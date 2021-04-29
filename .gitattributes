@@ -1,0 +1,12 @@
+# Marking Shards JS files as vendored
+watchtower-core/src/main/resources/static/scripts/shards.min.js linguist-vendored
+watchtower-core/src/main/resources/static/scripts/shards-dashboards.1.0.0.js linguist-vendored
+
+# Marking Shards styles as vendored
+watchtower-core/src/main/resources/static/styles/accents/** linguist-vendored
+watchtower-core/src/main/resources/static/styles/scss/** linguist-vendored
+watchtower-core/src/main/resources/static/styles/extras.1.0.0.min.css linguist-vendored
+watchtower-core/src/main/resources/static/styles/shards-dashboards.1.0.0.css linguist-vendored
+
+# Marking Material Icons styles as vendored
+watchtower-core/src/main/resources/static/styles/icons.css linguist-vendored
