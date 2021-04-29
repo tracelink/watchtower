@@ -10,3 +10,6 @@ watchtower-core/src/main/resources/static/styles/shards-dashboards.1.0.0.css lin
 
 # Marking Material Icons styles as vendored
 watchtower-core/src/main/resources/static/styles/icons.css linguist-vendored
+
+# Marking Font Awesome styles as vendored
+watchtower-core/src/main/resources/static/styles/font-awesome-all.css linguist-vendored
