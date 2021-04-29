@@ -1,0 +1,33 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+  <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+    <h3 class="page-title">Rule Designer</h3>
+  </div>
+</div>
+<!-- End Page Header -->
+<div class="row border-bottom pb-1 mb-2">
+  <div class="col">
+    <div class="card card-small mb-2">
+      <div class="card-header border-bottom py-1">
+        <h6 class="d-inline m-0">Select a Designer</h6>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item px-3">
+          <!-- Button Groups -->
+          <div th:if="${knownModules == null}">
+            No rule designers configured.
+          </div>
+          <div th:if="${knownModules != null}" class="btn-group btn-group-toggle">
+            <a th:each="optionKey, oStat : ${knownModules}"
+               th:href="'/designer/' + ${optionKey.toLowerCase()}"
+               th:class="${#httpServletRequest.getRequestURI().contains(optionKey.toLowerCase()) } ? 'btn btn-white active' : 'btn btn-white'"
+               th:text="${optionKey}"></a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="row" th:if="${designerView != null}">
+  <div th:replace="${designerView}"></div>
+</div>

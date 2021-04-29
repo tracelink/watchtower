@@ -1,0 +1,19 @@
+<!doctype html>
+<html class="no-js h-100" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/htmlhead"></head>
+<body class="h-100">
+<div class="container-fluid">
+    <div class="row">
+        <main class="main-content col">
+            <div class="error">
+                <div class="error__content">
+                    <h2 th:text="${status}"></h2>
+                    <h3 th:text="${message}"></h3>
+                    <a class="btn btn-accent btn-pill" href="/" role="button">Home</a>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+</body>
+</html>

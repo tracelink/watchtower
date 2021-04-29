@@ -1,0 +1,28 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+	<div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+		<!-- <span class="text-uppercase page-subtitle">Dashboard</span> -->
+		<h3 class="page-title">Watchtower Dashboard</h3>
+	</div>
+</div>
+<!-- End Page Header -->
+<!-- Small Stats Blocks -->
+<div th:each="metricEntry : ${metrics.entrySet()}">
+	<h4 class="page-subtitle" th:text="${metricEntry.getKey() + ' Stats'}"></h4>
+	<div class="row">
+		<div class="col-lg col-md-6 col-sm-6 mb-4" th:each="metricPair : ${metricEntry.getValue()}">
+			<div class="stats-small stats-small--1 card card-small">
+				<div class="card-body p-0 d-flex">
+					<div class="d-flex flex-column m-auto">
+						<div class="stats-small__data text-center">
+							<span class="stats-small__label text-uppercase" th:text="${metricPair.getFirst()}"></span>
+							<h6 class="stats-small__value count my-3" th:text="${metricPair.getSecond()}"></h6>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+</div>
+<!-- End Small Stats Blocks -->

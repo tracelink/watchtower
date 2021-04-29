@@ -1,0 +1,54 @@
+
+<div class="page-header row no-gutters py-4">
+	<div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+		<h3 class="page-title">Edit User Role</h3>
+	</div>
+</div>
+<!-- End Page Header -->
+<div class="row">
+	<div class="col">
+		<div class="card card-small mb-4">
+			<div class="card-header border-bottom">
+				<h6 class="m-0" th:text="${'Edit Role: ' + role.getRoleName()}"></h6>
+				<div class="form-group mt-2 mb-0">
+					<label class="font-weight-bold">Description:</label>
+					<span th:text="${role.getDescription()}"></span>
+				</div>
+			</div>
+			<div class="card-body p-0 pb-3 text-center">
+				<form method="POST" action="/rolemgmt/edit">
+					<div class="table-responsive">
+						<table class="table mb-0">
+							<thead class="bg-light">
+								<tr>
+									<th scope="col" class="border">Module</th>
+									<th scope="col" class="border">Category</th>
+									<th scope="col" class="border">Privilege</th>
+									<th scope="col" class="border">Description</th>
+									<th scope="col" class="border">Enabled</th>
+								</tr>
+							</thead>
+							<tbody>
+								<th:block th:each="priv : ${privileges}">
+									<tr>
+										<td th:text="${priv.module}"></td>
+										<td th:text="${priv.category}"></td>
+										<td th:text="${priv.name}"></td>
+										<td th:text="${priv.description}" class="text-left"></td>
+										<td>
+											<input type="checkbox" th:name="${priv.name}" th:checked="${role.getPrivileges().contains(priv)}"></input>
+										</td>
+									</tr>
+								</th:block>
+							</tbody>
+						</table>
+					</div>
+					<input type="hidden" name="id" th:value="${role.id}"></input> <input
+						type="hidden" th:name="${_csrf.parameterName}"
+						th:value="${_csrf.token}" />
+					<button type="submit" class="btn btn-accent">Save Role</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>

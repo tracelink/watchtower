@@ -1,0 +1,123 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+  <div
+      class="col-lg-12 col-md-12 col-sm-12 text-center text-sm-left mb-0">
+    <h3 class="page-title">Rule Editing</h3>
+  </div>
+</div>
+<!-- Rule Types -->
+<div class="row">
+  <div class="col-lg-12 col-md-12 col-sm-12 mb-4">
+    <div class="card card-small d-flex flex-column h-100">
+      <div class="card-header border-bottom">
+        <h6 class="card-title m-0">Select a Module</h6>
+      </div>
+      <div class="card-body border-bottom">
+        <div class="btn-group btn-group-toggle">
+          <div th:if="${modules.isEmpty()}">No rule types configured.
+          </div>
+          <a th:each="module : ${modules}"
+             th:href="${'/rule/edit/' + module.toLowerCase()}"
+             th:class="${module.toLowerCase()} == ${activeModule.toLowerCase()} ? 'btn btn-white active' : 'btn btn-white'"
+             th:text="${module}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Rule Types -->
+<!-- Rules -->
+<div class="row">
+  <div class="col-lg-3 col-md-12 col-sm-12">
+    <div class="card card-small mb-4">
+      <div class="card-header border-bottom">
+        <h6 class="card-title mb-0">Rules</h6>
+      </div>
+      <div class="card-footer">
+        <ul class="list-group list-group-flush">
+          <a th:each="rule : ${rules}"
+             th:class="'list-group-item list-group-item-action ruleLink ' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
+             th:id="${rule.id} + '-link'"
+             th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
+             th:text="${rule.name}"
+             th:data-value="${rule.id}">
+          </a>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <!-- End Rules -->
+  <!-- Rule Details -->
+  <div class="col-lg-9 col-md-12 col-sm-12">
+    <div class="card card-small mb-4">
+      <!-- Card Header -->
+      <div class="card-header border-bottom">
+        <div class="d-flex align-items-center">
+          <div class="mr-auto">
+            <h6 class="card-title m-0"
+                th:if="${activeRule != null}"
+                th:text="${activeRule.getModule()} + ' Rule Details: ' + ${activeRule.name}"></h6>
+          </div>
+          <div>
+            <button class="btn btn-danger" data-toggle="modal"
+                    data-target="#deleteRuleModal"
+                    th:if="${activeRule!=null}"
+                    th:data-action="'/rule/edit/' + ${activeRule.getModule()} + '/delete'"
+                    th:data-id="${activeRule.id}" th:data-name="${activeRule.name}"
+                    th:data-rulesets="${activeRule.rulesets.isEmpty() ? ' does not currently belong to any rulesets' : ' currently belongs to the following rulesets: ' + #strings.listJoin(activeRule.rulesets, ', ')}">
+              Delete Rule
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- End Card Header -->
+      <div th:if="${activeRule == null && rules.size() == 0}">
+        <div class="card-footer">
+          <p class="card-title text-left">There are no rules configured for this module</p>
+        </div>
+      </div>
+      <div th:if="${activeRule == null && rules.size() > 0}">
+        <div class="card-footer">
+          <p class="card-title text-left">Please select a rule</p>
+        </div>
+      </div>
+      <div th:if="${activeRule != null}">
+        <div th:replace="${ruleView}"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Rule Details -->
+<!-- Delete Rule Modal -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1" role="dialog"
+     aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="deleteModalLabel">
+          <i class="material-icons">warning</i> Delete <label
+            id="deleteModalName"></label>
+        </h4>
+        <button type="button" class="close" data-dismiss="modal"
+                aria-hidden="true">×
+        </button>
+
+      </div>
+      <div class="modal-body">
+        <p id="deleteModalContent"></p>
+      </div>
+      <div class="modal-footer">
+        <form class="form-inline" id="deleteModalForm" method="POST"
+              action="#">
+          <input type="hidden" th:name="${_csrf.parameterName}"
+                 th:value="${_csrf.token}"/> <input id="deleteModalInput"
+                                                    type="hidden" name="#" value="#"/>
+          <button class="btn btn-danger px-2" type="submit">Delete
+            Rule
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Delete Rule Modal -->

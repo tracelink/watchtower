@@ -1,0 +1,1 @@
+ALTER TABLE violations CHANGE preexisting is_new_vio TINYINT;

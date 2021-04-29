@@ -1,0 +1,53 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+        <!-- <span class="text-uppercase page-subtitle">Watchtower Admin</span> -->
+        <h3 class="page-title">Edit User Profile</h3>
+    </div>
+</div>
+<!-- End Page Header -->
+<!-- Content -->
+<div class="row">
+    <div class="col">
+        <div class="card card-small mb-4">
+            <div class="card-header border-bottom">
+                <h6 class="m-0">Edit Authorization</h6>
+            </div>
+            <div class="row p-3">
+                <div class="col">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="font-weight-bold" for="feFirstName">Username</label>
+                            <div th:text="${user.username}">Username</div>
+                        </div>
+                    </div>
+                    <form method="POST" action="/usermgmt/edit">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="font-weight-bold" for="enabled">Enabled</label>
+                                <input class="form-inline" th:checked="${user.enabled == 1}" id="enabled" value="1" name="enabled" type="checkbox">
+                            </div>
+                        </div>
+                        <div class="form-row">
+	                        <div class="form-group">
+	                            <label class="font-weight-bold" for="role">Role	</label>
+	                            <div class="form-inline">
+	                                <div>
+	                                    <select class="form-control form-inline" name="role" id="role">
+	                                        <option value=-1 th:selected="${user.getRoles().size() == 0}">No Roles</option>
+	                                        <option th:each="role : ${roles}" th:value="${role.getId()}" th:selected="${user.getRoles().contains(role)}" th:text="${role.getRoleName()}"></option>
+	                                    </select>
+	                                </div>
+	                            </div>
+	                        </div>
+                        </div>
+                        <input type="hidden" name="id" th:value="${user.id}"></input>
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <button type="submit" class="btn btn-accent">Update Authorization</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Content -->

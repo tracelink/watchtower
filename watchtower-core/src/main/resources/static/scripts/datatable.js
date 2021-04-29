@@ -1,0 +1,6 @@
+$(document).ready(function() {
+	$("table.datatable").DataTable();
+	$("table.datatable-invert").DataTable({
+		"order": [[0, 'desc']]
+	});
+});

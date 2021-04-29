@@ -1,0 +1,1 @@
+ALTER TABLE violations DROP COLUMN is_new_vio;

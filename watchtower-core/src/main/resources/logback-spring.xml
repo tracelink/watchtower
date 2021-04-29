@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+	<property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %logger{36} %-5level - %msg%n" />
+	<property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %class{36}.%M - %msg%n" />
+	<property scope="context" name="LOGS_DIR" value="./logs" />
+	<property name="FILENAME_PATTERN" value="${LOGS_DIR}/watchtower-%d{yyyy-MM-dd}.log" />
+
+
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<charset>UTF-8</charset>
+			<pattern>${CONSOLE_PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="ROLLING-QUEUE" package="com.tracelink.appsec" class="ch.qos.logback.core.read.CyclicBufferAppender">
+		<maxSize>256</maxSize>
+	</appender>
+
+	<logger name="com.tracelink.appsec" level="INFO">
+		<appender-ref ref="ROLLING-QUEUE" />
+	</logger>
+	
+	<springProfile name="dev,test,default">
+		<root level="INFO">
+			<appender-ref ref="CONSOLE" />
+		</root>
+	</springProfile>
+
+	<springProfile name="prd,prdtest">
+		<appender name="ROLLING-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<encoder>
+				<pattern>${FILE_PATTERN}</pattern>
+			</encoder>
+			<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				<fileNamePattern>${FILENAME_PATTERN}</fileNamePattern>
+				<maxHistory>7</maxHistory>
+			</rollingPolicy>
+		</appender>
+
+		<root level="INFO">
+			<appender-ref ref="ROLLING-FILE" />
+			<appender-ref ref="CONSOLE" />
+		</root>
+	</springProfile>
+</configuration>

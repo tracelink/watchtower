@@ -1,0 +1,77 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+	<div class="col-12 col-sm-6 text-center text-sm-left mb-0">
+		<!--  <span class="text-uppercase page-subtitle">Pull Request Scan</span> -->
+		<h3 class="page-title">Pull Request Scan Report</h3>
+	</div>
+</div>
+<!-- End Page Header -->
+<!-- Content -->
+<div class="row">
+	<div class="col">
+		<div class="card h-100">
+			<div class="card-body">
+				<div class="row border-bottom mb-4">
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Pull Request Name</h6>
+							<div th:text="${result.getDisplayName()}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Author</h6>
+							<div th:text="${result.getAuthor()}"></div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">API ID</h6>
+							<div th:text="${result.getApiLabel()}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Pull Request Link</h6>
+							<a th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank"/>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Scanned On</h6>
+							<div
+								th:text="${#temporals.format(result.getDate(), 'MMM d, yyy HH:mm:ss')}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Number of Violations</h6>
+							<div
+								th:text="${result.getViolations().size()}"></div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<h6 class="">Violations</h6>
+						<table class="table mb-0 w-100 datatable">
+							<thead class="bg-light">
+								<tr>
+									<th scope="col" class="border-0">Violation Name</th>
+									<th scope="col" class="border-0">Severity</th>
+									<th scope="col" class="border-0">File</th>
+									<th scope="col" class="border-0">Line Number</th>
+									<th scope="col" class="border-0">Description</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="vio : ${result.getViolations()}">
+									<td th:text="${vio.getViolationName()}"></td>
+									<td th:text="${vio.getSeverity()}"></td>
+									<td th:text="${vio.getFileName()}"></td>
+									<td th:text="${vio.getLineNumber()}"></td>
+									<td th:text="${vio.getMessage()}"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- End Content -->

@@ -1,0 +1,48 @@
+<!-- Card Footer -->
+<div class="card-footer">
+  <form class="d-inline" action="/rule/edit/eslint" method="POST" th:object="${rule}">
+    <div class="form-row mb-2">
+      <div class="col-md-5">
+        <label for="name">Name</label>
+        <input type="text" readonly class="form-control" id="name" th:value="${rule.name}"
+               name="name">
+      </div>
+      <div class="col-sm-5">
+        <label for="author">Author</label>
+        <input type="text" readonly class="form-control" id="author" th:value="${rule.author}"
+               name="author"/>
+      </div>
+      <div class="col-sm-2">
+        <label for="priority">Priority</label>
+        <select class="form-control" id="priority" name="priority">
+          <option th:each="priority : ${priorities}" th:value="${priority}"
+                  th:text="${priority.getName()}"
+                  th:selected="${priority.getPriority()==rule.priority.getPriority()}"></option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row mb-2">
+      <div class="col-sm-6">
+        <label for="message">Description</label>
+        <input type="text" readonly class="form-control" id="message" th:value="${rule.message}"
+               name="message"/>
+      </div>
+      <div class="col-sm-6">
+        <label for="externalUrl">External URL</label>
+        <input type="text" readonly class="form-control" id="externalUrl"
+               th:value="${rule.externalUrl}" name="externalUrl"/>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-2">
+        <button class="btn btn-warning" type="submit">
+          Save Rule Details
+        </button>
+      </div>
+      <input type="hidden" th:name="id" th:value="${rule.id}">
+      <input type="hidden" th:name="${_csrf.parameterName}"
+             th:value="${_csrf.token}"/>
+    </div>
+  </form>
+</div>
+<!-- End Card Footer -->

@@ -1,0 +1,25 @@
+server:
+  display-name: Watchtower
+
+spring:
+  profiles:
+    active: prd
+  
+  thymeleaf:
+    cache:  false
+    mode: HTML
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+  h2:
+    console:
+      enabled: true
+      path: /console
+      settings:
+        web-allow-others: true
+
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB

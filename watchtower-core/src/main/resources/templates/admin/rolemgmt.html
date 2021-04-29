@@ -1,0 +1,160 @@
+
+<div class="page-header row no-gutters py-4">
+	<div class="col-12 col-sm-6 text-center text-sm-left mb-0">
+		<h3 class="page-title">Role Management</h3>
+	</div>
+</div>
+<!-- End Page Header -->
+<div class="row">
+	<div class="col">
+		<div class="card card-small mb-4">
+			<div class="card-header border-bottom">
+				<div class="d-flex align-items-center">
+					<div class="mr-auto">
+						<h6 class="m-0">Role Data</h6>
+					</div>
+	                <div th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ROLE_MODIFY_NAME+''')')}">
+	                	<button class="btn btn-primary" data-toggle="modal"
+                                data-target="#defaultRoleModal">
+                            Manage Default Role
+                        </button>
+						<button class="btn btn-success" data-toggle="modal"
+								data-target="#createModal">Create New Role</button>
+					</div>
+				</div>
+			</div>
+			<div class="card-body p-0 pb-3 text-center">
+				<div class="table-responsive">
+					<table class="table mb-0">
+						<thead class="bg-light">
+							<tr>
+								<th scope="col" class="border-0">Role Name</th>
+								<th scope="col" class="border-0">Description</th>
+								<th scope="col" class="border-0"># of Privileges</th>
+								<th scope="col" class="border-0">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<th:block th:each="role : ${roles}">
+								<tr>
+									<td> 
+										<span th:text="${role.roleName}">Role Name</span>
+										<span th:if="${role.isDefaultRole()}" class="badge badge-pill badge-primary">Default</span>
+									</td>
+									<td th:text="${role.getDescription()}">Description</td>
+									<td th:text="${role.getPrivileges().size()}"># of Privileges</td>
+									<td align="center">
+										<a th:href="@{'/rolemgmt/edit/' + ${role.id}}"
+										   class="btn btn-primary"> 
+										   <i class="material-icons">edit</i>
+											Edit
+									</a>
+										<button class="btn btn-danger" data-toggle="modal"
+											data-target="#myModal" th:attr="data-id=${role.id}">
+											<i class="material-icons">close</i> Delete
+										</button></td>
+								</tr>
+							</th:block>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+	aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title" id="myModalLabel">
+					<i class="material-icons">warning</i> Delete Role
+				</h4>
+				<button type="button" class="close" data-dismiss="modal"
+					aria-hidden="true">×</button>
+
+			</div>
+			<div class="modal-body">
+				Are you sure you want to delete this role? <label class="idhere"></label>
+			</div>
+			<div class="modal-footer">
+				<form class="form-inline" action="/rolemgmt/delete" method="post">
+					<input type="hidden" class="deleterole" name="id" /> 
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button class="btn btn-danger" type="Submit">Delete</button>
+				</form>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ROLE_MODIFY_NAME+''')')}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Create a new Role</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="createRoleForm" method="POST" action="/rolemgmt/create">
+                   <div class="form-inline">
+                   		<label>New Role Name</label>
+                   		<input type="text" id="roleName" name="roleName">
+                   </div>
+                   <div class="form-inline">
+                   		<label>Role Description</label>
+                        <textarea rows="5" cols="50" name="roleDescription"></textarea>
+                   </div>
+    			   <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+               </form>
+            </div>
+            <div class="modal-footer">
+            	<button class="btn btn-success" type="Submit" form="createRoleForm">Create</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<div class="modal fade" id="defaultRoleModal" tabindex="-1" role="dialog"
+     aria-labelledby="defaultModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="defaultModalLabel">Manage Default Role</h5>
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-hidden="true">×
+                </button>
+            </div>
+            <div class="modal-body">
+                <p th:if="${defaultRole != null}"
+                   th:text="'The current default role is ' + ${defaultRole.getRoleName()} + '.'"></p>
+                <p th:if="${defaultRole == null}">There is currently no default role
+                    configured.</p>
+                <p>You may select a default role from the list of roles below. This
+                    roll will be automatically assigned to all new users that are added to
+                    Watchtower. You may also choose to select 'No Default Role', which means that
+                    new users will need to be manually assigned to a role before they
+                    can be access any Watchtower functions.</p>
+                <form class="d-inline" action="/rolemgmt/default" method="POST">
+                    <select class="selectpicker input-group" data-width="auto"
+                            data-style="rounded border" name="roleId">
+                        <option th:selected="${defaultRole == null}" th:value="-1">No Default Role</option>
+                        <option th:each="r : ${roles}"
+                                th:data-content="${r.getRoleName()}"
+                                th:value="${r.id}"
+                                th:selected="${defaultRole != null && r.id == defaultRole.id}"></option>
+                    </select>
+                    <input type="hidden" th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}"/>
+                    <button class="btn btn-primary" type="submit">
+                        Set Default Role
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

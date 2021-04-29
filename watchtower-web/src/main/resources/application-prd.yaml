@@ -1,0 +1,23 @@
+server:
+  port: 7777
+
+spring:
+  datasource:
+    url: ${JDBC_URL}
+    username: ${JDBC_USERNAME}
+    password: ${JDBC_PASSWORD}
+
+  thymeleaf:
+    cache:  true
+
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          oidc:
+#            client-id: ${CLIENT_ID}
+#            client-secret: ${CLIENT_SECRET}
+#            scope: openid, email
+#        provider:
+#          oidc:
+#            issuer-uri: ${ISSUER_URI}

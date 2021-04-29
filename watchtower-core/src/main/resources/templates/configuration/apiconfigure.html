@@ -1,0 +1,21 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+    <div class="col-12 col-sm-6 text-center text-sm-left mb-0">
+        <h3 class="page-title">API Configuration</h3>
+    </div>
+</div>
+<!-- End Page Header -->
+<!-- Content -->
+<!-- Top Row -->
+<div class="row border-bottom">
+    <div class="col">
+        <div class="card">
+            <div class="card-header border-bottom">
+                <h6 class="m-0" th:text="${'Configure ' + apiType.getTypeName() + ' Setting'}"/>
+            </div>
+            <div class="card-body">
+            	<div th:replace="${template}"/>
+            </div>
+        </div>
+    </div>
+</div>

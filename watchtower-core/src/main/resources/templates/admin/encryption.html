@@ -1,0 +1,203 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+  <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+    <h3 class="page-title">Encryption Management</h3>
+  </div>
+</div>
+<!-- End Page Header -->
+<div class="row border-bottom mb-4">
+  <!-- Rotation Schedule -->
+  <div class="col-lg-7 col-md-12 col-sm-12 mb-4">
+    <div class="card card-small text-center">
+      <div class="card-header border-bottom">
+        <h6 class="card-title m-0">Rotation Schedule</h6>
+      </div>
+      <div class="card-footer">
+        <p class="card-title text-left">Current Settings</p>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+            <tr>
+              <th scope="col">Enabled</th>
+              <th scope="col">Rotation Period (Days)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td th:text="${metadata.rotationScheduleEnabled} ? 'Yes' : 'No'"></td>
+              <td th:text="${metadata.rotationPeriod} ?: 'N/A'"></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer border-top"
+      	   th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
+        <p class="card-title text-left">Edit Rotation Schedule</p>
+        <div class="row">
+          <div class="col">
+            <form class="d-inline" action="/encryption/rotate/schedule" method="POST">
+              <div class="form-row">
+                <div class="form-group col">
+                  <select class="selectpicker w-100" data-style="rounded border"
+                          id="enable" name="enable">
+                    <option value="true" th:selected="${!metadata.rotationScheduleEnabled}">
+                      Enable
+                    </option>
+                    <option value="false" th:selected="${metadata.rotationScheduleEnabled}">
+                      Disable
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col">
+                  <input type="text" class="form-control" placeholder="Days between key rotations"
+                         name="rotationPeriod">
+                </div>
+                <div class="form-group col">
+                  <button class="btn btn-success form-control" type="submit">
+                    Update Rotation Schedule
+                  </button>
+                </div>
+              </div>
+              <input type="hidden" th:name="${_csrf.parameterName}"
+                     th:value="${_csrf.token}"/>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End Rotation Schedule -->
+  <!-- Key Encryption Key Info -->
+  <div class="col-lg-5 col-md-12 col-sm-12 mb-4">
+    <div class="card card-small text-center">
+      <div class="card-header border-bottom">
+        <h6 class="m-0">Key Encryption Key Information</h6>
+      </div>
+      <div class="card-body">
+        <p class="card-title text-left">Current Key Encryption Key</p>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+            <tr>
+              <th scope="col">Last Rotation Date</th>
+              <th scope="col">Days Since Rotation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td th:text="${#temporals.format(metadata.lastRotationDateTime, 'MMM d, YYYY h:mm a')} ?: 'Never'"></td>
+              <td th:text="${metadata.lastRotationDateTime != null ? T(java.time.temporal.ChronoUnit).DAYS.between(metadata.lastRotationDateTime.toLocalDate(), T(java.time.LocalDate).now()) : 'N/A'}"></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End Key Encryption Key Info -->
+</div>
+<!-- Current Data Encryption Keys -->
+<div class="row">
+  <div class="col-lg-12 col-md-12 col-sm-12">
+    <div class="card card-small mb-4">
+      <div class="card-header border-bottom">
+        <div class="d-flex align-items-center">
+          <div class="mr-auto">
+            <h6 class="card-title m-0">Current Data Encryption Keys</h6>
+          </div>
+          <div th:if="${!deks.isEmpty()}">
+            <button class="btn btn-secondary" data-toggle="modal" data-target="#rotateKeysModal"
+                    th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
+              Rotate All Keys
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div th:switch="${deks.size()}">
+          <p th:case="0" class="card-text">No data encryption keys found.</p>
+          <div th:case="*" class="table-responsive">
+            <table class="table table-striped text-center">
+              <thead>
+              <tr>
+                <th scope="col">Converter Class</th>
+                <th scope="col">Rotation in Progress</th>
+                <th scope="col">Last Rotation Date</th>
+                <th th:if="${metadata.rotationScheduleEnabled}" scope="col">Next Rotation Date
+                </th>
+                <th scope="col"
+                    th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">Rotate Key</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="dek : ${deks}">
+                <td th:text="${dek.converterClassName}"></td>
+                <td th:text="${dek.rotationInProgress} ? 'Yes' : 'No'"></td>
+                <td th:text="${#temporals.format(dek.lastRotationDateTime, 'MMM d, YYYY h:mm a')} ?: 'Never'"></td>
+                <td th:if="${metadata.rotationScheduleEnabled}"
+                    th:text="${#temporals.format(dek.lastRotationDateTime.toLocalDate().atStartOfDay().plusDays(metadata.rotationPeriod), 'MMM d, YYYY h:mm a')}"></td>
+                <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
+                  <button type="button" class="btn btn-primary" data-toggle="modal"
+                          th:disabled="${dek.rotationInProgress}" data-target="#rotateKeyModal"
+                          th:data-name="${dek.converterClassName}" th:data-id="${dek.id}">
+                    Rotate
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Current Data Encryption Keys -->
+<!-- Rotate Key Modal -->
+<div class="modal fade" id="rotateKeyModal" tabindex="-1" role="dialog" aria-hidden="true"
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">
+          <i class="material-icons">warning</i> Rotate Key
+        </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      </div>
+      <div class="modal-body" id="rotateModalContent">
+      </div>
+      <div class="modal-footer">
+        <form class="form-inline" id="rotateModalForm" method="POST"
+              action="/encryption/rotate">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input id="rotateModalInput" type="hidden" name="keyId" value="#"/>
+          <button class="btn btn-warning px-2" type="submit">Rotate Key Now</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Rotate Key Modal -->
+<!-- Rotate Keys Modal -->
+<div class="modal fade" id="rotateKeysModal" tabindex="-1" role="dialog" aria-hidden="true"
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">
+          <i class="material-icons">warning</i> Rotate Keys
+        </h4>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      </div>
+      <div class="modal-body">Are you sure you want to rotate all keys?</div>
+      <div class="modal-footer">
+        <form class="form-inline" method="POST" action="/encryption/rotate">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button class="btn btn-warning px-2" type="submit">Rotate Keys Now</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Rotate Key Modal -->

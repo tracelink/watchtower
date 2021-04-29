@@ -1,0 +1,1 @@
+ALTER TABLE rulesets ADD blocking_level TINYINT;

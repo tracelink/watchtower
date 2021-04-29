@@ -1,0 +1,33 @@
+<!doctype html>
+<html class="no-js h-100" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/htmlhead"></head>
+<body class="h-100">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Main Sidebar -->
+            <div th:replace="fragments/sidebar"></div>
+            <!-- End Main Sidebar -->
+            <main class="main-content col-lg-10 col-md-9 col-sm-12 p-0 offset-lg-2 offset-md-3">
+                <!-- Main Navbar -->
+                <div th:replace="fragments/topnavbar"></div>
+                <!-- End Main Navbar -->
+                <div th:if="${success != null}" class="alert alert-success alert-dismissible fade show mb-0" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                    <div th:text="${success}"></div>
+                </div>
+                <div th:if="${failure != null}" class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                    <div th:text="${failure}"></div>
+                </div>
+                <div class="main-content-container container-fluid px-4">
+                    <div th:replace="${contentViewName}"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

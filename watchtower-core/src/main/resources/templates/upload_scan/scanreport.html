@@ -1,0 +1,89 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+	<div class="col-12 col-sm-6 text-center text-sm-left mb-0">
+		<!--  <span class="text-uppercase page-subtitle">Pull Request Scan</span> -->
+		<h3 class="page-title">Upload Scan Report</h3>
+	</div>
+</div>
+<!-- End Page Header -->
+<!-- Content -->
+<div class="row">
+	<div class="col">
+		<div class="card h-100">
+			<div class="card-body">
+				<div class="row border-bottom mb-4">
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Upload Name</h6>
+							<div th:text="${result.getName()}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Uploader</h6>
+							<div th:text="${result.getSubmittedBy()}"></div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Status</h6>
+							<div th:text="${result.getStatus()}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Error Message</h6>
+							<div th:text="${result.getErrorMessage() == null ? 'N/A' : result.getErrorMessage()}"></div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Ticket</h6>
+							<div th:text="${result.getTicket()}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Ruleset</h6>
+							<div th:text="${result.getRuleset()}"></div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Submitted On</h6>
+							<div
+								th:text="${#temporals.format(result.getSubmitDate(), 'MMM d, yyy HH:mm:ss')}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Scan Ended On</h6>
+							<div
+								th:text="${#temporals.format(result.getEndDate(), 'MMM d, yyy HH:mm:ss')}"></div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<h6 class="">Violations</h6>
+						<table class="table mb-0 w-100 datatable">
+							<thead class="bg-light">
+								<tr>
+									<th scope="col" class="border-0">Violation Name</th>
+									<th scope="col" class="border-0">Severity</th>
+									<th scope="col" class="border-0">File</th>
+									<th scope="col" class="border-0">Line Number</th>
+									<th scope="col" class="border-0">Description</th>
+									<th scope="col" class="border-0">External URL</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="vio : ${result.getViolations()}">
+									<td th:text="${vio.getViolationName()}"></td>
+									<td th:text="${vio.getSeverity()}"></td>
+									<td th:text="${vio.getFileName()}"></td>
+									<td th:text="${vio.getLineNumber()}"></td>
+									<td th:text="${vio.getMessage()}"></td>
+									<td><a th:href="${vio.getExternalUrl()}" th:text="${vio.getExternalUrl()}" target="_blank"/></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- End Content -->

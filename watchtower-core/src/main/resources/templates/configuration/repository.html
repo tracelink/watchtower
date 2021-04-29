@@ -1,0 +1,84 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+        <h3 class="page-title">Repository Configuration</h3>
+    </div>
+</div>
+<!-- End Page Header -->
+<!-- Default Light Table -->
+<div class="row border-bottom pb-4 mb-4">
+    <div class="col">
+        <div class="card card-small mb-2">
+            <div class="card-header border-bottom">
+                <h6 class="m-0">Select a Source Control ID</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item px-3">
+                    <!-- Button Groups -->
+                    <div class="btn-group btn-group-toggle mb-3" id="scmidbtn" data-toggle="buttons">
+                        <label th:each="repoKey, oStat : ${repos.keySet()}" th:class="${oStat.first}? 'btn btn-white active' : 'btn btn-white'">
+                            <input type="radio" th:id="${repoKey}" autocomplete="off" th:text="${repoKey}">
+                        </label>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <div class="card card-small mb-2">
+            <div class="card-header border-bottom">
+                <h6 class="m-0">Repositories</h6>
+            </div>
+            <div class="row p-3">
+                <div class="col">
+                    <div th:each="repoKey, oStat : ${repos.keySet()}"
+                               th:style="${oStat.first} ? '' : 'display:none'" th:id="${repoKey}"
+                               class="table-responsive reposTable">
+                        <table class="table mb-0 datatable">
+                          <thead class="bg-light">
+                          <tr>
+                            <th scope="col" class="border-0">Count</th>
+                            <th scope="col" class="border-0">Repository Name</th>
+                            <th scope="col" class="border-0">Last Scanned</th>
+                            <th scope="col" class="border-0">Ruleset</th>
+                            <th scope="col" class="border-0">Blocking Level</th>
+                            <th scope="col" class="border-0" 
+							    th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).REPO_SETTINGS_MODIFY_NAME+''')')}">Set Ruleset</th>
+                          </tr>
+                          </thead>
+                          <tbody>
+                          <tr th:each="repoDetails, dStat : ${repos.get(repoKey)}">
+                            <td th:text="${dStat.count}">
+                            <td th:text="${repoDetails.repoName}">
+                            <td th:text="${repoDetails.getLastReviewedDateAsDate()}">
+                            <td th:text="${repoDetails.ruleset == null ? 'None' : repoDetails.ruleset.name}">
+                            <td th:text="${repoDetails.ruleset == null ? 'N/A' : (repoDetails.ruleset.blockingLevel == null ? 'None' : repoDetails.ruleset.blockingLevel.name)}">
+                            <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).REPO_SETTINGS_MODIFY_NAME+''')')}">
+                              <form method="POST" action="/repository" onchange="this.submit()">
+                                <input type="hidden" th:name="apiLabel" th:value="${repoDetails.apiLabel}"/>
+                                <input type="hidden" th:name="repo" th:value="${repoDetails.repoName}"/>
+                                <input type="hidden" th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}"/>
+                                <select name="rulesetId" class="custom-select custom-select-sm"
+                                        style="max-width: 130px;">
+                                  <option th:selected="${repoDetails.ruleset == null}"
+                                          value="-1">None
+                                  </option>
+                                  <option th:each="ruleset : ${rulesets}"
+                                          th:selected="${repoDetails.ruleset != null && ruleset.name == repoDetails.ruleset.name}"
+                                          th:value="${ruleset.id}" th:text="${ruleset.name}"></option>
+                                </select>
+                              </form>
+                            </td>
+                          </tr>
+                          </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Default Light Table -->

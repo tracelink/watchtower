@@ -1,0 +1,182 @@
+<ruleset name="Security-Controls-TruffleHog">
+	<description>
+		These are test rules taken from the truffleHog project
+	</description>
+
+	<!-- AWS -->
+	<rule name="AWS API Key">
+		<message>This looks to be an AWS API Key. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[AKIA[0-9A-Z]{16}]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>1</priority>
+	</rule>
+
+	<!-- Slack -->
+	<rule name="Slack Token">
+		<message>This looks to be a Slack Token. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[(xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>2</priority>
+	</rule>
+	<rule name="Slack Webhook">
+		<message>This looks to be a Slack Webhook. These services should be treated as secrets and
+			not committed to source control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>4</priority>
+	</rule>
+
+	<!-- certs -->
+	<rule name="RSA private key">
+		<message>This looks to be a Private Key Definition. Please do not commit any secrets to
+			source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[-----BEGIN RSA PRIVATE KEY-----]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>3</priority>
+	</rule>
+	<rule name="SSH (OPENSSH) private key">
+		<message>This looks to be a Private Key Definition. Please do not commit any secrets to
+			source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[-----BEGIN OPENSSH PRIVATE KEY-----]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>3</priority>
+	</rule>
+	<rule name="SSH (DSA) private key">
+		<message>This looks to be a Private Key Definition. Please do not commit any secrets to
+			source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[-----BEGIN DSA PRIVATE KEY-----]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>3</priority>
+	</rule>
+	<rule name="SSH (EC) private key">
+		<message>This looks to be a Private Key Definition. Please do not commit any secrets to
+			source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[-----BEGIN EC PRIVATE KEY-----]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>3</priority>
+	</rule>
+	<rule name="PGP private key block">
+		<message>This looks to be a Private Key Definition. Please do not commit any secrets to
+			source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[-----BEGIN PGP PRIVATE KEY BLOCK-----]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>3</priority>
+	</rule>
+
+	<!-- Generics -->
+	<rule name="Generic Secret">
+		<message>This looks to be a Generic Secret. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Generic API Key">
+		<message>This looks to be some kind of API Key. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Password in URL">
+		<message>This looks to be a Password configured in a URL. Please do not commit any secrets
+			to source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[[a-zA-Z]{3,10}://[^/\s:]{3,20}:[^/\s:@]{3,20}@.{1,100}]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Generic Oauth">
+		<message>This looks to be an OAuth Token. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[(\"client_secret\":\"[a-zA-Z0-9-_]{24}\")]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Generic Service Account">
+		<message>This looks to be a Service Account definition. Please do not commit any secrets to
+			source control.
+		</message>
+		<extension></extension>
+		<pattern><![CDATA[\"type\": \"service_account\"]]></pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+
+	<!-- Unlikely to be used -->
+	<rule name="GitHub">
+		<message>This looks to be a Github repo reference or secret. Please do not commit any
+			secrets to source control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"]]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Facebook Oauth">
+		<message>This looks to be a Facebook OAuth Token. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"]]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Twitter Oauth">
+		<message>This looks to be a Twitter OAuth Token. Please do not commit any secrets to source
+			control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*['|\"][0-9a-zA-Z]{35,44}['|\"]]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>5</priority>
+	</rule>
+	<rule name="Heroku API Key">
+		<message>This looks to be a Heroku API Key. Heroku is not an approved vendor. Please do not
+			commit any secrets to source control.
+		</message>
+		<extension></extension>
+		<pattern>
+			<![CDATA[[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}]]>
+		</pattern>
+		<externalURL>https://github.com/dxa4481/truffleHog</externalURL>
+		<priority>2</priority>
+	</rule>
+</ruleset>
