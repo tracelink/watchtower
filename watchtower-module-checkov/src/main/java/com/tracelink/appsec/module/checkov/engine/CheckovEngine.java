@@ -69,7 +69,9 @@ public class CheckovEngine {
 		if (StringUtils.isBlank(pythonMajorVersionNum)
 				|| StringUtils.isBlank(pythonMinorVersionNum)
 				|| Integer.parseInt(pythonMajorVersionNum) < EXPECTED_PYTHON_VERSION_MAJOR
-				|| Integer.parseInt(pythonMinorVersionNum) < EXPECTED_PYTHON_VERSION_MINOR) {
+				|| (Integer.parseInt(pythonMajorVersionNum) == EXPECTED_PYTHON_VERSION_MAJOR
+						&& Integer
+								.parseInt(pythonMinorVersionNum) < EXPECTED_PYTHON_VERSION_MINOR)) {
 			throw new RuntimeException("Python Version minimum expected: "
 					+ EXPECTED_PYTHON_VERSION_MAJOR + "." + EXPECTED_PYTHON_VERSION_MINOR
 					+ " but got " + pythonMajorVersionNum + "." + pythonMinorVersionNum);

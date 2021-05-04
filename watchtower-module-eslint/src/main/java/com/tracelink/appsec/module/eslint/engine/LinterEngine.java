@@ -220,7 +220,7 @@ public final class LinterEngine {
 		}
 		// Get installed version of package to confirm
 		List<String> versionCommand = Arrays
-				.asList("/bin/sh", "-c", "npm list --depth=0 | grep " + npmPackage);
+				.asList("npm", "list", "--depth=0");
 		ProcessResult versionResult = runCommand(versionCommand);
 		if (versionResult.hasErrors()) {
 			LOG.warn("Errors getting version of NPM package \"" + npmPackage + "\":\n"
@@ -228,11 +228,12 @@ public final class LinterEngine {
 		}
 		// Throw exception if installed version does not match given version, or if result is null
 		if (versionResult.hasResults()) {
-			String installedVersion = versionResult.getResults().split("@")[1];
-			if (!installedVersion.equals(version)) {
+			String targetString = npmPackage + "@" + version;
+			if (!versionResult.getResults().contains(targetString)) {
 				throw new RuntimeException(
-						"Expected \"" + npmPackage + "\" version " + version + " but received "
-								+ installedVersion);
+						"Expected \"" + npmPackage + "\" version " + version
+								+ " but received npm list:"
+								+ versionResult.getResults());
 			}
 		} else {
 			throw new RuntimeException("Cannot verify installed version of \"" + npmPackage + "\"");
