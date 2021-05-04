@@ -134,7 +134,7 @@ public class PRScanningService extends AbstractScanningService {
 				}
 			}
 		} else {
-			LOG.info("No Pull Requests found to scan after downtime");
+			LOG.info("No Pull Requests found to recover after downtime");
 		}
 	}
 
@@ -143,7 +143,8 @@ public class PRScanningService extends AbstractScanningService {
 		List<PullRequest> prs = new ArrayList<>();
 		try {
 			IScmApi api = scmFactoryService.createApiForApiEntity(entity);
-			List<RepositoryEntity> repos = repoMap.get(entity.getApiLabel());
+			List<RepositoryEntity> repos =
+					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
 			for (RepositoryEntity repo : repos) {
 				LOG.debug("Recovering Repo " + repo.getRepoName());
 				List<PullRequest> recovered = recoverByRepo(entity, api, repo);

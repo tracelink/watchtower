@@ -151,6 +151,9 @@ public class UploadScanningService extends AbstractScanningService {
 			LOG.info("Attempting to recover Not Started Upload Scans after downtime");
 			restartScans(notStartedScans);
 		}
+		if (inProgressScans.isEmpty() && notStartedScans.isEmpty()) {
+			LOG.info("No Upload Scans found to recover after downtime");
+		}
 	}
 
 	private void restartScans(List<UploadScanContainerEntity> scans) {

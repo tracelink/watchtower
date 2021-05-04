@@ -3,7 +3,6 @@ package com.tracelink.appsec.watchtower.core.configuration;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +21,6 @@ import ch.qos.logback.core.read.CyclicBufferAppender;
  */
 @Configuration
 @EnableScheduling
-@EnableAsync
 public class WatchtowerConfiguration {
 	@Bean
 	public PasswordEncoder passwordEncoder() {

@@ -1,11 +1,9 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 
 import com.tracelink.appsec.watchtower.core.scan.threadpool.PauseableThreadPoolTaskExecutor;
 
@@ -85,17 +83,9 @@ public abstract class AbstractScanningService {
 	}
 
 	/**
-	 * After a delay, execute the downtime recovery method
+	 * After Watchtower is fully live, attempt any processing needed to "catch up" on scans between
+	 * when the server went down and now.
 	 */
-	@Async
-	private void asyncStart() {
-		Executors.newSingleThreadScheduledExecutor().schedule(() -> recoverFromDowntime(), 5L,
-				TimeUnit.MINUTES);
-	}
-
-	/**
-	 * Attempt any processing needed to "catch up" on scans between when the server went down and
-	 * now.
-	 */
+	@EventListener(ApplicationReadyEvent.class)
 	protected abstract void recoverFromDowntime();
 }
