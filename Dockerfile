@@ -12,5 +12,8 @@ RUN useradd watchtoweruser
 RUN chown -R watchtoweruser /opt/watchtower/
 USER watchtoweruser
 WORKDIR /opt/watchtower/
+ENV VIRTUAL_ENV=/opt/watchtower/pythonvenv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENTRYPOINT ["java", "-jar", "/opt/watchtower/watchtower.jar"]
 
