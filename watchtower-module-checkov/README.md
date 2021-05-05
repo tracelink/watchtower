@@ -6,6 +6,8 @@ There are many [checks](https://github.com/bridgecrewio/checkov/tree/master/chec
 Checkov that can be easily configured as core rules within Watchtower. Custom Checkov rules are not
 currently supported by Watchtower.
 
+This Checkov Module expects Python 3.7+ to be installed along with pip in the operating environment using the 'python3' and 'pip3' binaries, respectively. It is highly recommended to create a virtual environment for python and add it to the Java execution PATH as in the Dockerfile provided in the overall installation. This module will install the correct version of Checkov in this environment, and will try to make sure that the checkov code is correctly installed. It is recommended to wipe or clean the virtual environment as part of startup, though this module will attempt to correct any mistakes in the environment.
+
 ## License
 
 [MIT License](https://opensource.org/licenses/MIT)

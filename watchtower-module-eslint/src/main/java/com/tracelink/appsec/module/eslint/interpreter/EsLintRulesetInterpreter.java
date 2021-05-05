@@ -1,5 +1,25 @@
 package com.tracelink.appsec.module.eslint.interpreter;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.samskivert.mustache.Mustache;
@@ -17,24 +37,6 @@ import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterprete
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of an {@link IRulesetInterpreter} for importing and exporting rulesets containing
@@ -51,13 +53,9 @@ public class EsLintRulesetInterpreter implements IRulesetInterpreter {
 			"The ESLint ruleset is incorrectly formatted. ";
 	private static final String PLEASE_CHECK_LOG = "Please check the log for more details.";
 
-	private final LinterEngine linterEngine;
-	private final Map<String, Map<String, String>> coreRules;
 	private Template rulesetTemplate;
 
 	public EsLintRulesetInterpreter() {
-		this.linterEngine = LinterEngine.getInstance();
-		this.coreRules = linterEngine.getCoreRules();
 		try (InputStream is = getClass().getClassLoader()
 				.getResourceAsStream("templates/export/ruleset.js")) {
 			String exampleRuleset = IOUtils.toString(is, Charset.defaultCharset());
@@ -142,7 +140,7 @@ public class EsLintRulesetInterpreter implements IRulesetInterpreter {
 	 */
 	private EsLintRulesetJsonModel parseRuleset(String ruleset) throws RulesetInterpreterException {
 		// Parse the ruleset
-		ProcessResult parseResult = linterEngine.parseRuleset(ruleset);
+		ProcessResult parseResult = LinterEngine.getInstance().parseRuleset(ruleset);
 		// Check if an error occurred while parsing
 		if (parseResult.hasErrors()) {
 			throw new RulesetInterpreterException(
@@ -211,6 +209,9 @@ public class EsLintRulesetInterpreter implements IRulesetInterpreter {
 			throws RulesetInterpreterException {
 		Set<String> customRules = rules.stream().map(RuleDto::getName)
 				.collect(Collectors.toSet());
+
+		Map<String, Map<String, String>> coreRules = LinterEngine.getInstance().getCoreRules();
+
 		for (Map.Entry<String, Integer> priorityEntry : priorities.entrySet()) {
 			String name = priorityEntry.getKey();
 			// Rule priorities for custom rules have already been set

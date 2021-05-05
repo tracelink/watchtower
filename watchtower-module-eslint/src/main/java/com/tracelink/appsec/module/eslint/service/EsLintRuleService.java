@@ -1,6 +1,14 @@
 package com.tracelink.appsec.module.eslint.service;
 
-import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.validation.Validator;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
@@ -10,14 +18,6 @@ import com.tracelink.appsec.module.eslint.repository.EsLintRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.validation.Validator;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * Handles logic to retrieve and edit ESLint rules.
@@ -27,14 +27,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class EsLintRuleService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(EsLintRuleDesigner.class);
-
 	private final EsLintRuleRepository ruleRepository;
-	private final Map<String, Map<String, String>> coreRules;
 
 	public EsLintRuleService(@Autowired EsLintRuleRepository ruleRepository) {
 		this.ruleRepository = ruleRepository;
-		this.coreRules = LinterEngine.getInstance().getCoreRules();
 	}
 
 	/**
@@ -65,6 +61,8 @@ public class EsLintRuleService {
 		rule.setCore(dto.isCore());
 		rule.setName(dto.getName());
 		rule.setPriority(dto.getPriority());
+
+		Map<String, Map<String, String>> coreRules = LinterEngine.getInstance().getCoreRules();
 		// Set fields specific to core or custom rule
 		if (dto.isCore()) {
 			if (coreRules.containsKey(dto.getName())) {

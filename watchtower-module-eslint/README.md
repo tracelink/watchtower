@@ -6,6 +6,8 @@ files for common issues. There are many [rules](https://eslint.org/docs/rules/) 
 that can be easily configured as core rules within Watchtower. Additionally, custom ESLint rules can
 be designed using the Watchtower UI or imported as a JS file.
 
+This ESLint Module expects nodejs 12+ to be installed along with npm in the operating environment using the 'node' and 'npm' binaries, respectively. This module will install the correct version of ESLint and Estraverse in order to operate correctly. The module will attempt to correct any node version conflicts of these projects if any inconsistencies are found in the environment.
+
 ## License
 
 [MIT License](https://opensource.org/licenses/MIT)
