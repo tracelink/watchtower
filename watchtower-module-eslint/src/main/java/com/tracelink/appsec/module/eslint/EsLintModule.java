@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.editor.EsLintRuleEditor;
+import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
 import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
@@ -26,6 +27,11 @@ public class EsLintModule extends AbstractModule {
 	public static final String MODULE_NAME = "ESLint";
 	public static final String ESLINT_RULE_EDIT_PRIVILEGE_NAME = "ESLint Rule Editor";
 	public static final String ESLINT_RULE_DESIGNER_PRIVILEGE_NAME = "ESLint Rule Designer";
+
+	public EsLintModule() {
+		// ensure the LinterEngine is started
+		LinterEngine.getInstance();
+	}
 
 	/**
 	 * {@inheritDoc}

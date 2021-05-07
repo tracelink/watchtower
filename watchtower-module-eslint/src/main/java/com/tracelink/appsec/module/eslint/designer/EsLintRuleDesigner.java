@@ -1,5 +1,17 @@
 package com.tracelink.appsec.module.eslint.designer;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
@@ -17,16 +29,6 @@ import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 
 /**
  * Implementation of the {@link IRuleDesigner} for ESLint rules. Allows querying against core or
@@ -68,11 +70,9 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	private static final String CANNOT_PARSE_SOURCE_CODE = "Cannot parse source code";
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-	private final LinterEngine linterEngine;
 	private final EsLintScanner scanner;
 
 	public EsLintRuleDesigner() {
-		this.linterEngine = LinterEngine.getInstance();
 		this.scanner = new EsLintScanner();
 	}
 
@@ -141,7 +141,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 * @param createFunction createFunction of the rule (used for custom rule)
 	 * @param messages       messages of the rule (used for custom rule)
 	 * @return an ESLint rule representing the given parameters, or null if the parameters are
-	 * invalid
+	 *         invalid
 	 */
 	private EsLintRuleDto createRule(RuleDesignerModelAndView mav, boolean core, String name,
 			String createFunction, List<EsLintMessageDto> messages) {
@@ -185,7 +185,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 */
 	private void addAst(RuleDesignerModelAndView mav, String sourceCode) {
 		// Parse the ruleset
-		ProcessResult parseResult = linterEngine.parseAst(sourceCode);
+		ProcessResult parseResult = LinterEngine.getInstance().parseAst(sourceCode);
 		// Check if an error occurred while parsing
 		if (parseResult.hasErrors()) {
 			mav.addErrorMessage(CANNOT_PARSE_SOURCE_CODE + ": " + parseResult.getErrors());
@@ -254,7 +254,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	private RuleDesignerModelAndView getBaseModelAndView() {
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView("designer/eslint");
 		mav.addObject("rulePriorities", RulePriority.values());
-		mav.addObject("coreRules", linterEngine.getCoreRules().keySet());
+		mav.addObject("coreRules", LinterEngine.getInstance().getCoreRules().keySet());
 		mav.addObject("help", getHelp());
 		mav.addObject("rule", new EsLintRuleDto());
 		mav.addScriptReference("/scripts/eslint-designer.js");

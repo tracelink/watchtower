@@ -13,13 +13,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.nimbusds.oauth2.sdk.util.StringUtils;
 import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
 
 import kong.unirest.Unirest;
@@ -35,8 +33,6 @@ import kong.unirest.Unirest;
  */
 public class CheckovEngine {
 	private static final Logger LOG = LoggerFactory.getLogger(CheckovEngine.class);
-
-	private Path checkovBinary;
 
 	private static final String BRIDGECREW_GUIDELINES =
 			"https://www.bridgecrew.cloud/api/v1/guidelines";
@@ -54,7 +50,9 @@ public class CheckovEngine {
 		gson = new Gson();
 		try {
 			testPythonVersion();
+			LOG.info("Python installed correctly");
 			installCheckov();
+			LOG.info("Checkov installed correctly");
 			coreRules = Collections.unmodifiableMap(populateCoreRules());
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to create Checkov Engine", e);
@@ -62,54 +60,90 @@ public class CheckovEngine {
 	}
 
 	private void testPythonVersion() throws IOException {
-		String pythonMajorVersionNum = runPythonCommand("-c",
+		ProcessResult pythonMajorVersionNum = runPythonCommand("-c",
 				"import sys; print(sys.version_info.major)");
-		String pythonMinorVersionNum = runPythonCommand("-c",
+		ProcessResult pythonMinorVersionNum = runPythonCommand("-c",
 				"import sys; print(sys.version_info.minor)");
-		if (StringUtils.isBlank(pythonMajorVersionNum)
-				|| StringUtils.isBlank(pythonMinorVersionNum)
-				|| Integer.parseInt(pythonMajorVersionNum) < EXPECTED_PYTHON_VERSION_MAJOR
-				|| (Integer.parseInt(pythonMajorVersionNum) == EXPECTED_PYTHON_VERSION_MAJOR
-						&& Integer
-								.parseInt(pythonMinorVersionNum) < EXPECTED_PYTHON_VERSION_MINOR)) {
+		if (pythonMajorVersionNum.hasErrors()) {
+			LOG.error("Error during python version command: " + pythonMajorVersionNum.getErrors());
+		}
+		// major and minor should exist,
+		// major is over the minimum expected or
+		// major is the expected and minor is at least the expected
+		if (!pythonMajorVersionNum.hasResults()
+				|| !pythonMinorVersionNum.hasResults()
+				|| Integer.parseInt(
+						pythonMajorVersionNum.getResults()) < EXPECTED_PYTHON_VERSION_MAJOR
+				|| (Integer.parseInt(
+						pythonMajorVersionNum.getResults()) == EXPECTED_PYTHON_VERSION_MAJOR
+						&& Integer.parseInt(pythonMinorVersionNum
+								.getResults()) <= EXPECTED_PYTHON_VERSION_MINOR)) {
 			throw new RuntimeException("Python Version minimum expected: "
 					+ EXPECTED_PYTHON_VERSION_MAJOR + "." + EXPECTED_PYTHON_VERSION_MINOR
 					+ " but got " + pythonMajorVersionNum + "." + pythonMinorVersionNum);
 		}
 
-		String pipVersion = runPipCommand("-V");
-		if (StringUtils.isBlank(pipVersion)) {
+		ProcessResult pipVersionResults = runPipCommand("-V");
+		if (!pipVersionResults.hasResults()) {
 			throw new RuntimeException("Pip is not installed");
 		}
 	}
 
 	private void installCheckov() throws IOException {
-		runPipCommand("install", "-Iv", "checkov==" + EXPECTED_CHECKOV_VERSION, "--force-reinstall",
-				"-q", "--user", "--no-warn-script-location");
+		LOG.info("Testing for existing Checkov install");
+		ProcessResult checkovVersionNumResult = runCheckovCommand("-v");
+		if (checkovVersionNumResult.hasResults()
+				&& checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
+			// everything is already correct
+			return;
+		}
 
-		String checkovVersionNum = runCheckovCommand("-v");
-		if (StringUtils.isBlank(checkovVersionNum)
-				|| !checkovVersionNum.startsWith(EXPECTED_CHECKOV_VERSION)) {
+		LOG.info("Installing Checkov for virtual environment");
+		ProcessResult pipResult = runPipCommand("install", "checkov==" + EXPECTED_CHECKOV_VERSION,
+				"--force-reinstall", "--no-cache-dir", "--no-warn-script-location");
+		if (pipResult.hasErrors()) {
+			LOG.warn("Error during virtualenv pip install: " + pipResult.getErrors());
+		}
+
+		checkovVersionNumResult = runCheckovCommand("-v");
+		if (checkovVersionNumResult.hasResults()
+				|| checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
+			// successfully installed in a virtual env or global scope
+			return;
+		}
+
+		LOG.info("Not in virtual environment. Installing Checkov for user environment");
+		pipResult = runPipCommand("install", "checkov==" + EXPECTED_CHECKOV_VERSION,
+				"--force-reinstall", "--user", "--no-cache-dir", "--no-warn-script-location");
+
+		if (pipResult.hasErrors()) {
+			LOG.warn("Error during user dir pip install: " + pipResult.getErrors());
+		}
+
+		checkovVersionNumResult = runCheckovCommand("-v");
+		if (!checkovVersionNumResult.hasResults()
+				|| !checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
 			throw new RuntimeException("Checkov Version Number is incorrect. Expected: "
-					+ EXPECTED_CHECKOV_VERSION + " but received " + checkovVersionNum);
+					+ EXPECTED_CHECKOV_VERSION + " but received "
+					+ checkovVersionNumResult.getResults());
 		}
 	}
 
-	private String runPythonCommand(String... command) throws IOException {
+	private ProcessResult runPythonCommand(String... command) throws IOException {
 		List<String> commandString = new ArrayList<>();
 		commandString.add("python3");
 		commandString.addAll(Arrays.asList(command));
 		return runCommand(commandString);
 	}
 
-	private String runPipCommand(String... command) throws IOException {
+	private ProcessResult runPipCommand(String... command) throws IOException {
 		List<String> commandString = new ArrayList<>();
 		commandString.add("pip3");
 		commandString.addAll(Arrays.asList(command));
 		return runCommand(commandString);
 	}
 
-	private String runCheckovCommand(String... command) throws IOException {
+	private ProcessResult runCheckovCommand(String... command) throws IOException {
 		List<String> commandString = new ArrayList<>();
 		commandString
 				.addAll(Arrays.asList("-c", "from checkov import main as checkov; checkov.run();"));
@@ -117,16 +151,16 @@ public class CheckovEngine {
 		return runPythonCommand(commandString.toArray(new String[]{}));
 	}
 
-	private String runCommand(List<String> commands) throws IOException {
+	private ProcessResult runCommand(List<String> commands) throws IOException {
 		ProcessBuilder pb = new ProcessBuilder(commands);
 		Process p = pb.start();
 		String results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
 		String errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
-		if (StringUtils.isNotBlank(errors)) {
-			LOG.error("Command failed. Command: "
-					+ Strings.join(Arrays.asList(commands), ' ') + " errors: " + errors);
+		ProcessResult result = new ProcessResult(String.join(" ", commands), results, errors);
+		if (LOG.isDebugEnabled()) {
+			LOG.debug(result.getFullOutput("\n"));
 		}
-		return results;
+		return result;
 	}
 
 	public Map<String, CheckovRuleDto> getCoreRules() {
@@ -134,12 +168,12 @@ public class CheckovEngine {
 	}
 
 	private Map<String, CheckovRuleDto> populateCoreRules() throws IOException {
-		String rules = runCheckovCommand("--list");
+		ProcessResult rulesResult = runCheckovCommand("--list");
 		kong.unirest.json.JSONObject guidelines =
 				Unirest.get(BRIDGECREW_GUIDELINES).asJson()
 						.getBody().getObject().getJSONObject("guidelines");
 		Map<String, CheckovRuleDto> coreRules = new LinkedHashMap<>();
-		Stream.of(rules.split("\\r?\\n")).skip(2).forEachOrdered(r -> {
+		Stream.of(rulesResult.getResults().split("\\r?\\n")).skip(2).forEachOrdered(r -> {
 			String[] ruleLine = r.split("\\|");
 			if (ruleLine.length != 7) {
 				return;
@@ -172,13 +206,13 @@ public class CheckovEngine {
 	 */
 	public JsonObject runCheckovDirectoryScan(Path targetDirectory,
 			List<CheckovRuleDto> ruleChecks) {
-		String results;
+		ProcessResult results;
 		JsonObject json = new JsonObject();
 		try {
 			results = runCheckovCommand("-d", targetDirectory.toString(), "--quiet", "--no-guide",
 					"-o", "json", "-c", ruleChecks.stream().map(CheckovRuleDto::getName)
 							.collect(Collectors.joining(",")));
-			json = gson.fromJson(results, JsonObject.class);
+			json = gson.fromJson(results.getResults(), JsonObject.class);
 		} catch (Exception e) {
 			json.addProperty("errors", e.getMessage());
 		}

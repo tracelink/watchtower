@@ -31,7 +31,7 @@ import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
  */
 public final class LinterEngine {
 
-	private static final LinterEngine INSTANCE = new LinterEngine();
+	private static LinterEngine INSTANCE;
 
 	private static final Gson GSON = new Gson();
 	private static final TypeToken<Map<String, Map<String, String>>> CORE_RULES_TYPE_TOKEN =
@@ -64,10 +64,13 @@ public final class LinterEngine {
 			copyJsResources(eslintDirectory);
 			// Check node version
 			checkNodeVersion();
+			LOG.info("Node installed correctly");
 			// Install ESLint and check version
 			installNpmPackageAtVersion("eslint", ESLINT_VERSION, "--save-dev");
+			LOG.info("ESLint installed correctly");
 			// Install Estraverse and check version
 			installNpmPackageAtVersion("estraverse", ESTRAVERSE_VERSION);
+			LOG.info("Estraverse installed correctly");
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize ESLint Engine", e);
 		}
@@ -79,6 +82,9 @@ public final class LinterEngine {
 	 * @return the EsLintEngine instance
 	 */
 	public static LinterEngine getInstance() {
+		if (INSTANCE == null) {
+			INSTANCE = new LinterEngine();
+		}
 		return INSTANCE;
 	}
 
@@ -204,38 +210,57 @@ public final class LinterEngine {
 	 * @param args       any additional arguments for the npm install command
 	 */
 	private void installNpmPackageAtVersion(String npmPackage, String version, String... args) {
-		// Run command to install NPM package
-		List<String> installCommand = new ArrayList<>(
-				Arrays.asList("npm", "install", npmPackage + "@" + version, "--loglevel=error"));
-		installCommand.addAll(Arrays.asList(args));
-		ProcessResult installResult = runCommand(installCommand);
-		// If there are errors, log as a warning but continue
-		if (installResult.hasErrors()) {
-			LOG.warn("Errors installing NPM package \"" + npmPackage + "\":\n" + installResult
-					.getErrors());
-		}
-		// If there are results, log results as info
-		if (installResult.hasResults()) {
-			LOG.info(installResult.getResults());
-		}
 		// Get installed version of package to confirm
 		List<String> versionCommand = Arrays
 				.asList("npm", "list", "--depth=0");
 		ProcessResult versionResult = runCommand(versionCommand);
-		if (versionResult.hasErrors()) {
+
+		// if the package is at the right version, move on. Otherwise log errors
+		if (versionResult.hasResults()) {
+			String targetString = npmPackage + "@" + version;
+			if (versionResult.getResults().contains(targetString)) {
+				// already at correct version
+				return;
+			}
+		} else if (versionResult.hasErrors()) {
 			LOG.warn("Errors getting version of NPM package \"" + npmPackage + "\":\n"
 					+ versionResult.getErrors());
 		}
-		// Throw exception if installed version does not match given version, or if result is null
+
+		// now install since package doesn't exist
+		String npmPackageCoordinates = npmPackage + "@" + version;
+		LOG.info("Installing " + npmPackage);
+		// Run command to install NPM package
+		List<String> installCommand = new ArrayList<>(
+				Arrays.asList("npm", "install", npmPackageCoordinates, "--loglevel=error",
+						"--no-fund", "--no-audit"));
+		installCommand.addAll(Arrays.asList(args));
+
+		ProcessResult installResult = runCommand(installCommand);
+		versionResult = runCommand(versionCommand);
+
+		// if the npm list has the right package at the right version, move on.
+		// Otherwise log everything about the install and list and throw exception
 		if (versionResult.hasResults()) {
-			String targetString = npmPackage + "@" + version;
-			if (!versionResult.getResults().contains(targetString)) {
+			if (!versionResult.getResults().contains(npmPackageCoordinates)) {
 				throw new RuntimeException(
-						"Expected \"" + npmPackage + "\" version " + version
+						"Expected \"" + npmPackageCoordinates
 								+ " but received npm list:"
 								+ versionResult.getResults());
 			}
 		} else {
+			// log all output to help triage
+			if (installResult.hasErrors()) {
+				LOG.warn("Errors installing NPM package \"" + npmPackage + "\":\n" + installResult
+						.getErrors());
+			}
+			if (installResult.hasResults()) {
+				LOG.warn("Install Output: " + installResult.getResults());
+			}
+			if (versionResult.hasErrors()) {
+				LOG.warn("Errors getting version of NPM package \"" + npmPackage + "\":\n"
+						+ versionResult.getErrors());
+			}
 			throw new RuntimeException("Cannot verify installed version of \"" + npmPackage + "\"");
 		}
 	}
