@@ -87,7 +87,7 @@ public class EsLintRuleService {
 			rule.setMessage(dto.getMessage());
 			rule.setExternalUrl(dto.getExternalUrl());
 			rule.setMessages(dto.getMessages().stream().map(EsLintMessageDto::toEntity)
-					.collect(Collectors.toList()));
+					.collect(Collectors.toSet()));
 			rule.setCreateFunction(dto.getCreateFunction());
 		}
 		// Save rule

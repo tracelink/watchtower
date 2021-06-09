@@ -1,17 +1,20 @@
 package com.tracelink.appsec.module.pmd.model;
 
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
+import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 
 /**
  * Entity description for a PMD rule entity. Contains PMD-specific fields and inherits fields from
@@ -33,9 +36,9 @@ public class PMDRuleEntity extends RuleEntity {
 	@Convert(converter = HexStringConverter.class)
 	private String description;
 
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
 	@JoinColumn(name = "rule_id", nullable = false)
-	private List<PMDPropertyEntity> properties = new ArrayList<>();
+	private Set<PMDPropertyEntity> properties = new LinkedHashSet<>();
 
 	public String getParserLanguage() {
 		return parserLanguage;
@@ -61,11 +64,11 @@ public class PMDRuleEntity extends RuleEntity {
 		this.description = description;
 	}
 
-	public List<PMDPropertyEntity> getProperties() {
+	public Set<PMDPropertyEntity> getProperties() {
 		return properties;
 	}
 
-	public void setProperties(List<PMDPropertyEntity> properties) {
+	public void setProperties(Set<PMDPropertyEntity> properties) {
 		this.properties = properties;
 	}
 

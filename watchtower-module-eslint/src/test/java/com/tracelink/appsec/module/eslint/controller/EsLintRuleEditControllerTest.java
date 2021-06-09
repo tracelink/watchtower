@@ -190,7 +190,7 @@ public class EsLintRuleEditControllerTest {
 		EsLintMessageEntity message = new EsLintMessageEntity();
 		message.setKey("unexpected");
 		message.setValue("There's something unexpected here");
-		rule.setMessages(Collections.singletonList(message));
+		rule.setMessages(Collections.singleton(message));
 		rule.setCreateFunction("create(context) {\n"
 				+ "\treturn {\n"
 				+ "\t\tBinaryExpression(node) {\n"

@@ -147,9 +147,9 @@ public class EsLintRuleServiceTest {
 		MatcherAssert.assertThat(entity.getExternalUrl(), Matchers.is(dto.getExternalUrl()));
 		MatcherAssert.assertThat(entity.getCreateFunction(), Matchers.is(dto.getCreateFunction()));
 		MatcherAssert.assertThat(entity.getMessages(), Matchers.iterableWithSize(1));
-		MatcherAssert.assertThat(entity.getMessages().get(0).getKey(),
+		MatcherAssert.assertThat(entity.getMessages().iterator().next().getKey(),
 				Matchers.is(dto.getMessages().get(0).getKey()));
-		MatcherAssert.assertThat(entity.getMessages().get(0).getValue(),
+		MatcherAssert.assertThat(entity.getMessages().iterator().next().getValue(),
 				Matchers.is(dto.getMessages().get(0).getValue()));
 	}
 
@@ -239,7 +239,7 @@ public class EsLintRuleServiceTest {
 				+ "}";
 
 		EsLintMessageEntity messageEntity = new EsLintMessageEntity();
-		rule.setMessages(Collections.singletonList(messageEntity));
+		rule.setMessages(Collections.singleton(messageEntity));
 
 		EsLintRuleDto dto = new EsLintRuleDto();
 		dto.setId(dtoId);
@@ -264,8 +264,8 @@ public class EsLintRuleServiceTest {
 		Assertions.assertEquals(dtoUrl, rule.getExternalUrl());
 		Assertions.assertEquals(dtoPriority, rule.getPriority());
 		Assertions.assertEquals(dtoCore, rule.isCore());
-		Assertions.assertEquals(dtoMessageKey, rule.getMessages().get(0).getKey());
-		Assertions.assertEquals(dtoMessageValue, rule.getMessages().get(0).getValue());
+		Assertions.assertEquals(dtoMessageKey, messageEntity.getKey());
+		Assertions.assertEquals(dtoMessageValue, messageEntity.getValue());
 		Assertions.assertEquals(dtoCreateFunction, rule.getCreateFunction());
 	}
 
