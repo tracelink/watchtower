@@ -1,19 +1,20 @@
 package com.tracelink.appsec.module.pmd.model;
 
-import com.tracelink.appsec.module.pmd.PMDModule;
-import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.tracelink.appsec.module.pmd.PMDModule;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+
 /**
  * Represents a data transfer object for the {@link PMDRuleEntity}. All fields in this object are in
- * plain text.
- * Contains PMD-specific fields and inherits fields from the {@link RuleDto}.
+ * plain text. Contains PMD-specific fields and inherits fields from the {@link RuleDto}.
  *
  * @author mcool
  */
@@ -86,7 +87,7 @@ public class PMDRuleDto extends RuleDto {
 		rule.setRuleClass(getRuleClass());
 		rule.setDescription(getDescription());
 		rule.setProperties(getProperties().stream().map(PMDPropertyDto::toEntity)
-				.collect(Collectors.toList()));
+				.collect(Collectors.toSet()));
 		return rule;
 	}
 }

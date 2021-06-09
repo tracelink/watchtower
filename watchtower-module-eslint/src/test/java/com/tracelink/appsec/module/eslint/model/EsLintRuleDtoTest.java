@@ -56,9 +56,10 @@ public class EsLintRuleDtoTest {
 		Assertions.assertEquals(dto.getExternalUrl(), rule.getExternalUrl());
 		Assertions.assertEquals(dto.getPriority(), rule.getPriority());
 		Assertions.assertEquals(dto.isCore(), rule.isCore());
-		Assertions.assertEquals(dto.getMessages().get(0).getKey(), rule.getMessages().get(0).getKey());
-		Assertions.assertEquals(dto.getMessages().get(0).getValue(),
-				rule.getMessages().get(0).getValue());
+		EsLintMessageDto retMessage = dto.getMessages().get(0);
+		EsLintMessageEntity ruleMessage = rule.getMessages().iterator().next();
+		Assertions.assertEquals(retMessage.getKey(), ruleMessage.getKey());
+		Assertions.assertEquals(retMessage.getValue(), ruleMessage.getValue());
 		Assertions.assertEquals(dto.getCreateFunction(), rule.getCreateFunction());
 		Assertions.assertEquals(dto.getCategory(), rule.getCategory());
 		Assertions.assertEquals(dto.getRecommended(), rule.getRecommended());

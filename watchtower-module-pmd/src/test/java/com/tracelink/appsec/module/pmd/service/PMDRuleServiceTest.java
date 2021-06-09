@@ -71,7 +71,7 @@ public class PMDRuleServiceTest {
 		String dtoXPath = "CDATA";
 
 		PMDPropertyEntity propertyEntity = new PMDPropertyEntity();
-		rule.setProperties(Collections.singletonList(propertyEntity));
+		rule.setProperties(Collections.singleton(propertyEntity));
 
 		PMDRuleDto dto = new PMDRuleDto();
 		dto.setId(dtoId);
@@ -99,8 +99,9 @@ public class PMDRuleServiceTest {
 		Assertions.assertNull(rule.getParserLanguage());
 		Assertions.assertNull(rule.getRuleClass());
 		Assertions.assertEquals(dtoDescription, rule.getDescription());
-		Assertions.assertEquals("xpath", rule.getProperties().get(0).getName());
-		Assertions.assertEquals(dtoXPath, rule.getProperties().get(0).getValue());
+		PMDPropertyEntity retProp = rule.getProperties().iterator().next();
+		Assertions.assertEquals("xpath", retProp.getName());
+		Assertions.assertEquals(dtoXPath, retProp.getValue());
 	}
 
 	@Test

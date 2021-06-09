@@ -153,12 +153,20 @@ public class CheckovEngine {
 
 	private ProcessResult runCommand(List<String> commands) throws IOException {
 		ProcessBuilder pb = new ProcessBuilder(commands);
-		Process p = pb.start();
-		String results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
-		String errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
-		ProcessResult result = new ProcessResult(String.join(" ", commands), results, errors);
-		if (LOG.isDebugEnabled()) {
-			LOG.debug(result.getFullOutput("\n"));
+		Process p = null;
+		ProcessResult result;
+		try {
+			p = pb.start();
+			String results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
+			String errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
+			result = new ProcessResult(String.join(" ", commands), results, errors);
+			if (LOG.isDebugEnabled()) {
+				LOG.debug(result.getFullOutput("\n"));
+			}
+		} finally {
+			if (p != null) {
+				p.destroy();
+			}
 		}
 		return result;
 	}

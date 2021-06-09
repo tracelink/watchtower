@@ -241,14 +241,8 @@ public final class LinterEngine {
 
 		// if the npm list has the right package at the right version, move on.
 		// Otherwise log everything about the install and list and throw exception
-		if (versionResult.hasResults()) {
-			if (!versionResult.getResults().contains(npmPackageCoordinates)) {
-				throw new RuntimeException(
-						"Expected \"" + npmPackageCoordinates
-								+ " but received npm list:"
-								+ versionResult.getResults());
-			}
-		} else {
+		if (!versionResult.hasResults()
+				|| !versionResult.getResults().contains(npmPackageCoordinates)) {
 			// log all output to help triage
 			if (installResult.hasErrors()) {
 				LOG.warn("Errors installing NPM package \"" + npmPackage + "\":\n" + installResult
@@ -260,6 +254,9 @@ public final class LinterEngine {
 			if (versionResult.hasErrors()) {
 				LOG.warn("Errors getting version of NPM package \"" + npmPackage + "\":\n"
 						+ versionResult.getErrors());
+			}
+			if (versionResult.hasResults()) {
+				LOG.warn("Version Check Output: " + versionResult.getResults());
 			}
 			throw new RuntimeException("Cannot verify installed version of \"" + npmPackage + "\"");
 		}
@@ -294,12 +291,17 @@ public final class LinterEngine {
 
 		String results = null;
 		String errors = null;
+		Process p = null;
 		try {
-			Process p = pb.start();
+			p = pb.start();
 			results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
 			errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
 		} catch (IOException e) {
 			LOG.error("Failed to run command '" + String.join(" ", command), e);
+		} finally {
+			if (p != null) {
+				p.destroy();
+			}
 		}
 		return new ProcessResult(results, errors);
 	}

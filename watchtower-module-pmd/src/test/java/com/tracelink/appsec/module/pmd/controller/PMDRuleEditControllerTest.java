@@ -200,7 +200,7 @@ public class PMDRuleEditControllerTest {
 		PMDPropertyEntity property = new PMDPropertyEntity();
 		property.setName("xpath");
 		property.setValue("//PrimaryPrefix[Name[starts-with(@Image,\"System.out\")]]");
-		rule.setProperties(Collections.singletonList(property));
+		rule.setProperties(Collections.singleton(property));
 		return rule;
 	}
 
