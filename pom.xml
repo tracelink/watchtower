@@ -22,6 +22,8 @@
 		<module>watchtower-module-regex</module>
 		<module>watchtower-module-json</module>
 		<module>watchtower-module-checkov</module>
+		<module>watchtower-maven-plugin</module>
+		<module>watchtower-cli</module>
 	</modules>
 
 	<properties>
@@ -90,5 +92,14 @@
 				</executions>
 			</plugin>
 		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-plugin-plugin</artifactId>
+					<version>3.6.1</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 </project>
