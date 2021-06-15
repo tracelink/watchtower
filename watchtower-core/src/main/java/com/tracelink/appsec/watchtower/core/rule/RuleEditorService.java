@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
+import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -91,7 +92,7 @@ public class RuleEditorService {
 			throw new ModuleNotFoundException("Unknown module: " + module);
 		}
 
-		Set<RuleDto> rules = ruleService.getRulesForModule(module);
+		List<RuleDto> rules = ruleService.getRulesForModule(module);
 		RuleDto rule = null;
 		// if the rule is still null, make a blank page, else ask the scanner module how to display
 		RuleEditModelAndView mv;

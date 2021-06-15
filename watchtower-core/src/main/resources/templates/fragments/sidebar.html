@@ -33,7 +33,7 @@
 		      </a>
 	      </li>
 	      <div class="collapse" th:id="${'sidebarcollapse' + iter.index}">
-	        <ul>
+	        <ul class="px-3">
 	          <li th:each="link : ${menu.getLinks()}" th:if="${#authorization.expression(link.getAuthorizationExpression())}" class="nav-item">
 			    <a class="nav-link" th:href="${link.getUrl()}" th:target="${link.isExternalLink() ? '_blank' : '_self'}">
 			      <i class="material-icons" th:text="${link.getMaterialIcon()}"></i>

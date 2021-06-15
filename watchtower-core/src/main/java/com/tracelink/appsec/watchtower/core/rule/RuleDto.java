@@ -106,11 +106,7 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 
 	@Override
 	public int compareTo(RuleDto o) {
-		int priorityCompare = getPriority().getPriority() - o.getPriority().getPriority();
-		if (priorityCompare == 0) {
-			return getName().compareTo(o.getName());
-		}
-		return priorityCompare;
+		return getName().compareTo(o.getName());
 	}
 
 	/**

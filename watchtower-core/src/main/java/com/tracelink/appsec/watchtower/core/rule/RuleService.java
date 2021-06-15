@@ -1,12 +1,10 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,14 +69,12 @@ public class RuleService {
 		return ruleRepository.findByName(name);
 	}
 
-	public Set<RuleDto> getRulesForModule(String module) {
+	public List<RuleDto> getRulesForModule(String module) {
 		List<RuleEntity> rules = ruleRepository.findAll();
 
-		Set<RuleDto> rulesSet = new TreeSet<>(Comparator.comparing(RuleDto::getName));
-		rulesSet.addAll(rules.stream().map(RuleEntity::toDto)
-				.filter(r -> r.getModule().equalsIgnoreCase(module))
-				.collect(Collectors.toSet()));
-		return rulesSet;
+		return rules.stream().map(RuleEntity::toDto)
+				.filter(r -> r.getModule().equalsIgnoreCase(module)).sorted()
+				.collect(Collectors.toList());
 	}
 
 	/**

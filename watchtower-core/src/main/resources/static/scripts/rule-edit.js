@@ -12,4 +12,11 @@ $(document).ready(function() {
     $("#deleteModalInput").attr("name", "ruleId");
     $("#deleteModalInput").attr("value", id);
   });
+  $('.ruleLink').html(function(i, html){
+	    return html.replace(/([a-z])([A-Z0-9])/g, '$1\u200B$2')
+	    			.replace(/([A-Z])([0-9])/g, '$1\u200B$2')
+	    			.replace(/([0-9])([A-Za-z])/g, '$1\u200B$2');
+  });
+  
+  
 });

@@ -75,10 +75,20 @@ public class APIIntegrationService {
 	 * Get the API Entity by its label
 	 * 
 	 * @param label the api label
-	 * @return an {@linkplain APIIntegrationEntity} for the type or null
+	 * @return an {@linkplain APIIntegrationEntity} for the label or null
 	 */
 	public APIIntegrationEntity findByLabel(String label) {
 		return apiRepo.getByApiLabel(label);
+	}
+
+	/**
+	 * Get the API Entity by its endpoint
+	 * 
+	 * @param apiEndpoint the api endpoint
+	 * @return an {@linkplain APIIntegrationEntity} for the endpoint or null
+	 */
+	public APIIntegrationEntity findByEndpoint(String apiEndpoint) {
+		return apiRepo.getByApiEndpoint(apiEndpoint);
 	}
 
 	/**
