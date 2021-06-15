@@ -2,3 +2,7 @@
 **/bin/
 **/upload/
 **/logs/
+.idea/
+*.iml
+**/target/
+**/non-blank

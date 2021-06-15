@@ -79,17 +79,26 @@ environment variables listed in [Docker.env](Docker.env), then type `docker-comp
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
 
-If you are running directly from the jar file and not via Docker, note that some modules require specific setup as noted in their respective READMEs.
+If you are running directly from the jar file and not via Docker, note that some modules require
+specific setup as noted in their respective READMEs.
 
-For development purposes and initial setup of Watchtower, an initial admin user is configured by default in the Watchtower database.
+For development purposes and initial setup of Watchtower, an initial admin user is configured by
+default in the Watchtower database.
 
 | Username | Roles | 
 |----------|-------| 
 | admin | Full System Admin. Ability to access all Watchtower features. | 
 
-This user is given a random password that is output to the Watchtower logs. Once Watchtower has been deployed, set up a new, named admin user with a secure password and the Full System Admin role, and then disable or delete the default admin user to prevent unauthorized access to Watchtower configurations.
+This user is given a random password that is output to the Watchtower logs. Once Watchtower has been
+deployed, set up a new, named admin user with a secure password and the Full System Admin role, and
+then disable or delete the default admin user to prevent unauthorized access to Watchtower
+configurations.
 
-On every startup, Watchtower will check for this admin user. If the user exists and is not disabled, Watchtower will automatically reset the password and output it to the logs. If the user doesn't exist, Watchtower will ensure a user does exist that has sufficient privileges to assign roles and privileges. If such a user does not exist, Watchtower will re-create the admin and grant it Full System Admin so that administrators cannot get locked out while modifying users or roles.
+On every startup, Watchtower will check for this admin user. If the user exists and is not disabled,
+Watchtower will automatically reset the password and output it to the logs. If the user doesn't
+exist, Watchtower will ensure a user does exist that has sufficient privileges to assign roles and
+privileges. If such a user does not exist, Watchtower will re-create the admin and grant it Full
+System Admin so that administrators cannot get locked out while modifying users or roles.
 
 ## Authentication
 
@@ -102,16 +111,23 @@ There are two built-in ways to authenticate to Watchtower.
    , `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as
    in [here](./watchtower-web/src/main/resources/application-prd.yaml).
 
-In addition, any user can create an API key + Secret that can be used for programmatic access via Basic Auth. This Api key is granted the same privileges as the owning user.
+In addition, any user can create an API key + Secret that can be used for programmatic access via
+Basic Auth. This Api key is granted the same privileges as the owning user.
 
 ## Authorization
 
 Watchtower defines several roles and privileges in order to restrict access to resources on the
-server. Individual privileges are grouped into roles, which can then be assigned to users. On install, Watchtower creates a "Full System Admin" role and grants it all privileges, including any that a Module needs.
+server. Individual privileges are grouped into roles, which can then be assigned to users. On
+install, Watchtower creates a "Full System Admin" role and grants it all privileges, including any
+that a Module needs.
 
-An administrator can configure a role with any number of privileges and mark it as being the "default" role. When a new user is created the user is automatically assigned the default role. Otherwise the user will be assigned no roles or privileges. A user with zero roles represents the most basic user with the least amount of privilege. 
+An administrator can configure a role with any number of privileges and mark it as being the "
+default" role. When a new user is created the user is automatically assigned the default role.
+Otherwise the user will be assigned no roles or privileges. A user with zero roles represents the
+most basic user with the least amount of privilege.
 
-Administrators can see a list of all privileges in the system along with a description in order to determine what privileges to give to a role or user.
+Administrators can see a list of all privileges in the system along with a description in order to
+determine what privileges to give to a role or user.
 
 ## What is a Module?
 
@@ -217,6 +233,10 @@ file and then the ruleset to apply is specified before the scan can begin. Watch
 user with a ticket number for their scan, which they can use to check scan status and access
 results. While not automated, upload scans provide a way to get a baseline of issues in all the
 files of a project, rather than only reporting on the subset of files that appear in a pull request.
+
+Watchtower provides a [CLI](./watchtower-cli/README.md) and
+a [Maven plugin](./watchtower-maven-plugin/README.md) to perform upload scans during the development
+phase of the SDLC.
 
 ## Database Column Encryption
 
