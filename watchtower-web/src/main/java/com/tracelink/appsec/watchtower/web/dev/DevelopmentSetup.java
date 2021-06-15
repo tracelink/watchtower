@@ -63,7 +63,7 @@ public class DevelopmentSetup {
 	private static final int UP_NUM_SIZE = 1000;
 	private static final boolean USE_MULTI_SCANS = true;
 	private static final long RANDOM_SEED = 1L;
-	private static final String API_LABEL_1 = "api1";
+	private static final String API_LABEL_1 = "API1";
 	private static final String API_LABEL_2 = "api2";
 
 	private final Environment environment;
@@ -151,12 +151,14 @@ public class DevelopmentSetup {
 	private void addApiSettings() throws ApiIntegrationException {
 		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
 		entity.setApiLabel(API_LABEL_1);
+		entity.setApiEndpoint(API_LABEL_1);
 		entity.setWorkspace("workspace1");
 		entity.setUser("myUser");
 		entity.setAuth("myAuth");
 		apiService.save(entity);
 		BBCloudIntegrationEntity entity2 = new BBCloudIntegrationEntity();
 		entity2.setApiLabel(API_LABEL_2);
+		entity2.setApiEndpoint(API_LABEL_2);
 		entity2.setWorkspace("workspace2");
 		entity2.setUser("myUser");
 		entity2.setAuth("myAuth");

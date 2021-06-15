@@ -56,7 +56,7 @@ and frameworks.
 
 Spring Boot - For web server technology  
 Flyway - For data migration  
-MySQL - Tested with MySQL 8.0  
+MySQL - Tested with MySQL 8+  
 Thymeleaf - For UI template rendering
 
 ## Installation
@@ -78,6 +78,9 @@ in [Dockerfile](Dockerfile) and [docker-compose.yml](docker-compose.yml). Be sur
 environment variables listed in [Docker.env](Docker.env), then type `docker-compose up` in the root
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
+
+If you are running directly from the jar file and not via Docker, note that some modules require
+specific setup as noted in their respective READMEs.
 
 For development purposes and initial setup of Watchtower, an initial admin user is configured by
 default in the Watchtower database.

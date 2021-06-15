@@ -43,7 +43,8 @@ import ch.qos.logback.classic.Level;
 @ExtendWith(SpringExtension.class)
 public class PRScanningServiceTest {
 	@RegisterExtension
-	public CoreLogWatchExtension logWatcher = CoreLogWatchExtension.forClass(PRScanningService.class);
+	public CoreLogWatchExtension logWatcher =
+			CoreLogWatchExtension.forClass(PRScanningService.class);
 
 	@MockBean
 	private ScmFactoryService mockScanFactory;
@@ -187,7 +188,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
-		BDDMockito.when(mockApiService.findByLabel(apiLabel)).thenReturn(mockApiEntity);
+		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(mockApiEntity);
 
 		String prSeenReviewedId = "123";
 		String prSeenNotReviewedId = "234";

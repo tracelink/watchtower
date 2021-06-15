@@ -164,7 +164,7 @@ public class EsLintRuleDto extends RuleDto {
 		rule.setCore(isCore());
 		rule.setMessages(
 				getMessages().stream().map(EsLintMessageDto::toEntity)
-						.collect(Collectors.toList()));
+						.collect(Collectors.toSet()));
 		rule.setCreateFunction(getCreateFunction());
 		rule.setType(getType());
 		rule.setCategory(getCategory());

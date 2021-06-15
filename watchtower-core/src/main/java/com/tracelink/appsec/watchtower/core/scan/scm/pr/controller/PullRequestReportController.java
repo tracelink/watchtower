@@ -37,6 +37,7 @@ public class PullRequestReportController {
 			mav.setViewName("redirect:/scan");
 		} else {
 			mav.addObject("result", scanResult);
+			mav.addScriptReference("/scripts/scan_report.js");
 		}
 		return mav;
 	}

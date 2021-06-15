@@ -52,7 +52,7 @@
                             <tr>
                                 <td th:text="${api.apiType.getTypeName()}">API</td>
                                 <td th:text="${api.apiLabel}">API Label</td>
-                                <td th:text="${api.endpoint}">Webhook Endpoint</th>
+                                <td th:text="${api.getEndpointLink()}">Webhook Endpoint</th>
                             	<td>
                             		<form method="post" action="/apisettings/testConnection">
                             			<input type="hidden" name="apiLabel" th:value="${api.apiLabel}"/>

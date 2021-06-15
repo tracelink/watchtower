@@ -29,14 +29,14 @@
 <!-- Rules -->
 <div class="row">
   <div class="col-lg-3 col-md-12 col-sm-12">
-    <div class="card card-small mb-4">
+    <div class="card card-small mb-4 scrollable-6">
       <div class="card-header border-bottom">
         <h6 class="card-title mb-0">Rules</h6>
       </div>
-      <div class="card-footer">
-        <ul class="list-group list-group-flush">
+      <div class="card-body">
+        <ul class="list-group list-group-flush text-center">
           <a th:each="rule : ${rules}"
-             th:class="'list-group-item list-group-item-action ruleLink ' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
+             th:class="'list-group-item list-group-item-action ruleLink px-0' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
              th:id="${rule.id} + '-link'"
              th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
              th:text="${rule.name}"

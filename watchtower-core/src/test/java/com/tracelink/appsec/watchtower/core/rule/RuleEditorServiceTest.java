@@ -85,7 +85,7 @@ public class RuleEditorServiceTest {
 		BDDMockito.when(mockDto.getModule()).thenReturn(module);
 		BDDMockito.when(mockDto.getId()).thenReturn(ruleId);
 		BDDMockito.when(ruleService.getRulesForModule(BDDMockito.anyString()))
-				.thenReturn(Collections.singleton(mockDto));
+				.thenReturn(Collections.singletonList(mockDto));
 
 		BDDMockito.when(mockRuleManager.getRuleEditModelAndView(mockDto))
 				.thenReturn(new RuleEditModelAndView(view));
@@ -130,7 +130,7 @@ public class RuleEditorServiceTest {
 					BDDMockito.when(mockDto.getId()).thenReturn(ruleId);
 
 					BDDMockito.when(ruleService.getRulesForModule(BDDMockito.anyString()))
-							.thenReturn(Collections.singleton(mockDto));
+							.thenReturn(Collections.singletonList(mockDto));
 
 					ruleEditorService.getRuleEditModelAndView(module, 234L);
 				});

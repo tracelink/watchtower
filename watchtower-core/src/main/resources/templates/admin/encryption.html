@@ -132,7 +132,7 @@
               </thead>
               <tbody>
               <tr th:each="dek : ${deks}">
-                <td th:text="${dek.converterClassName}"></td>
+                <td class="className" th:text="${dek.converterClassName}"></td>
                 <td th:text="${dek.rotationInProgress} ? 'Yes' : 'No'"></td>
                 <td th:text="${#temporals.format(dek.lastRotationDateTime, 'MMM d, YYYY h:mm a')} ?: 'Never'"></td>
                 <td th:if="${metadata.rotationScheduleEnabled}"

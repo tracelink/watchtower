@@ -1,19 +1,22 @@
 package com.tracelink.appsec.module.eslint.model;
 
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
+import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 
 /**
  * Entity description for an ESLint rule entity. Contains ESLint-specific fields and inherits fields
@@ -28,9 +31,9 @@ public class EsLintRuleEntity extends RuleEntity {
 	@Column(name = "core")
 	private boolean core;
 
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
 	@JoinColumn(name = "rule_id", nullable = false)
-	private List<EsLintMessageEntity> messages = new ArrayList<>();
+	private Set<EsLintMessageEntity> messages = new LinkedHashSet<>();
 
 	@Column(name = "create_function")
 	@Convert(converter = HexStringConverter.class)
@@ -82,11 +85,11 @@ public class EsLintRuleEntity extends RuleEntity {
 		this.core = core;
 	}
 
-	public List<EsLintMessageEntity> getMessages() {
+	public Set<EsLintMessageEntity> getMessages() {
 		return messages;
 	}
 
-	public void setMessages(List<EsLintMessageEntity> messages) {
+	public void setMessages(Set<EsLintMessageEntity> messages) {
 		this.messages = messages;
 	}
 

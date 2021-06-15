@@ -109,7 +109,9 @@ public class BBCloudIntegrationEntity extends APIIntegrationEntity {
 			throw new ApiIntegrationException("Missing value for "
 					+ neededParams.stream().collect(Collectors.joining(", ")));
 		}
-		setApiLabel(parameters.get("apiLabel"));
+		String apiLabel = parameters.get("apiLabel");
+		setApiLabel(apiLabel);
+		setApiEndpoint(apiLabel);
 		setWorkspace(parameters.get("workspace"));
 		setUser(parameters.get("user"));
 		setAuth(parameters.get("auth"));

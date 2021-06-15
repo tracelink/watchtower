@@ -1,5 +1,10 @@
 package com.tracelink.appsec.module.pmd.service;
 
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyEntity;
 import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
@@ -7,11 +12,6 @@ import com.tracelink.appsec.module.pmd.model.PMDRuleEntity;
 import com.tracelink.appsec.module.pmd.repository.PMDRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * Handles logic to retrieve and edit PMD rules.
@@ -20,9 +20,6 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class PMDRuleService {
-
-	private final List<String> supportedLanguages =
-			Arrays.asList("Java", "Ecmascript", "Scala", "XML");
 
 	private final PMDRuleRepository ruleRepository;
 
@@ -89,12 +86,13 @@ public class PMDRuleService {
 			throw new RuleDesignerException(
 					"Rule with the name " + dto.getName() + " already exists");
 		}
-		if (supportedLanguages.contains(dto.getParserLanguage())) {
+
+		if (PMDLanguageSupport.getSupportedLanguageNames().contains(dto.getParserLanguage())) {
 			dto.setParserLanguage(dto.getParserLanguage().toLowerCase());
 		} else {
 			throw new RuleDesignerException(
 					"Please select a supported language: " + String
-							.join(", ", supportedLanguages));
+							.join(", ", PMDLanguageSupport.getSupportedLanguageNames()));
 		}
 		PMDRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
 import com.tracelink.appsec.module.pmd.scanner.PMDReport;
+import com.tracelink.appsec.module.pmd.service.PMDLanguageSupport;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
@@ -53,8 +54,7 @@ public class PMDRuleDesigner implements IRuleDesigner {
 			"public class HelloWorld {\n" + "    public static void main(String[] args) {\n"
 					+ "        System.out.println(\"Hello, World\");\n" + "    }\n" + "}";
 
-	private final List<String> supportedLanguages =
-			Arrays.asList("Java", "Ecmascript", "Scala", "XML");
+	private final List<String> supportedLanguages = PMDLanguageSupport.getSupportedLanguageNames();
 
 	/**
 	 * Run a query for this language on the supplied code and return a new Designer view of the
@@ -140,7 +140,7 @@ public class PMDRuleDesigner implements IRuleDesigner {
 		RuleContext ctx = new RuleContext();
 		Report report = new Report();
 		ctx.setReport(report);
-		ctx.setSourceCodeFile(new File("foobar." + lang.getExtensions().get(0)));
+		ctx.setSourceCodeFile(new File("designer." + lang.getExtensions().get(0)));
 		RuleSet rules = RulesetsFactoryUtils.defaultFactory().createSingleRuleRuleSet(xpath);
 		p.getSourceCodeProcessor().processSourceCode(new StringReader(code),
 				new RuleSets(rules), ctx);
