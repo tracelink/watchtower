@@ -8,20 +8,16 @@ import com.tracelink.appsec.watchtower.cli.reporter.CsvReporter;
 import com.tracelink.appsec.watchtower.cli.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.cli.scan.UploadScanResult;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.ZipParameters;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -55,12 +51,10 @@ public class UploadScanExecutor {
 	 * @throws InterruptedException if there is a problem sleeping while polling for scan results
 	 */
 	public void executeUploadScan() throws IOException, InterruptedException {
-		Path zipDestination = zipTarget(params.getTarget());
-		UploadScanResult result = initiateUploadScan(zipDestination);
+		Path zipPath = zipTarget(params.getTarget());
+		UploadScanResult result = initiateUploadScan(zipPath);
 		pollForScanResults(result);
-		if (zipDestination != null) {
-			FileUtils.deleteQuietly(zipDestination.toFile());
-		}
+		FileUtils.deleteQuietly(zipPath.toFile());
 	}
 
 	/**
@@ -69,42 +63,29 @@ public class UploadScanExecutor {
 	 * @param target the file or directory to zip
 	 * @return path to the zipped file
 	 * @throws IllegalArgumentException if the target directory or file does not exist
-	 * @throws IOException              if there is a problem zipping the target
+	 * @throws IOException              if there is a problem creating the zip file
 	 */
 	private Path zipTarget(String target) throws IllegalArgumentException, IOException {
 		LOG.info("Zipping target for upload to Watchtower");
+		// Make sure target file/folder exists
 		File targetFile = new File(target);
-		Path zipDestination = Files.createTempFile(null, ".zip");
-		try (FileOutputStream fos = new FileOutputStream(zipDestination.toString());
-				ZipOutputStream zos = new ZipOutputStream(fos)) {
-			if (!targetFile.exists()) {
-				throw new IllegalArgumentException("Target directory or file must exist");
-			}
-			Path targetPath = targetFile.toPath();
-			Files.walkFileTree(targetPath, new SimpleFileVisitor<Path>() {
-				@Override
-				public FileVisitResult preVisitDirectory(final Path dir,
-						final BasicFileAttributes attrs) throws IOException {
-					if (!targetPath.equals(dir)) {
-						LOG.debug("Adding directory to zip: " + dir);
-						zos.putNextEntry(new ZipEntry(targetPath.relativize(dir) + "/"));
-						zos.closeEntry();
-					}
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-						throws IOException {
-					LOG.debug("Adding file to zip: " + targetPath.relativize(file));
-					zos.putNextEntry(new ZipEntry(targetPath.relativize(file).toString()));
-					Files.copy(file, zos);
-					zos.closeEntry();
-					return FileVisitResult.CONTINUE;
-				}
-			});
+		if (!targetFile.exists()) {
+			throw new IllegalArgumentException("Target directory or file must exist");
 		}
-		return zipDestination;
+		// Create zip file
+		Path zipPath = Files.createTempFile(null, ".zip");
+		ZipParameters zipParams = new ZipParameters();
+		zipParams.setReadHiddenFiles(false);
+		zipParams.setReadHiddenFolders(false);
+		ZipFile zipFile = new ZipFile(zipPath.toFile());
+		FileUtils.deleteQuietly(zipPath.toFile()); // Needed for the Zip4j library to work
+		// Add target file/folder to zip file
+		if (targetFile.isFile()) {
+			zipFile.addFile(targetFile, zipParams);
+		} else {
+			zipFile.addFolder(targetFile, zipParams);
+		}
+		return zipPath;
 	}
 
 	/**

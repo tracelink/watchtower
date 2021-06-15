@@ -4,6 +4,7 @@ import com.tracelink.appsec.watchtower.cli.scan.UploadScanResult;
 import java.time.Duration;
 import java.util.Collections;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract class to report Watchtower scan results in various formats. Reports a summary of the
@@ -13,11 +14,7 @@ import org.slf4j.Logger;
  */
 public abstract class AbstractReporter {
 
-	private final Logger log;
-
-	public AbstractReporter(Logger log) {
-		this.log = log;
-	}
+	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * Reports a summary of the given scan results to the console.

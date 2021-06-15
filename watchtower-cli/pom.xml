@@ -39,10 +39,20 @@
 			<artifactId>commons-csv</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.lingala.zip4j</groupId>
+			<artifactId>zip4j</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.konghq</groupId>
 			<artifactId>unirest-java</artifactId>
 			<version>${unirest.version}</version>
 		</dependency>
+
+		<!-- Test -->
 		<dependency>
 			<groupId>com.github.tomakehurst</groupId>
 			<artifactId>wiremock-jre8</artifactId>
@@ -52,12 +62,8 @@
 		<dependency>
 			<groupId>com.tracelink.appsec</groupId>
 			<artifactId>watchtower-test</artifactId>
-			<version>2.3.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
 		</dependency>
 	</dependencies>
 </project>

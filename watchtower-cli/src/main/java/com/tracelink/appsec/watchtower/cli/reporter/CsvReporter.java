@@ -29,7 +29,6 @@ public class CsvReporter extends AbstractReporter {
 	private Path errorLocation;
 
 	public CsvReporter(String output) {
-		super(LOG);
 		this.outputPath = Paths.get(output);
 	}
 

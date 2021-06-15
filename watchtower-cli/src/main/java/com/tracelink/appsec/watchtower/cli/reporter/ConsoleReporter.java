@@ -17,10 +17,6 @@ public class ConsoleReporter extends AbstractReporter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ConsoleReporter.class);
 
-	public ConsoleReporter() {
-		super(LOG);
-	}
-
 	/**
 	 * {@inheritDoc}
 	 */
