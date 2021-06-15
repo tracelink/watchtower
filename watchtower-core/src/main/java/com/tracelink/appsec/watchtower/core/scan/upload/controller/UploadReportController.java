@@ -37,6 +37,7 @@ public class UploadReportController {
 			mav.setViewName("redirect:/uploadscan");
 		} else {
 			mav.addObject("result", scanResultService.generateResultForTicket(ticket));
+			mav.addScriptReference("/scripts/scan_report.js");
 		}
 		return mav;
 	}

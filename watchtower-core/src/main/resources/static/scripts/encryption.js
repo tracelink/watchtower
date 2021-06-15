@@ -8,4 +8,7 @@ $(document).ready(function() {
     $("#rotateModalContent").html(content);
     $("#rotateModalInput").attr("value", id);
   });
+  $('.className').html(function(i, html){
+	    return html.replace(/([\/.])/g, '$1\u200B');
+  });
 });

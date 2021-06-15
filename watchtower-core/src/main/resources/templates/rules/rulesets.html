@@ -139,7 +139,7 @@
                                 <tbody>
                                 <tr th:each="rule : ${ruleset.getInheritedRules()}">
                                     <td th:text="${rule.key.name}"></td>
-                                    <td th:text="${rule.key.priority.getName()}"></td>
+                                    <td th:text="${rule.key.priority.getName()}" th:data-sort="${rule.key.priority.getPriority()}"></td>
                                     <td th:text="${rule.key.message}"></td>
                                     <td th:text="${rule.value}"></td>
                                     <td class="text-center">

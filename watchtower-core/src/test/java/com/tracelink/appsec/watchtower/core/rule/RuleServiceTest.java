@@ -88,12 +88,12 @@ public class RuleServiceTest {
 		RuleEntity rule2 = new MockRule();
 		rule2.setName("A");
 		String scannerType = rule.toDto().getModule();
-		BDDMockito.when(ruleRepository.findAll()).thenReturn(Arrays.asList(rule, rule2));
-		Set<RuleDto> rules = ruleService.getRulesForModule(scannerType);
+		BDDMockito.when(ruleRepository.findAll()).thenReturn(Arrays.asList(rule2, rule));
+		List<RuleDto> rules = ruleService.getRulesForModule(scannerType);
 		MatcherAssert.assertThat(rules, Matchers.hasSize(2));
 		RuleDto[] rulesArr = rules.toArray(new RuleDto[2]);
-		MatcherAssert.assertThat(rulesArr[0].getName(), Matchers.is(rule2.getName()));
-		MatcherAssert.assertThat(rulesArr[1].getName(), Matchers.is(rule.getName()));
+		MatcherAssert.assertThat(rulesArr[0].getName(), Matchers.is(rule.getName()));
+		MatcherAssert.assertThat(rulesArr[1].getName(), Matchers.is(rule2.getName()));
 	}
 
 	@Test
