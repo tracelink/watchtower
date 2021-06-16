@@ -1,11 +1,15 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
+import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
+import com.tracelink.appsec.watchtower.core.mock.MockRule;
+import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
+import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -18,12 +22,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.mock.MockRule;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
-import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 
 @ExtendWith(SpringExtension.class)
 public class RuleServiceTest {
@@ -88,12 +86,12 @@ public class RuleServiceTest {
 		RuleEntity rule2 = new MockRule();
 		rule2.setName("A");
 		String scannerType = rule.toDto().getModule();
-		BDDMockito.when(ruleRepository.findAll()).thenReturn(Arrays.asList(rule2, rule));
+		BDDMockito.when(ruleRepository.findAll()).thenReturn(Arrays.asList(rule, rule2));
 		List<RuleDto> rules = ruleService.getRulesForModule(scannerType);
 		MatcherAssert.assertThat(rules, Matchers.hasSize(2));
 		RuleDto[] rulesArr = rules.toArray(new RuleDto[2]);
-		MatcherAssert.assertThat(rulesArr[0].getName(), Matchers.is(rule.getName()));
-		MatcherAssert.assertThat(rulesArr[1].getName(), Matchers.is(rule2.getName()));
+		MatcherAssert.assertThat(rulesArr[0].getName(), Matchers.is(rule2.getName()));
+		MatcherAssert.assertThat(rulesArr[1].getName(), Matchers.is(rule.getName()));
 	}
 
 	@Test
