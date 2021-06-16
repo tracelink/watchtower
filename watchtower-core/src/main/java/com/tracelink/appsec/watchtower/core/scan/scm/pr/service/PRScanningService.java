@@ -158,11 +158,16 @@ public class PRScanningService extends AbstractScanningService {
 
 	private List<PullRequest> recoverByRepo(APIIntegrationEntity entity, IScmApi api,
 			RepositoryEntity repo) {
+		long repoLastReview = repo.getLastReviewedDate();
 		List<PullRequest> prUpdates = api.getOpenPullRequestsForRepository(repo.getRepoName())
 				.stream().filter(pr -> {
 					PullRequestContainerEntity prEntity =
 							prScanResultService.getPullRequestByLabelRepoAndId(entity.getApiLabel(),
 									repo.getRepoName(), pr.getPrId());
+					// This is an ancient pr and older than our last check on the repository.
+					if (repoLastReview > pr.getUpdateTime()) {
+						return false;
+					}
 					// if we haven't seen this PR add it
 					if (prEntity == null) {
 						return true;
