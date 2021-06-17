@@ -61,7 +61,7 @@ public class UploadScanMojoTest {
 		ReflectionTestUtils.setField(mojo, "watchtowerApiSecret", apiSecret);
 		ReflectionTestUtils
 				.setField(mojo, "target",
-						resourcesDir.resolve("maven-project/target/File.java").toString());
+						resourcesDir.resolve("maven-project/folder/File.java").toString());
 		ReflectionTestUtils.setField(mojo, "output", resourcesDir.toString());
 		ReflectionTestUtils.setField(mojo, "fileName", "foo.zip");
 		ReflectionTestUtils.setField(mojo, "ruleset", "Primary");
