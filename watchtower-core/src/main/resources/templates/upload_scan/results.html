@@ -51,8 +51,8 @@
                        </thead>
                        <tbody>
                            <tr th:each="result : ${results}">
-                               <td class="py-1" th:text="${#temporals.format(result.getSubmitDate(), 'MMM d, yyy HH:mm:ss')}" th:data-order="${result.getSubmitDate()}">Scan Submit</td>
-                               <td class="py-1" th:text="${#temporals.format(result.getEndDate(), 'MMM d, yyy HH:mm:ss')}" th:data-order="${result.getEndDate()}">Scan End</td>
+                               <td class="py-1 localizetime" th:text="${result.getSubmitDateMillis()}" th:data-order="${result.getSubmitDateMillis()}">Scan Submit</td>
+                               <td class="py-1 localizetime" th:text="${result.getEndDateMillis()}" th:data-order="${result.getEndDateMillis()}">Scan End</td>
                                <td class="py-1" th:text="${result.getName()}">Name</td>
                                <td class="py-1" th:text="${result.getRuleset()}">Ruleset</td>
                                <td class="py-1" th:text="${result.getStatus()}">Status</td>

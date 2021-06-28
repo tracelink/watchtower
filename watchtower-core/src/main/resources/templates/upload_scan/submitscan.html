@@ -177,11 +177,11 @@
             <tbody>
             <tr th:each="scan : ${lastScans}">
               <td th:text="${scan.getId()}">Scan ID</td>
-              <td th:text="${#temporals.format(scan.getStartDate(), 'MMM d, yyy HH:mm:ss')}"
-                  th:data-order="${scan.getStartDate()}">Date Submitted
+              <td class="localizetime" th:text="${scan.getStartDateMillis()}"
+                  th:data-order="${scan.getStartDateMillis()}">Date Submitted
               </td>
-              <td th:text="${#temporals.format(scan.getEndDate(), 'MMM d, yyy HH:mm:ss')}"
-                  th:data-order="${scan.getEndDate()}">Date Reviewed
+              <td class="localizetime" th:text="${scan.getEndDateMillis()}"
+                  th:data-order="${scan.getEndDateMillis()}">Date Reviewed
               </td>
               <td th:text="${scan.getContainer().getName()}">Name</td>
               <td th:text="${scan.getContainer().getRuleSet()}">Ruleset</td>

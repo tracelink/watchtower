@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.upload.result;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -85,12 +86,20 @@ public class UploadScanResult {
 		this.submitDate = submitDate;
 	}
 
+	public long getSubmitDateMillis() {
+		return submitDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+	}
+
 	public LocalDateTime getEndDate() {
 		return endDate;
 	}
 
 	public void setEndDate(LocalDateTime endDate) {
 		this.endDate = endDate;
+	}
+
+	public long getEndDateMillis() {
+		return endDate.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public int getViolationsFound() {

@@ -52,7 +52,7 @@
                           <tr th:each="repoDetails, dStat : ${repos.get(repoKey)}">
                             <td th:text="${dStat.count}">
                             <td th:text="${repoDetails.repoName}">
-                            <td th:text="${repoDetails.getLastReviewedDateAsDate()}">
+                            <td class="localizetime" th:text="${repoDetails.getLastReviewedDate()}">
                             <td th:text="${repoDetails.ruleset == null ? 'None' : repoDetails.ruleset.name}">
                             <td th:text="${repoDetails.ruleset == null ? 'N/A' : (repoDetails.ruleset.blockingLevel == null ? 'None' : repoDetails.ruleset.blockingLevel.name)}">
                             <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).REPO_SETTINGS_MODIFY_NAME+''')')}">

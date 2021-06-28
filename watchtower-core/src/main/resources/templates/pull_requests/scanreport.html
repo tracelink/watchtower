@@ -35,8 +35,7 @@
 					<div class="col">
 						<div class="mb-4">
 							<h6 class="d-block">Scanned On</h6>
-							<div
-								th:text="${#temporals.format(result.getDate(), 'MMM d, yyy HH:mm:ss')}"></div>
+							<div class="localizetime" th:text="${result.getDateMillis()}"></div>
 						</div>
 						<div class="mb-4">
 							<h6 class="d-block">Number of Violations</h6>

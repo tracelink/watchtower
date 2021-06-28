@@ -164,7 +164,7 @@
                         <tbody>
                             <tr th:each="scan : ${lastScans}">
                                 <td th:text="${scan.getId()}">Scan ID</td>
-                                <td th:text="${#temporals.format(scan.getEndDate(), 'MMM d, yyy HH:mm:ss')}" th:data-order="${scan.getEndDate()}">Date Reviewed</td>
+                                <td class="localizetime" th:text="${scan.getEndDateMillis()}" th:data-order="${scan.getEndDateMillis()}">Date Reviewed</td>
                                 <td th:text="${scan.getContainer().getApiLabel()}">API Label</td>
                                 <td th:text="${scan.getContainer().getRepoName() + '-' + scan.getContainer().getPrId()}">Pull Request ID</td>
                                 <td th:text="${scan.getNumViolations()}">Number of Violations</td>

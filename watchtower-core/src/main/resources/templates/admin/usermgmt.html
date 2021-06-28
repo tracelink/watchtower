@@ -47,7 +47,7 @@
                                         <i class="material-icons">close</i>
                                     </div>
                                 </td>
-                                <td th:text="${user.lastLogin} ? ${#dates.format(user.lastLogin,'MM/dd/YYYY hh:mm:ss a')} : 'Never'">Last Login</td>
+                                <td class="localizetime" th:text="${user.lastLogin} ? ${user.lastLogin.toInstant().toEpochMilli()} : 'Never'">Last Login</td>
                                 <td align="center">
                                     <a th:href="@{'/usermgmt/edit/' + ${user.id}}" class="btn btn-primary">
                                         <i class="material-icons">edit</i> Edit

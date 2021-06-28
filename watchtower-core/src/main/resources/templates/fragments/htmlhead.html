@@ -39,6 +39,10 @@
 
 <script src="/scripts/sidebar.js" th:attr="nonce=${nonce}"></script>
 
+<script src="/webjars/luxon/1.26.0/build/global/luxon.js" th:attr="nonce=${nonce}"></script>
+
+<script src="/scripts/localizetime.js" th:attr="nonce=${nonce}"></script>
+
 <th:block th:if="${scripts != null}" th:each="script : ${scripts}">
 <script th:src="${script}" th:attr="nonce=${nonce}"></script>
 </th:block>

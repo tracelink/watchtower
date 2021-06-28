@@ -3,6 +3,7 @@ package com.tracelink.appsec.watchtower.core.logging;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,6 +52,7 @@ public class LoggingController {
 		mav.addObject("currentLogLevel", logsService.getLogsLevel().levelStr);
 		mav.addObject("logOptions", allowedLevels);
 		mav.addObject("logs", logsService.getLogs());
+		mav.addObject("currentTime", LocalDateTime.now());
 		return mav;
 	}
 

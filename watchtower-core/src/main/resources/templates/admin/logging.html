@@ -48,6 +48,7 @@
         <div class="card card-small mb-2">
             <div class="card-header border-bottom">
                 <h6 class="m-0">Most Recent Logs</h6>
+                <span th:text="${'Current Server Time: ' + #temporals.format(currentTime, 'yyy-MM-dd HH:mm:ss')}"></span>
             </div>
             <div class="row p-3">
                 <div class="col">
