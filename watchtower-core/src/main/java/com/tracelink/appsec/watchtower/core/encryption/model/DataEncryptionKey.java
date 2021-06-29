@@ -1,9 +1,9 @@
 package com.tracelink.appsec.watchtower.core.encryption.model;
 
-import com.tracelink.appsec.watchtower.core.encryption.converter.DataEncryptionKeyConverter;
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity.HexStringConverter;
 import java.security.Key;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -11,6 +11,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
+import com.tracelink.appsec.watchtower.core.encryption.converter.DataEncryptionKeyConverter;
+import com.tracelink.appsec.watchtower.core.rule.RuleEntity.HexStringConverter;
 
 /**
  * Model for the Watchtower data encryption key. Includes the name of the encrypted attribute
@@ -83,6 +86,11 @@ public class DataEncryptionKey {
 
 	public void setLastRotationDateTime(LocalDateTime lastRotationDateTime) {
 		this.lastRotationDateTime = lastRotationDateTime;
+	}
+
+	public long getLastRotationDateTimeMillis() {
+		return lastRotationDateTime == null ? 0L
+				: lastRotationDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public boolean isRotationInProgress() {

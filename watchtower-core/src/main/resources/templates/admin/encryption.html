@@ -86,7 +86,7 @@
             </thead>
             <tbody>
             <tr>
-              <td th:text="${#temporals.format(metadata.lastRotationDateTime, 'MMM d, YYYY h:mm a')} ?: 'Never'"></td>
+              <td class="localizetime" th:text="${metadata.lastRotationDateTime != null ? metadata.lastRotationDateTimeMillis : 'Never'}"></td>
               <td th:text="${metadata.lastRotationDateTime != null ? T(java.time.temporal.ChronoUnit).DAYS.between(metadata.lastRotationDateTime.toLocalDate(), T(java.time.LocalDate).now()) : 'N/A'}"></td>
             </tr>
             </tbody>
@@ -134,9 +134,9 @@
               <tr th:each="dek : ${deks}">
                 <td class="className" th:text="${dek.converterClassName}"></td>
                 <td th:text="${dek.rotationInProgress} ? 'Yes' : 'No'"></td>
-                <td th:text="${#temporals.format(dek.lastRotationDateTime, 'MMM d, YYYY h:mm a')} ?: 'Never'"></td>
+                <td class="localizetime" th:text="${dek.lastRotationDateTime != null ? dek.lastRotationDateTimeMillis: 'Never'}"></td>
                 <td th:if="${metadata.rotationScheduleEnabled}"
-                    th:text="${#temporals.format(dek.lastRotationDateTime.toLocalDate().atStartOfDay().plusDays(metadata.rotationPeriod), 'MMM d, YYYY h:mm a')}"></td>
+                    class="localizetime" th:text="${metadata.getNextRotationDateMillis(dek)}"></td>
                 <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
                   <button type="button" class="btn btn-primary" data-toggle="modal"
                           th:disabled="${dek.rotationInProgress}" data-target="#rotateKeyModal"

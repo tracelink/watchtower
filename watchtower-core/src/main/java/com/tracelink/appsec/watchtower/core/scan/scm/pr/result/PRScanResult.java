@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.scm.pr.result;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -66,6 +67,10 @@ public class PRScanResult {
 
 	public void setDate(LocalDateTime date) {
 		this.date = date;
+	}
+
+	public long getDateMillis() {
+		return date.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public String getPrLink() {

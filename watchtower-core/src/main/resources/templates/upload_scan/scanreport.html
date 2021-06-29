@@ -45,13 +45,11 @@
 					<div class="col">
 						<div class="mb-4">
 							<h6 class="d-block">Submitted On</h6>
-							<div
-								th:text="${#temporals.format(result.getSubmitDate(), 'MMM d, yyy HH:mm:ss')}"></div>
+							<div class="localizetime" th:text="${result.getSubmitDateMillis()}"></div>
 						</div>
 						<div class="mb-4">
 							<h6 class="d-block">Scan Ended On</h6>
-							<div
-								th:text="${#temporals.format(result.getEndDate(), 'MMM d, yyy HH:mm:ss')}"></div>
+							<div class="localizetime" th:text="${result.getEndDateMillis()}"></div>
 						</div>
 					</div>
 				</div>
