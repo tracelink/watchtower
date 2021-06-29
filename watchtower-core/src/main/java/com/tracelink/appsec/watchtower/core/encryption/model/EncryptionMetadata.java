@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.encryption.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -66,5 +67,14 @@ public class EncryptionMetadata {
 
 	public void setRotationPeriod(Integer rotationPeriod) {
 		this.rotationPeriod = rotationPeriod;
+	}
+
+	public LocalDate getNextRotationDate(DataEncryptionKey dek) {
+		return dek.getLastRotationDateTime().toLocalDate().plusDays(getRotationPeriod());
+	}
+
+	public long getNextRotationDateMillis(DataEncryptionKey dek) {
+		return getNextRotationDate(dek).atStartOfDay().toInstant(ZoneOffset.UTC)
+				.toEpochMilli();
 	}
 }

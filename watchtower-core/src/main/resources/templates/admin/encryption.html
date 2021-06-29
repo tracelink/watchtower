@@ -136,7 +136,7 @@
                 <td th:text="${dek.rotationInProgress} ? 'Yes' : 'No'"></td>
                 <td class="localizetime" th:text="${dek.lastRotationDateTime != null ? dek.lastRotationDateTimeMillis: 'Never'}"></td>
                 <td th:if="${metadata.rotationScheduleEnabled}"
-                    class="localizetime" th:text="${dek.lastRotationDateTime.toLocalDate().atStartOfDay().plusDays(metadata.rotationPeriod).toInstant(T(java.time.ZoneOffset).UTC).toEpochMilli()}"></td>
+                    class="localizetime" th:text="${metadata.getNextRotationDateMillis(dek)}"></td>
                 <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ENCRYPTION_MODIFY_NAME+''')')}">
                   <button type="button" class="btn btn-primary" data-toggle="modal"
                           th:disabled="${dek.rotationInProgress}" data-target="#rotateKeyModal"

@@ -87,7 +87,7 @@ public class UploadScanResult {
 	}
 
 	public long getSubmitDateMillis() {
-		return submitDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return submitDate == null ? 0L : submitDate.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public LocalDateTime getEndDate() {
@@ -99,7 +99,7 @@ public class UploadScanResult {
 	}
 
 	public long getEndDateMillis() {
-		return endDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return endDate == null ? 0L : endDate.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public int getViolationsFound() {
