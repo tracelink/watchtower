@@ -5,11 +5,13 @@ import java.nio.file.Paths;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
@@ -20,16 +22,26 @@ import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 @ExtendWith(SpringExtension.class)
 public class EsLintScannerTest {
 
-	private final EsLintRulesetInterpreter interpreter = new EsLintRulesetInterpreter();
-	private final EsLintScanner scanner = new EsLintScanner();
+	private static LinterEngine engine;
+
+	private EsLintRulesetInterpreter interpreter;
+	private EsLintScanner scanner;
 	private RulesetDto rulesetDto;
+
+	@BeforeAll
+	public static void init() {
+		engine = new LinterEngine();
+	}
 
 	@BeforeEach
 	public void setup() throws Exception {
+		interpreter = new EsLintRulesetInterpreter(engine);
+		scanner = new EsLintScanner(engine);
 		try (InputStream is = getClass().getClassLoader()
 				.getResourceAsStream("import/ruleset.js")) {
 			rulesetDto = interpreter.importRuleset(is);
 		}
+
 	}
 
 	@Test

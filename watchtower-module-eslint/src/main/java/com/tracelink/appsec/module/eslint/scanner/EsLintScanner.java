@@ -1,5 +1,18 @@
 package com.tracelink.appsec.module.eslint.scanner;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.commons.io.FileUtils;
+
 import com.google.gson.Gson;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.engine.ProcessResult;
@@ -21,27 +34,21 @@ import com.tracelink.appsec.watchtower.core.scan.processor.AbstractProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.CallableCreator;
 import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
 
 /**
- * {@link IScanner} for ESLint. Scans and reports with the ESLint Linter via the {@link
- * LinterEngine}.
+ * {@link IScanner} for ESLint. Scans and reports with the ESLint Linter via the
+ * {@link LinterEngine}.
  *
  * @author mcool
  */
 public class EsLintScanner implements IScanner {
 
 	private static final Gson GSON = new Gson();
+	private final LinterEngine engine;
+
+	public EsLintScanner(LinterEngine engine) {
+		this.engine = engine;
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -107,7 +114,7 @@ public class EsLintScanner implements IScanner {
 		String uri = "ruleset-" + ruleset.getId();
 		Path rulesetPath = Files.createTempFile(uri, ".js").toFile().getCanonicalFile()
 				.getAbsoluteFile().toPath();
-		try (InputStream is = new EsLintRulesetInterpreter().exportRuleset(ruleset)) {
+		try (InputStream is = new EsLintRulesetInterpreter(engine).exportRuleset(ruleset)) {
 			Files.copy(is, rulesetPath, StandardCopyOption.REPLACE_EXISTING);
 		}
 		return rulesetPath;
@@ -132,8 +139,8 @@ public class EsLintScanner implements IScanner {
 				Path filePath = path.getFileName();
 				Path directoryPath = workingDirectory.relativize(path.getParent());
 				// Run Linter on all lines of the file
-				ProcessResult scanResult = LinterEngine.getInstance()
-						.scanCode(br.lines().collect(Collectors.joining("\n")),
+				ProcessResult scanResult =
+						engine.scanCode(br.lines().collect(Collectors.joining("\n")),
 								directoryPath.toString(), filePath.toString(),
 								rulesetPath.toString());
 				// Check for errors

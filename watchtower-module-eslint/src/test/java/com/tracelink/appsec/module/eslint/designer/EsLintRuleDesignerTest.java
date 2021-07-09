@@ -7,9 +7,11 @@ import java.util.Map;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -50,16 +52,24 @@ public class EsLintRuleDesignerTest {
 
 	private EsLintRuleDesigner ruleDesigner;
 
+	private static LinterEngine engine;
+
+	@BeforeAll
+	public static void init() {
+		engine = new LinterEngine();
+	}
+
 	@BeforeEach
-	public void init() {
-		ruleDesigner = new EsLintRuleDesigner();
+	public void setup() {
+		ruleDesigner = new EsLintRuleDesigner(engine);
 	}
 
 	@Test
 	public void testGetRuleDesignerModelAndView() {
 		RuleDesignerModelAndView mav = ruleDesigner.getRuleDesignerModelAndView();
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(DEFAULT_CORE));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -78,7 +88,8 @@ public class EsLintRuleDesignerTest {
 				.query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, DEFAULT_NAME, DEFAULT_CREATE_FUNCTION,
 						DEFAULT_MESSAGES);
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(DEFAULT_CORE));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -97,7 +108,8 @@ public class EsLintRuleDesignerTest {
 				.query(null, DEFAULT_CORE, DEFAULT_NAME, DEFAULT_CREATE_FUNCTION,
 						DEFAULT_MESSAGES);
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(DEFAULT_CORE));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -117,7 +129,8 @@ public class EsLintRuleDesignerTest {
 		RuleDesignerModelAndView mav = ruleDesigner
 				.query(DEFAULT_SOURCE_CODE, true, null, null, null);
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(true));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -137,7 +150,8 @@ public class EsLintRuleDesignerTest {
 		RuleDesignerModelAndView mav = ruleDesigner
 				.query(DEFAULT_SOURCE_CODE, true, DEFAULT_NAME, null, null);
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(true));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -157,7 +171,8 @@ public class EsLintRuleDesignerTest {
 		RuleDesignerModelAndView mav = ruleDesigner
 				.query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, null, null, null);
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(DEFAULT_CORE));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -178,7 +193,8 @@ public class EsLintRuleDesignerTest {
 				.query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, null, DEFAULT_CREATE_FUNCTION,
 						Collections.singletonList(new EsLintMessageDto("key", "")));
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(DEFAULT_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(DEFAULT_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(DEFAULT_CORE));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is(DEFAULT_NAME));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
@@ -198,7 +214,8 @@ public class EsLintRuleDesignerTest {
 		RuleDesignerModelAndView mav = ruleDesigner
 				.query(INVALID_SOURCE_CODE, true, "no-extra-semi", null, null);
 		assertMav(mav);
-		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(INVALID_SOURCE_CODE));
+		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
+				Matchers.is(INVALID_SOURCE_CODE));
 		MatcherAssert.assertThat(mav.getModel().get("core"), Matchers.is(true));
 		MatcherAssert.assertThat(mav.getModel().get("name"), Matchers.is("no-extra-semi"));
 		MatcherAssert.assertThat(mav.getModel().get("createFunction"),
