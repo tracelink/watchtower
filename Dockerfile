@@ -11,7 +11,7 @@ FROM base AS build
 RUN dnf install maven -y
 COPY . /tmp/watchtower
 WORKDIR /tmp/watchtower
-RUN mvn clean package -q -DskipTests
+RUN mvn clean package -q
 
 FROM base
 COPY --from=build /tmp/watchtower/watchtower-web/target/watchtower*SNAPSHOT.jar /opt/watchtower/watchtower.jar
