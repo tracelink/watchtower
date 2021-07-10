@@ -4,7 +4,10 @@ import java.util.Collections;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeAll;
 
+import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
+import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
@@ -16,9 +19,18 @@ import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanCon
 
 public class EsLintModuleTest extends ScannerModuleTest {
 
+	private static LinterEngine engine;
+	private static EsLintRuleDesigner designer;
+
+	@BeforeAll
+	public static void init() {
+		engine = new LinterEngine();
+		designer = new EsLintRuleDesigner(engine);
+	}
+
 	@Override
 	protected AbstractModule buildScannerModule() {
-		return new EsLintModule();
+		return new EsLintModule(engine, designer);
 	}
 
 	@Override
@@ -70,8 +82,10 @@ public class EsLintModuleTest extends ScannerModuleTest {
 									}
 								})
 								.withAssertClause(report -> {
-									MatcherAssert.assertThat(report.getErrors(), Matchers.hasSize(0));
-									MatcherAssert.assertThat(report.getViolations(), Matchers.hasSize(1));
+									MatcherAssert.assertThat(report.getErrors(),
+											Matchers.hasSize(0));
+									MatcherAssert.assertThat(report.getViolations(),
+											Matchers.hasSize(1));
 								}));
 	}
 }

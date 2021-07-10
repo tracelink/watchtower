@@ -40,7 +40,7 @@ public class CheckovEngine {
 	private static final int EXPECTED_PYTHON_VERSION_MAJOR = 3;
 	private static final int EXPECTED_PYTHON_VERSION_MINOR = 7;
 
-	private static final String EXPECTED_CHECKOV_VERSION = "2.0.40";
+	private static final String EXPECTED_CHECKOV_VERSION = "2.0.257";
 
 	private final Map<String, CheckovRuleDto> coreRules;
 
@@ -94,21 +94,23 @@ public class CheckovEngine {
 		ProcessResult checkovVersionNumResult = runCheckovCommand("-v");
 		if (checkovVersionNumResult.hasResults()
 				&& checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
-			// everything is already correct
+			LOG.info("Checkov already installed at version " + EXPECTED_CHECKOV_VERSION);
 			return;
 		}
 
 		LOG.info("Installing Checkov for virtual environment");
 		ProcessResult pipResult = runPipCommand("install", "checkov==" + EXPECTED_CHECKOV_VERSION,
 				"--force-reinstall", "--no-cache-dir", "--no-warn-script-location");
+
 		if (pipResult.hasErrors()) {
 			LOG.warn("Error during virtualenv pip install: " + pipResult.getErrors());
 		}
-
+		LOG.info(pipResult.getResults());
 		checkovVersionNumResult = runCheckovCommand("-v");
 		if (checkovVersionNumResult.hasResults()
-				|| checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
+				&& checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
 			// successfully installed in a virtual env or global scope
+			LOG.info("Checkov installed in the virtual environment or global scope");
 			return;
 		}
 
@@ -127,6 +129,8 @@ public class CheckovEngine {
 					+ EXPECTED_CHECKOV_VERSION + " but received "
 					+ checkovVersionNumResult.getResults());
 		}
+		LOG.info("Checkov installed in the user environment");
+
 	}
 
 	private ProcessResult runPythonCommand(String... command) throws IOException {
@@ -205,7 +209,7 @@ public class CheckovEngine {
 	 * Execute a checkov scan on a directory, given the supplied checkov rules. This is equivalent
 	 * to the checkov command line: <br>
 	 * <code>
-	 * checkov.py -d {targetDirectory} --quiet -o json -c {ruleChecks}
+	 * checkov.py -d {targetDirectory} --quiet --no-guide -o json -c {ruleChecks}
 	 * </code>
 	 * 
 	 * @param targetDirectory the directory to scan

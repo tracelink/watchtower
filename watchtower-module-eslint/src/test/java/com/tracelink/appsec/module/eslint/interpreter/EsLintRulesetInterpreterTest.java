@@ -7,9 +7,12 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleFixable;
 import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
@@ -23,7 +26,19 @@ public class EsLintRulesetInterpreterTest {
 	public LogWatchExtension loggerRule =
 			LogWatchExtension.forClass(EsLintRulesetInterpreter.class);
 
-	private final EsLintRulesetInterpreter interpreter = new EsLintRulesetInterpreter();
+	private static LinterEngine engine;
+
+	private EsLintRulesetInterpreter interpreter;
+
+	@BeforeAll
+	public static void init() {
+		engine = new LinterEngine();
+	}
+
+	@BeforeEach
+	public void setup() {
+		interpreter = new EsLintRulesetInterpreter(engine);
+	}
 
 	@Test
 	public void testImportRuleset() throws Exception {

@@ -28,9 +28,12 @@ import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorExceptio
 public class EsLintRuleService {
 
 	private final EsLintRuleRepository ruleRepository;
+	private final LinterEngine engine;
 
-	public EsLintRuleService(@Autowired EsLintRuleRepository ruleRepository) {
+	public EsLintRuleService(@Autowired EsLintRuleRepository ruleRepository,
+			@Autowired LinterEngine engine) {
 		this.ruleRepository = ruleRepository;
+		this.engine = engine;
 	}
 
 	/**
@@ -62,7 +65,7 @@ public class EsLintRuleService {
 		rule.setName(dto.getName());
 		rule.setPriority(dto.getPriority());
 
-		Map<String, Map<String, String>> coreRules = LinterEngine.getInstance().getCoreRules();
+		Map<String, Map<String, String>> coreRules = engine.getCoreRules();
 		// Set fields specific to core or custom rule
 		if (dto.isCore()) {
 			if (coreRules.containsKey(dto.getName())) {
