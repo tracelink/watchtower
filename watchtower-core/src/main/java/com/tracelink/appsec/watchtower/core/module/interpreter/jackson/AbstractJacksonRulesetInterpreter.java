@@ -23,15 +23,19 @@ public abstract class AbstractJacksonRulesetInterpreter implements IRulesetInter
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RulesetDto importRuleset(InputStream inputStream)
+	public final RulesetDto importRuleset(InputStream inputStream)
 			throws IOException, RulesetInterpreterException {
 		AbstractRulesetImpexModel impexModel;
 		ObjectMapper mapper = getObjectMapper();
 
 		impexModel = mapper.readValue(inputStream, getRulesetModelClass());
 		inputStream.close();
-
-		return importInternal(impexModel);
+		RulesetDto ruleset = importInternal(impexModel);
+		if (ruleset.isProvided()) {
+			throw new RulesetInterpreterException(
+					"Cannot import a Provided ruleset. These rules are automatically included in Watchtower");
+		}
+		return ruleset;
 	}
 
 	/**
@@ -54,11 +58,18 @@ public abstract class AbstractJacksonRulesetInterpreter implements IRulesetInter
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws RulesetInterpreterException
 	 */
 	@Override
-	public InputStream exportRuleset(RulesetDto rulesetDto) throws IOException {
+	public final InputStream exportRuleset(RulesetDto rulesetDto)
+			throws IOException, RulesetInterpreterException {
 		if (rulesetDto == null) {
 			return null;
+		}
+		if (rulesetDto.isProvided()) {
+			throw new RulesetInterpreterException(
+					"Cannot export a Provided ruleset. These rules are automatically included in Watchtower");
 		}
 		AbstractRulesetImpexModel impexModel = fromDto(rulesetDto);
 		if (impexModel == null) {
@@ -69,7 +80,7 @@ public abstract class AbstractJacksonRulesetInterpreter implements IRulesetInter
 	}
 
 	@Override
-	public InputStream exportExampleRuleset() throws IOException {
+	public InputStream exportExampleRuleset() throws IOException, RulesetInterpreterException {
 		if (exampleRuleset == null) {
 			exampleRuleset = makeExampleRuleset();
 		}

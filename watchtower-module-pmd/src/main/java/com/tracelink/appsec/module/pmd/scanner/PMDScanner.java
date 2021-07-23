@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.tracelink.appsec.module.pmd.interpreter.PMDRulesetInterpreter;
 import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
+import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -49,8 +50,8 @@ public class PMDScanner implements IScanner {
 		Path rulesetPath;
 		try {
 			rulesetPath = writeRulesetToFile(config.getRuleset());
-		} catch (IOException | URISyntaxException | RulesetException e) {
-			LOG.debug("Exception writing ruleset to resources", e);
+		} catch (Exception e) {
+			LOG.error("Exception writing ruleset to resources", e);
 			return null;
 		}
 		// Create configuration
@@ -77,7 +78,7 @@ public class PMDScanner implements IScanner {
 	}
 
 	private Path writeRulesetToFile(RulesetDto dto)
-			throws IOException, URISyntaxException, RulesetException {
+			throws IOException, URISyntaxException, RulesetException, RulesetInterpreterException {
 		String uri = "pmd-" + dto.getId();
 		Path rulesetPath;
 		try (InputStream is = new PMDRulesetInterpreter().exportRuleset(dto)) {
