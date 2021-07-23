@@ -20,6 +20,8 @@ import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
 import com.tracelink.appsec.watchtower.core.rule.RuleEditorService;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 
@@ -145,6 +147,19 @@ public abstract class AbstractModule {
 	public abstract List<PrivilegeEntity> getModulePrivileges();
 
 	/**
+	 * Allow Modules to provide any rules as {@linkplain RulesetDesignation#PROVIDED} rulesets. On
+	 * rule updates, the {@linkplain RulesetService} will update existing rules and remove
+	 * no-longer-available rules
+	 * <p>
+	 * Note that all rulesets will be prefixed by the system with the result of
+	 * {@linkplain #getName()} to help identify their origin
+	 * 
+	 * @return a list of {@linkplain RulesetDesignation#PROVIDED} rulesets, or null/blank if the
+	 *         module does not have/support built-in third-party rules
+	 */
+	public abstract List<RulesetDto> getProvidedRulesets();
+
+	/**
 	 * Create the Module, calling each of the abstract methods required and validating their content
 	 * as needed
 	 */
@@ -180,6 +195,9 @@ public abstract class AbstractModule {
 			rulesetService.registerInterpreter(getName(), getInterpreter());
 			if (getRuleDesigner() != null) {
 				ruleDesignerService.registerRuleDesigner(getName(), getRuleDesigner());
+			}
+			if (getProvidedRulesets() != null) {
+				rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
 			}
 			List<PrivilegeEntity> privileges = getModulePrivileges();
 			if (privileges != null) {

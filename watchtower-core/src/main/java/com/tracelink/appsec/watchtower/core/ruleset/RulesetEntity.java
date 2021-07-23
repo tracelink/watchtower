@@ -1,8 +1,5 @@
 package com.tracelink.appsec.watchtower.core.ruleset;
 
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
-import com.tracelink.appsec.watchtower.core.rule.RulePriority;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,9 +18,12 @@ import javax.persistence.ManyToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
+import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+
 /**
- * Entity description for the ruleset entity. Holds name and description, as well as a list of rules contained in this
- * ruleset and a list of rulesets from which to inherit rules.
+ * Entity description for the ruleset entity. Holds name and description, as well as a list of rules
+ * contained in this ruleset and a list of rulesets from which to inherit rules.
  *
  * @author mcool
  */
@@ -36,11 +36,13 @@ public class RulesetEntity {
 	private long id;
 
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "ruleset_ruleset", joinColumns = @JoinColumn(name = "ruleset_id"), inverseJoinColumns = @JoinColumn(name = "inherited_ruleset_id"))
+	@JoinTable(name = "ruleset_ruleset", joinColumns = @JoinColumn(name = "ruleset_id"),
+			inverseJoinColumns = @JoinColumn(name = "inherited_ruleset_id"))
 	private Set<RulesetEntity> rulesets = new HashSet<>();
 
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "rule_ruleset", joinColumns = @JoinColumn(name = "ruleset_id"), inverseJoinColumns = @JoinColumn(name = "rule_id"))
+	@JoinTable(name = "rule_ruleset", joinColumns = @JoinColumn(name = "ruleset_id"),
+			inverseJoinColumns = @JoinColumn(name = "rule_id"))
 	@OrderBy("name asc")
 	private Set<RuleEntity> rules = new HashSet<>();
 
@@ -60,6 +62,10 @@ public class RulesetEntity {
 
 	public long getId() {
 		return id;
+	}
+
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	public Set<RulesetEntity> getRulesets() {
@@ -111,32 +117,32 @@ public class RulesetEntity {
 	}
 
 	/**
-	 * Determines if the given ruleset is inherited by this ruleset, either
-	 * directly or recursively.
+	 * Determines if the given ruleset is inherited by this ruleset, either directly or recursively.
 	 *
 	 * @param ruleset the ruleset that may be inherited from
-	 * @return true if the given ruleset is inherited by this ruleset, false
-	 * otherwise
+	 * @return true if the given ruleset is inherited by this ruleset, false otherwise
 	 */
 	public boolean containsRuleset(RulesetEntity ruleset) {
-		return rulesets.contains(ruleset) || rulesets.stream().anyMatch(r -> r.containsRuleset(ruleset));
+		return rulesets.contains(ruleset)
+				|| rulesets.stream().anyMatch(r -> r.containsRuleset(ruleset));
 	}
 
 	/**
-	 * Converts this database entity object into a data transfer object that is more convenient in UI and other
-	 * operations. Converts all contained rules and rulesets to DTOs.
+	 * Converts this database entity object into a data transfer object that is more convenient in
+	 * UI and other operations. Converts all contained rules and rulesets to DTOs.
 	 *
 	 * @return ruleset DTO representing this ruleset entity
 	 */
 	public RulesetDto toDto() {
 		RulesetDto dto = new RulesetDto();
-		dto.setId(id);
-		dto.setName(name);
-		dto.setDescription(description);
-		dto.setDesignation(designation);
-		dto.setBlockingLevel(blockingLevel);
-		dto.setRulesets(rulesets.stream().map(RulesetEntity::toDto).collect(Collectors.toSet()));
-		dto.setRules(rules.stream().map(RuleEntity::toDto).collect(Collectors.toSet()));
+		dto.setId(getId());
+		dto.setName(getName());
+		dto.setDescription(getDescription());
+		dto.setDesignation(getDesignation());
+		dto.setBlockingLevel(getBlockingLevel());
+		dto.setRulesets(
+				getRulesets().stream().map(RulesetEntity::toDto).collect(Collectors.toSet()));
+		dto.setRules(getRules().stream().map(RuleEntity::toDto).collect(Collectors.toSet()));
 		return dto;
 	}
 }

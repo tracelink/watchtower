@@ -16,6 +16,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Module to hold implementations for PMD rules, scanner, designer, and XML model.
@@ -98,5 +99,10 @@ public class PMDModule extends AbstractModule {
 				new PrivilegeEntity().setName(PMD_RULE_DESIGNER_PRIVILEGE_NAME)
 						.setCategory("Rule Designer").setDescription(
 								"User may create and test PMD rules in the Rule Designer."));
+	}
+
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		throw new RuntimeException("You didn't build this yet Chris");
 	}
 }

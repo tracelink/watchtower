@@ -17,6 +17,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Module to hold implementations for ESLint rules, scanner, designer, editor and interpreter.
@@ -102,5 +103,10 @@ public class EsLintModule extends AbstractModule {
 				new PrivilegeEntity().setName(ESLINT_RULE_DESIGNER_PRIVILEGE_NAME)
 						.setCategory("Rule Designer").setDescription(
 								"User may create and test ESLint rules in the Rule Designer. Caution! This may lead to remote code execution as the rules are run as server-side javascript on the Watchtower machine"));
+	}
+
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		throw new RuntimeException("You didn't build this yet Chris");
 	}
 }

@@ -1,15 +1,11 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.mock.MockRule;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
-import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -22,6 +18,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
+import com.tracelink.appsec.watchtower.core.mock.MockRule;
+import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
+import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 
 @ExtendWith(SpringExtension.class)
 public class RuleServiceTest {
@@ -129,8 +130,7 @@ public class RuleServiceTest {
 
 	@Test
 	public void testImportRules() throws RulesetInterpreterException {
-		UserEntity user = new UserEntity();
-		user.setUsername("jdoe");
+		String user = "jdoe";
 		ruleService.importRules(Collections.singleton(rule.toDto()), user);
 
 		ArgumentCaptor<Iterable<RuleEntity>> argumentCaptor =
@@ -139,6 +139,6 @@ public class RuleServiceTest {
 		BDDMockito.verify(ruleRepository, Mockito.times(1)).flush();
 		Set<RuleEntity> rules = (Set<RuleEntity>) argumentCaptor.getValue();
 		Assertions.assertEquals(rule.getName(), rules.iterator().next().getName());
-		Assertions.assertEquals(user.getUsername(), rules.iterator().next().getAuthor());
+		Assertions.assertEquals(user, rules.iterator().next().getAuthor());
 	}
 }

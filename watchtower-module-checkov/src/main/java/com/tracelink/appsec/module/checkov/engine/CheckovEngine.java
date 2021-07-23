@@ -192,7 +192,7 @@ public class CheckovEngine {
 			}
 			CheckovRuleDto rule = new CheckovRuleDto();
 			rule.setCoreRule(true);
-			rule.setAuthor("core");
+			rule.setAuthor("system");
 			rule.setName(ruleLine[2].trim());
 			rule.setCheckovType(ruleLine[3].trim());
 			rule.setCheckovEntity(ruleLine[4].trim());

@@ -598,7 +598,7 @@ public class RulesetServiceTest {
 		BDDMockito.when(rulesetRepository.findByName("Mock-Ruleset")).thenReturn(defaultRuleset);
 		BDDMockito
 				.when(ruleService.importRules(BDDMockito.anySet(),
-						BDDMockito.any(UserEntity.class)))
+						BDDMockito.anyString()))
 				.thenReturn(Arrays.asList(rule));
 		rulesetService.importRuleset("mock", is, new UserEntity());
 
@@ -614,7 +614,7 @@ public class RulesetServiceTest {
 		BDDMockito.when(ruleService.getRule(rule.getName())).thenReturn(null);
 		BDDMockito
 				.when(ruleService.importRules(BDDMockito.anySet(),
-						BDDMockito.any(UserEntity.class)))
+						BDDMockito.anyString()))
 				.thenReturn(Arrays.asList(rule));
 		rulesetService.importRuleset("mock", is, new UserEntity());
 

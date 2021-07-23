@@ -14,6 +14,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Checkov is a scanner for Intrastructure As Code (IAC) maintained by Bridgecrew at
@@ -103,4 +104,8 @@ public class CheckovModule extends AbstractModule {
 						"Users may Edit Checkov rules in the Rule Editor. Caution! This privilege allows Code Execution on the Watchtower machine as Checkov runs directly as a python task"));
 	}
 
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		throw new RuntimeException("You didn't build this yet Chris");
+	}
 }

@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
 
@@ -106,12 +105,12 @@ public class RuleService {
 	 * Imports the given set of rule DTOs and stores each in the database. For each new rule entity,
 	 * assign the given user as the author of the rule.
 	 *
-	 * @param dtos set of rule DTOs to import
-	 * @param user user to assign as author of the rules
+	 * @param dtos       set of rule DTOs to import
+	 * @param authorName name to assign as author of the rules
 	 * @return list of database entity rules that have been imported
 	 * @throws RulesetInterpreterException if there is a rule that already exists with the same name
 	 */
-	public List<RuleEntity> importRules(Set<RuleDto> dtos, UserEntity user)
+	public List<RuleEntity> importRules(Set<RuleDto> dtos, String authorName)
 			throws RulesetInterpreterException {
 		Set<RuleEntity> rules = new HashSet<>();
 		for (RuleDto rule : dtos) {
@@ -120,11 +119,15 @@ public class RuleService {
 						+ " as another rule by that name already exists");
 			}
 			RuleEntity ruleEntity = rule.toEntity();
-			ruleEntity.setAuthor(user.getUsername());
+			ruleEntity.setAuthor(authorName);
 			rules.add(ruleEntity);
 		}
 		List<RuleEntity> saveRules = ruleRepository.saveAll(rules);
 		ruleRepository.flush();
 		return saveRules;
+	}
+
+	public RuleEntity saveRule(RuleEntity rule) {
+		return ruleRepository.saveAndFlush(rule);
 	}
 }

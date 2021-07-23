@@ -25,6 +25,7 @@ import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
 import com.tracelink.appsec.watchtower.core.rule.RuleEditorService;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 
@@ -211,5 +212,9 @@ public class AbstractModuleTest {
 			return null;
 		}
 
+		@Override
+		public List<RulesetDto> getProvidedRulesets() {
+			return null;
+		}
 	}
 }

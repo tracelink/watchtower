@@ -16,6 +16,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Module to hold implementations for Regex rules, scanner, designer, and XML model.
@@ -97,5 +98,10 @@ public class RegexModule extends AbstractModule {
 				new PrivilegeEntity().setName(REGEX_RULE_DESIGNER_PRIVILEGE_NAME)
 						.setCategory("Rule Designer").setDescription(
 								"User may create and test Regex rules in the Rule Designer."));
+	}
+
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		return null;
 	}
 }

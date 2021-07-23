@@ -151,9 +151,18 @@ public class RulesetService {
 	 *
 	 * @param id ID of the ruleset to delete
 	 * @throws RulesetNotFoundException if no ruleset with the given ID exists
+	 * @throws RulesetException         if the id belongs to a Provided ruleset
 	 */
-	public void deleteRuleset(long id) throws RulesetNotFoundException {
+	public void deleteRuleset(long id) throws RulesetNotFoundException, RulesetException {
 		RulesetEntity ruleset = getRuleset(id);
+		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			throw new RulesetException("Cannot delete a Provided ruleset");
+		}
+		deleteRulesetInternal(ruleset);
+	}
+
+	private void deleteRulesetInternal(RulesetEntity ruleset)
+			throws RulesetNotFoundException, RulesetException {
 		// Remove all rulesets and rules from this ruleset
 		ruleset.getRulesets().clear();
 		ruleset.getRules().clear();
@@ -183,6 +192,10 @@ public class RulesetService {
 	public void editRuleset(RulesetDto rulesetDto)
 			throws RulesetNotFoundException, RulesetException {
 		RulesetEntity ruleset = getRuleset(rulesetDto.getId());
+		// Check to avoid changing Provided rulesets
+		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			throw new RulesetException("Cannot modify a Provided Ruleset");
+		}
 		// Make sure values are not null or empty
 		if (StringUtils.isBlank(rulesetDto.getName())
 				|| StringUtils.isBlank(rulesetDto.getDescription())) {
@@ -230,6 +243,11 @@ public class RulesetService {
 	public void setInheritedRulesets(long rulesetId, List<Long> inheritedRulesetIds)
 			throws RulesetNotFoundException, RulesetException {
 		RulesetEntity ruleset = getRuleset(rulesetId);
+		// Check that we do not create inheritance on a Provided ruleset
+		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			throw new RulesetException(
+					"Cannot have a provided ruleset inherit from any other ruleset.");
+		}
 		Set<RulesetEntity> inheritedRulesets = new HashSet<>();
 		for (Long inheritedRulesetId : inheritedRulesetIds) {
 			RulesetEntity inheritedRuleset = getRuleset(inheritedRulesetId);
@@ -250,6 +268,7 @@ public class RulesetService {
 			throw new RulesetException("Supporting rulesets cannot inherit from primary rulesets.");
 		}
 		ruleset.setRulesets(inheritedRulesets);
+
 		rulesetRepository.saveAndFlush(ruleset);
 	}
 
@@ -295,9 +314,10 @@ public class RulesetService {
 		} else {
 			// Check that given ruleset is valid
 			RulesetEntity ruleset = getRuleset(rulesetId);
-			if (ruleset.getDesignation().equals(RulesetDesignation.SUPPORTING)) {
+			if (ruleset.getDesignation().equals(RulesetDesignation.SUPPORTING) ||
+					ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
 				throw new RulesetException(
-						"Cannot set a supporting ruleset as the default ruleset.");
+						"Can only set a primary ruleset as the default ruleset.");
 			}
 			// Set current default to primary
 			RulesetEntity defaultRuleset = getDefaultRuleset();
@@ -352,18 +372,22 @@ public class RulesetService {
 		}
 		// Convert ruleset to DTO
 		RulesetDto rulesetDto = getRulesetInterpreter(module).importRuleset(inputStream);
+		importRulesetInternal(rulesetDto, user.getUsername());
+	}
+
+	private void importRulesetInternal(RulesetDto rulesetDto, String authorName)
+			throws RulesetException, RulesetInterpreterException {
 		// Validate rules
 		validateRules(rulesetDto.getRules());
 		// Create ruleset if it does not already exist
-		RulesetEntity ruleset;
-		try {
-			ruleset = getRuleset(rulesetDto.getName());
-		} catch (RulesetNotFoundException e) {
+		RulesetEntity ruleset = rulesetRepository.findByName(rulesetDto.getName());
+		if (ruleset == null) {
 			ruleset = createRuleset(rulesetDto.getName(), rulesetDto.getDescription(),
 					RulesetDesignation.SUPPORTING);
 		}
+
 		// Import rules
-		List<RuleEntity> rules = ruleService.importRules(rulesetDto.getRules(), user);
+		List<RuleEntity> rules = ruleService.importRules(rulesetDto.getRules(), authorName);
 		// Set rules for the ruleset
 		ruleset.getRules().addAll(rules);
 		rulesetRepository.saveAndFlush(ruleset);
@@ -386,6 +410,9 @@ public class RulesetService {
 			throws RulesetNotFoundException, RulesetException, IOException,
 			RulesetInterpreterException {
 		RulesetDto rulesetDto = getRuleset(id).toDto();
+		if (rulesetDto.isProvided()) {
+			throw new RulesetException("Cannot export a Provided Ruleset");
+		}
 		// Check that there are rules to export
 		if (rulesetDto.getNumRules() == 0) {
 			throw new RulesetException(
@@ -534,5 +561,142 @@ public class RulesetService {
 		return interpreterMap.get(interpreter);
 	}
 
+	public void registerProvidedRulesets(String moduleName,
+			List<RulesetDto> incomingProvidedRulesets)
+			throws ModuleException {
+		/*
+		 * get all watchtower provided rulesets where the ruleset name fits the naming convention
+		 * for this module
+		 */
+		Map<String, RulesetDto> relevantWatchtowerProvidedRulesets =
+				getRulesets().stream().filter(
+						ruleset -> ruleset.isProvided() && ruleset.getName().startsWith(moduleName))
+						.collect(Collectors.toMap(RulesetDto::getName, r -> r));
+
+		for (RulesetDto incomingRulesetDto : incomingProvidedRulesets) {
+			// Make sure ruleset is designated properly
+			if (!incomingRulesetDto.isProvided()) {
+				throw new ModuleException(
+						"Trying to register a provided ruleset, but not designated correctly. Module "
+								+ moduleName + " ruleset " + incomingRulesetDto.getName());
+			}
+
+			// Ensure the correct naming convention of the provided ruleset
+			if (!incomingRulesetDto.getName().startsWith(moduleName)) {
+				incomingRulesetDto.setName(moduleName + " - " + incomingRulesetDto.getName());
+			}
+
+			// Look for the provided ruleset in the watchtower rulesets, remove it if found
+			RulesetDto foundWatchtowerRuleset =
+					relevantWatchtowerProvidedRulesets.remove(incomingRulesetDto.getName());
+
+			if (foundWatchtowerRuleset != null) {
+				// existing ruleset known by watchtower, update
+				updateExistingProvidedRuleset(incomingRulesetDto, foundWatchtowerRuleset);
+			} else {
+				// This is a new ruleset, so import it normally
+				try {
+					importRulesetInternal(incomingRulesetDto, "system");
+				} catch (RulesetException | RulesetInterpreterException e) {
+					throw new ModuleException(
+							"Failed to import Provided Ruleset: " + incomingRulesetDto.getName(),
+							e);
+				}
+			}
+		}
+		// Finally, check for orphaned watchtower rulesets (no longer provided)
+		removeDeprecatedProvidedRulesets(relevantWatchtowerProvidedRulesets);
+	}
+
+	private void updateExistingProvidedRuleset(RulesetDto incomingRulesetDto,
+			RulesetDto foundWatchtowerRuleset) throws ModuleException {
+		RulesetEntity watchtowerRuleset =
+				rulesetRepository.findByName(foundWatchtowerRuleset.getName());
+		// update the ruleset with the new values, if they exist
+		watchtowerRuleset.setBlockingLevel(incomingRulesetDto.getBlockingLevel());
+		watchtowerRuleset.setDescription(incomingRulesetDto.getDescription());
+
+		try {
+			// validate the new rules to make sure they conform as well
+			validateRules(incomingRulesetDto.getRules());
+		} catch (RulesetException e) {
+			throw new ModuleException("Rule validation failed for new provided ruleset rules", e);
+		}
+		Set<RuleEntity> newRulesetRules =
+				updateRulesInProvidedRuleset(incomingRulesetDto.getRules(),
+						foundWatchtowerRuleset.getRules());
+		// update the watchtower ruleset and save
+		watchtowerRuleset.setRules(newRulesetRules);
+		rulesetRepository.saveAndFlush(watchtowerRuleset);
+	}
+
+	private Set<RuleEntity> updateRulesInProvidedRuleset(Set<RuleDto> incomingRulesetRules,
+			Set<RuleDto> foundWatchtowerRulesetRules) throws ModuleException {
+		/*
+		 * this will track all rules from the incoming provided ruleset that we save
+		 */
+		Set<RuleEntity> newRulesetRules = new HashSet<RuleEntity>();
+
+		// now work on updating rules inside the new provided ruleset
+		for (RuleDto incomingRule : incomingRulesetRules) {
+			// this is do-able because the RuleDto has a comparator implementation
+			if (foundWatchtowerRulesetRules.contains(incomingRule)) {
+				/*
+				 * there's a matching Watchtower Rule in the found Ruleset for this incoming rule,
+				 * so update
+				 */
+				RuleEntity newRule = incomingRule.toEntity();
+				RuleEntity existingRule = ruleService.getRule(incomingRule.getName());
+				/*
+				 * take the id from the existing rule and attach it to the new rule to update the
+				 * reference
+				 */
+				newRule.setId(existingRule.getId());
+				newRule = ruleService.saveRule(newRule);
+				newRulesetRules.add(newRule);
+				// this is do-able because the RuleDto has a comparator implementation
+				foundWatchtowerRulesetRules.remove(incomingRule);
+			} else {
+				// this is a new rule to watchtower, add it to the ruleset
+				RuleEntity newRule = incomingRule.toEntity();
+				newRule = ruleService.saveRule(newRule);
+				newRulesetRules.add(newRule);
+			}
+		}
+		// Check that the original watchtower rules have all been found/updated
+		if (!foundWatchtowerRulesetRules.isEmpty()) {
+			// There are orphaned rules, so delete them
+			for (RuleDto leftoverRule : foundWatchtowerRulesetRules) {
+				try {
+					removeRuleFromAllRulesets(leftoverRule.getId());
+				} catch (RuleNotFoundException e) {
+					throw new ModuleException(
+							"Failed to remove orphaned rule during Provided ruleset registration. Rule: "
+									+ leftoverRule.getName(),
+							e);
+				}
+			}
+		}
+		return newRulesetRules;
+	}
+
+	private void removeDeprecatedProvidedRulesets(
+			Map<String, RulesetDto> relevantWatchtowerProvidedRulesets) throws ModuleException {
+		if (relevantWatchtowerProvidedRulesets.isEmpty()) {
+			return;
+		}
+		for (RulesetDto orphanedRuleset : relevantWatchtowerProvidedRulesets.values()) {
+			RulesetEntity orphanedEntity =
+					rulesetRepository.findByName(orphanedRuleset.getName());
+			try {
+				deleteRulesetInternal(orphanedEntity);
+			} catch (RulesetNotFoundException | RulesetException e) {
+				throw new ModuleException(
+						"Exception while deleting provided, orphaned ruleset: "
+								+ orphanedEntity.getName(),
+						e);
+			}
+		}
+	}
 
 }

@@ -78,7 +78,7 @@ public class RulesetMgmtController {
 			rulesetService.deleteRuleset(rulesetId);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully deleted ruleset.");
-		} catch (RulesetNotFoundException e) {
+		} catch (RulesetNotFoundException | RulesetException e) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Cannot delete ruleset. " + e.getMessage());
 		}

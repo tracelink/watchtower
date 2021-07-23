@@ -16,9 +16,9 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
 /**
- * Represents the data transfer object for the {@link RulesetEntity}. All rules
- * and rulesets contained in the entity are converted to DTOs. This class also
- * contains some convenience methods used in the UI.
+ * Represents the data transfer object for the {@link RulesetEntity}. All rules and rulesets
+ * contained in the entity are converted to DTOs. This class also contains some convenience methods
+ * used in the UI.
  *
  * @author mcool
  */
@@ -115,16 +115,23 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	/**
 	 * Determines whether this ruleset is a supporting ruleset.
 	 *
-	 * @return true if this ruleset has the supporting designation, false
-	 * otherwise
+	 * @return true if this ruleset has the supporting designation, false otherwise
 	 */
 	public boolean isSupporting() {
 		return designation.equals(RulesetDesignation.SUPPORTING);
 	}
 
 	/**
-	 * Gets the number of unique rules in this ruleset, including inherited
-	 * rules.
+	 * Determines whether this ruleset is a provided ruleset.
+	 *
+	 * @return true if this ruleset has the provided designation, false otherwise
+	 */
+	public boolean isProvided() {
+		return designation.equals(RulesetDesignation.PROVIDED);
+	}
+
+	/**
+	 * Gets the number of unique rules in this ruleset, including inherited rules.
 	 *
 	 * @return number of unique rules in this ruleset
 	 */
@@ -133,8 +140,8 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	}
 
 	/**
-	 * Gets a map of all inherited rules. The key is the rule DTO and the value
-	 * is the name of the ruleset it is inherited from.
+	 * Gets a map of all inherited rules. The key is the rule DTO and the value is the name of the
+	 * ruleset it is inherited from.
 	 *
 	 * @return map from rule to ruleset it is inherited from
 	 */
@@ -163,8 +170,8 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	}
 
 	/**
-	 * Gets a set of all rules contained in this ruleset, including those that
-	 * are inherited from other rulesets.
+	 * Gets a set of all rules contained in this ruleset, including those that are inherited from
+	 * other rulesets.
 	 *
 	 * @return set of all rules in this ruleset
 	 */
