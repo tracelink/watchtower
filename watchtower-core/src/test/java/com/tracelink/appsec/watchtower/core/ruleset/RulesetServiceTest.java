@@ -43,6 +43,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
 import com.tracelink.appsec.watchtower.core.mock.MockRule;
+import com.tracelink.appsec.watchtower.core.mock.MockRuleDto;
 import com.tracelink.appsec.watchtower.core.mock.MockRuleset;
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
@@ -878,7 +879,7 @@ public class RulesetServiceTest {
 	private static class MockInvalidRuleXmlModel extends AbstractRuleImpexModel {
 		@Override
 		public RuleDto toDto() {
-			RuleDto dto = new MockRule().toDto();
+			MockRuleDto dto = new MockRule().toDto();
 			dto.setId(null);
 			dto.setAuthor(null);
 			dto.setMessage("");

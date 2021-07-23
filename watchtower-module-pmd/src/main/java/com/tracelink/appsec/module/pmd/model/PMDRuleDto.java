@@ -10,6 +10,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
+import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
 /**
@@ -18,7 +19,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  * @author mcool
  */
-public class PMDRuleDto extends RuleDto {
+public class PMDRuleDto extends CustomRuleDto {
 
 	@NotNull(message = "Parser language" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Parser language" + CANNOT_BE_EMPTY)

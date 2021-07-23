@@ -1,11 +1,14 @@
 package com.tracelink.appsec.module.regex.model;
 
-import com.tracelink.appsec.module.regex.RegexModule;
-import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import java.util.regex.Pattern;
+
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+
+import com.tracelink.appsec.module.regex.RegexModule;
+import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
 /**
  * Represents a data transfer object for the {@link RegexRuleEntity}. All fields in this object are
@@ -13,7 +16,7 @@ import javax.validation.constraints.Size;
  *
  * @author mcool
  */
-public class RegexRuleDto extends RuleDto {
+public class RegexRuleDto extends CustomRuleDto {
 
 	@NotNull(message = "File extension" + CANNOT_BE_NULL)
 	@Size(max = 255, message = "File extension cannot have a length of more than 256 characters.")

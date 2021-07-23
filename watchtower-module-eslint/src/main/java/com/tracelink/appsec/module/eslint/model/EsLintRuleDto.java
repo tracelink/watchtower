@@ -1,22 +1,24 @@
 package com.tracelink.appsec.module.eslint.model;
 
-import com.tracelink.appsec.module.eslint.EsLintModule;
-import com.tracelink.appsec.watchtower.core.rule.RuleDto;
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
 
+import com.tracelink.appsec.module.eslint.EsLintModule;
+import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+
 /**
- * Represents a data transfer object for the {@link EsLintRuleEntity}. All fields in this object
- * are in plain text. Contains ESLint-specific fields and inherits fields from the {@link RuleDto}.
+ * Represents a data transfer object for the {@link EsLintRuleEntity}. All fields in this object are
+ * in plain text. Contains ESLint-specific fields and inherits fields from the {@link RuleDto}.
  *
  * @author mcool
  */
-public class EsLintRuleDto extends RuleDto {
+public class EsLintRuleDto extends CustomRuleDto {
 
 	private boolean core = false;
 
@@ -26,10 +28,9 @@ public class EsLintRuleDto extends RuleDto {
 	private String createFunction;
 
 	/*
-	 * OPTIONAL FIELDS
-	 * The remaining fields are included in the ESLint rule model, but are not useful for
-	 * Watchtower. They are included here to support compatibility with preexisting rules so that
-	 * we do not lose any information on ruleset import/export.
+	 * OPTIONAL FIELDS The remaining fields are included in the ESLint rule model, but are not
+	 * useful for Watchtower. They are included here to support compatibility with preexisting rules
+	 * so that we do not lose any information on ruleset import/export.
 	 */
 
 	private EsLintRuleType type;

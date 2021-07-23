@@ -1,6 +1,7 @@
 package com.tracelink.appsec.module.checkov.model;
 
 import com.tracelink.appsec.module.checkov.CheckovModule;
+import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
 /**
@@ -10,7 +11,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  * @author csmith
  *
  */
-public class CheckovRuleDto extends RuleDto {
+public class CheckovRuleDto extends CustomRuleDto {
 
 	private boolean coreRule;
 	private String type;

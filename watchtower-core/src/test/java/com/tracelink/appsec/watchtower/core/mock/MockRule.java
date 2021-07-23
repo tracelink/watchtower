@@ -1,6 +1,5 @@
 package com.tracelink.appsec.watchtower.core.mock;
 
-import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
@@ -21,7 +20,7 @@ public class MockRule extends RuleEntity {
 	}
 
 	@Override
-	public RuleDto toDto() {
+	public MockRuleDto toDto() {
 		MockRuleDto dto = new MockRuleDto();
 		dto.setId(1L);
 		dto.setAuthor(getAuthor());

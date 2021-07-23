@@ -5,6 +5,7 @@ import javax.validation.constraints.NotNull;
 
 import com.jayway.jsonpath.JsonPath;
 import com.tracelink.appsec.module.json.JsonModule;
+import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
 /**
@@ -13,7 +14,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  * @author csmith
  */
-public class JsonRuleDto extends RuleDto {
+public class JsonRuleDto extends CustomRuleDto {
 
 	@NotNull(message = "File extension" + CANNOT_BE_NULL)
 	private String fileExtension;

@@ -27,26 +27,10 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	@Size(max = 100, message = "Name cannot have a length of more than 100 characters.")
 	private String name;
 
-	@NotNull(message = "Message" + CANNOT_BE_NULL)
-	@NotEmpty(message = "Message" + CANNOT_BE_EMPTY)
-	private String message;
-
-	@NotNull(message = "External URL" + CANNOT_BE_NULL)
-	@NotEmpty(message = "External URL" + CANNOT_BE_EMPTY)
-	@Size(max = 255, message = "External URL cannot have a length of more than 256 characters.")
-	private String externalUrl;
-
 	@NotNull(message = "Priority" + CANNOT_BE_NULL)
 	private RulePriority priority;
 
 	private Set<String> rulesets = new TreeSet<>();
-
-	/**
-	 * This returns the name of the module that the rule is associated with.
-	 *
-	 * @return module name, representing the rule type
-	 */
-	public abstract String getModule();
 
 	public Long getId() {
 		return id;
@@ -72,22 +56,6 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 		this.name = name;
 	}
 
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public String getExternalUrl() {
-		return externalUrl;
-	}
-
-	public void setExternalUrl(String externalUrl) {
-		this.externalUrl = externalUrl;
-	}
-
 	public RulePriority getPriority() {
 		return priority;
 	}
@@ -108,6 +76,24 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	public int compareTo(RuleDto o) {
 		return getName().compareTo(o.getName());
 	}
+
+	/**
+	 * This returns the name of the module that the rule is associated with.
+	 *
+	 * @return module name, representing the rule type
+	 */
+	public abstract String getModule();
+
+	public abstract String getMessage();
+
+	public abstract String getExternalUrl();
+
+	/**
+	 * Returns true if this rule was provided by a Module
+	 * 
+	 * @return true if this rule was provided by a Module, false if it is custom
+	 */
+	public abstract boolean isProvidedRule();
 
 	/**
 	 * Converts this data transfer object into a database entity object. Used to help import rules

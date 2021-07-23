@@ -19,7 +19,7 @@ public class RuleDtoTest {
 		String url = "https://example.com/MockRule";
 		Set<String> rulesets = Collections.singleton("Mock Ruleset");
 		RulePriority priority = RulePriority.MEDIUM;
-		RuleDto dto = new MockRuleDto();
+		CustomRuleDto dto = new MockRuleDto();
 		dto.setId(id);
 		dto.setAuthor(author);
 		dto.setName(name);
