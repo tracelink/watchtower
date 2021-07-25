@@ -21,6 +21,8 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +49,7 @@ import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
  */
 @Service
 public class RulesetService {
+	private static final Logger LOG = LoggerFactory.getLogger(RulesetService.class);
 
 	private RulesetRepository rulesetRepository;
 	private RuleService ruleService;
@@ -592,9 +595,13 @@ public class RulesetService {
 
 			if (foundWatchtowerRuleset != null) {
 				// existing ruleset known by watchtower, update
+				LOG.debug("Found Watchtower Ruleset for name %s, updating",
+						incomingRulesetDto.getName());
 				updateExistingProvidedRuleset(incomingRulesetDto, foundWatchtowerRuleset);
 			} else {
 				// This is a new ruleset, so import it normally
+				LOG.debug("No existing Watchtower Ruleset for name %s, importing as new",
+						incomingRulesetDto.getName());
 				try {
 					importRulesetInternal(incomingRulesetDto, "system");
 				} catch (RulesetException | RulesetInterpreterException e) {
@@ -645,6 +652,8 @@ public class RulesetService {
 				 * there's a matching Watchtower Rule in the found Ruleset for this incoming rule,
 				 * so update
 				 */
+				LOG.debug("Found Watchtower Rule for name %s", incomingRule.getName());
+
 				RuleEntity newRule = incomingRule.toEntity();
 				RuleEntity existingRule = ruleService.getRule(incomingRule.getName());
 				/*
@@ -658,6 +667,7 @@ public class RulesetService {
 				foundWatchtowerRulesetRules.remove(incomingRule);
 			} else {
 				// this is a new rule to watchtower, add it to the ruleset
+				LOG.debug("New Watchtower Rule for name %s", incomingRule.getName());
 				RuleEntity newRule = incomingRule.toEntity();
 				newRule = ruleService.saveRule(newRule);
 				newRulesetRules.add(newRule);
@@ -666,7 +676,10 @@ public class RulesetService {
 		// Check that the original watchtower rules have all been found/updated
 		if (!foundWatchtowerRulesetRules.isEmpty()) {
 			// There are orphaned rules, so delete them
+			LOG.debug("Found orphaned rules. Deleting %d rules",
+					foundWatchtowerRulesetRules.size());
 			for (RuleDto leftoverRule : foundWatchtowerRulesetRules) {
+				LOG.debug("Deleting orphaned rule: %s", leftoverRule.getName());
 				try {
 					removeRuleFromAllRulesets(leftoverRule.getId());
 				} catch (RuleNotFoundException e) {
@@ -685,7 +698,9 @@ public class RulesetService {
 		if (relevantWatchtowerProvidedRulesets.isEmpty()) {
 			return;
 		}
+		LOG.debug("Found %s deprecated rulesets", relevantWatchtowerProvidedRulesets.size());
 		for (RulesetDto orphanedRuleset : relevantWatchtowerProvidedRulesets.values()) {
+			LOG.debug("Deleting ruleset: %s and all sub-rules", orphanedRuleset.getName());
 			RulesetEntity orphanedEntity =
 					rulesetRepository.findByName(orphanedRuleset.getName());
 			try {
@@ -698,5 +713,4 @@ public class RulesetService {
 			}
 		}
 	}
-
 }
