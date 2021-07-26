@@ -3,7 +3,6 @@ package com.tracelink.appsec.module.checkov.model;
 import java.util.stream.Collectors;
 
 import javax.persistence.Column;
-import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
@@ -20,8 +19,8 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 @Table(name = "checkov_rules")
 public class CheckovRuleEntity extends RuleEntity {
 
-	@Column(name = "core")
-	private boolean coreRule;
+	@Column(name = "checkovrulename")
+	private String checkovRuleName;
 
 	@Column(name = "checkovtype")
 	private String type;
@@ -32,37 +31,31 @@ public class CheckovRuleEntity extends RuleEntity {
 	@Column(name = "iac")
 	private String iac;
 
-	@Column(name = "code")
-	@Convert(converter = HexStringConverter.class)
-	private String code;
-
 	@Override
-	public CheckovRuleDto toDto() {
+	public CheckovProvidedRuleDto toDto() {
 		// Set inherited fields
-		CheckovRuleDto dto = new CheckovRuleDto();
+		CheckovProvidedRuleDto dto = new CheckovProvidedRuleDto();
 		dto.setId(getId());
-		dto.setAuthor(getAuthor());
 		dto.setName(getName());
+		dto.setCheckovRuleName(getCheckovRuleName());
 		dto.setMessage(getMessage());
-		dto.setExternalUrl(getExternalUrl());
+		dto.setGuidelineUrl(getExternalUrl());
 		dto.setPriority(getPriority());
 		dto.setRulesets(
 				getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
 		// Set Checkov-specific fields
-		dto.setCoreRule(isCoreRule());
 		dto.setCheckovType(getType());
 		dto.setCheckovEntity(getEntity());
 		dto.setCheckovIac(getIac());
-		dto.setCode(getCode());
 		return dto;
 	}
 
-	public boolean isCoreRule() {
-		return coreRule;
+	public String getCheckovRuleName() {
+		return checkovRuleName;
 	}
 
-	public void setCoreRule(boolean coreRule) {
-		this.coreRule = coreRule;
+	public void setCheckovRuleName(String checkovRuleName) {
+		this.checkovRuleName = checkovRuleName;
 	}
 
 	public String getType() {
@@ -89,11 +82,4 @@ public class CheckovRuleEntity extends RuleEntity {
 		this.iac = iac;
 	}
 
-	public String getCode() {
-		return code;
-	}
-
-	public void setCode(String code) {
-		this.code = code;
-	}
 }

@@ -11,6 +11,8 @@ import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.service.AuthConfigurationService;
@@ -196,9 +198,6 @@ public abstract class AbstractModule {
 			if (getRuleDesigner() != null) {
 				ruleDesignerService.registerRuleDesigner(getName(), getRuleDesigner());
 			}
-			if (getProvidedRulesets() != null) {
-				rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
-			}
 			List<PrivilegeEntity> privileges = getModulePrivileges();
 			if (privileges != null) {
 				for (PrivilegeEntity privilege : privileges) {
@@ -207,7 +206,14 @@ public abstract class AbstractModule {
 				}
 			}
 		} catch (ModuleException e) {
-			throw new RuntimeException("Error registering scanner " + name + ": " + e.getMessage());
+			throw new RuntimeException("Error registering scanner " + name, e);
+		}
+	}
+
+	@EventListener
+	public void onApplicationEvent(ContextRefreshedEvent event) throws ModuleException {
+		if (getProvidedRulesets() != null) {
+			rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
 		}
 	}
 }

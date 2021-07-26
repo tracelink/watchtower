@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -106,7 +107,7 @@ public class RuleService {
 	 * assign the given user as the author of the rule.
 	 *
 	 * @param dtos       set of rule DTOs to import
-	 * @param authorName name to assign as author of the rules
+	 * @param authorName name to assign as author of the rules, if they are not provided rules
 	 * @return list of database entity rules that have been imported
 	 * @throws RulesetInterpreterException if there is a rule that already exists with the same name
 	 */
@@ -119,7 +120,9 @@ public class RuleService {
 						+ " as another rule by that name already exists");
 			}
 			RuleEntity ruleEntity = rule.toEntity();
-			ruleEntity.setAuthor(authorName);
+			if (StringUtils.isBlank(ruleEntity.getAuthor())) {
+				ruleEntity.setAuthor(authorName);
+			}
 			rules.add(ruleEntity);
 		}
 		List<RuleEntity> saveRules = ruleRepository.saveAll(rules);

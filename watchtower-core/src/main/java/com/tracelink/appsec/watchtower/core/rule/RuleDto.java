@@ -18,10 +18,6 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	protected static final String CANNOT_BE_EMPTY = " cannot be empty.";
 	private Long id;
 
-	@NotNull(message = "Author" + CANNOT_BE_NULL)
-	@NotEmpty(message = "Author" + CANNOT_BE_EMPTY)
-	private String author;
-
 	@NotNull(message = "Name" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Name" + CANNOT_BE_EMPTY)
 	@Size(max = 100, message = "Name cannot have a length of more than 100 characters.")
@@ -38,14 +34,6 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public String getAuthor() {
-		return author;
-	}
-
-	public void setAuthor(String author) {
-		this.author = author;
 	}
 
 	public String getName() {
@@ -84,16 +72,13 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	 */
 	public abstract String getModule();
 
+	public abstract String getAuthor();
+
 	public abstract String getMessage();
 
 	public abstract String getExternalUrl();
 
-	/**
-	 * Returns true if this rule was provided by a Module
-	 * 
-	 * @return true if this rule was provided by a Module, false if it is custom
-	 */
-	public abstract boolean isProvidedRule();
+	public abstract RuleDesignation getRuleDesignation();
 
 	/**
 	 * Converts this data transfer object into a database entity object. Used to help import rules

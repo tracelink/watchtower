@@ -1,6 +1,6 @@
 package com.tracelink.appsec.module.checkov.interpreter;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -16,7 +16,7 @@ public class CheckovRulesetInterpreterTest {
 	@Test
 	public void testImportNonCoreRules() {
 		CheckovEngine mockEngine = BDDMockito.mock(CheckovEngine.class);
-		BDDMockito.when(mockEngine.getCoreRules()).thenReturn(new HashMap<>());
+		BDDMockito.when(mockEngine.getCoreRules()).thenReturn(new ArrayList<>());
 
 		CheckovRulesetJsonModel ruleset = new CheckovRulesetJsonModel();
 		CheckovCoreRuleModel coreRule = new CheckovCoreRuleModel();
@@ -28,7 +28,8 @@ public class CheckovRulesetInterpreterTest {
 			interpreter.importInternal(ruleset);
 			Assertions.fail("Should throw exception");
 		} catch (RulesetInterpreterException e) {
-			MatcherAssert.assertThat(e.getMessage(), Matchers.containsString("not Checkov Core Rules"));
+			MatcherAssert.assertThat(e.getMessage(),
+					Matchers.containsString("not Checkov Core Rules"));
 		}
 
 	}

@@ -5,11 +5,10 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.module.checkov.model.CheckovRuleEntity;
 import com.tracelink.appsec.module.checkov.repository.CheckovRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
 
 /**
  * Service definition for managing Checkov Rules
@@ -39,23 +38,16 @@ public class CheckovRuleService {
 	/**
 	 * Edit the saved rule given the input rule
 	 * 
-	 * @param dto the {@linkplain CheckovRuleDto} with changes to save
+	 * @param dto the {@linkplain CheckovProvidedRuleDto} with changes to save
 	 * @throws RuleNotFoundException if there is no corresponding rule already saved
-	 * @throws RuleEditorException   if the rule is attempting to edit something illegal (e.g. a
-	 *                               core rule cannot edit a custom rule)
 	 */
-	public void editRule(@Valid CheckovRuleDto dto)
-			throws RuleNotFoundException, RuleEditorException {
+	public void editProvidedRule(@Valid CheckovProvidedRuleDto dto)
+			throws RuleNotFoundException {
 		CheckovRuleEntity rule = getRule(dto.getId());
 		if (rule == null) {
-			throw new RuleNotFoundException("No such Checkov rule exists.");
+			throw new RuleNotFoundException("No such Checkov Provided rule exists.");
 		}
-		if (rule.isCoreRule()) {
-			// Only allowed to edit the priority field
-			rule.setPriority(dto.getPriority());
-		} else {
-			throw new RuleEditorException("Unknown Rule. Only supports Core Rules");
-		}
+		rule.setPriority(dto.getPriority());
 		ruleRepository.saveAndFlush(rule);
 	}
 

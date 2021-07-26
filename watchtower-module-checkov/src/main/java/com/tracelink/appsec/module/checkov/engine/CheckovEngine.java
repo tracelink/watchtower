@@ -6,9 +6,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,7 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 import kong.unirest.Unirest;
 
@@ -42,9 +45,11 @@ public class CheckovEngine {
 
 	private static final String EXPECTED_CHECKOV_VERSION = "2.0.257";
 
-	private final Map<String, CheckovRuleDto> coreRules;
+	private final Map<String, RulesetDto> coreRulesets;
 
 	private final Gson gson;
+
+	private List<CheckovProvidedRuleDto> coreRules;
 
 	public CheckovEngine() {
 		gson = new Gson();
@@ -53,10 +58,18 @@ public class CheckovEngine {
 			LOG.info("Python installed correctly");
 			installCheckov();
 			LOG.info("Checkov installed correctly");
-			coreRules = Collections.unmodifiableMap(populateCoreRules());
+			coreRulesets = Collections.unmodifiableMap(populateCoreRulesets());
+			coreRules = Collections.unmodifiableList(populateCoreRules(coreRulesets));
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to create Checkov Engine", e);
 		}
+	}
+
+	private List<CheckovProvidedRuleDto> populateCoreRules(
+			Map<String, RulesetDto> coreRulesets) {
+		return coreRulesets.values().stream().flatMap(ruleset -> ruleset.getRules().stream())
+				.map(r -> (CheckovProvidedRuleDto) r)
+				.collect(Collectors.toList());
 	}
 
 	private void testPythonVersion() throws IOException {
@@ -105,7 +118,6 @@ public class CheckovEngine {
 		if (pipResult.hasErrors()) {
 			LOG.warn("Error during virtualenv pip install: " + pipResult.getErrors());
 		}
-		LOG.info(pipResult.getResults());
 		checkovVersionNumResult = runCheckovCommand("-v");
 		if (checkovVersionNumResult.hasResults()
 				&& checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
@@ -175,34 +187,54 @@ public class CheckovEngine {
 		return result;
 	}
 
-	public Map<String, CheckovRuleDto> getCoreRules() {
+	public Map<String, RulesetDto> getCoreRulesets() {
+		return coreRulesets;
+	}
+
+	public List<CheckovProvidedRuleDto> getCoreRules() {
 		return coreRules;
 	}
 
-	private Map<String, CheckovRuleDto> populateCoreRules() throws IOException {
+	private Map<String, RulesetDto> populateCoreRulesets() throws IOException {
 		ProcessResult rulesResult = runCheckovCommand("--list");
 		kong.unirest.json.JSONObject guidelines =
 				Unirest.get(BRIDGECREW_GUIDELINES).asJson()
 						.getBody().getObject().getJSONObject("guidelines");
-		Map<String, CheckovRuleDto> coreRules = new LinkedHashMap<>();
+		Map<String, RulesetDto> coreRulesets = new TreeMap<>();
 		Stream.of(rulesResult.getResults().split("\\r?\\n")).skip(2).forEachOrdered(r -> {
 			String[] ruleLine = r.split("\\|");
 			if (ruleLine.length != 7) {
 				return;
 			}
-			CheckovRuleDto rule = new CheckovRuleDto();
-			rule.setCoreRule(true);
-			rule.setAuthor("system");
-			rule.setName(ruleLine[2].trim());
-			rule.setCheckovType(ruleLine[3].trim());
-			rule.setCheckovEntity(ruleLine[4].trim());
-			rule.setMessage(ruleLine[5].trim());
-			rule.setCheckovIac(ruleLine[6].trim());
+			CheckovProvidedRuleDto rule = new CheckovProvidedRuleDto();
+			String name = ruleLine[2].trim();
+			String type = ruleLine[3].trim();
+			String entity = ruleLine[4].trim();
+			String message = ruleLine[5].trim();
+			String iac = ruleLine[6].trim();
+			rule.setName(iac + "-" + name);
+			rule.setCheckovRuleName(name);
+			rule.setCheckovType(type);
+			rule.setCheckovEntity(entity);
+			rule.setMessage(message);
+			rule.setCheckovIac(iac);
 			String url = guidelines.optString(rule.getName(), "#");
-			rule.setExternalUrl(url);
-			coreRules.put(rule.getName(), rule);
+			rule.setGuidelineUrl(url);
+			rule.setPriority(RulePriority.LOW);
+
+			RulesetDto ruleset = coreRulesets.get(rule.getCheckovIac());
+			if (ruleset == null) {
+				ruleset = new RulesetDto();
+				ruleset.setBlockingLevel(RulePriority.LOW);
+				ruleset.setDescription(
+						"Checkov Provided Ruleset for " + rule.getCheckovIac() + " rules");
+				ruleset.setDesignation(RulesetDesignation.PROVIDED);
+				ruleset.setName(rule.getCheckovIac());
+				coreRulesets.put(rule.getCheckovIac(), ruleset);
+			}
+			ruleset.getRules().add(rule);
 		});
-		return coreRules;
+		return coreRulesets;
 	}
 
 	/**
@@ -217,12 +249,13 @@ public class CheckovEngine {
 	 * @return a json object of the result from checkov
 	 */
 	public JsonObject runCheckovDirectoryScan(Path targetDirectory,
-			List<CheckovRuleDto> ruleChecks) {
+			List<CheckovProvidedRuleDto> ruleChecks) {
 		ProcessResult results;
 		JsonObject json = new JsonObject();
 		try {
 			results = runCheckovCommand("-d", targetDirectory.toString(), "--quiet", "--no-guide",
-					"-o", "json", "-c", ruleChecks.stream().map(CheckovRuleDto::getName)
+					"-o", "json", "-c",
+					ruleChecks.stream().map(CheckovProvidedRuleDto::getCheckovRuleName)
 							.collect(Collectors.joining(",")));
 			json = gson.fromJson(results.getResults(), JsonObject.class);
 		} catch (Exception e) {

@@ -25,6 +25,7 @@ import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpret
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
@@ -180,6 +181,7 @@ public abstract class ScannerModuleTest {
 		RulesetDto rulesetDto = new RulesetDto();
 		rulesetDto.setName("test");
 		rulesetDto.setDescription("test");
+		rulesetDto.setDesignation(RulesetDesignation.SUPPORTING);
 		rulesetDto.setRules(Collections.singleton(this.scannerTester.getRuleSupplier().get()));
 
 		Path temp = Files.createTempFile(null, null);

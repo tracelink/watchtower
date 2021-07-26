@@ -2,6 +2,7 @@ package com.tracelink.appsec.module.checkov;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.tracelink.appsec.module.checkov.editor.CheckovRuleEditor;
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
@@ -106,6 +107,7 @@ public class CheckovModule extends AbstractModule {
 
 	@Override
 	public List<RulesetDto> getProvidedRulesets() {
-		throw new RuntimeException("You didn't build this yet Chris");
+		return engine.getCoreRulesets().values().stream()
+				.collect(Collectors.toList());
 	}
 }

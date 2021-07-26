@@ -1,6 +1,6 @@
 package com.tracelink.appsec.module.checkov;
 
-import java.util.Map;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.hamcrest.MatcherAssert;
@@ -8,7 +8,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -33,15 +33,17 @@ public class CheckovModuleTest extends ScannerModuleTest {
 
 	@Override
 	protected void configurePluginTester(ScannerModuleTestBuilder testPlan) {
-		Map<String, CheckovRuleDto> coreRules = engine.getCoreRules();
+		List<CheckovProvidedRuleDto> coreRules = engine.getCoreRules();
 		testPlan.withMigration("db/checkov").withName("Checkov")
 				.withRuleSupplier(() -> {
-					CheckovRuleDto rule =
-							coreRules.entrySet().stream().findFirst().get().getValue();
+					// CKV_AWS_9 only has 1 implementation IaC
+					CheckovProvidedRuleDto rule =
+							coreRules.stream().filter(r -> r.getName().equals("CKV_AWS_9"))
+									.findFirst().get();
 					rule.setPriority(RulePriority.HIGH);
 					return rule;
 				}).withSchemaName("checkov_schema_history")
-				.withSupportedRuleClass(CheckovRuleDto.class)
+				.withSupportedRuleClass(CheckovProvidedRuleDto.class)
 				.andIgnoreTestOption(ScannerModuleTestOption.DESIGNER)
 				.withTestScanConfigurationBuilder(
 						new TestScanConfiguration()
@@ -51,7 +53,7 @@ public class CheckovModuleTest extends ScannerModuleTest {
 										setName("testRuleset");
 										setDescription("description");
 										setRules(
-												coreRules.values().stream()
+												coreRules.stream()
 														.peek(r -> r.setPriority(RulePriority.HIGH))
 														.collect(Collectors.toSet()));
 									}
@@ -60,7 +62,7 @@ public class CheckovModuleTest extends ScannerModuleTest {
 									MatcherAssert.assertThat(report.getErrors(),
 											Matchers.hasSize(0));
 									MatcherAssert.assertThat(report.getViolations(),
-											Matchers.hasSize(4));
+											Matchers.hasSize(7));
 								}));
 	}
 }

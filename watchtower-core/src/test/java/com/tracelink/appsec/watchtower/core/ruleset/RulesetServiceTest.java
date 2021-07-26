@@ -845,7 +845,6 @@ public class RulesetServiceTest {
 		public RuleDto toDto() {
 			RuleDto dto = new MockRule().toDto();
 			dto.setId(null);
-			dto.setAuthor(null);
 			return dto;
 		}
 	}

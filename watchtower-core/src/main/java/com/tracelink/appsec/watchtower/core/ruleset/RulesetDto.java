@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotEmpty;
@@ -96,7 +95,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	}
 
 	public Set<RuleDto> getRules() {
-		return new TreeSet<>(rules);
+		return rules;
 	}
 
 	public void setRules(Set<RuleDto> rules) {
@@ -109,7 +108,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 * @return true if this ruleset has the default designation, false otherwise
 	 */
 	public boolean isDefault() {
-		return designation.equals(RulesetDesignation.DEFAULT);
+		return RulesetDesignation.DEFAULT.equals(designation);
 	}
 
 	/**
@@ -118,7 +117,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 * @return true if this ruleset has the supporting designation, false otherwise
 	 */
 	public boolean isSupporting() {
-		return designation.equals(RulesetDesignation.SUPPORTING);
+		return RulesetDesignation.SUPPORTING.equals(designation);
 	}
 
 	/**
@@ -127,7 +126,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 * @return true if this ruleset has the provided designation, false otherwise
 	 */
 	public boolean isProvided() {
-		return designation.equals(RulesetDesignation.PROVIDED);
+		return RulesetDesignation.PROVIDED.equals(designation);
 	}
 
 	/**
@@ -176,7 +175,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 * @return set of all rules in this ruleset
 	 */
 	public Set<RuleDto> getAllRules() {
-		Set<RuleDto> allRules = new TreeSet<>(rules);
+		Set<RuleDto> allRules = rules;
 		for (RulesetDto ruleset : rulesets) {
 			allRules.addAll(ruleset.getAllRules());
 		}

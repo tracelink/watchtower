@@ -6,6 +6,10 @@ import javax.validation.constraints.Size;
 
 public abstract class CustomRuleDto extends RuleDto {
 
+	@NotNull(message = "Author" + CANNOT_BE_NULL)
+	@NotEmpty(message = "Author" + CANNOT_BE_EMPTY)
+	private String author;
+
 	@NotNull(message = "Message" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Message" + CANNOT_BE_EMPTY)
 	private String message;
@@ -15,6 +19,16 @@ public abstract class CustomRuleDto extends RuleDto {
 	@Size(max = 255, message = "External URL cannot have a length of more than 256 characters.")
 	private String externalUrl;
 
+	@Override
+	public String getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(String author) {
+		this.author = author;
+	}
+
+	@Override
 	public String getMessage() {
 		return message;
 	}
@@ -23,6 +37,7 @@ public abstract class CustomRuleDto extends RuleDto {
 		this.message = message;
 	}
 
+	@Override
 	public String getExternalUrl() {
 		return externalUrl;
 	}
@@ -32,7 +47,7 @@ public abstract class CustomRuleDto extends RuleDto {
 	}
 
 	@Override
-	public boolean isProvidedRule() {
-		return false;
+	public RuleDesignation getRuleDesignation() {
+		return RuleDesignation.CUSTOM;
 	}
 }
