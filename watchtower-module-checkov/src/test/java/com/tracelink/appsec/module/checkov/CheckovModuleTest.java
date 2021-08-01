@@ -38,7 +38,8 @@ public class CheckovModuleTest extends ScannerModuleTest {
 				.withRuleSupplier(() -> {
 					// CKV_AWS_9 only has 1 implementation IaC
 					CheckovProvidedRuleDto rule =
-							coreRules.stream().filter(r -> r.getName().equals("CKV_AWS_9"))
+							coreRules.stream()
+									.filter(r -> r.getCheckovRuleName().equals("CKV_AWS_9"))
 									.findFirst().get();
 					rule.setPriority(RulePriority.HIGH);
 					return rule;

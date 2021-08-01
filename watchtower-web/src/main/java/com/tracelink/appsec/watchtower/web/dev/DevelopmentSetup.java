@@ -144,10 +144,6 @@ public class DevelopmentSetup {
 		}).start();
 	}
 
-	private UserEntity getAdminUser() {
-		return userService.findByUsername("admin");
-	}
-
 	private void addApiSettings() throws ApiIntegrationException {
 		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
 		entity.setApiLabel(API_LABEL_1);
@@ -187,7 +183,9 @@ public class DevelopmentSetup {
 	private void importRuleset(String module, String location) throws Exception {
 		try (InputStream rulesetStream = this.getClass().getClassLoader()
 				.getResourceAsStream(location)) {
-			rulesetService.importRuleset(module, rulesetStream, getAdminUser());
+			UserEntity admin = new UserEntity();
+			admin.setUsername("admin");
+			rulesetService.importRuleset(module, rulesetStream, admin);
 		}
 	}
 

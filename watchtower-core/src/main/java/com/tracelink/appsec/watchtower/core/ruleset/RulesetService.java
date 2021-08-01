@@ -382,6 +382,15 @@ public class RulesetService {
 			throws RulesetException, RulesetInterpreterException {
 		// Validate rules
 		validateRules(rulesetDto.getRules());
+		// Make sure rules do not already exist with the given names
+		for (RuleDto ruleDto : rulesetDto.getRules()) {
+			RuleEntity rule = ruleService.getRule(ruleDto.getName());
+			if (rule != null) {
+				// Fail if we find a rule
+				throw new RulesetException(
+						"A rule with the name \"" + ruleDto.getName() + "\" already exists.");
+			}
+		}
 		// Create ruleset if it does not already exist
 		RulesetEntity ruleset = rulesetRepository.findByName(rulesetDto.getName());
 		if (ruleset == null) {
@@ -543,15 +552,6 @@ public class RulesetService {
 									+ violation
 											.getMessage());
 				}
-			}
-		}
-		// Make sure rules do not already exist with the given names
-		for (T ruleDto : ruleDtos) {
-			RuleEntity rule = ruleService.getRule(ruleDto.getName());
-			if (rule != null) {
-				// Fail if we find a rule
-				throw new RulesetException(
-						"A rule with the name \"" + ruleDto.getName() + "\" already exists.");
 			}
 		}
 	}

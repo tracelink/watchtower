@@ -78,7 +78,7 @@ public class PMDScanner implements IScanner {
 			TimeTracker.startGlobalTracking();
 		}
 
-		PMD.doPMD(pmdConfig);
+		PMD.runPmd(pmdConfig);
 
 		if (config.isBenchmarkEnabled()) {
 			timing = TimeTracker.stopGlobalTracking();

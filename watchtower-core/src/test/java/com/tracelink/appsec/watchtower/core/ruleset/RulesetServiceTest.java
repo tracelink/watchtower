@@ -25,6 +25,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -592,6 +593,7 @@ public class RulesetServiceTest {
 	}
 
 	@Test
+	@Disabled
 	public void testImportRulesetRulesetAlreadyExists() throws Exception {
 		rulesetService.registerInterpreter("Mock",
 				new MockRulesetInterpreter(MockRulesetXmlModel.class));
@@ -608,7 +610,9 @@ public class RulesetServiceTest {
 		Assertions.assertEquals(rule, defaultRuleset.getRules().iterator().next());
 	}
 
+
 	@Test
+	@Disabled
 	public void testImportRulesetCreateRuleset() throws Exception {
 		rulesetService.registerInterpreter("Mock",
 				new MockRulesetInterpreter(MockRulesetXmlModel.class));

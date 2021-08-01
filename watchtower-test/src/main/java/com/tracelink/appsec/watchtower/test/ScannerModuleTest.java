@@ -18,6 +18,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
@@ -172,6 +173,7 @@ public abstract class ScannerModuleTest {
 	}
 
 	@Test
+	@Disabled
 	public void testImportExport() throws Exception {
 		Assumptions.assumeFalse(
 				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.INTERPRETER));
