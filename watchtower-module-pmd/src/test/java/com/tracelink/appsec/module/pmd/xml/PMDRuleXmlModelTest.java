@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
 public class PMDRuleXmlModelTest {
@@ -18,7 +18,6 @@ public class PMDRuleXmlModelTest {
 	private RulePriority priority = RulePriority.MEDIUM;
 	private String parserLanguage = "java";
 	private String ruleClass = "net.sourceforge.pmd.lang.rule.XPathRule";
-	private String description = "This is a bad practice.";
 	private String xpath = "//PrimaryPrefix[Name[starts-with(@Image,\"System.out\")";
 	private PMDRuleXmlModel pmdRuleXmlModel;
 
@@ -32,7 +31,6 @@ public class PMDRuleXmlModelTest {
 		pmdRuleXmlModel.setClazz(ruleClass);
 		pmdRuleXmlModel.setExternalUrl(externalUrl);
 		pmdRuleXmlModel.setPriority(priority.getPriority());
-		pmdRuleXmlModel.setDescription(description);
 		Property property = new Property();
 		property.setName("xpath");
 		property.setValue(xpath);
@@ -42,7 +40,7 @@ public class PMDRuleXmlModelTest {
 
 	@Test
 	public void testToDto() {
-		PMDRuleDto pmdRuleDto = (PMDRuleDto) pmdRuleXmlModel.toDto();
+		PMDCustomRuleDto pmdRuleDto = (PMDCustomRuleDto) pmdRuleXmlModel.toDto();
 		Assertions.assertEquals(PMDModule.PMD_MODULE_NAME, pmdRuleDto.getModule());
 		Assertions.assertNull(pmdRuleDto.getId());
 		Assertions.assertNull(pmdRuleDto.getAuthor());
@@ -52,7 +50,6 @@ public class PMDRuleXmlModelTest {
 		Assertions.assertEquals(priority, pmdRuleDto.getPriority());
 		Assertions.assertEquals(parserLanguage, pmdRuleDto.getParserLanguage());
 		Assertions.assertEquals(ruleClass, pmdRuleDto.getRuleClass());
-		Assertions.assertEquals(description, pmdRuleDto.getDescription());
 		Assertions.assertEquals("xpath", pmdRuleDto.getProperties().iterator().next().getName());
 		Assertions.assertEquals(xpath, pmdRuleDto.getProperties().iterator().next().getValue());
 	}

@@ -1,17 +1,33 @@
 package com.tracelink.appsec.module.pmd.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyEntity;
+import com.tracelink.appsec.module.pmd.model.PMDProvidedRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDRuleEntity;
 import com.tracelink.appsec.module.pmd.repository.PMDRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+
+import net.sourceforge.pmd.Rule;
+import net.sourceforge.pmd.RuleSet;
+import net.sourceforge.pmd.RuleSetLoader;
+import net.sourceforge.pmd.properties.PropertyDescriptor;
+import net.sourceforge.pmd.rules.RuleBuilder;
 
 /**
  * Handles logic to retrieve and edit PMD rules.
@@ -22,6 +38,9 @@ import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerExceptio
 public class PMDRuleService {
 
 	private final PMDRuleRepository ruleRepository;
+	private Map<PMDLanguageSupport, List<RulesetDto>> providedRulesetMap;
+	private Map<String, PMDProvidedRuleDto> providedRulesMap;
+	private Map<String, Rule> pmdOriginalRulesMap;
 
 	/**
 	 * Creates and instance of this service with a {@link PMDRuleRepository}.
@@ -48,13 +67,13 @@ public class PMDRuleService {
 	}
 
 	/**
-	 * Edits the PMD rule with the same ID as the given {@link PMDRuleDto}. Updates select fields of
-	 * the rule with values from the DTO.
+	 * Edits the PMD rule with the same ID as the given {@link PMDCustomRuleDto}. Updates select
+	 * fields of the rule with values from the DTO.
 	 *
 	 * @param dto rule DTO whose fields will be used to edit the PMD rule
 	 * @throws RuleNotFoundException if no PMD rule exists with the same ID as the given DTO
 	 */
-	public void editRule(PMDRuleDto dto) throws RuleNotFoundException {
+	public void editRule(PMDCustomRuleDto dto) throws RuleNotFoundException {
 		PMDRuleEntity rule = getRule(dto.getId());
 		// Set inherited fields
 		rule.setName(dto.getName());
@@ -62,7 +81,7 @@ public class PMDRuleService {
 		rule.setExternalUrl(dto.getExternalUrl());
 		rule.setPriority(dto.getPriority());
 		// Set PMD-specific fields
-		rule.setDescription(dto.getDescription());
+		// rule.setDescription(dto.getDescription());
 		// Set PMD properties
 		for (PMDPropertyEntity propertyEntity : rule.getProperties()) {
 			for (PMDPropertyDto propertyDto : dto.getProperties()) {
@@ -81,7 +100,7 @@ public class PMDRuleService {
 	 * @param dto the rule data to save
 	 * @throws RuleDesignerException if the rule name already exists
 	 */
-	public void saveNewRule(PMDRuleDto dto) throws RuleDesignerException {
+	public void saveNewRule(PMDCustomRuleDto dto) throws RuleDesignerException {
 		if (ruleRepository.findByName(dto.getName()) != null) {
 			throw new RuleDesignerException(
 					"Rule with the name " + dto.getName() + " already exists");
@@ -99,4 +118,103 @@ public class PMDRuleService {
 		ruleRepository.saveAndFlush(entity);
 	}
 
+	public Map<PMDLanguageSupport, List<RulesetDto>> getPMDProvidedRulesetsMap() {
+		if (providedRulesetMap == null) {
+			makePMDProvidedRulesMaps();
+		}
+		return providedRulesetMap;
+	}
+
+	public Map<String, PMDProvidedRuleDto> getPMDProvidedRulesMap() {
+		if (providedRulesMap == null) {
+			makePMDProvidedRulesMaps();
+		}
+		return providedRulesMap;
+	}
+
+	private Map<String, Rule> getPMDOriginalRulesMap() {
+		if (pmdOriginalRulesMap == null) {
+			makePMDProvidedRulesMaps();
+		}
+		return pmdOriginalRulesMap;
+	}
+
+	private void makePMDProvidedRulesMaps() {
+		Map<PMDLanguageSupport, List<RulesetDto>> providedRulesets = new TreeMap<>();
+		Map<String, PMDProvidedRuleDto> providedRules = new HashMap<>();
+		Map<String, Rule> originalRules = new HashMap<String, Rule>();
+		RuleSetLoader rsl = new RuleSetLoader();
+		List<RuleSet> rsList = rsl.getStandardRuleSets();
+		for (RuleSet rs : rsList) {
+			// if the rules in this ruleset match a supported language
+			if (rs.getRules().size() > 0) {
+				Optional<PMDLanguageSupport> support = PMDLanguageSupport
+						.getPMDLanguageSupport(rs.getRules().iterator().next().getLanguage());
+				if (support.isPresent()) {
+					PMDLanguageSupport languageSupport = support.get();
+					RulesetDto watchtowerRuleset = new RulesetDto();
+					watchtowerRuleset.setBlockingLevel(RulePriority.LOW);
+					watchtowerRuleset.setDescription(rs.getDescription());
+					watchtowerRuleset.setDesignation(RulesetDesignation.PROVIDED);
+					watchtowerRuleset
+							.setName(languageSupport.getLanguageName() + " " + rs.getName());
+					rs.getRules().forEach(rule -> {
+						// Create PMD Provided Rule
+						PMDProvidedRuleDto dto = new PMDProvidedRuleDto();
+						dto.setName(rule.getName());
+						dto.setMessage(rule.getMessage());
+						dto.setPriority(RulePriority.LOW);
+						dto.setExternalUrl(rule.getExternalInfoUrl());
+						// attach to the watchtowerRuleset
+						watchtowerRuleset.getRules().add(dto);
+						// add to the rules listing
+						providedRules.put(dto.getName(), dto);
+						originalRules.put(rule.getName(), rule);
+					});
+					List<RulesetDto> rulesetsForLanguage = providedRulesets.get(languageSupport);
+					if (rulesetsForLanguage == null) {
+						rulesetsForLanguage = new ArrayList<>();
+						providedRulesets.put(languageSupport, rulesetsForLanguage);
+					}
+					rulesetsForLanguage.add(watchtowerRuleset);
+				}
+			}
+		}
+		providedRulesetMap = providedRulesets;
+		providedRulesMap = providedRules;
+		pmdOriginalRulesMap = originalRules;
+	}
+
+	public Rule makeRuleFromDto(PMDRuleDto ruleDto) throws RuleNotFoundException {
+		Rule pmdRule;
+		if (ruleDto.isProvided()) {
+			PMDProvidedRuleDto provided = (PMDProvidedRuleDto) ruleDto;
+			pmdRule = getPMDOriginalRulesMap().get(provided.getName());
+			if (pmdRule == null) {
+				throw new RuleNotFoundException("Unknown Provided Rule " + provided.getName());
+			}
+		} else {
+			PMDCustomRuleDto custom = (PMDCustomRuleDto) ruleDto;
+			try {
+				RuleBuilder ruleBuilder = new RuleBuilder(custom.getName(), custom.getRuleClass(),
+						custom.getParserLanguage());
+				ruleBuilder.priority(custom.getPriority().getPriority());
+				ruleBuilder.message(custom.getMessage());
+				ruleBuilder.externalInfoUrl(custom.getExternalUrl());
+				ruleBuilder.description(custom.getMessage());
+				pmdRule = ruleBuilder.build();
+				custom.getProperties().stream()
+						.filter(prop -> (pmdRule.getPropertyDescriptor(prop.getName()) != null))
+						.forEach(prop -> {
+							PropertyDescriptor desc =
+									pmdRule.getPropertyDescriptor(prop.getName());
+							pmdRule.setProperty(desc, desc.valueFrom(prop.getValue()));
+						});
+			} catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+				throw new RuleNotFoundException(
+						"Cannot create custom PMD rule " + custom.getName(), e);
+			}
+		}
+		return pmdRule;
+	}
 }

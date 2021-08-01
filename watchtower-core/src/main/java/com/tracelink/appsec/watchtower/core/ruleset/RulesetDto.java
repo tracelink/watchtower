@@ -111,6 +111,10 @@ public class RulesetDto implements Comparable<RulesetDto> {
 		return RulesetDesignation.DEFAULT.equals(designation);
 	}
 
+	public boolean isPrimary() {
+		return RulesetDesignation.PRIMARY.equals(designation) || isDefault();
+	}
+
 	/**
 	 * Determines whether this ruleset is a supporting ruleset.
 	 *
@@ -175,7 +179,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 * @return set of all rules in this ruleset
 	 */
 	public Set<RuleDto> getAllRules() {
-		Set<RuleDto> allRules = rules;
+		Set<RuleDto> allRules = new HashSet<>(rules);
 		for (RulesetDto ruleset : rulesets) {
 			allRules.addAll(ruleset.getAllRules());
 		}

@@ -1,6 +1,6 @@
 <!-- Card Footer -->
 <div class="card-footer">
-    <p class="card-title text-left">Edit Rule Details</p>
+    <p class="card-title text-left" th:text="${'Edit ' + (rule.isProvided() ? 'Provided' : 'Custom') + ' Rule Details'}"/>
     <form class="d-inline" action="/rule/edit/pmd/edit" method="POST" th:object="${rule}">
         <div class="row mb-2">
             <label for="name" class="col-sm-2 col-form-label">Name</label>
@@ -17,9 +17,9 @@
                 </select>
             </div>
         </div>
-        <div class="row mb-2">
-            <label for="author" class="col-sm-2 col-form-label">Author</label>
-            <div class="col-sm-4">
+        <div class="row mb-2" th:unless="${rule.isProvided()}">
+	        <label for="author" class="control-label">Author</label>
+	        <div class="col-sm-4">
                 <input type="text" readonly class="form-control" id="author" th:value="${rule.author}"
                        name="author">
             </div>
@@ -29,7 +29,7 @@
                        th:value="${rule.parserLanguage}" name="parserLanguage">
             </div>
         </div>
-        <div class="row mb-2">
+        <div class="row mb-2" th:unless="${rule.isProvided()}">
             <label for="ruleClass" class="col-sm-2 col-form-label">Rule Class</label>
             <div class="col-sm-10">
                 <input type="text" readonly class="form-control" id="ruleClass"
@@ -43,7 +43,7 @@
                        name="message">
             </div>
         </div>
-        <div class="row mb-2">
+        <div class="row mb-2" th:unless="${rule.isProvided()}">
             <label for="description" class="col-sm-2 col-form-label">Description</label>
             <div class="col-sm-10">
                 <textarea rows="4" class="form-control" id="description"
@@ -57,24 +57,26 @@
                        th:value="${rule.externalUrl}" name="externalUrl"/>
             </div>
         </div>
-        <div th:each="property, stat : ${rule.properties}">
-            <div class="row mb-2">
-                <label for="propertyName" class="col-sm-2">Property Name</label>
-                <div class="col-sm-2">
-                    <input type="hidden" th:name="|properties[${stat.index}].id|" th:value="${property.id}"/>
-                    <input type="text" class="form-control" id="propertyName"
-                           th:name="|properties[${stat.index}].name|"
-                           th:value="${property.name}"/>
-                </div>
-            </div>
-            <div class="row mb-2">
-                <label for="propertyValue" class="col-sm-2">Property Value</label>
-                <div class="col-sm-10">
-                    <textarea class="form-control" rows="4" id="propertyValue"
-                              th:name="|properties[${stat.index}].value|" th:text="${property.value}"></textarea>
-                </div>
-            </div>
-        </div>
+        <div th:unless="${rule.isProvided()}">
+	        <div th:each="property, stat : ${rule.properties}">
+	            <div class="row mb-2">
+	                <label for="propertyName" class="col-sm-2">Property Name</label>
+	                <div class="col-sm-2">
+	                    <input type="hidden" th:name="|properties[${stat.index}].id|" th:value="${property.id}"/>
+	                    <input type="text" class="form-control" id="propertyName"
+	                           th:name="|properties[${stat.index}].name|"
+	                           th:value="${property.name}"/>
+	                </div>
+	            </div>
+	            <div class="row mb-2">
+	                <label for="propertyValue" class="col-sm-2">Property Value</label>
+	                <div class="col-sm-10">
+	                    <textarea class="form-control" rows="4" id="propertyValue"
+	                              th:name="|properties[${stat.index}].value|" th:text="${property.value}"></textarea>
+	                </div>
+	            </div>
+	        </div>
+	        </div>
         <div class="row">
             <div class="col-sm-2">
                 <button class="btn btn-warning" type="submit">

@@ -31,13 +31,19 @@
 	                <select class="selectpicker" data-style="rounded border"
 	                        data-width="auto" id="rulesetselect">
 	                    <optgroup label="Primary">
-	                        <option th:each="ruleset : ${rulesets}" th:if="${!ruleset.isSupporting()}"
+	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isPrimary()}"
 	                                th:selected="${ruleset.id} == ${activeRuleset}"
 	                                th:value="${ruleset.name}"
 	                                th:data-content="${ruleset.isDefault() ? ruleset.name + ' (' + ruleset.getNumRules() + ')' + ' <span class=''badge badge-pill badge-primary''>' + ruleset.designation.name + '</span>' : ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
 	                    </optgroup>
 	                    <optgroup label="Supporting">
 	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isSupporting()}"
+	                                th:selected="${ruleset.id} == ${activeRuleset}"
+	                                th:value="${ruleset.name}"
+	                                th:data-content="${ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
+	                    </optgroup>
+	                    <optgroup label="Provided">
+	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isProvided()}"
 	                                th:selected="${ruleset.id} == ${activeRuleset}"
 	                                th:value="${ruleset.name}"
 	                                th:data-content="${ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
@@ -85,7 +91,7 @@
                 <div th:case="*">
                     <div class="card-body border-bottom">
                         <p class="card-title">Rules directly contained in this ruleset:</p>
-                        <div th:switch="${ruleset.rules.size()}">
+                        <div th:switch="${ruleset.getRules().size()}">
                             <span th:case="0">There are no rules in this ruleset.</span>
                             <div th:case="*">
                                 <div class="table-responsive">

@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlCData;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.watchtower.core.module.interpreter.jackson.AbstractRuleImpexModel;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -125,14 +125,14 @@ public class PMDRuleXmlModel extends AbstractRuleImpexModel {
 	 */
 	@Override
 	public RuleDto toDto() {
-		PMDRuleDto dto = new PMDRuleDto();
+		PMDCustomRuleDto dto = new PMDCustomRuleDto();
 		dto.setName(getName());
 		dto.setMessage(getMessage());
 		dto.setExternalUrl(getExternalUrl());
 		dto.setPriority(RulePriority.valueOf(getPriority()));
 		dto.setParserLanguage(getLanguage());
 		dto.setRuleClass(getClazz());
-		dto.setDescription(getDescription());
+		// dto.setDescription(getDescription());
 		dto.setProperties(getProperties().stream().map(property -> {
 			PMDPropertyDto pmdProperty = new PMDPropertyDto();
 			pmdProperty.setName(property.getName());

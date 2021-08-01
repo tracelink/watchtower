@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
 import com.tracelink.appsec.module.pmd.designer.PMDRuleDesigner;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
@@ -57,11 +57,12 @@ public class PMDDesignerController {
 			@RequestParam int priority, @RequestParam String query,
 			@RequestParam String externalUrl, String source, Authentication auth) {
 
-		PMDRuleDto pmdDto = createPMDRuleDto(name, message, description, language, priority, query,
-				externalUrl, auth);
+		PMDCustomRuleDto pmdDto =
+				createPMDRuleDto(name, message, description, language, priority, query,
+						externalUrl, auth);
 		RuleDesignerModelAndView mav = ruleDesigner.query(language, query, source);
 
-		Set<ConstraintViolation<PMDRuleDto>> violations = validator.validate(pmdDto);
+		Set<ConstraintViolation<PMDCustomRuleDto>> violations = validator.validate(pmdDto);
 		if (!violations.isEmpty()) {
 			String vioMessage =
 					violations.stream().map(ConstraintViolation::getMessage)
@@ -85,15 +86,15 @@ public class PMDDesignerController {
 		return mav;
 	}
 
-	private PMDRuleDto createPMDRuleDto(String name, String message, String description,
+	private PMDCustomRuleDto createPMDRuleDto(String name, String message, String description,
 			String language, int priority, String query, String externalUrl, Authentication auth) {
 		PMDPropertyDto property = new PMDPropertyDto();
 		property.setName("xpath");
 		property.setValue(query);
 
-		PMDRuleDto pmdDto = new PMDRuleDto();
+		PMDCustomRuleDto pmdDto = new PMDCustomRuleDto();
 		pmdDto.setAuthor(auth.getName());
-		pmdDto.setDescription(description);
+		// pmdDto.setDescription(description);
 		pmdDto.setExternalUrl(externalUrl);
 		pmdDto.setMessage(message);
 		pmdDto.setName(name);

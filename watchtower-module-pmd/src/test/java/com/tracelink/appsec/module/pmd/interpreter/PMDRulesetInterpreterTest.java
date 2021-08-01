@@ -5,7 +5,7 @@ import java.util.Collections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDRuleDtoTest;
 import com.tracelink.appsec.module.pmd.xml.PMDRuleXmlModel;
 import com.tracelink.appsec.module.pmd.xml.PMDRulesetXmlModel;
@@ -25,7 +25,7 @@ public class PMDRulesetInterpreterTest {
 		RulesetDto rulesetDto = new RulesetDto();
 		rulesetDto.setName("Mock Ruleset");
 		rulesetDto.setDescription("Ruleset containing mock rules");
-		PMDRuleDto ruleDto = PMDRuleDtoTest.setup();
+		PMDCustomRuleDto ruleDto = PMDRuleDtoTest.setup();
 		rulesetDto.setRules(Collections.singleton(ruleDto));
 
 		AbstractRulesetImpexModel rulesetXmlModel = new PMDRulesetInterpreter().fromDto(rulesetDto);
@@ -40,7 +40,6 @@ public class PMDRulesetInterpreterTest {
 		Assertions.assertEquals(ruleDto.getPriority().getPriority(), ruleXmlModel.getPriority());
 		Assertions.assertEquals(ruleDto.getParserLanguage(), ruleXmlModel.getLanguage());
 		Assertions.assertEquals(ruleDto.getRuleClass(), ruleXmlModel.getClazz());
-		Assertions.assertEquals(ruleDto.getDescription(), ruleXmlModel.getDescription());
 		Assertions.assertEquals("xpath", ruleXmlModel.getProperties().get(0).getName());
 		Assertions.assertEquals(ruleDto.getProperties().iterator().next().getValue(),
 				ruleXmlModel.getProperties().get(0).getValue());

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
@@ -40,7 +40,7 @@ public class PMDRuleEditController {
 	}
 
 	@PostMapping("/rule/edit/pmd/edit")
-	public String editRule(@Valid PMDRuleDto dto, BindingResult bindingResult,
+	public String editRule(@Valid PMDCustomRuleDto dto, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
 		// Validate and Edit rule
 		try {

@@ -172,7 +172,6 @@ public class DevelopmentSetup {
 	}
 
 	private void importRules() throws Exception {
-		importRuleset("pmd", "rules/security.xml");
 		importRuleset("regex", "rules/trufflehog-regexes.xml");
 		RulesetEntity defaultRuleset = rulesetService.createRuleset("Default Dev Ruleset",
 				"Default Dev Rulesets", RulesetDesignation.PRIMARY);

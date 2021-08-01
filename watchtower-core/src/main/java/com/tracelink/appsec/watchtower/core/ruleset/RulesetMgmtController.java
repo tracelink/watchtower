@@ -49,7 +49,8 @@ public class RulesetMgmtController {
 		mv.addObject("activeRuleset", getActiveRuleset(activeRuleset, rulesets));
 		mv.addObject("defaultRuleset", rulesetService.getDefaultRuleset());
 		mv.addObject("rulesetDesignations",
-				Arrays.asList(RulesetDesignation.PRIMARY, RulesetDesignation.SUPPORTING));
+				Arrays.asList(RulesetDesignation.PRIMARY, RulesetDesignation.SUPPORTING,
+						RulesetDesignation.PROVIDED));
 		mv.addObject("rulePriorities", RulePriority.values());
 		mv.addScriptReference("/scripts/ruleset-mgmt.js");
 		return mv;

@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.xml.PMDRuleXmlModel;
 import com.tracelink.appsec.module.pmd.xml.PMDRulesetXmlModel;
 import com.tracelink.appsec.module.pmd.xml.Property;
@@ -43,8 +43,8 @@ public class PMDRulesetInterpreter extends AbstractXmlRulesetInterpreter {
 		rulesetXmlModel.setDescription(rulesetDto.getDescription());
 		Set<PMDRuleXmlModel> ruleXmlModels = new HashSet<>();
 		for (RuleDto ruleDto : rulesetDto.getAllRules()) {
-			if (ruleDto instanceof PMDRuleDto) {
-				PMDRuleXmlModel ruleXmlModel = fromDto((PMDRuleDto) ruleDto);
+			if (ruleDto instanceof PMDCustomRuleDto) {
+				PMDRuleXmlModel ruleXmlModel = fromDto((PMDCustomRuleDto) ruleDto);
 				ruleXmlModels.add(ruleXmlModel);
 			}
 		}
@@ -57,14 +57,14 @@ public class PMDRulesetInterpreter extends AbstractXmlRulesetInterpreter {
 		return rulesetXmlModel;
 	}
 
-	private PMDRuleXmlModel fromDto(PMDRuleDto dto) {
+	private PMDRuleXmlModel fromDto(PMDCustomRuleDto dto) {
 		PMDRuleXmlModel xmlModel = new PMDRuleXmlModel();
 		xmlModel.setName(dto.getName());
 		xmlModel.setLanguage(dto.getParserLanguage());
 		xmlModel.setMessage(dto.getMessage());
 		xmlModel.setClazz(dto.getRuleClass());
 		xmlModel.setExternalUrl(dto.getExternalUrl());
-		xmlModel.setDescription(dto.getDescription());
+		// xmlModel.setDescription(dto.getDescription());
 		xmlModel.setPriority(dto.getPriority().getPriority());
 		// Set all properties
 		List<Property> properties = new ArrayList<>();
@@ -84,13 +84,13 @@ public class PMDRulesetInterpreter extends AbstractXmlRulesetInterpreter {
 		ruleset.setName("Example PMD Ruleset");
 		ruleset.setDescription("Example PMD Ruleset to show necessary model values");
 
-		PMDRuleDto pmdRule = new PMDRuleDto();
+		PMDCustomRuleDto pmdRule = new PMDCustomRuleDto();
 		pmdRule.setName("Example Json Rule");
 		pmdRule.setParserLanguage("Java");
 		pmdRule.setMessage("Example Message");
 		pmdRule.setRuleClass("net.sourceforge.pmd.lang.rule.XPathRule");
 		pmdRule.setExternalUrl("https://example.com");
-		pmdRule.setDescription("An Example PMD Rule, using XPath and properties");
+		// pmdRule.setDescription("An Example PMD Rule, using XPath and properties");
 		pmdRule.setPriority(RulePriority.HIGH);
 
 		PMDPropertyDto property = new PMDPropertyDto();
@@ -98,13 +98,13 @@ public class PMDRulesetInterpreter extends AbstractXmlRulesetInterpreter {
 		property.setValue("XPath Query");
 		pmdRule.setProperties(Arrays.asList(property));
 
-		PMDRuleDto pmdRule2 = new PMDRuleDto();
+		PMDCustomRuleDto pmdRule2 = new PMDCustomRuleDto();
 		pmdRule2.setName("Example Json Rule");
 		pmdRule2.setParserLanguage("Java");
 		pmdRule2.setMessage("Example Message");
 		pmdRule2.setRuleClass("com.my.custom.Rule");
 		pmdRule2.setExternalUrl("https://example.com");
-		pmdRule2.setDescription("An Example PMD Rule, using a class");
+		// pmdRule2.setDescription("An Example PMD Rule, using a class");
 		pmdRule2.setPriority(RulePriority.HIGH);
 
 		ruleset.setRules(new HashSet<>(Arrays.asList(pmdRule, pmdRule2)));

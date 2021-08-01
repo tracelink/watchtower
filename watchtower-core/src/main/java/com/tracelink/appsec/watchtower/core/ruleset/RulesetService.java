@@ -386,7 +386,8 @@ public class RulesetService {
 		RulesetEntity ruleset = rulesetRepository.findByName(rulesetDto.getName());
 		if (ruleset == null) {
 			ruleset = createRuleset(rulesetDto.getName(), rulesetDto.getDescription(),
-					RulesetDesignation.SUPPORTING);
+					rulesetDto.getDesignation() == null ? RulesetDesignation.SUPPORTING
+							: rulesetDto.getDesignation());
 		}
 
 		// Import rules

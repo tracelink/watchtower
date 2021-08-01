@@ -7,12 +7,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tracelink.appsec.module.pmd.controller.PMDRuleEditControllerTest;
+import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 import com.tracelink.appsec.watchtower.test.logging.LogWatchExtension;
@@ -25,6 +27,13 @@ public class PMDScannerTest {
 	@RegisterExtension
 	public LogWatchExtension loggerRule = LogWatchExtension.forClass(PMDReport.class);
 
+	private static PMDRuleService ruleService;
+
+	@BeforeAll
+	public static void setup() {
+		ruleService = new PMDRuleService(null);
+	}
+
 	@Test
 	public void testBenchmarkSet() throws Exception {
 		Path workingDirectory = Files.createTempDirectory(null);
@@ -36,8 +45,7 @@ public class PMDScannerTest {
 		config.setRuleset(ruleset);
 		config.setWorkingDirectory(workingDirectory);
 		config.setBenchmarkEnabled(true);
-		new PMDScanner().scan(config);
-		PMDReport report = new PMDScanner().scan(config);
+		PMDReport report = new PMDScanner(ruleService).scan(config);
 		Assertions.assertTrue(loggerRule.getMessages().isEmpty());
 		report.logRuleBenchmarking();
 		List<String> messages = loggerRule.getMessages();

@@ -173,7 +173,7 @@ public abstract class AbstractModule {
 					+ " could not be created as it does not have a valid name. Please provide a nonempty string that does not contain whitespace.");
 		}
 
-		LOG.info("BUILDING SCANNER: " + name);
+		LOG.info("BUILDING SCANNER: {}", name);
 
 		ClassicConfiguration compConfig = new ClassicConfiguration(flyway.getConfiguration());
 
@@ -190,7 +190,7 @@ public abstract class AbstractModule {
 		// migrate
 		Flyway.configure().configuration(compConfig).load().migrate();
 
-		LOG.info("Registering Scanner: " + name);
+		LOG.info("Registering Scanner: {}", name);
 		try {
 			scanRegistrationService.registerScanner(getName(), getScanner());
 			ruleEditorService.registerRuleEditor(getName(), getRuleEditor());
@@ -213,6 +213,7 @@ public abstract class AbstractModule {
 	@EventListener
 	public void onApplicationEvent(ContextRefreshedEvent event) throws ModuleException {
 		if (getProvidedRulesets() != null) {
+			LOG.info("Importing Provided rules for {}", getName());
 			rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
 		}
 	}

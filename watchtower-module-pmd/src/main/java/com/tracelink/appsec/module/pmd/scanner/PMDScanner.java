@@ -1,19 +1,23 @@
 package com.tracelink.appsec.module.pmd.scanner;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tracelink.appsec.module.pmd.interpreter.PMDRulesetInterpreter;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
+import com.tracelink.appsec.module.pmd.service.PMDRuleService;
+import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
@@ -23,7 +27,10 @@ import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 
 import net.sourceforge.pmd.PMD;
 import net.sourceforge.pmd.PMDConfiguration;
+import net.sourceforge.pmd.Rule;
 import net.sourceforge.pmd.RulePriority;
+import net.sourceforge.pmd.RuleSet;
+import net.sourceforge.pmd.RuleSetWriter;
 import net.sourceforge.pmd.benchmark.TimeTracker;
 import net.sourceforge.pmd.benchmark.TimingReport;
 import net.sourceforge.pmd.lang.Language;
@@ -40,6 +47,11 @@ public class PMDScanner implements IScanner {
 	public static final Logger LOG = LoggerFactory.getLogger(PMDScanner.class);
 	public static final String DEFAULT_PMD_RULES =
 			"rules/security/sec-deserialization.xml,rules/security/sec-xxe.xml";
+	private PMDRuleService ruleService;
+
+	public PMDScanner(PMDRuleService ruleService) {
+		this.ruleService = ruleService;
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -79,16 +91,30 @@ public class PMDScanner implements IScanner {
 
 	private Path writeRulesetToFile(RulesetDto dto)
 			throws IOException, URISyntaxException, RulesetException, RulesetInterpreterException {
-		String uri = "pmd-" + dto.getId();
-		Path rulesetPath;
-		try (InputStream is = new PMDRulesetInterpreter().exportRuleset(dto)) {
-			if (is == null) {
-				throw new IOException("PMD Ruleset stream is null");
+		String uri = "pmd-" + dto.getId() + "-";
+		Path rulesetPath = Files.createTempFile(uri, ".xml").toFile().getCanonicalFile()
+				.getAbsoluteFile().toPath();
+
+		List<Rule> rules = new ArrayList<Rule>();
+		try {
+			for (RuleDto ruleDto : dto.getAllRules()) {
+				if (ruleDto instanceof PMDRuleDto) {
+					rules.add(ruleService.makeRuleFromDto((PMDRuleDto) ruleDto));
+				}
 			}
-			rulesetPath = Files.createTempFile(uri, ".xml").toFile().getCanonicalFile()
-					.getAbsoluteFile().toPath();
-			Files.copy(is, rulesetPath, StandardCopyOption.REPLACE_EXISTING);
+		} catch (RuleNotFoundException e) {
+			throw new RulesetException("Error while creating ruleset: " + e.getMessage());
 		}
+
+		RuleSet ruleset = RuleSet.create(dto.getName(), dto.getDescription(),
+				rulesetPath.getFileName().toString(),
+				new ArrayList<>(), new ArrayList<>(), rules);
+
+		try (OutputStream os = new FileOutputStream(rulesetPath.toFile())) {
+			RuleSetWriter writer = new RuleSetWriter(os);
+			writer.write(ruleset);
+		}
+
 		return rulesetPath;
 	}
 
@@ -147,7 +173,7 @@ public class PMDScanner implements IScanner {
 			setInputPaths(inputPath);
 			setRuleSets(ruleSets);
 			setThreads(threads);
-			setReportFile("non-blank"); // this is forced and an awful requirement
+			setReportFile("");
 		}
 
 		void setRenderer(Renderer renderer) {
@@ -174,6 +200,6 @@ public class PMDScanner implements IScanner {
 
 	@Override
 	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return PMDRuleDto.class;
+		return PMDCustomRuleDto.class;
 	}
 }
