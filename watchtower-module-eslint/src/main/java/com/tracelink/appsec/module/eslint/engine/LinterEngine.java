@@ -109,17 +109,6 @@ public final class LinterEngine {
 	}
 
 	/**
-	 * Parses the given ruleset using the ESLint Linter and Estraverse.
-	 *
-	 * @param ruleset ruleset to parse into JSON
-	 * @return {@link ProcessResult} containing the ruleset as JSON, or messages from the Linter if
-	 *         there are errors
-	 */
-	public ProcessResult parseRuleset(String ruleset) {
-		return executeJsFunction(LINTER_PARSE, "parseRuleset", escapeCommandLineArgument(ruleset));
-	}
-
-	/**
 	 * Parses the given source code into an AST using the ESLint Linter.
 	 *
 	 * @param sourceCode source code to parse into AST

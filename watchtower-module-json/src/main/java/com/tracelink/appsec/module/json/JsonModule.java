@@ -6,14 +6,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.tracelink.appsec.module.json.designer.JsonRuleDesigner;
-import com.tracelink.appsec.module.json.interpreter.JsonRulesetInterpreter;
 import com.tracelink.appsec.module.json.ruleeditor.JsonRuleEditor;
 import com.tracelink.appsec.module.json.scanner.JsonScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -62,11 +60,6 @@ public class JsonModule extends AbstractModule {
 	@Override
 	public IRuleEditor getRuleEditor() {
 		return new JsonRuleEditor();
-	}
-
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new JsonRulesetInterpreter();
 	}
 
 	@Override

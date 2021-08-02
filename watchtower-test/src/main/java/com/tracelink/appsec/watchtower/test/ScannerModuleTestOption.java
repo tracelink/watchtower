@@ -7,5 +7,5 @@ package com.tracelink.appsec.watchtower.test;
  * @author mcool
  */
 public enum ScannerModuleTestOption {
-	SCANNER, DESIGNER, EDITOR, INTERPRETER;
+	SCANNER, DESIGNER, EDITOR;
 }

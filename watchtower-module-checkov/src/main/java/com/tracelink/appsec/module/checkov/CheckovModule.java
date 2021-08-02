@@ -6,13 +6,11 @@ import java.util.stream.Collectors;
 
 import com.tracelink.appsec.module.checkov.editor.CheckovRuleEditor;
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
-import com.tracelink.appsec.module.checkov.interpreter.CheckovRulesetInterpreter;
 import com.tracelink.appsec.module.checkov.scanner.CheckovScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -88,14 +86,6 @@ public class CheckovModule extends AbstractModule {
 	@Override
 	public IRuleEditor getRuleEditor() {
 		return new CheckovRuleEditor();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new CheckovRulesetInterpreter(engine);
 	}
 
 	@Override

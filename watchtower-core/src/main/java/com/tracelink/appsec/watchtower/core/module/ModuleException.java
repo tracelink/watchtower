@@ -16,4 +16,8 @@ public class ModuleException extends Exception {
 	public ModuleException(String message, Throwable e) {
 		super(message, e);
 	}
+
+	public ModuleException(Exception e) {
+		super(e);
+	}
 }

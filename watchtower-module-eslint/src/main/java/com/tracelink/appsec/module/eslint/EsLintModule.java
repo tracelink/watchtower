@@ -8,13 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.editor.EsLintRuleEditor;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
-import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
 import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -85,14 +83,6 @@ public class EsLintModule extends AbstractModule {
 	@Override
 	public IRuleEditor getRuleEditor() {
 		return new EsLintRuleEditor();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new EsLintRulesetInterpreter(engine);
 	}
 
 	@Override

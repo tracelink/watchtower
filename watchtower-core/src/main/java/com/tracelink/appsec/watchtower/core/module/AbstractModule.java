@@ -17,7 +17,6 @@ import org.springframework.context.event.EventListener;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.service.AuthConfigurationService;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
@@ -129,18 +128,6 @@ public abstract class AbstractModule {
 	public abstract IRuleEditor getRuleEditor();
 
 	/**
-	 * The implementation of an {@link IRulesetInterpreter}.
-	 * <p>
-	 * This ruleset interpreter will be used to translate between rulesets (and rules) stored in the
-	 * database, and their file formats, such as XML or JSON. This is used both to import and export
-	 * rules, but also to write rules to temporary files for scanning.
-	 *
-	 * @return ruleset interpreter implementation for this module
-	 */
-	public abstract IRulesetInterpreter getInterpreter();
-
-
-	/**
 	 * Allow Modules to provide additional privileges they utilize to be added to the main set of
 	 * privileges in Watchtower
 	 * 
@@ -194,7 +181,6 @@ public abstract class AbstractModule {
 		try {
 			scanRegistrationService.registerScanner(getName(), getScanner());
 			ruleEditorService.registerRuleEditor(getName(), getRuleEditor());
-			rulesetService.registerInterpreter(getName(), getInterpreter());
 			if (getRuleDesigner() != null) {
 				ruleDesignerService.registerRuleDesigner(getName(), getRuleDesigner());
 			}

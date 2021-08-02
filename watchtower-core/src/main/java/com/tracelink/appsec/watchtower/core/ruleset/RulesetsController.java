@@ -6,14 +6,9 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,7 +24,6 @@ import com.tracelink.appsec.watchtower.core.auth.service.UserService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.rule.RuleEditorService;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
@@ -119,37 +112,9 @@ public class RulesetsController {
 	public void exportRuleset(@RequestParam long rulesetId, HttpServletResponse response) {
 		try {
 			rulesetService.exportRuleset(rulesetId, response);
-		} catch (RulesetNotFoundException | RulesetException | IOException
-				| RulesetInterpreterException e) {
+		} catch (RulesetNotFoundException | RulesetException | IOException e) {
 			LOG.error("Error exporting ruleset with ID: " + rulesetId, e);
 		}
-	}
-
-	@GetMapping(value = "/import/example", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@PreAuthorize("hasAuthority('" + CorePrivilege.RULESETS_MODIFY_NAME + "')")
-	public ResponseEntity<InputStreamResource> downloadImportExample(
-			@RequestParam String ruleType) {
-		InputStreamResource res = null;
-		try {
-
-			if (StringUtils.isBlank(ruleType)) {
-				throw new RulesetInterpreterException("No Rule Type selected");
-			}
-
-			res = rulesetService.downloadExampleRuleset(ruleType);
-
-			if (res == null) {
-				throw new RulesetInterpreterException("Cannot Export Example Ruleset");
-			}
-		} catch (Exception e) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
-
-		return ResponseEntity.ok()
-				.header("Content-Disposition",
-						"attachment; filename=\"" + res.getFilename() + "\"")
-				.contentType(MediaType.APPLICATION_OCTET_STREAM)
-				.body(res);
 	}
 
 	private Long getActiveRuleset(Long rulesetId, List<RulesetDto> rulesets) {

@@ -6,14 +6,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.tracelink.appsec.module.regex.designer.RegexRuleDesigner;
-import com.tracelink.appsec.module.regex.interpreter.RegexRulesetInterpreter;
 import com.tracelink.appsec.module.regex.ruleeditor.RegexRuleEditor;
 import com.tracelink.appsec.module.regex.scanner.RegexScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -80,14 +78,6 @@ public class RegexModule extends AbstractModule {
 	@Override
 	public IRuleEditor getRuleEditor() {
 		return new RegexRuleEditor();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new RegexRulesetInterpreter();
 	}
 
 	@Override

@@ -22,7 +22,7 @@ import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
+import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
@@ -65,7 +65,7 @@ public class EsLintScanner implements IScanner {
 			Path rulesetPath;
 			try {
 				rulesetPath = writeRulesetToFile(config.getRuleset());
-			} catch (IOException | RulesetInterpreterException e) {
+			} catch (IOException | RulesetException e) {
 				report.addError(
 						new ScanError(
 								"Exception writing ESLint ruleset to file: " + e.getMessage()));
@@ -110,11 +110,11 @@ public class EsLintScanner implements IScanner {
 	 * @throws IOException if an I/O exception is thrown while creating or writing to the file
 	 */
 	private Path writeRulesetToFile(RulesetDto ruleset)
-			throws IOException, RulesetInterpreterException {
+			throws IOException, RulesetException {
 		String uri = "ruleset-" + ruleset.getId();
 		Path rulesetPath = Files.createTempFile(uri, ".js").toFile().getCanonicalFile()
 				.getAbsoluteFile().toPath();
-		try (InputStream is = new EsLintRulesetInterpreter(engine).exportRuleset(ruleset)) {
+		try (InputStream is = new EsLintRulesetInterpreter().exportRuleset(ruleset)) {
 			Files.copy(is, rulesetPath, StandardCopyOption.REPLACE_EXISTING);
 		}
 		return rulesetPath;

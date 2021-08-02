@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
+import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 
 /**
  * Handles logic to retrieve and delete rules, regardless of rule type.
@@ -109,14 +109,14 @@ public class RuleService {
 	 * @param dtos       set of rule DTOs to import
 	 * @param authorName name to assign as author of the rules, if they are not provided rules
 	 * @return list of database entity rules that have been imported
-	 * @throws RulesetInterpreterException if there is a rule that already exists with the same name
+	 * @throws RulesetException if there is a rule that already exists with the same name
 	 */
 	public List<RuleEntity> importRules(Set<RuleDto> dtos, String authorName)
-			throws RulesetInterpreterException {
+			throws RulesetException {
 		Set<RuleEntity> rules = new HashSet<>();
 		for (RuleDto rule : dtos) {
 			if (ruleRepository.findByName(rule.getName()) != null) {
-				throw new RulesetInterpreterException("Cannot import rule " + rule.getName()
+				throw new RulesetException("Cannot import rule " + rule.getName()
 						+ " as another rule by that name already exists");
 			}
 			RuleEntity ruleEntity = rule.toEntity();

@@ -3,7 +3,6 @@ package com.tracelink.appsec.module.pmd.scanner;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -19,7 +18,6 @@ import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -90,7 +88,7 @@ public class PMDScanner implements IScanner {
 	}
 
 	private Path writeRulesetToFile(RulesetDto dto)
-			throws IOException, URISyntaxException, RulesetException, RulesetInterpreterException {
+			throws IOException, RulesetException {
 		String uri = "pmd-" + dto.getId() + "-";
 		Path rulesetPath = Files.createTempFile(uri, ".xml").toFile().getCanonicalFile()
 				.getAbsoluteFile().toPath();

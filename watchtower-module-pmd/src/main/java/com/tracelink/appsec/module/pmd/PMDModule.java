@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.tracelink.appsec.module.pmd.designer.PMDRuleDesigner;
-import com.tracelink.appsec.module.pmd.interpreter.PMDRulesetInterpreter;
 import com.tracelink.appsec.module.pmd.ruleeditor.PMDRuleEditor;
 import com.tracelink.appsec.module.pmd.scanner.PMDScanner;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
@@ -15,7 +14,6 @@ import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -86,14 +84,6 @@ public class PMDModule extends AbstractModule {
 	@Override
 	public IRuleEditor getRuleEditor() {
 		return new PMDRuleEditor();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new PMDRulesetInterpreter();
 	}
 
 	@Override
