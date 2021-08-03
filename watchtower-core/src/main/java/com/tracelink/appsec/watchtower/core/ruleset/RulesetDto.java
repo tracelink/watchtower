@@ -11,6 +11,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
@@ -107,10 +108,12 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return true if this ruleset has the default designation, false otherwise
 	 */
+	@JsonIgnore
 	public boolean isDefault() {
 		return RulesetDesignation.DEFAULT.equals(designation);
 	}
 
+	@JsonIgnore
 	public boolean isPrimary() {
 		return RulesetDesignation.PRIMARY.equals(designation) || isDefault();
 	}
@@ -120,6 +123,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return true if this ruleset has the supporting designation, false otherwise
 	 */
+	@JsonIgnore
 	public boolean isSupporting() {
 		return RulesetDesignation.SUPPORTING.equals(designation);
 	}
@@ -129,6 +133,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return true if this ruleset has the provided designation, false otherwise
 	 */
+	@JsonIgnore
 	public boolean isProvided() {
 		return RulesetDesignation.PROVIDED.equals(designation);
 	}
@@ -138,6 +143,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return number of unique rules in this ruleset
 	 */
+	@JsonIgnore
 	public int getNumRules() {
 		return getAllRules().size();
 	}
@@ -148,6 +154,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return map from rule to ruleset it is inherited from
 	 */
+	@JsonIgnore
 	public Map<RuleDto, String> getInheritedRules() {
 		Map<RuleDto, String> inheritedRules = new TreeMap<>();
 		for (RulesetDto ruleset : rulesets) {
@@ -162,6 +169,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return a list of IDs to rules in this ruleset
 	 */
+	@JsonIgnore
 	public Set<Long> getRuleIds() {
 		return rules.stream().map(RuleDto::getId).collect(Collectors.toSet());
 	}
@@ -178,6 +186,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return set of all rules in this ruleset
 	 */
+	@JsonIgnore
 	public Set<RuleDto> getAllRules() {
 		Set<RuleDto> allRules = new HashSet<>(rules);
 		for (RulesetDto ruleset : rulesets) {

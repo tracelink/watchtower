@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.tracelink.appsec.module.regex.designer.RegexRuleDesigner;
 import com.tracelink.appsec.module.regex.ruleeditor.RegexRuleEditor;
 import com.tracelink.appsec.module.regex.scanner.RegexScanner;
+import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
@@ -27,9 +28,12 @@ public class RegexModule extends AbstractModule {
 	public static final String REGEX_RULE_EDIT_PRIVILEGE_NAME = "Regex Rule Editor";
 	public static final String REGEX_RULE_DESIGNER_PRIVILEGE_NAME = "Regex Rule Designer";
 	private RegexRuleDesigner regexRuleDesigner;
+	private RegexRuleService ruleService;
 
-	public RegexModule(@Autowired RegexRuleDesigner regexRuleDesigner) {
+	public RegexModule(@Autowired RegexRuleDesigner regexRuleDesigner,
+			@Autowired RegexRuleService ruleService) {
 		this.regexRuleDesigner = regexRuleDesigner;
+		this.ruleService = ruleService;
 	}
 
 	/**
@@ -92,6 +96,6 @@ public class RegexModule extends AbstractModule {
 
 	@Override
 	public List<RulesetDto> getProvidedRulesets() {
-		return null;
+		return ruleService.getProvidedRulesets();
 	}
 }

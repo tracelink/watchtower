@@ -78,6 +78,7 @@ public class RulesetService {
 	private PolymorphicTypeValidator createTypeValidator() {
 		return BasicPolymorphicTypeValidator.builder()
 				.allowIfBaseType(RuleDto.class)
+				.allowIfBaseType(Set.class)
 				.allowIfBaseType(RulesetDto.class)
 				.build();
 	}

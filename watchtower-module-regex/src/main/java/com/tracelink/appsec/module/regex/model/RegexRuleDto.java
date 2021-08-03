@@ -6,6 +6,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tracelink.appsec.module.regex.RegexModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -49,6 +50,7 @@ public class RegexRuleDto extends CustomRuleDto {
 		this.regexPattern = regexPattern;
 	}
 
+	@JsonIgnore
 	public Pattern getCompiledPattern() {
 		if (compiledPattern == null) {
 			compiledPattern = Pattern.compile(getRegexPattern());
