@@ -10,11 +10,23 @@
     <div class="col-lg-12 col-md-12 col-sm-12 mb-4">
         <div class="card card-small h-100">
             <div class="card-header border-bottom">
-                <div class="d-flex align-items-center">
+                <div class="d-flex">
                     <div class="mr-auto">
                         <h6 class="card-title m-0">Select a Ruleset</h6>
                     </div>
-                    <div th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+                    <div class="mr-right pr-1" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+                        <button class="btn btn-success" data-toggle="modal"
+                                data-target="#createRulesetModal">
+                            Create New Ruleset
+                        </button>
+                    </div>
+                    <div class="mr-right pr-1" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+                        <button class="btn btn-primary" data-toggle="modal"
+                                 data-target="#defaultRulesetModal">
+                            Manage Default Ruleset
+                        </button>
+                    </div>
+                    <div class="mr-right pr-1" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}">
                         <button class="btn btn-secondary" data-toggle="modal"
                                 data-target="#importModal">
                             Import Ruleset
@@ -32,20 +44,20 @@
 	                        data-width="auto" id="rulesetselect">
 	                    <optgroup label="Primary">
 	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isPrimary()}"
-	                                th:selected="${ruleset.id} == ${activeRuleset}"
-	                                th:value="${ruleset.name}"
+	                                th:selected="${ruleset.id} == ${currentRuleset.id}"
+	                                th:value="${ruleset.id}"
 	                                th:data-content="${ruleset.isDefault() ? ruleset.name + ' (' + ruleset.getNumRules() + ')' + ' <span class=''badge badge-pill badge-primary''>' + ruleset.designation.name + '</span>' : ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
 	                    </optgroup>
 	                    <optgroup label="Supporting">
 	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isSupporting()}"
-	                                th:selected="${ruleset.id} == ${activeRuleset}"
-	                                th:value="${ruleset.name}"
+	                                th:selected="${ruleset.id} == ${currentRuleset.id}"
+	                                th:value="${ruleset.id}"
 	                                th:data-content="${ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
 	                    </optgroup>
 	                    <optgroup label="Provided">
 	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isProvided()}"
-	                                th:selected="${ruleset.id} == ${activeRuleset}"
-	                                th:value="${ruleset.name}"
+	                                th:selected="${ruleset.id} == ${currentRuleset.id}"
+	                                th:value="${ruleset.id}"
 	                                th:data-content="${ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
 	                    </optgroup>
 	                </select>
@@ -55,21 +67,24 @@
     </div>
     <!-- End Rulesets -->
 </div>
+<!-- No Ruleset Block -->
+<th:block th:if="${currentRuleset != null}">
 <div class="row">
     <!-- Rules -->
-    <div th:each="ruleset : ${rulesets}" class="col-lg-12 col-md-12 col-sm-12 rulesCard"
-         th:id="${ruleset.name} + '-rules'"
-         th:style="${ruleset.id} == ${activeRuleset} ? '' : 'display:none'">
+    <div class="col-lg-12 col-md-12 col-sm-12 rulesCard">
         <div class="card card-small mb-4">
             <div class="card-header border-bottom">
                 <div class="d-flex align-items-center">
                     <div class="mr-auto">
-                        <h6 class="card-title m-0">Rules</h6>
+                        <h6 class="card-title m-0" th:text="${currentRuleset.name + ' Rules'}"></h6>
                     </div>
                     <div>
-                        <form th:if="${ruleset.getNumRules() > 0}" class="d-inline"
-                              action="/rulesets/export" method="POST">
-                            <input type="hidden" name="rulesetId" th:value="${ruleset.id}">
+                        <button class="btn btn-warning" data-toggle="modal"
+                        		th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
+                                data-target="#editRulesetModal">Edit Ruleset</button>
+                        <form th:unless="${currentRuleset.getNumRules() == 0}" class="d-inline"
+                        	  th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}"
+                              th:action="${'/rulesets/'+currentRuleset.id+'/export'}" method="POST">
                             <input type="hidden" th:name="${_csrf.parameterName}"
                                    th:value="${_csrf.token}"/>
                             <button class="btn btn-secondary" type="submit">Export Ruleset</button>
@@ -77,21 +92,19 @@
                     </div>
                 </div>
             </div>
-            <div th:switch="${ruleset.getNumRules()}">
-                <div th:case="0" class="card-body border-bottom">
-                    <span>This ruleset does not contain any rules.</span>
-                    <div class="text-right mr-auto" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-                        <button class="btn btn-warning" data-toggle="modal"
-                                data-target="#editRulesModal" data-action="/rulesets"
-                                th:attr="data-id=${ruleset.id}, data-name=${ruleset.name}, data-rules=${ruleset.getRuleIds()}">
-                            Edit Rules
-                        </button>
-                    </div>
-                </div>
-                <div th:case="*">
-                    <div class="card-body border-bottom">
-                        <p class="card-title">Rules directly contained in this ruleset:</p>
-                        <div th:switch="${ruleset.getRules().size()}">
+            <div>
+                <div>
+                    <div class="card-body ">
+	                    <div class="d-flex mb-4">
+	                        <p class="h6 mr-auto font-weight-bold">Owned Rules:</p>
+	                        <div class="text-right mr-right" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+		                        <button class="btn btn-warning" data-toggle="modal"
+		                                data-target="#editRulesModal">
+		                            Edit Rules
+		                        </button>
+		                    </div>
+	                    </div>
+                        <div th:switch="${currentRuleset.getRules().size()}">
                             <span th:case="0">There are no rules in this ruleset.</span>
                             <div th:case="*">
                                 <div class="table-responsive">
@@ -105,7 +118,7 @@
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <tr th:each="rule : ${ruleset.getRules()}">
+                                        <tr th:each="rule : ${currentRuleset.getRules()}">
                                             <td th:text="${rule.name}"></td>
                                             <td th:text="${rule.priority.getName()}"></td>
                                             <td th:text="${rule.message}"></td>
@@ -120,42 +133,45 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="text-right mr-auto" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-                            <button class="btn btn-warning" data-toggle="modal"
-                                    data-target="#editRulesModal" data-action="/rulesets"
-                                    th:attr="data-id=${ruleset.id}, data-name=${ruleset.name}, data-rules=${ruleset.getRuleIds()}">
-                                Edit Rules
-                            </button>
-                        </div>
                     </div>
-                    <div th:if="${ruleset.getInheritedRules().size() > 0}"
-                         class="card-body border-bottom">
-                        <p class="card-title">Inherited Rules:</p>
-                        <div class="table-responsive">
-                            <table class="table table-striped datatable">
-                                <thead>
-                                <tr>
-                                    <th scope="col">Rule Name</th>
-                                    <th scope="col">Priority</th>
-                                    <th scope="col">Message</th>
-                                    <th scope="col">Inherited From</th>
-                                    <th scope="col" class="text-center">More Info</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr th:each="rule : ${ruleset.getInheritedRules()}">
-                                    <td th:text="${rule.key.name}"></td>
-                                    <td th:text="${rule.key.priority.getName()}" th:data-sort="${rule.key.priority.getPriority()}"></td>
-                                    <td th:text="${rule.key.message}"></td>
-                                    <td th:text="${rule.value}"></td>
-                                    <td class="text-center">
-                                        <a th:href="${rule.key.externalUrl}" target="_blank">
-                                            <i class="material-icons md-18">link</i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+                    <div class="card-body border-top">
+                        <div class="d-flex mb-4">
+                        	<p class="h6 mr-auto font-weight-bold">Inherited Rules:</p>
+                        	<div class="text-right mr-right" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+	                            <button class="btn btn-warning" data-toggle="modal"
+	                                    data-target="#rulesetInheritanceModal" >
+	                                Edit Inherited Rulesets
+	                            </button>
+                        	</div>
+                        </div>
+                        <div th:switch=${currentRuleset.getInheritedRules().size()}>
+                        	<span th:case="0">This ruleset has no inherited rulesets.</span>
+	                        <div th:case="*" class="table-responsive">
+	                            <table class="table table-striped datatable">
+	                                <thead>
+	                                <tr>
+	                                    <th scope="col">Inherited From</th>
+	                                    <th scope="col">Rule Name</th>
+	                                    <th scope="col">Priority</th>
+	                                    <th scope="col">Message</th>
+	                                    <th scope="col" class="text-center">More Info</th>
+	                                </tr>
+	                                </thead>
+	                                <tbody>
+	                                <tr th:each="rule : ${currentRuleset.getInheritedRules()}">
+	                                    <td th:text="${rule.value}"></td>
+	                                    <td th:text="${rule.key.name}"></td>
+	                                    <td th:text="${rule.key.priority.getName()}" th:data-sort="${rule.key.priority.getPriority()}"></td>
+	                                    <td th:text="${rule.key.message}"></td>
+	                                    <td class="text-center">
+	                                        <a th:href="${rule.key.externalUrl}" target="_blank">
+	                                            <i class="material-icons md-18">link</i>
+	                                        </a>
+	                                    </td>
+	                                </tr>
+	                                </tbody>
+	                            </table>
+	                        </div>
                         </div>
                     </div>
                 </div>
@@ -166,13 +182,13 @@
 </div>
 <!-- Edit Rules Modal -->
 <div class="modal fade" id="editRulesModal" tabindex="-1" role="dialog"
+	 th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
      aria-labelledby="addModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title" id="addModalLabel">
-                    Set Rules for
-                    <label id="editRulesModalName"></label>
+                    Set Rules for <label th:text="${currentRuleset.name}"></label>
                 </h4>
                 <button type="button" class="close" data-dismiss="modal"
                         aria-hidden="true">×
@@ -181,10 +197,8 @@
             </div>
             <div class="modal-body">
                 <form class="form-inline" id="editRulesModalForm" method="post"
-                      action="#">
+                      th:action="${'/rulesets/'+currentRuleset.id+'/rules'}">
                     <div class="input-group pb-2">
-                        <input id="editRulesModalInput"
-                               type="hidden" name="#" value="#"/>
                         <input type="hidden" th:name="${_csrf.parameterName}"
                                th:value="${_csrf.token}"/>
                         <label for="rulesPicker">Select rules to include in this ruleset</label>
@@ -192,7 +206,7 @@
                                 class="selectpicker input-group" title="Select Rules"
                                 data-style="rounded border" data-live-search="true" multiple>
                             <option th:each="rule : ${rules}" th:data-content="${rule.name}"
-                                    th:value="${rule.id}"/>
+                                    th:value="${rule.id}" th:selected="${currentRuleset.getRuleIds().contains(rule.id)}"/>
                         </select>
                         <button class="btn btn-success px-2" type="submit">
                             Set Rules
@@ -204,11 +218,247 @@
     </div>
 </div>
 <!-- End Edit Rules Modal -->
+<!-- Edit Ruleset Modal -->
+<div class="modal fade" id="editRulesetModal" tabindex="-1" role="dialog"
+	 th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
+     aria-labelledby="editRulesetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="editRulesetModalLabel">
+                    Ruleset Info for <label th:text="${currentRuleset.name}"></label>
+                </h4>
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-hidden="true">×
+                </button>
+            </div>
+            <div class="modal-body">
+                <form class="d-inline" th:action="${'/rulesets/'+currentRuleset.id+'/edit'}" method="POST" id="rulesetEditForm">
+                    <div class="row mb-2">
+                        <label for="name" class="col-sm-3 col-form-label">Name</label>
+                        <div class="col">
+                            <input type="text" class="form-control" id="name"
+                                   name="name" th:value="${currentRuleset.name}">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <label for="rulesetDescription"
+                               class="col-sm-3 col-form-label">Description</label>
+                        <div class="col">
+                                            <textarea class="form-control" rows="2"
+                                                      id="rulesetDescription"
+                                                      name="description" th:text="${currentRuleset.description}"></textarea>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <label for="designation" class="col-sm-3 col-form-label">Designation</label>
+                        <div class="col">
+                            <select th:if="${rulesetDesignations.contains(currentRuleset.designation)}" class="selectpicker w-100" data-style="rounded border"
+                                    id="designation" name="designation">
+                                <th:block th:each="designation : ${rulesetDesignations}">
+                                    <option th:text="${designation.name}"
+                                            th:value="${designation}"
+                                            th:selected="${designation.equals(currentRuleset.designation)}"/>
+                                </th:block>
+                            </select>
+                            <input th:unless="${rulesetDesignations.contains(currentRuleset.designation)}" 
+                            		class="form-control" type="text" disabled name="designation" th:value="${currentRuleset.designation.name}"/>
+                            <input th:unless="${rulesetDesignations.contains(currentRuleset.designation)}"
+                            		type="hidden" name="designation" th:value="${currentRuleset.designation}"/>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <label for="blockingLevel" class="col-sm-3 col-form-label">Blocking
+                            Level</label>
+                        <div class="col">
+                            <select class="selectpicker w-100"
+                                    data-style="rounded border" id="blockingLevel"
+                                    name="blockingLevel">
+                                <th:block th:each="priority : ${rulePriorities}">
+                                    <option th:text="${priority.name}"
+                                            th:value="${priority}"
+                                            th:selected="${priority.equals(currentRuleset.blockingLevel)}"/>
+                                </th:block>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}"/>
+                </form>
+                
+            </div>
+            <div class="modal-footer d-flex">
+           		<div class="col ml-left pl-0">
+            		<form id="deleteRulesetForm" method="post" th:action="${'/rulesets/'+currentRuleset.id+'/delete'}">
+		            	<button type="submit" class="btn btn-danger">
+		                	Delete Ruleset
+		                </button>
+	                </form>
+                </div>
+                <div >
+	                <button class="btn btn-warning" type="submit" form="rulesetEditForm">
+                         Save Ruleset Info
+               		</button>
+            	</div>
+           	</div>
+        </div>
+    </div>
+</div>
+<!-- End Edit Ruleset Modal -->
+<!-- Ruleset Inheritance Modal -->
+<div class="modal fade" id="rulesetInheritanceModal" tabindex="-1" role="dialog"
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
+     aria-labelledby="rulesetInheritanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="rulesetInheritanceModalLabel">
+                    Set Inherited Rulesets
+                </h4>
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-hidden="true">×
+                </button>
+            </div>
+            <div class="modal-body">
+                <form class="d-inline" th:action="${'/rulesets/'+currentRuleset.id+'/inherit'}" method="POST">
+                    <select name="inheritedRulesetIds" class="selectpicker input-group w-75"
+                            title="Select rulesets to inherit rules from"
+                            data-style="rounded border" data-live-search="true" multiple>
+                        <optgroup label="Primary">
+                            <option th:each="r : ${rulesets}"
+                                    th:if="${!currentRuleset.name.equals(r.name) && r.isPrimary()}"
+                                    th:data-content="${r.name}"
+                                    th:value="${r.id}"
+                                    th:selected="${not currentRuleset.rulesets.?[name == #root.r.name].isEmpty()}"/>
+                        </optgroup>
+                        <optgroup label="Supporting">
+                            <option th:each="r : ${rulesets}"
+                                    th:if="${!currentRuleset.name.equals(r.name) && r.isSupporting()}"
+                                    th:data-content="${r.name}"
+                                    th:value="${r.id}"
+                                    th:selected="${not currentRuleset.rulesets.?[name == #root.r.name].isEmpty()}"/>
+                        </optgroup>
+                        <optgroup label="Provided">
+                            <option th:each="r : ${rulesets}"
+                                    th:if="${!currentRuleset.name.equals(r.name) && r.isProvided()}"
+                                    th:data-content="${r.name}"
+                                    th:value="${r.id}"
+                                    th:selected="${not currentRuleset.rulesets.?[name == #root.r.name].isEmpty()}"/>
+                        </optgroup>
+                    </select>
+                    <input type="hidden" th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}"/>
+                    <button class="btn btn-secondary" type="submit">
+                        Set Rulesets
+                    </button>
+                </form>
+          	</div>
+        </div>
+    </div>
+</div>
+<!-- End Ruleset Inheritance Modal -->
+</th:block>
+<!-- End No Ruleset Block -->
+
+<!-- Create Ruleset Modal -->
+<div class="modal fade" id="createRulesetModal" tabindex="-1" role="dialog"
+     aria-labelledby="createModalLabel" aria-hidden="true"
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="createModalLabel">Create Ruleset</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×
+                </button>
+            </div>
+            <form id="createModalForm" class="d-inline" method="POST" action="create">
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" placeholder="Name" name="name">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <input type="text" class="form-control" placeholder="Description"
+                                   name="description">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <select class="selectpicker mt-2" data-style="rounded border"
+                                    data-width="auto"
+                                    id="designationselect" name="designation">
+                                <option value="" selected disabled>Select a Designation</option>
+                                <th:block th:each="designation : ${rulesetDesignations}">
+                                    <option th:text="${designation.name}"
+                                            th:value="${designation}"/>
+                                </th:block>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}"/>
+                    <button class="btn btn-success px-2" type="submit">Create Ruleset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- End Create Ruleset Modal -->
+<!-- Default Ruleset Modal -->
+<div class="modal fade" id="defaultRulesetModal" tabindex="-1" role="dialog"
+     aria-labelledby="defaultModalLabel" aria-hidden="true"
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="defaultModalLabel">Manage Default Ruleset</h5>
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-hidden="true">×
+                </button>
+            </div>
+            <div class="modal-body">
+                <p th:if="${defaultRuleset != null}"
+                   th:text="'The current default ruleset is ' + ${defaultRuleset.name} + '.'"></p>
+                <p th:if="${defaultRuleset == null}">There is currently no default ruleset
+                    configured.</p>
+                <p>You may select a default ruleset from the list of primary rulesets below. This
+                    ruleset will be automatically assigned to new repositories that are added to
+                    Watchtower. You may also choose to select 'No Default Ruleset', which means that
+                    new repositories will need to be manually assigned to a ruleset before they
+                    can be scanned.</p>
+                <form class="d-inline" action="default" method="POST">
+                    <select class="selectpicker input-group" data-width="auto"
+                            data-style="rounded border" name="rulesetId">
+                        <option th:selected="${defaultRuleset == null}" th:value="-1">No Default
+                            Ruleset
+                        </option>
+                        <option th:each="r : ${rulesets}"
+                                th:if="${!r.isSupporting()}"
+                                th:data-content="${r.name}"
+                                th:value="${r.id}"
+                                th:selected="${defaultRuleset != null && r.id == defaultRuleset.id}"></option>
+                    </select>
+                    <input type="hidden" th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}"/>
+                    <button class="btn btn-primary" type="submit">
+                        Set Default Ruleset
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Default Ruleset Modal -->
 <!-- Import Ruleset Modal -->
 <div class="modal fade" id="importModal" tabindex="-1"
      role="dialog"
      aria-labelledby="importModalLabel" aria-hidden="true"
-     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
+     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -221,28 +471,16 @@
                 <div class="row">
                     <div class="col">
                         <form id="importModalForm" method="post" class="form"
-                              action="/rulesets/import" enctype="multipart/form-data">
-                            <div class="form-group">
-                                <label for="ruleTypeRadio">Select a rule type for the ruleset</label>
-                                <select name="ruleType" class="form-control" id="importRuleType">
-                                    <option th:each="ruleType : ${ruleTypes}" th:value="${ruleType.toLowerCase()}" th:text="${ruleType}"/>
-                                </select>
-                            </div>
+                              action="import" enctype="multipart/form-data">
                             <div class="form-group">
                                 <label for="fileSelect">Select a file to import</label>
-                                <input type="hidden" id="fileSelect" th:name="${_csrf.parameterName}"
+                                <input class="form-control-file" id="fileSelect" type="file" name="file"/>
+                                 <input type="hidden"  th:name="${_csrf.parameterName}"
                                        th:value="${_csrf.token}"/>
-                                <input class="form-control-file" type="file" name="file"/>
                             </div>
-                        </form>
-                        <form id="importModalExampleForm" method="get" class="form"
-                        	action="/rulesets/import/example">
-                        	<input type="hidden" name="ruleType" id="exampleType"/>
-                        	
                         </form>
                         <div>
 	                        <button class="btn btn-success" type="submit" form="importModalForm">Import</button>
-	                        <button class="btn btn-success" type="submit" form="importModalExampleForm" id="downloadExample">Download Example</button>	
                         </div>
                     </div>
                 </div>

@@ -95,13 +95,7 @@ public class SidebarService {
 										.setMaterialIcon("block")
 										.setUrl("/rule/edit")
 										.setAuthorizationExpression("hasAuthority('"
-												+ CorePrivilege.RULE_MODIFY_NAME + "')"),
-								new SidebarLink()
-										.setDisplayName("Ruleset Management")
-										.setMaterialIcon("assignment_late")
-										.setUrl("/ruleset/mgmt")
-										.setAuthorizationExpression("hasAuthority('"
-												+ CorePrivilege.RULESET_MGMT_MODIFY_NAME + "')"))),
+												+ CorePrivilege.RULE_MODIFY_NAME + "')"))),
 				// Config Menu
 				new SidebarMenuGroup().setGroupName("Configuration")
 						.setMaterialIcon("settings")

@@ -17,7 +17,7 @@ public class CheckovProvidedRuleDto extends ProvidedRuleDto {
 	private String type;
 	private String entity;
 	private String iac;
-	private String guidelineUrl;
+	private String externalUrl;
 
 	public String getCheckovRuleName() {
 		return this.ruleName;
@@ -60,13 +60,13 @@ public class CheckovProvidedRuleDto extends ProvidedRuleDto {
 		this.iac = iac;
 	}
 
-	public void setGuidelineUrl(String url) {
-		this.guidelineUrl = url;
+	public void setExternalUrl(String url) {
+		this.externalUrl = url;
 	}
 
 	@Override
 	public String getExternalUrl() {
-		return guidelineUrl;
+		return externalUrl;
 	}
 
 	@Override

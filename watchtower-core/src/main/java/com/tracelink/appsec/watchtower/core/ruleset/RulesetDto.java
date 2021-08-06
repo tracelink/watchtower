@@ -194,4 +194,9 @@ public class RulesetDto implements Comparable<RulesetDto> {
 		}
 		return allRules;
 	}
+
+	@Override
+	public String toString() {
+		return getName();
+	}
 }

@@ -7,12 +7,20 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
+import com.tracelink.appsec.watchtower.core.ruleset.ImportOption;
 
 /**
  * Handles logic to retrieve and delete rules, regardless of rule type.
@@ -21,6 +29,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
  */
 @Service
 public class RuleService {
+	private static final Logger LOG = LoggerFactory.getLogger(RuleService.class);
 
 	private RuleRepository ruleRepository;
 
@@ -102,35 +111,78 @@ public class RuleService {
 		return rule != null && rule.getId() != id;
 	}
 
+
+	private <T extends RuleDto> void validateRules(Set<T> ruleDtos) throws RulesetException {
+		ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+		Validator validator = validatorFactory.getValidator();
+		// Validate fields of the rule
+		for (T ruleDto : ruleDtos) {
+			Set<ConstraintViolation<T>> violations = validator.validate(ruleDto);
+			for (ConstraintViolation<T> violation : violations) {
+				String property = violation.getPropertyPath().toString();
+				if (!"author".equals(property)) {
+					throw new RulesetException("The rule with the name \"" + ruleDto.getName()
+							+ "\" is invalid: " + violation.getMessage());
+				}
+			}
+		}
+	}
+
 	/**
 	 * Imports the given set of rule DTOs and stores each in the database. For each new rule entity,
 	 * assign the given user as the author of the rule.
 	 *
-	 * @param dtos       set of rule DTOs to import
-	 * @param authorName name to assign as author of the rules, if they are not provided rules
+	 * @param dtos           set of rule DTOs to import
+	 * @param authorName     name to assign as author of the rules, if it is not part of the given
+	 *                       rule
+	 * @param providedOption
 	 * @return list of database entity rules that have been imported
 	 * @throws RulesetException if there is a rule that already exists with the same name
 	 */
-	public List<RuleEntity> importRules(Set<RuleDto> dtos, String authorName)
+	public List<RuleEntity> importRules(Set<RuleDto> dtos, String authorName,
+			ImportOption importOption, ImportOption providedOption)
 			throws RulesetException {
+		validateRules(dtos);
+
 		Set<RuleEntity> rules = new HashSet<>();
 		for (RuleDto rule : dtos) {
-			if (ruleRepository.findByName(rule.getName()) != null) {
-				throw new RulesetException("Cannot import rule " + rule.getName()
-						+ " as another rule by that name already exists");
+			LOG.debug("Importing Rule {}", rule.getName());
+			RuleEntity found = ruleRepository.findByName(rule.getName());
+			if (found != null) {
+				if (importOption.equals(ImportOption.SKIP)) {
+					// don't update, just skip
+					LOG.debug("Skipping update of rule {}", rule.getName());
+				} else if (rule.getRuleDesignation().equals(RuleDesignation.PROVIDED)) {
+					// On update, only update the priority
+					if (providedOption.equals(ImportOption.SKIP)) {
+						LOG.debug("Skipping update of provided rule {}", rule.getName());
+					} else if (providedOption.equals(ImportOption.UPDATE)) {
+						found.setPriority(rule.getPriority());
+						rules.add(found);
+					} else if (providedOption.equals(ImportOption.OVERRIDE)) {
+						// update the old rule with the new info
+						RuleEntity ruleEntity = rule.toEntity();
+						ruleEntity.setId(found.getId());
+						rules.add(ruleEntity);
+					}
+				} else {
+					// update the old rule with the new info
+					RuleEntity ruleEntity = rule.toEntity();
+					ruleEntity.setId(found.getId());
+					rules.add(ruleEntity);
+				}
+			} else {
+				// new rule
+				RuleEntity ruleEntity = rule.toEntity();
+				if (StringUtils.isBlank(ruleEntity.getAuthor())) {
+					ruleEntity.setAuthor(authorName);
+				}
+				rules.add(ruleEntity);
 			}
-			RuleEntity ruleEntity = rule.toEntity();
-			if (StringUtils.isBlank(ruleEntity.getAuthor())) {
-				ruleEntity.setAuthor(authorName);
-			}
-			rules.add(ruleEntity);
 		}
 		List<RuleEntity> saveRules = ruleRepository.saveAll(rules);
 		ruleRepository.flush();
 		return saveRules;
 	}
 
-	public RuleEntity saveRule(RuleEntity rule) {
-		return ruleRepository.saveAndFlush(rule);
-	}
 }

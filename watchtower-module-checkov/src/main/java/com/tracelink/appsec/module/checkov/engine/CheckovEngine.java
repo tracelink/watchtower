@@ -212,14 +212,14 @@ public class CheckovEngine {
 			String entity = ruleLine[4].trim();
 			String message = ruleLine[5].trim();
 			String iac = ruleLine[6].trim();
-			rule.setName(iac + "-" + name);
+			rule.setName(name + "-" + entity);
 			rule.setCheckovRuleName(name);
 			rule.setCheckovType(type);
 			rule.setCheckovEntity(entity);
 			rule.setMessage(message);
 			rule.setCheckovIac(iac);
 			String url = guidelines.optString(rule.getName(), "#");
-			rule.setGuidelineUrl(url);
+			rule.setExternalUrl(url);
 			rule.setPriority(RulePriority.LOW);
 
 			RulesetDto ruleset = coreRulesets.get(rule.getCheckovIac());

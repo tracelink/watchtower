@@ -7,6 +7,8 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Represents a data transfer object for the {@link RuleEntity}. All fields in this object are in
  * plain text. Contains the fields inherited by all rule DTOs, regardless of type.
@@ -65,11 +67,17 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 		return getName().compareTo(o.getName());
 	}
 
+	@Override
+	public String toString() {
+		return getName();
+	}
+
 	/**
 	 * This returns the name of the module that the rule is associated with.
 	 *
 	 * @return module name, representing the rule type
 	 */
+	@JsonIgnore
 	public abstract String getModule();
 
 	public abstract String getAuthor();

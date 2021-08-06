@@ -4,6 +4,8 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public abstract class CustomRuleDto extends RuleDto {
 
 	@NotNull(message = "Author" + CANNOT_BE_NULL)
@@ -47,7 +49,8 @@ public abstract class CustomRuleDto extends RuleDto {
 	}
 
 	@Override
-	public RuleDesignation getRuleDesignation() {
+	@JsonIgnore
+	public final RuleDesignation getRuleDesignation() {
 		return RuleDesignation.CUSTOM;
 	}
 }

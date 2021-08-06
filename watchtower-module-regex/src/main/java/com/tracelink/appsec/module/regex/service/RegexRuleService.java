@@ -114,8 +114,12 @@ public class RegexRuleService {
 	private RulesetDto getRuleset(String location) {
 		try (InputStream is = getClass().getResourceAsStream(location)) {
 			RulesetDto dto = jsonMapper.readValue(is, RulesetDto.class);
-			dto.getRules().forEach(r -> r.setPriority(RulePriority.LOW));
+			dto.getRules().stream().map(r -> (RegexRuleDto) r).forEach(r -> {
+				r.setPriority(RulePriority.LOW);
+				r.setAuthor("system");
+			});
 			dto.setDesignation(RulesetDesignation.PROVIDED);
+			dto.setBlockingLevel(RulePriority.LOW);
 			return dto;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

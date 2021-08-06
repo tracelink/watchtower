@@ -39,7 +39,7 @@ public class CheckovRuleEntity extends RuleEntity {
 		dto.setName(getName());
 		dto.setCheckovRuleName(getCheckovRuleName());
 		dto.setMessage(getMessage());
-		dto.setGuidelineUrl(getExternalUrl());
+		dto.setExternalUrl(getExternalUrl());
 		dto.setPriority(getPriority());
 		dto.setRulesets(
 				getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
