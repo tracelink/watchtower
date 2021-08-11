@@ -1,5 +1,11 @@
 package com.tracelink.appsec.watchtower.core.ruleset;
 
+/**
+ * The option used during import to dictate how the import should handle merging rules or rulesets
+ * 
+ * @author csmith
+ *
+ */
 public enum ImportOption {
 	/**
 	 * Skip all import steps for this option

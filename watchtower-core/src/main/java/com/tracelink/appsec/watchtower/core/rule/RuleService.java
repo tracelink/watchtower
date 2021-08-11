@@ -132,15 +132,16 @@ public class RuleService {
 	 * Imports the given set of rule DTOs and stores each in the database. For each new rule entity,
 	 * assign the given user as the author of the rule.
 	 *
-	 * @param dtos           set of rule DTOs to import
-	 * @param authorName     name to assign as author of the rules, if it is not part of the given
-	 *                       rule
-	 * @param providedOption
+	 * @param dtos             set of rule DTOs to import
+	 * @param backupAuthorName name to assign as author of the rules, if it is not part of the given
+	 *                         rule
+	 * @param customOption     the option used during custom rule imports
+	 * @param providedOption   the option used during provided rule imports
 	 * @return list of database entity rules that have been imported
 	 * @throws RulesetException if there is a rule that already exists with the same name
 	 */
-	public List<RuleEntity> importRules(Set<RuleDto> dtos, String authorName,
-			ImportOption importOption, ImportOption providedOption)
+	public List<RuleEntity> importRules(Set<RuleDto> dtos, String backupAuthorName,
+			ImportOption customOption, ImportOption providedOption)
 			throws RulesetException {
 		validateRules(dtos);
 
@@ -149,7 +150,7 @@ public class RuleService {
 			LOG.debug("Importing Rule {}", rule.getName());
 			RuleEntity found = ruleRepository.findByName(rule.getName());
 			if (found != null) {
-				if (importOption.equals(ImportOption.SKIP)) {
+				if (customOption.equals(ImportOption.SKIP)) {
 					// don't update, just skip
 					LOG.debug("Skipping update of rule {}", rule.getName());
 				} else if (rule.getRuleDesignation().equals(RuleDesignation.PROVIDED)) {
@@ -175,7 +176,7 @@ public class RuleService {
 				// new rule
 				RuleEntity ruleEntity = rule.toEntity();
 				if (StringUtils.isBlank(ruleEntity.getAuthor())) {
-					ruleEntity.setAuthor(authorName);
+					ruleEntity.setAuthor(backupAuthorName);
 				}
 				rules.add(ruleEntity);
 			}

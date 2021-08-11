@@ -6,6 +6,14 @@ import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * The Custom rule extension for {@linkplain RuleDto} objects. This implements most of the
+ * {@linkplain RuleDto} abstractions to let concrete subclasses focus on their individual rule data
+ * members
+ * 
+ * @author csmith
+ *
+ */
 public abstract class CustomRuleDto extends RuleDto {
 
 	@NotNull(message = "Author" + CANNOT_BE_NULL)

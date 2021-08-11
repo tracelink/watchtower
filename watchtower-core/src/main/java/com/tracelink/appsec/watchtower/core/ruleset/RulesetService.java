@@ -286,7 +286,7 @@ public class RulesetService {
 	 * default designation from the current default ruleset, if it exists.
 	 *
 	 * @param rulesetId ID of the ruleset to set as the default
-	 * @return
+	 * @return The configured default ruleset, or null if the default ruleset is un-set
 	 * @throws RulesetNotFoundException if no ruleset with the given ID exists
 	 * @throws RulesetException         if a supporting ruleset is being set as the default
 	 */
@@ -342,7 +342,8 @@ public class RulesetService {
 	 * the name in the file exists.
 	 *
 	 * @param inputStream stream of file containing ruleset to import
-	 * @param user        user to assign as author of new rules
+	 * @param userName    user to assign as author of new rules
+	 * @return the imported ruleset
 	 * @throws IllegalArgumentException if the user is null
 	 * @throws ModuleNotFoundException  if there is no interpreter associated with the given module
 	 * @throws IOException              if an error occurs while handling the input stream
@@ -445,6 +446,16 @@ public class RulesetService {
 		}
 	}
 
+	/**
+	 * Register the provided rulesets from the module during startup. This will override all
+	 * provided rules, rulesets, and remove deprecated/removed rules and rulesets that were imported
+	 * from an earlier version of the module
+	 * 
+	 * @param moduleName               the name of the module
+	 * @param incomingProvidedRulesets the rulesets to import
+	 * @return the imported rulesets
+	 * @throws ModuleException if any import fails
+	 */
 	public List<RulesetDto> registerProvidedRulesets(String moduleName,
 			List<RulesetDto> incomingProvidedRulesets)
 			throws ModuleException {
@@ -514,15 +525,16 @@ public class RulesetService {
 	 * Return the new finalized Ruleset object
 	 * </pre>
 	 * 
-	 * @param incomingRulesetDto
-	 * @param author
-	 * @param shouldUpdateRuleset
-	 * @param shouldUpdateRules
-	 * @return
-	 * @throws RulesetException
+	 * @param incomingRulesetDto the ruleset object to import
+	 * @param backupAuthorName   the author name to use on rule objects that have no author assigned
+	 * @param customOption       the option used during custom rule imports
+	 * @param providedOption     the option used during provided rule imports
+	 * @return the final ruleset after importing
+	 * @throws RulesetException if an import fails
 	 */
-	private RulesetEntity importOrUpdateRuleset(RulesetDto incomingRulesetDto, String author,
-			ImportOption importOption, ImportOption providedOption) throws RulesetException {
+	private RulesetEntity importOrUpdateRuleset(RulesetDto incomingRulesetDto,
+			String backupAuthorName, ImportOption customOption, ImportOption providedOption)
+			throws RulesetException {
 		RulesetEntity finalRuleset;
 
 		// Look for the ruleset in the watchtower rulesets
@@ -532,15 +544,16 @@ public class RulesetService {
 			// Existing ruleset known by watchtower, update
 			LOG.debug("Found Watchtower Ruleset for name {}, updating",
 					incomingRulesetDto.getName());
-			finalRuleset = updateExistingRuleset(incomingRulesetDto, author, foundWatchtowerRuleset,
-					importOption, providedOption);
+			finalRuleset = updateExistingRuleset(incomingRulesetDto, backupAuthorName,
+					foundWatchtowerRuleset,
+					customOption, providedOption);
 		} else {
 			// This is a new ruleset, so import it normally
 			LOG.debug("No existing Watchtower Ruleset for name {}, importing as new",
 					incomingRulesetDto.getName());
 			try {
-				finalRuleset = importNewRuleset(incomingRulesetDto, author,
-						importOption, providedOption);
+				finalRuleset = importNewRuleset(incomingRulesetDto, backupAuthorName,
+						customOption, providedOption);
 			} catch (RulesetException e) {
 				throw new RulesetException(
 						"Failed to import Ruleset: " + incomingRulesetDto.getName(),

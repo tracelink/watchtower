@@ -196,11 +196,20 @@ public abstract class AbstractModule {
 		}
 	}
 
-	@EventListener
-	public void onApplicationEvent(ContextRefreshedEvent event) throws ModuleException {
-		if (getProvidedRulesets() != null) {
-			LOG.info("Importing Provided rules for {}", getName());
-			rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
+	/**
+	 * Certain processes must occur after all modules have been loaded. This method handles those
+	 * cases.
+	 */
+	@EventListener(classes = ContextRefreshedEvent.class)
+	public void afterModulesLoaded() {
+		try {
+			if (getProvidedRulesets() != null) {
+				LOG.info("Importing Provided rules for {}", getName());
+				rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
+			}
+		} catch (ModuleException e) {
+			throw new RuntimeException(
+					"Error configuring scanner " + getName() + " after all modules loaded", e);
 		}
 	}
 }

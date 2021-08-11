@@ -12,6 +12,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 /**
  * Represents a data transfer object for the {@link RuleEntity}. All fields in this object are in
  * plain text. Contains the fields inherited by all rule DTOs, regardless of type.
+ * <p>
+ * Note To Implementors: This Dto is used throughout Watchtower to transfer between Import/Export
+ * items, Scanners, Rule Entities, etc so it must contain the superset of all data needed for each.
+ * Additionally, as this is used for Import/Export, you may need to configure fields and/or methods
+ * with the {@linkplain JsonIgnore} annotation.
  *
  * @author mcool
  */
