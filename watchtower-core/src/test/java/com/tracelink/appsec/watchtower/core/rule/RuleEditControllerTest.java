@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.mock.MockRule;
+import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditModelAndView;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
@@ -43,7 +43,7 @@ public class RuleEditControllerTest {
 
 	@BeforeEach
 	public void setup() {
-		rule = new MockRule().toDto();
+		rule = new MockRuleEntity().toDto();
 	}
 
 	@Test

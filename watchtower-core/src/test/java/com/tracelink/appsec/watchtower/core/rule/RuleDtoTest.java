@@ -6,7 +6,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.watchtower.core.mock.MockRuleDto;
+import com.tracelink.appsec.watchtower.core.mock.MockCustomRuleDto;
 
 public class RuleDtoTest {
 
@@ -19,7 +19,7 @@ public class RuleDtoTest {
 		String url = "https://example.com/MockRule";
 		Set<String> rulesets = Collections.singleton("Mock Ruleset");
 		RulePriority priority = RulePriority.MEDIUM;
-		CustomRuleDto dto = new MockRuleDto();
+		CustomRuleDto dto = new MockCustomRuleDto();
 		dto.setId(id);
 		dto.setAuthor(author);
 		dto.setName(name);
@@ -40,8 +40,8 @@ public class RuleDtoTest {
 
 	@Test
 	public void testCompareToPriority() {
-		RuleDto r1 = new MockRuleDto();
-		RuleDto r2 = new MockRuleDto();
+		RuleDto r1 = new MockCustomRuleDto();
+		RuleDto r2 = new MockCustomRuleDto();
 		r1.setPriority(RulePriority.LOW);
 		r1.setName("Foo");
 		r2.setPriority(RulePriority.MEDIUM);
@@ -51,8 +51,8 @@ public class RuleDtoTest {
 
 	@Test
 	public void testCompareToName() {
-		RuleDto r1 = new MockRuleDto();
-		RuleDto r2 = new MockRuleDto();
+		RuleDto r1 = new MockCustomRuleDto();
+		RuleDto r2 = new MockCustomRuleDto();
 		r1.setPriority(RulePriority.MEDIUM);
 		r1.setName("Foo");
 		r2.setPriority(RulePriority.MEDIUM);
@@ -62,7 +62,7 @@ public class RuleDtoTest {
 
 	@Test
 	public void testGetRulesetsIsEmptySet() {
-		RuleDto dto = new MockRuleDto();
+		RuleDto dto = new MockCustomRuleDto();
 		Assertions.assertTrue(dto.getRulesets().isEmpty());
 	}
 }

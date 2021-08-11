@@ -1,58 +1,28 @@
 package com.tracelink.appsec.watchtower.core.ruleset;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.IOUtils;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
-import com.tracelink.appsec.watchtower.core.mock.MockRule;
-import com.tracelink.appsec.watchtower.core.mock.MockRuleDto;
+import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
 import com.tracelink.appsec.watchtower.core.mock.MockRuleset;
-import com.tracelink.appsec.watchtower.core.module.ModuleException;
-import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
-import com.tracelink.appsec.watchtower.core.module.interpreter.jackson.AbstractRuleImpexModel;
-import com.tracelink.appsec.watchtower.core.module.interpreter.jackson.AbstractRulesetImpexModel;
-import com.tracelink.appsec.watchtower.core.module.interpreter.jackson.AbstractXmlRulesetInterpreter;
-import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
@@ -74,16 +44,13 @@ public class RulesetServiceTest {
 	private RulesetEntity defaultRuleset;
 	private RulesetEntity compositeRuleset;
 	private RuleEntity rule;
-	private InputStream is;
 
 	@BeforeEach
 	public void setup() throws Exception {
 		rulesetService = new RulesetService(rulesetRepository, ruleService, repositoryRepository);
 		defaultRuleset = MockRuleset.getDefaultRuleset();
 		compositeRuleset = MockRuleset.getCompositeRuleset();
-		rule = new MockRule();
-		is = new FileInputStream(
-				Paths.get(getClass().getResource("/xml/mockRuleset.xml").toURI()).toFile());
+		rule = new MockRuleEntity();
 	}
 
 	@Test
@@ -181,6 +148,19 @@ public class RulesetServiceTest {
 	}
 
 	@Test
+	public void testDeleteRulesetProvidedException() throws Exception {
+		Assertions.assertThrows(RulesetException.class,
+				() -> {
+					RulesetEntity provided = MockRuleset.getDefaultRuleset();
+					provided.setDesignation(RulesetDesignation.PROVIDED);
+					BDDMockito.when(rulesetRepository.findById(BDDMockito.anyLong()))
+							.thenReturn(Optional.of(provided));
+					rulesetService.deleteRuleset(1L);
+					BDDMockito.verify(rulesetRepository).delete(defaultRuleset);
+				});
+	}
+
+	@Test
 	public void testDeleteRulesetRemoveRepoReferences() throws Exception {
 		RepositoryEntity repo = new RepositoryEntity();
 		repo.setRuleset(compositeRuleset);
@@ -239,6 +219,18 @@ public class RulesetServiceTest {
 		Assertions.assertEquals(complexDesc, compositeRuleset.getDescription());
 		Assertions.assertEquals(RulesetDesignation.SUPPORTING, compositeRuleset.getDesignation());
 		Assertions.assertNull(compositeRuleset.getBlockingLevel());
+	}
+
+	@Test
+	public void testEditRulesetProvided() throws Exception {
+		Assertions.assertThrows(RulesetException.class,
+				() -> {
+					RulesetEntity ruleset = MockRuleset.getDefaultRuleset();
+					ruleset.setDesignation(RulesetDesignation.PROVIDED);
+					BDDMockito.when(rulesetRepository.findById(BDDMockito.anyLong()))
+							.thenReturn(Optional.of(ruleset));
+					rulesetService.editRuleset(ruleset.toDto());
+				});
 	}
 
 	@Test
@@ -364,13 +356,13 @@ public class RulesetServiceTest {
 		Assertions.assertThrows(RulesetException.class,
 				() -> {
 					RulesetDto ruleset = new RulesetDto();
-					ruleset.setId(2L);
+					ruleset.setId(compositeRuleset.getId());
 					ruleset.setName(defaultRuleset.getName());
 					ruleset.setDescription(compositeRuleset.getDescription());
 					ruleset.setDesignation(RulesetDesignation.PRIMARY);
 					BDDMockito.when(rulesetRepository.findByName(defaultRuleset.getName()))
 							.thenReturn(defaultRuleset);
-					BDDMockito.when(rulesetRepository.findById(2L))
+					BDDMockito.when(rulesetRepository.findById(compositeRuleset.getId()))
 							.thenReturn(Optional.of(compositeRuleset));
 					rulesetService.editRuleset(ruleset);
 				});
@@ -456,6 +448,19 @@ public class RulesetServiceTest {
 							.thenReturn(Optional.of(compositeRuleset));
 					compositeRuleset.setDesignation(RulesetDesignation.SUPPORTING);
 					rulesetService.setInheritedRulesets(2L, Collections.singletonList(1L));
+				});
+	}
+
+	@Test
+	public void testSetInheritedRulesetsProvided() throws Exception {
+		Assertions.assertThrows(RulesetException.class,
+				() -> {
+					RulesetEntity ruleset = MockRuleset.getDefaultRuleset();
+					BDDMockito.when(rulesetRepository.findById(ruleset.getId()))
+							.thenReturn(Optional.of(ruleset));
+					ruleset.setDesignation(RulesetDesignation.PROVIDED);
+					rulesetService.setInheritedRulesets(ruleset.getId(),
+							Collections.singletonList(1L));
 				});
 	}
 
@@ -548,189 +553,6 @@ public class RulesetServiceTest {
 	}
 
 	@Test
-	public void testImportRulesetNullUser() throws Exception {
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> {
-					rulesetService.importRuleset("mock", is, null);
-				});
-	}
-
-	@Test
-	public void testImportRulesetNoXmlModel() throws Exception {
-		Assertions.assertThrows(ModuleNotFoundException.class,
-				() -> {
-					rulesetService.importRuleset("mock", is, new UserEntity());
-				});
-	}
-
-	@Test
-	public void testImportRulesetInvalidRule() throws Exception {
-		rulesetService.registerInterpreter("Mock",
-				new MockRulesetInterpreter(MockInvalidRulesetXmlModel.class));
-		try {
-			rulesetService.importRuleset("mock", is, new UserEntity());
-			Assertions.fail("Exception should have been thrown");
-		} catch (RulesetException e) {
-			Assertions.assertEquals(
-					"The rule with the name \"Rule Name\" is invalid: Message cannot be empty.",
-					e.getMessage());
-		}
-	}
-
-	@Test
-	public void testImportRulesetRuleAlreadyExists() throws Exception {
-		rulesetService.registerInterpreter("Mock",
-				new MockRulesetInterpreter(MockRulesetXmlModel.class));
-		BDDMockito.when(ruleService.getRule(BDDMockito.anyString()))
-				.thenReturn(BDDMockito.mock(RuleEntity.class));
-		try {
-			rulesetService.importRuleset("mock", is, new UserEntity());
-			Assertions.fail("Exception should have been thrown");
-		} catch (RulesetException e) {
-			Assertions.assertEquals("A rule with the name \"Rule Name\" already exists.",
-					e.getMessage());
-		}
-	}
-
-	@Test
-	@Disabled
-	public void testImportRulesetRulesetAlreadyExists() throws Exception {
-		rulesetService.registerInterpreter("Mock",
-				new MockRulesetInterpreter(MockRulesetXmlModel.class));
-		BDDMockito.when(ruleService.getRule(rule.getName())).thenReturn(null);
-		BDDMockito.when(rulesetRepository.findByName("Mock-Ruleset")).thenReturn(defaultRuleset);
-		BDDMockito
-				.when(ruleService.importRules(BDDMockito.anySet(),
-						BDDMockito.anyString()))
-				.thenReturn(Arrays.asList(rule));
-		rulesetService.importRuleset("mock", is, new UserEntity());
-
-		BDDMockito.verify(rulesetRepository, Mockito.times(1)).saveAndFlush(defaultRuleset);
-		Assertions.assertFalse(defaultRuleset.getRules().isEmpty());
-		Assertions.assertEquals(rule, defaultRuleset.getRules().iterator().next());
-	}
-
-
-	@Test
-	@Disabled
-	public void testImportRulesetCreateRuleset() throws Exception {
-		rulesetService.registerInterpreter("Mock",
-				new MockRulesetInterpreter(MockRulesetXmlModel.class));
-		BDDMockito.when(ruleService.getRule(rule.getName())).thenReturn(null);
-		BDDMockito
-				.when(ruleService.importRules(BDDMockito.anySet(),
-						BDDMockito.anyString()))
-				.thenReturn(Arrays.asList(rule));
-		rulesetService.importRuleset("mock", is, new UserEntity());
-
-		ArgumentCaptor<RulesetEntity> rulesetCaptor = ArgumentCaptor.forClass(RulesetEntity.class);
-		BDDMockito.verify(rulesetRepository, Mockito.times(2))
-				.saveAndFlush(rulesetCaptor.capture());
-		RulesetEntity ruleset = rulesetCaptor.getValue();
-		Assertions.assertFalse(ruleset.getRules().isEmpty());
-		Assertions.assertEquals(rule, ruleset.getRules().iterator().next());
-	}
-
-	@Test
-	public void testExportRulesetNoRules() throws Exception {
-		BDDMockito.when(rulesetRepository.findById(defaultRuleset.getId()))
-				.thenReturn(Optional.of(defaultRuleset));
-		try {
-			rulesetService.exportRuleset(defaultRuleset.getId(), mockResponse);
-			Assertions.fail("Exception should have been thrown");
-		} catch (RulesetException e) {
-			Assertions.assertEquals("Ruleset with name \"Default\" does not contain any rules.",
-					e.getMessage());
-		}
-	}
-
-	@Test
-	public void testExportRuleset() throws Exception {
-		defaultRuleset.setRules(Collections.singleton(rule));
-		rulesetService.registerInterpreter("Mock",
-				new MockRulesetInterpreter(MockRulesetXmlModel.class));
-		BDDMockito.when(rulesetRepository.findById(defaultRuleset.getId()))
-				.thenReturn(Optional.of(defaultRuleset));
-		MockOutputStream outputStream = new MockOutputStream();
-		BDDMockito.when(mockResponse.getOutputStream()).thenReturn(outputStream);
-		rulesetService.exportRuleset(defaultRuleset.getId(), mockResponse);
-		BDDMockito.verify(mockResponse).setStatus(HttpServletResponse.SC_OK);
-		BDDMockito.verify(mockResponse).setHeader(HttpHeaders.CONTENT_TYPE, "application/zip");
-		BDDMockito.verify(mockResponse)
-				.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Default.zip\"");
-
-		try (ZipInputStream zipInputStream = new ZipInputStream(
-				new ByteArrayInputStream(outputStream.getBaos().toByteArray()))) {
-			ZipEntry zipEntry = zipInputStream.getNextEntry();
-			Assertions.assertEquals("Default-Mock.xml", zipEntry.getName());
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			int b = zipInputStream.read();
-			while (b >= 0) {
-				baos.write(b);
-				b = zipInputStream.read();
-			}
-			zipInputStream.closeEntry();
-			Assertions.assertEquals(
-					"<ruleset name=\"Default\"><description>The default set of rules.</description><rule name=\"Mock Rule\"/></ruleset>",
-					new String(baos.toByteArray()));
-			Assertions.assertNull(zipInputStream.getNextEntry());
-		}
-	}
-
-	@Test
-	public void testExportRulesetNoRulesOfOneType() throws Exception {
-		defaultRuleset.setRules(Collections.singleton(rule));
-		rulesetService.registerInterpreter("Mock",
-				new MockRulesetInterpreter(MockRulesetXmlModel.class));
-		rulesetService.registerInterpreter("OtherMock", new MockRulesetInterpreter(null));
-		BDDMockito.when(rulesetRepository.findById(defaultRuleset.getId()))
-				.thenReturn(Optional.of(defaultRuleset));
-		MockOutputStream outputStream = new MockOutputStream();
-		BDDMockito.when(mockResponse.getOutputStream()).thenReturn(outputStream);
-		rulesetService.exportRuleset(defaultRuleset.getId(), mockResponse);
-		BDDMockito.verify(mockResponse).setStatus(HttpServletResponse.SC_OK);
-		BDDMockito.verify(mockResponse).setHeader(HttpHeaders.CONTENT_TYPE, "application/zip");
-		BDDMockito.verify(mockResponse)
-				.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Default.zip\"");
-
-		try (ZipInputStream zipInputStream = new ZipInputStream(
-				new ByteArrayInputStream(outputStream.getBaos().toByteArray()))) {
-			ZipEntry zipEntry = zipInputStream.getNextEntry();
-			Assertions.assertEquals("Default-Mock.xml", zipEntry.getName());
-			zipInputStream.closeEntry();
-			Assertions.assertNull(zipInputStream.getNextEntry());
-		}
-	}
-
-	@Test
-	public void testRegisterInterpreterBlankModuleName() throws Exception {
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> {
-					rulesetService.registerInterpreter("\t",
-							new MockRulesetInterpreter(MockRulesetXmlModel.class));
-				});
-	}
-
-	@Test
-	public void testRegisterInterpreterNullModelClass() throws Exception {
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> {
-					rulesetService.registerInterpreter("Mock", null);
-				});
-	}
-
-	@Test
-	public void testRegisterInterpreterDuplicateModule() throws Exception {
-		Assertions.assertThrows(ModuleException.class,
-				() -> {
-					rulesetService.registerInterpreter("Mock",
-							new MockRulesetInterpreter(MockRulesetXmlModel.class));
-					rulesetService.registerInterpreter("Mock",
-							new MockRulesetInterpreter(MockRulesetXmlModel.class));
-				});
-	}
-
-	@Test
 	public void testGetDefaultNull() {
 		RulesetEntity ruleset = rulesetService.getDefaultRuleset();
 		Assertions.assertNull(ruleset);
@@ -745,170 +567,4 @@ public class RulesetServiceTest {
 		BDDMockito.verify(rulesetRepository, Mockito.times(0)).saveAndFlush(ruleset);
 	}
 
-	@Test
-	public void testDownloadExampleRuleset() throws Exception {
-		String module = "module";
-		String ext = "js";
-		String content = "foo";
-		IRulesetInterpreter mockInterpreter =
-				BDDMockito.mock(IRulesetInterpreter.class);
-		rulesetService.registerInterpreter(module, mockInterpreter);
-		ByteArrayInputStream bais = new ByteArrayInputStream(content.getBytes());
-		BDDMockito.when(mockInterpreter.exportExampleRuleset()).thenReturn(bais);
-		BDDMockito.when(mockInterpreter.getExtension()).thenReturn(ext);
-		InputStreamResource isr = rulesetService.downloadExampleRuleset(module);
-		MatcherAssert.assertThat(isr.getFilename(), Matchers.is(module + "." + ext));
-		Assertions.assertEquals(isr.contentLength(), -1L);
-		Assertions.assertEquals(IOUtils.toString(isr.getInputStream(), Charset.defaultCharset()),
-				content);
-	}
-
-	@Test
-	public void testDownloadExampleRulesetNull() throws Exception {
-		String module = "module";
-		IRulesetInterpreter mockInterpreter =
-				BDDMockito.mock(IRulesetInterpreter.class);
-		rulesetService.registerInterpreter(module, mockInterpreter);
-		BDDMockito.when(mockInterpreter.exportExampleRuleset()).thenReturn(null);
-		InputStreamResource isr = rulesetService.downloadExampleRuleset(module);
-		Assertions.assertNull(isr);
-	}
-
-	private static class MockRulesetInterpreter extends AbstractXmlRulesetInterpreter {
-		private Class<? extends AbstractRulesetImpexModel> xmlModelClass;
-
-		MockRulesetInterpreter(Class<? extends AbstractRulesetImpexModel> xmlModelClass) {
-			this.xmlModelClass = xmlModelClass;
-		}
-
-		@Override
-		protected Class<? extends AbstractRulesetImpexModel> getRulesetModelClass() {
-			return xmlModelClass;
-		}
-
-		@Override
-		protected AbstractRulesetImpexModel fromDto(RulesetDto rulesetDto) {
-			if (xmlModelClass == null) {
-				return null;
-			}
-			MockRulesetXmlModel rulesetXmlModel = new MockRulesetXmlModel();
-			rulesetXmlModel.setName(rulesetDto.getName());
-			rulesetXmlModel.setDescription(rulesetDto.getDescription());
-			rulesetXmlModel.setRules(Collections.singleton(new MockRuleXmlModel()));
-			return rulesetXmlModel;
-		}
-
-		@Override
-		protected RulesetDto makeExampleRuleset() {
-			return null;
-		}
-	}
-
-	@JacksonXmlRootElement(localName = "ruleset")
-	private static class MockRulesetXmlModel extends AbstractRulesetImpexModel {
-		@JacksonXmlProperty(isAttribute = true)
-		private String name;
-		@JacksonXmlProperty
-		private String description;
-		@JacksonXmlProperty(localName = "rule")
-		private Set<MockRuleXmlModel> rules;
-
-		@Override
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		@Override
-		public String getDescription() {
-			return description;
-		}
-
-		public void setDescription(String description) {
-			this.description = description.trim();
-		}
-
-		@Override
-		public Set<? extends AbstractRuleImpexModel> getRules() {
-			return rules;
-		}
-
-		public void setRules(Set<MockRuleXmlModel> rules) {
-			this.rules = rules;
-		}
-	}
-
-	private static class MockRuleXmlModel extends AbstractRuleImpexModel {
-		@JacksonXmlProperty(isAttribute = true)
-		private String name = "Mock Rule";
-
-		@Override
-		public RuleDto toDto() {
-			RuleDto dto = new MockRule().toDto();
-			dto.setId(null);
-			return dto;
-		}
-	}
-
-	@JacksonXmlRootElement(localName = "ruleset")
-	private static class MockInvalidRulesetXmlModel extends AbstractRulesetImpexModel {
-		@JacksonXmlProperty(isAttribute = true)
-		private String name;
-		@JacksonXmlProperty
-		private String description;
-		@JacksonXmlProperty(localName = "rule")
-		private Set<MockInvalidRuleXmlModel> rules;
-
-		@Override
-		public String getName() {
-			return name;
-		}
-
-		@Override
-		public String getDescription() {
-			return description;
-		}
-
-		@Override
-		public Set<? extends AbstractRuleImpexModel> getRules() {
-			return rules;
-		}
-
-	}
-
-	private static class MockInvalidRuleXmlModel extends AbstractRuleImpexModel {
-		@Override
-		public RuleDto toDto() {
-			MockRuleDto dto = new MockRule().toDto();
-			dto.setId(null);
-			dto.setAuthor(null);
-			dto.setMessage("");
-			return dto;
-		}
-	}
-
-	private static class MockOutputStream extends ServletOutputStream {
-		private ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-		@Override
-		public boolean isReady() {
-			return true;
-		}
-
-		@Override
-		public void setWriteListener(WriteListener writeListener) {
-		}
-
-		@Override
-		public void write(int b) throws IOException {
-			baos.write(b);
-		}
-
-		ByteArrayOutputStream getBaos() {
-			return baos;
-		}
-	}
 }

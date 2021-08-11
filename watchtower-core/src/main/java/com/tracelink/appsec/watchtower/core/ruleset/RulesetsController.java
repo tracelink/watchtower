@@ -26,7 +26,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.auth.service.UserService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
@@ -52,16 +51,13 @@ public class RulesetsController {
 	private RulesetService rulesetService;
 	private RuleEditorService ruleManagerService;
 	private RuleService ruleService;
-	private UserService userService;
 
 	public RulesetsController(@Autowired RulesetService rulesetService,
 			@Autowired RuleEditorService ruleManagerService,
-			@Autowired RuleService ruleService,
-			@Autowired UserService userService) {
+			@Autowired RuleService ruleService) {
 		this.rulesetService = rulesetService;
 		this.ruleManagerService = ruleManagerService;
 		this.ruleService = ruleService;
-		this.userService = userService;
 	}
 
 	private String makeRedirect(long id) {
@@ -84,8 +80,8 @@ public class RulesetsController {
 	@PostMapping(value = {"/create", "/{id}/create"})
 	@PreAuthorize("hasAuthority('" + CorePrivilege.RULESETS_MODIFY_NAME + "')")
 	public String createRuleset(@PathVariable Optional<Long> id, @RequestParam String name,
-			@RequestParam String description,
-			@RequestParam RulesetDesignation designation, RedirectAttributes redirectAttributes) {
+			@RequestParam String description, @RequestParam RulesetDesignation designation,
+			RedirectAttributes redirectAttributes) {
 		String redirect;
 		try {
 			if (designation.equals(RulesetDesignation.PROVIDED)) {
@@ -109,12 +105,10 @@ public class RulesetsController {
 			@RequestParam(required = false, defaultValue = "-1") long rulesetId,
 			RedirectAttributes redirectAttributes) {
 		try {
-			RulesetDto dto = rulesetService.setDefaultRuleset(rulesetId);
+			RulesetDto dto = rulesetService.setDefaultRuleset(rulesetId).toDto();
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully set the default ruleset.");
-			if (dto != null) {
-				id = Optional.of(dto.getId());
-			}
+			id = Optional.of(dto.getId());
 		} catch (RulesetNotFoundException | RulesetException e) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Cannot set the default ruleset. " + e.getMessage());
@@ -124,12 +118,11 @@ public class RulesetsController {
 
 	@PostMapping(value = {"/import", "/{id}/import"})
 	@PreAuthorize("hasAuthority('" + CorePrivilege.RULESETS_IMPEX_NAME + "')")
-	public String importRuleset(@PathVariable Optional<Long> id,
-			@RequestParam MultipartFile file,
+	public String importRuleset(@PathVariable Optional<Long> id, @RequestParam MultipartFile file,
 			Principal authenticatedUser, RedirectAttributes redirectAttributes) {
 		try {
 			RulesetDto newRuleset = rulesetService.importRuleset(file.getInputStream(),
-					userService.findByUsername(authenticatedUser.getName()));
+					authenticatedUser.getName());
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully imported ruleset.");
 			id = Optional.of(newRuleset.getId());
