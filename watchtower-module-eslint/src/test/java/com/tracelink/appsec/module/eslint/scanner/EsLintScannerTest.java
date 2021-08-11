@@ -1,6 +1,5 @@
 package com.tracelink.appsec.module.eslint.scanner;
 
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -35,13 +34,8 @@ public class EsLintScannerTest {
 
 	@BeforeEach
 	public void setup() throws Exception {
-		interpreter = new EsLintRulesetInterpreter(engine);
+		interpreter = new EsLintRulesetInterpreter();
 		scanner = new EsLintScanner(engine);
-		try (InputStream is = getClass().getClassLoader()
-				.getResourceAsStream("import/ruleset.js")) {
-			rulesetDto = interpreter.importRuleset(is);
-		}
-
 	}
 
 	@Test

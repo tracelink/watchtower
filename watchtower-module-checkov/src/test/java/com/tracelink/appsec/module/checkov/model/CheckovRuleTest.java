@@ -23,7 +23,7 @@ public class CheckovRuleTest {
 		dto.setCheckovEntity(ENTITY);
 		dto.setCheckovIac(IAC);
 		dto.setCheckovType(TYPE);
-		dto.setGuidelineUrl(EXT_URL);
+		dto.setExternalUrl(EXT_URL);
 		dto.setMessage(MESSAGE);
 		dto.setPriority(PRIORITY);
 		return dto;

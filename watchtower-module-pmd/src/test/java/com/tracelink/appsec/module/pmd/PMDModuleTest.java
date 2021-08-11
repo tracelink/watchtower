@@ -12,7 +12,6 @@ import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTestOption;
 
 public class PMDModuleTest extends ScannerModuleTest {
 
@@ -44,8 +43,7 @@ public class PMDModuleTest extends ScannerModuleTest {
 			rule.setProperties(Arrays.asList(prop));
 			rule.setRuleClass("net.sourceforge.pmd.lang.rule.XPathRule");
 			return rule;
-		}).withSchemaName("pmd_schema_history").withSupportedRuleClass(PMDCustomRuleDto.class)
-				.andIgnoreTestOption(ScannerModuleTestOption.INTERPRETER);
+		}).withSchemaName("pmd_schema_history").withSupportedRuleClass(PMDCustomRuleDto.class);
 	}
 
 }

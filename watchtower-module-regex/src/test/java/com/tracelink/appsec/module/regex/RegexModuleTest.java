@@ -2,6 +2,7 @@ package com.tracelink.appsec.module.regex;
 
 import com.tracelink.appsec.module.regex.designer.RegexRuleDesigner;
 import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
@@ -11,7 +12,7 @@ public class RegexModuleTest extends ScannerModuleTest {
 
 	@Override
 	protected AbstractModule buildScannerModule() {
-		return new RegexModule(new RegexRuleDesigner());
+		return new RegexModule(new RegexRuleDesigner(), new RegexRuleService(null));
 	}
 
 	@Override

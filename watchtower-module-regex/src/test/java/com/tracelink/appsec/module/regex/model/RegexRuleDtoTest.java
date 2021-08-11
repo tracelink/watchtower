@@ -47,7 +47,7 @@ public class RegexRuleDtoTest {
 	public void testToEntity() {
 		RegexRuleEntity regexRule = (RegexRuleEntity) regexRuleDto.toEntity();
 		Assertions.assertEquals(0L, regexRule.getId());
-		Assertions.assertNull(regexRule.getAuthor());
+		Assertions.assertEquals(author, regexRule.getAuthor());
 		Assertions.assertEquals(name, regexRule.getName());
 		Assertions.assertEquals(message, regexRule.getMessage());
 		Assertions.assertEquals(externalUrl, regexRule.getExternalUrl());

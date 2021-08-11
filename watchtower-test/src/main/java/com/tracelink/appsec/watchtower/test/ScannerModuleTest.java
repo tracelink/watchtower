@@ -162,4 +162,11 @@ public abstract class ScannerModuleTest {
 				this.scannerTester.getRuleSupplier().get()));
 	}
 
+	@Test
+	public void testProvidedRulesExist() {
+		Assumptions.assumeFalse(
+				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.PROVIDED_RULES));
+		Assertions.assertNotNull(this.moduleUnderTest.getProvidedRulesets());
+		Assertions.assertNotEquals(0, this.moduleUnderTest.getProvidedRulesets().size());
+	}
 }
