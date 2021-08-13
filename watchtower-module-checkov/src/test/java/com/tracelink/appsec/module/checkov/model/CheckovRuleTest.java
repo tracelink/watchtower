@@ -19,10 +19,11 @@ public class CheckovRuleTest {
 		CheckovProvidedRuleDto dto = new CheckovProvidedRuleDto();
 		dto.setId(1L);
 		dto.setName(NAME);
-		dto.setCheckovRuleName(IAC + NAME);
-		dto.setCheckovEntity(ENTITY);
-		dto.setCheckovIac(IAC);
-		dto.setCheckovType(TYPE);
+		CheckovRuleDefinitionDto def = new CheckovRuleDefinitionDto();
+		def.setEntity(ENTITY);
+		def.setIac(IAC);
+		def.setType(TYPE);
+		dto.getDefinitions().add(def);
 		dto.setExternalUrl(EXT_URL);
 		dto.setMessage(MESSAGE);
 		dto.setPriority(PRIORITY);
@@ -35,21 +36,25 @@ public class CheckovRuleTest {
 		Assertions.assertEquals(1L, dto.getId().longValue());
 		Assertions.assertEquals(NAME, dto.getName());
 		Assertions.assertEquals("system", dto.getAuthor());
-		Assertions.assertEquals(ENTITY, dto.getCheckovEntity());
-		Assertions.assertEquals(IAC, dto.getCheckovIac());
-		Assertions.assertEquals(TYPE, dto.getCheckovType());
 		Assertions.assertEquals(EXT_URL, dto.getExternalUrl());
 		Assertions.assertEquals(MESSAGE, dto.getMessage());
 		Assertions.assertEquals(PRIORITY, dto.getPriority());
 
+		CheckovRuleDefinitionDto def = dto.getDefinitions().get(0);
+		Assertions.assertEquals(ENTITY, def.getEntity());
+		Assertions.assertEquals(IAC, def.getIac());
+		Assertions.assertEquals(TYPE, def.getType());
+
 		CheckovRuleEntity rule = dto.toEntity();
 		Assertions.assertEquals(NAME, rule.getName());
 		Assertions.assertEquals("system", rule.getAuthor());
-		Assertions.assertEquals(ENTITY, rule.getEntity());
-		Assertions.assertEquals(IAC, rule.getIac());
-		Assertions.assertEquals(TYPE, rule.getType());
 		Assertions.assertEquals(EXT_URL, rule.getExternalUrl());
 		Assertions.assertEquals(MESSAGE, rule.getMessage());
 		Assertions.assertEquals(PRIORITY, rule.getPriority());
+
+		CheckovRuleDefinitionEntity defEnt = rule.getDefinitions().iterator().next();
+		Assertions.assertEquals(ENTITY, defEnt.getEntity());
+		Assertions.assertEquals(IAC, defEnt.getIac());
+		Assertions.assertEquals(TYPE, defEnt.getType());
 	}
 }

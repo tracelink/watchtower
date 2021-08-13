@@ -94,7 +94,7 @@ public class EsLintRuleEditControllerTest {
 				.param("message", esLintRule.getMessage())
 				.param("externalUrl", esLintRule.getExternalUrl())
 				.param("priority", esLintRule.getPriority().toString())
-				.param("core", Boolean.toString(esLintRule.isCore()))
+				.param("core", Boolean.toString(esLintRule.isProvided()))
 				.param("createFunction", esLintRule.getCreateFunction())
 				.with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.flash().attribute(
@@ -117,7 +117,7 @@ public class EsLintRuleEditControllerTest {
 				.param("message", esLintRule.getMessage())
 				.param("externalUrl", esLintRule.getExternalUrl())
 				.param("priority", esLintRule.getPriority().toString())
-				.param("core", Boolean.toString(esLintRule.isCore()))
+				.param("core", Boolean.toString(esLintRule.isProvided()))
 				.param("createFunction", esLintRule.getCreateFunction())
 				.with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.flash()

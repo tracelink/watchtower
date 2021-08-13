@@ -91,7 +91,7 @@ public class CheckovScanner implements IScanner {
 						JsonObject fail = f.getAsJsonObject();
 						String failName = fail.get("check_id").getAsString();
 						Optional<CheckovProvidedRuleDto> foundRule = rules.stream()
-								.filter(r -> r.getCheckovRuleName().equals(failName)).findFirst();
+								.filter(r -> r.getName().equals(failName)).findFirst();
 						if (foundRule.isPresent()) {
 							RuleDto rule = foundRule.get();
 							ScanViolation violation = new ScanViolation();

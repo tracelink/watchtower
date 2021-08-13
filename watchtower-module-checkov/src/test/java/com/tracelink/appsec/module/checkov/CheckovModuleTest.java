@@ -36,11 +36,7 @@ public class CheckovModuleTest extends ScannerModuleTest {
 		List<CheckovProvidedRuleDto> coreRules = engine.getCoreRules();
 		testPlan.withMigration("db/checkov").withName("Checkov")
 				.withRuleSupplier(() -> {
-					// CKV_AWS_9 only has 1 implementation IaC
-					CheckovProvidedRuleDto rule =
-							coreRules.stream()
-									.filter(r -> r.getCheckovRuleName().equals("CKV_AWS_9"))
-									.findFirst().get();
+					CheckovProvidedRuleDto rule = coreRules.get(0);
 					rule.setPriority(RulePriority.HIGH);
 					return rule;
 				}).withSchemaName("checkov_schema_history")

@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -19,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovRuleDefinitionDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -45,7 +46,7 @@ public class CheckovEngine {
 
 	private static final String EXPECTED_CHECKOV_VERSION = "2.0.257";
 
-	private final Map<String, RulesetDto> coreRulesets;
+	private Map<String, RulesetDto> coreRulesets;
 
 	private final Gson gson;
 
@@ -58,19 +59,11 @@ public class CheckovEngine {
 			LOG.info("Python installed correctly");
 			installCheckov();
 			LOG.info("Checkov installed correctly");
-			coreRulesets = Collections.unmodifiableMap(populateCoreRulesets());
-			coreRules = Collections.unmodifiableList(populateCoreRules(coreRulesets));
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to create Checkov Engine", e);
 		}
 	}
 
-	private List<CheckovProvidedRuleDto> populateCoreRules(
-			Map<String, RulesetDto> coreRulesets) {
-		return coreRulesets.values().stream().flatMap(ruleset -> ruleset.getRules().stream())
-				.map(r -> (CheckovProvidedRuleDto) r)
-				.collect(Collectors.toList());
-	}
 
 	private void testPythonVersion() throws IOException {
 		ProcessResult pythonMajorVersionNum = runPythonCommand("-c",
@@ -145,7 +138,7 @@ public class CheckovEngine {
 
 	}
 
-	private ProcessResult runPythonCommand(String... command) throws IOException {
+	private ProcessResult runPythonCommand(String... command) {
 		List<String> commandString = new ArrayList<>();
 		commandString.add("python3");
 		commandString.addAll(Arrays.asList(command));
@@ -159,7 +152,7 @@ public class CheckovEngine {
 		return runCommand(commandString);
 	}
 
-	private ProcessResult runCheckovCommand(String... command) throws IOException {
+	private ProcessResult runCheckovCommand(String... command) {
 		List<String> commandString = new ArrayList<>();
 		commandString
 				.addAll(Arrays.asList("-c", "from checkov import main as checkov; checkov.run();"));
@@ -167,74 +160,98 @@ public class CheckovEngine {
 		return runPythonCommand(commandString.toArray(new String[]{}));
 	}
 
-	private ProcessResult runCommand(List<String> commands) throws IOException {
+	private ProcessResult runCommand(List<String> commands) {
 		ProcessBuilder pb = new ProcessBuilder(commands);
+		String results = null;
+		String errors = null;
 		Process p = null;
-		ProcessResult result;
 		try {
 			p = pb.start();
-			String results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
-			String errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
-			result = new ProcessResult(String.join(" ", commands), results, errors);
-			if (LOG.isDebugEnabled()) {
-				LOG.debug(result.getFullOutput("\n"));
-			}
+			results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
+			errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
+		} catch (IOException e) {
+			LOG.error("Failed to run command '" + String.join(" ", commands), e);
 		} finally {
 			if (p != null) {
 				p.destroy();
 			}
 		}
-		return result;
+		return new ProcessResult(String.join(" ", commands), results, errors);
 	}
 
 	public Map<String, RulesetDto> getCoreRulesets() {
+		if (coreRulesets == null) {
+			populateCoreRulesRulesets();
+		}
 		return coreRulesets;
 	}
 
 	public List<CheckovProvidedRuleDto> getCoreRules() {
+		if (coreRules == null) {
+			populateCoreRulesRulesets();
+		}
 		return coreRules;
 	}
 
-	private Map<String, RulesetDto> populateCoreRulesets() throws IOException {
+	private void populateCoreRulesRulesets() {
 		ProcessResult rulesResult = runCheckovCommand("--list");
 		kong.unirest.json.JSONObject guidelines =
 				Unirest.get(BRIDGECREW_GUIDELINES).asJson()
 						.getBody().getObject().getJSONObject("guidelines");
 		Map<String, RulesetDto> coreRulesets = new TreeMap<>();
+		Map<String, CheckovProvidedRuleDto> coreRules = new TreeMap<>();
 		Stream.of(rulesResult.getResults().split("\\r?\\n")).skip(2).forEachOrdered(r -> {
 			String[] ruleLine = r.split("\\|");
 			if (ruleLine.length != 7) {
 				return;
 			}
-			CheckovProvidedRuleDto rule = new CheckovProvidedRuleDto();
+
 			String name = ruleLine[2].trim();
+
+			// make the ruleset name from the rule name CKV_AWS_123 is in the ruleset CKV_AWS
+			String[] nameParts = name.split("_");
+			if (nameParts.length != 3) {
+				throw new IllegalArgumentException("Can't parse rule name " + name);
+			}
+			String rulesetName = String.join("_", nameParts[0], nameParts[1]);
+
+			// make the definition object
 			String type = ruleLine[3].trim();
 			String entity = ruleLine[4].trim();
 			String message = ruleLine[5].trim();
 			String iac = ruleLine[6].trim();
-			rule.setName(name + "-" + entity);
-			rule.setCheckovRuleName(name);
-			rule.setCheckovType(type);
-			rule.setCheckovEntity(entity);
-			rule.setMessage(message);
-			rule.setCheckovIac(iac);
-			String url = guidelines.optString(rule.getName(), "#");
-			rule.setExternalUrl(url);
-			rule.setPriority(RulePriority.LOW);
 
-			RulesetDto ruleset = coreRulesets.get(rule.getCheckovIac());
+			CheckovRuleDefinitionDto def = new CheckovRuleDefinitionDto();
+			def.setType(type);
+			def.setEntity(entity);
+			def.setIac(iac);
+
+			CheckovProvidedRuleDto rule = coreRules.get(name);
+			if (rule == null) {
+				rule = new CheckovProvidedRuleDto();
+				rule.setName(name);
+				rule.setMessage(message);
+				String url = guidelines.optString(rule.getName(), "#");
+				rule.setExternalUrl(url);
+				rule.setPriority(RulePriority.LOW);
+				coreRules.put(name, rule);
+			}
+			rule.getDefinitions().add(def);
+
+			RulesetDto ruleset = coreRulesets.get(rulesetName);
 			if (ruleset == null) {
 				ruleset = new RulesetDto();
 				ruleset.setBlockingLevel(RulePriority.LOW);
 				ruleset.setDescription(
-						"Checkov Provided Ruleset for " + rule.getCheckovIac() + " rules");
+						"Checkov Provided Ruleset for " + iac + " rules");
 				ruleset.setDesignation(RulesetDesignation.PROVIDED);
-				ruleset.setName(rule.getCheckovIac());
-				coreRulesets.put(rule.getCheckovIac(), ruleset);
+				ruleset.setName(rulesetName);
+				coreRulesets.put(rulesetName, ruleset);
 			}
 			ruleset.getRules().add(rule);
 		});
-		return coreRulesets;
+		this.coreRulesets = coreRulesets;
+		this.coreRules = coreRules.values().stream().collect(Collectors.toList());
 	}
 
 	/**
@@ -255,7 +272,7 @@ public class CheckovEngine {
 		try {
 			results = runCheckovCommand("-d", targetDirectory.toString(), "--quiet", "--no-guide",
 					"-o", "json", "-c",
-					ruleChecks.stream().map(CheckovProvidedRuleDto::getCheckovRuleName)
+					ruleChecks.stream().map(RuleDto::getName)
 							.collect(Collectors.joining(",")));
 			json = gson.fromJson(results.getResults(), JsonObject.class);
 		} catch (Exception e) {

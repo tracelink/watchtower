@@ -39,11 +39,14 @@ public class RuleEditControllerTest {
 	@MockBean
 	private RuleEditorService ruleManagerService;
 
+	private MockRuleEntity ruleEntity;
 	private RuleDto rule;
+
 
 	@BeforeEach
 	public void setup() {
-		rule = new MockRuleEntity().toDto();
+		ruleEntity = new MockRuleEntity();
+		rule = ruleEntity.toDto();
 	}
 
 	@Test
@@ -168,6 +171,7 @@ public class RuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.RULE_MODIFY_NAME})
 	public void testDeleteRule() throws Exception {
+		BDDMockito.when(ruleService.getRule(BDDMockito.anyLong())).thenReturn(ruleEntity);
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/rule/edit/regex/delete")
 						.param("ruleId", rule.getId().toString())
@@ -182,6 +186,7 @@ public class RuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.RULE_MODIFY_NAME})
 	public void testDeleteRuleNotFound() throws Exception {
+		BDDMockito.when(ruleService.getRule(BDDMockito.anyLong())).thenReturn(ruleEntity);
 		BDDMockito.doThrow(RuleNotFoundException.class).when(ruleService).deleteRule(rule.getId());
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/rule/edit/pmd/delete")

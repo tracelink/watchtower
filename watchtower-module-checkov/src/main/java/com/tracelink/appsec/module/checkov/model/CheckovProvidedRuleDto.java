@@ -1,8 +1,11 @@
 package com.tracelink.appsec.module.checkov.model;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.tracelink.appsec.module.checkov.CheckovModule;
 import com.tracelink.appsec.watchtower.core.rule.ProvidedRuleDto;
-import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
 /**
  * Extension of the {@linkplain ProvidedRuleDto} to add Checkov Rule concepts like the
@@ -12,20 +15,9 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  */
 public class CheckovProvidedRuleDto extends ProvidedRuleDto {
-	private String ruleName;
 	private String message;
-	private String type;
-	private String entity;
-	private String iac;
 	private String externalUrl;
-
-	public String getCheckovRuleName() {
-		return this.ruleName;
-	}
-
-	public void setCheckovRuleName(String ruleName) {
-		this.ruleName = ruleName;
-	}
+	private List<CheckovRuleDefinitionDto> definitions = new ArrayList<>();
 
 	@Override
 	public String getMessage() {
@@ -34,30 +26,6 @@ public class CheckovProvidedRuleDto extends ProvidedRuleDto {
 
 	public void setMessage(String message) {
 		this.message = message;
-	}
-
-	public String getCheckovType() {
-		return type;
-	}
-
-	public void setCheckovType(String type) {
-		this.type = type;
-	}
-
-	public String getCheckovEntity() {
-		return entity;
-	}
-
-	public void setCheckovEntity(String entity) {
-		this.entity = entity;
-	}
-
-	public String getCheckovIac() {
-		return iac;
-	}
-
-	public void setCheckovIac(String iac) {
-		this.iac = iac;
 	}
 
 	public void setExternalUrl(String url) {
@@ -69,6 +37,14 @@ public class CheckovProvidedRuleDto extends ProvidedRuleDto {
 		return externalUrl;
 	}
 
+	public void setDefinitions(List<CheckovRuleDefinitionDto> definitions) {
+		this.definitions = definitions;
+	}
+
+	public List<CheckovRuleDefinitionDto> getDefinitions() {
+		return definitions;
+	}
+
 	@Override
 	public String getModule() {
 		return CheckovModule.MODULE_NAME;
@@ -76,27 +52,20 @@ public class CheckovProvidedRuleDto extends ProvidedRuleDto {
 
 	@Override
 	public CheckovRuleEntity toEntity() {
-		CheckovRuleEntity rule = new CheckovRuleEntity();
-		// Set inherited fields
-		rule.setName(getName());
-		rule.setAuthor(getAuthor());
-		rule.setMessage(getMessage());
-		rule.setExternalUrl(getExternalUrl());
-		rule.setPriority(getPriority());
-		// Set Checkov-specific fields
-		rule.setType(getCheckovType());
-		rule.setEntity(getCheckovEntity());
-		rule.setIac(getCheckovIac());
-		return rule;
-	}
-
-	@Override
-	public int compareTo(RuleDto o) {
-		if (o instanceof CheckovProvidedRuleDto) {
-			CheckovProvidedRuleDto other = (CheckovProvidedRuleDto) o;
-			return (getCheckovIac() + getName()).compareTo(other.getCheckovIac() + other.getName());
+		if (isProvided()) {
+			CheckovRuleEntity rule = new CheckovRuleEntity();
+			rule.setName(getName());
+			rule.setAuthor(getAuthor());
+			rule.setProvided(isProvided());
+			rule.setMessage(getMessage());
+			rule.setExternalUrl(getExternalUrl());
+			rule.setPriority(getPriority());
+			rule.setDefinitions(getDefinitions().stream().map(CheckovRuleDefinitionDto::toEntity)
+					.collect(Collectors.toSet()));
+			return rule;
+		} else {
+			throw new IllegalArgumentException("Checkov does not support Custom Rules");
 		}
-		return super.compareTo(o);
 	}
 
 }

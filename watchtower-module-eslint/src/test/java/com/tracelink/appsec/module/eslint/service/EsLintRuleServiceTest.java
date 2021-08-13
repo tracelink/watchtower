@@ -103,7 +103,7 @@ public class EsLintRuleServiceTest {
 		BDDMockito.verify(ruleRepository).saveAndFlush(entityCaptor.capture());
 		EsLintRuleEntity entity = entityCaptor.getValue();
 		MatcherAssert.assertThat(entity.getName(), Matchers.is(dto.getName()));
-		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isCore()));
+		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isProvided()));
 		MatcherAssert.assertThat(entity.getPriority(), Matchers.is(dto.getPriority()));
 		MatcherAssert.assertThat(entity.getMessage(), Matchers.not(dto.getMessage()));
 		MatcherAssert.assertThat(entity.getExternalUrl(), Matchers.not(dto.getExternalUrl()));
@@ -148,7 +148,7 @@ public class EsLintRuleServiceTest {
 		BDDMockito.verify(ruleRepository).saveAndFlush(entityCaptor.capture());
 		EsLintRuleEntity entity = entityCaptor.getValue();
 		MatcherAssert.assertThat(entity.getName(), Matchers.is(dto.getName()));
-		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isCore()));
+		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isProvided()));
 		MatcherAssert.assertThat(entity.getPriority(), Matchers.is(dto.getPriority()));
 		MatcherAssert.assertThat(entity.getMessage(), Matchers.is(dto.getMessage()));
 		MatcherAssert.assertThat(entity.getExternalUrl(), Matchers.is(dto.getExternalUrl()));
@@ -183,7 +183,6 @@ public class EsLintRuleServiceTest {
 		String dtoMessage = "This is a bad practice.";
 		String dtoUrl = "https://example.com";
 		RulePriority dtoPriority = RulePriority.MEDIUM_HIGH;
-		boolean dtoCore = false;
 
 		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(dtoId);

@@ -42,11 +42,6 @@ public class EsLintProvidedRuleDto extends ProvidedRuleDto implements EsLintRule
 		return EsLintModule.MODULE_NAME;
 	}
 
-	@Override
-	public boolean isCore() {
-		return true;
-	}
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -60,7 +55,7 @@ public class EsLintProvidedRuleDto extends ProvidedRuleDto implements EsLintRule
 		rule.setExternalUrl(getExternalUrl());
 		rule.setPriority(getPriority());
 		// Set ESLint-specific fields
-		rule.setCore(isCore());
+		rule.setCore(isProvided());
 		return rule;
 	}
 

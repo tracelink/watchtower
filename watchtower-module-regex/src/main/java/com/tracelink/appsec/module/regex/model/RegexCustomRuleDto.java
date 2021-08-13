@@ -65,7 +65,7 @@ public class RegexCustomRuleDto extends CustomRuleDto {
 	public RegexRuleEntity toEntity() {
 		RegexRuleEntity rule = new RegexRuleEntity();
 		rule.setName(getName());
-		rule.setProvided(false);
+		rule.setProvided(isProvided());
 		rule.setAuthor(getAuthor());
 		rule.setMessage(getMessage());
 		rule.setExternalUrl(getExternalUrl());

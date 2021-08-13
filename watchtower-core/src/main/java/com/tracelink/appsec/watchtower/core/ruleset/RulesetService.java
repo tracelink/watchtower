@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -477,6 +478,14 @@ public class RulesetService {
 							"Trying to register a provided ruleset, but not designated correctly. Module "
 									+ moduleName + " ruleset " + incomingRulesetDto.getName());
 				}
+				List<RuleDto> nonProvidedRules = incomingRulesetDto.getRules().stream()
+						.filter(r -> !r.isProvided()).collect(Collectors.toList());
+				if (!nonProvidedRules.isEmpty()) {
+					throw new ModuleException(
+							"Trying to register a provided ruleset, but not all rules are marked provided. Module "
+									+ moduleName + " ruleset " + incomingRulesetDto.getName()
+									+ " rules: " + Strings.join(nonProvidedRules, ','));
+				}
 
 				// Ensure the correct naming convention of the provided ruleset
 				if (!incomingRulesetDto.getName().startsWith(moduleName)) {
@@ -550,8 +559,7 @@ public class RulesetService {
 			LOG.debug("Found Watchtower Ruleset for name {}, updating",
 					incomingRulesetDto.getName());
 			finalRuleset = updateExistingRuleset(incomingRulesetDto, backupAuthorName,
-					foundWatchtowerRuleset,
-					customOption, providedOption);
+					foundWatchtowerRuleset, customOption, providedOption);
 		} else {
 			// This is a new ruleset, so import it normally
 			LOG.debug("No existing Watchtower Ruleset for name {}, importing as new",
@@ -569,16 +577,10 @@ public class RulesetService {
 	}
 
 	private RulesetEntity updateExistingRuleset(RulesetDto incomingRulesetDto, String authorName,
-			RulesetEntity foundWatchtowerRuleset, ImportOption importOption,
+			RulesetEntity foundWatchtowerRuleset, ImportOption customOption,
 			ImportOption providedOption) throws RulesetException {
-		// The ruleset exists
-		if (importOption.equals(ImportOption.SKIP)) {
-			// Skip
-			LOG.debug("Skipping update of ruleset {}. Will still update rules in ruleset",
-					incomingRulesetDto.getName());
-		}
 		// ruleset is provided, handle separately
-		else if (foundWatchtowerRuleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+		if (foundWatchtowerRuleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
 			if (providedOption.equals(ImportOption.SKIP)) {
 				LOG.debug(
 						"Skipping update of provided ruleset {}. Will still update rules in ruleset if configured",
@@ -587,6 +589,11 @@ public class RulesetService {
 				foundWatchtowerRuleset.setBlockingLevel(incomingRulesetDto.getBlockingLevel());
 				foundWatchtowerRuleset.setDescription(incomingRulesetDto.getDescription());
 			}
+		} else if (customOption.equals(ImportOption.SKIP)) {
+			// Skip
+			LOG.debug(
+					"Skipping update of ruleset {}. Will still attempt update of rules in ruleset",
+					incomingRulesetDto.getName());
 		}
 		// ruleset update/override are treated the same
 		else {
@@ -595,7 +602,7 @@ public class RulesetService {
 			foundWatchtowerRuleset.setDesignation(incomingRulesetDto.getDesignation());
 		}
 		List<RuleEntity> rules =
-				ruleService.importRules(incomingRulesetDto.getRules(), authorName, importOption,
+				ruleService.importRules(incomingRulesetDto.getRules(), authorName, customOption,
 						providedOption);
 		// Set rules for the ruleset
 		foundWatchtowerRuleset.setRules(new HashSet<>(rules));
@@ -603,7 +610,7 @@ public class RulesetService {
 	}
 
 	private RulesetEntity importNewRuleset(RulesetDto rulesetDto, String authorName,
-			ImportOption importOption, ImportOption providedOption)
+			ImportOption customOption, ImportOption providedOption)
 			throws RulesetException {
 		// Create ruleset
 		RulesetEntity ruleset = new RulesetEntity();
@@ -614,12 +621,12 @@ public class RulesetService {
 		ruleset.setBlockingLevel(rulesetDto.getBlockingLevel());
 		// Import rules
 		List<RuleEntity> rules =
-				ruleService.importRules(rulesetDto.getRules(), authorName, importOption,
+				ruleService.importRules(rulesetDto.getRules(), authorName, customOption,
 						providedOption);
 		// Set rules for the ruleset
 		ruleset.setRules(new HashSet<>(rules));
 		ruleset.setRulesets(
-				importInheritedRulesets(rulesetDto, authorName, importOption,
+				importInheritedRulesets(rulesetDto, authorName, customOption,
 						providedOption));
 		return rulesetRepository.saveAndFlush(ruleset);
 	}

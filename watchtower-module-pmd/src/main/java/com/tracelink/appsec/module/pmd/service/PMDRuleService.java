@@ -14,7 +14,6 @@ import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyEntity;
 import com.tracelink.appsec.module.pmd.model.PMDProvidedRuleDto;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDRuleEntity;
 import com.tracelink.appsec.module.pmd.repository.PMDRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -189,7 +188,7 @@ public class PMDRuleService {
 		pmdOriginalRulesMap = originalRules;
 	}
 
-	public Rule makeRuleFromDto(PMDRuleDto ruleDto) throws RuleNotFoundException {
+	public Rule makeRuleFromDto(RuleDto ruleDto) throws RuleNotFoundException {
 		Rule pmdRule;
 		if (ruleDto.isProvided()) {
 			PMDProvidedRuleDto provided = (PMDProvidedRuleDto) ruleDto;

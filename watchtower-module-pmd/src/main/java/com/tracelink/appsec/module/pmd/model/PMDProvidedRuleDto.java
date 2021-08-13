@@ -33,11 +33,6 @@ public class PMDProvidedRuleDto extends ProvidedRuleDto implements PMDRuleDto {
 	}
 
 	@Override
-	public boolean isProvided() {
-		return true;
-	}
-
-	@Override
 	public PMDRuleEntity toEntity() {
 		PMDRuleEntity rule = new PMDRuleEntity();
 		rule.setAuthor(getAuthor());

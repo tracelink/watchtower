@@ -97,7 +97,7 @@ public class PMDScanner implements IScanner {
 		try {
 			for (RuleDto ruleDto : dto.getAllRules()) {
 				if (ruleDto instanceof PMDRuleDto) {
-					rules.add(ruleService.makeRuleFromDto((PMDRuleDto) ruleDto));
+					rules.add(ruleService.makeRuleFromDto(ruleDto));
 				}
 			}
 		} catch (RuleNotFoundException e) {

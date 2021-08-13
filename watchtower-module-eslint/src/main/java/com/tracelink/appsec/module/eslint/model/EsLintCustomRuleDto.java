@@ -10,7 +10,6 @@ import javax.validation.constraints.NotNull;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 
 /**
  * Represents a data transfer object for the {@link EsLintRuleEntity} for custom rules. All fields
@@ -36,11 +35,6 @@ public class EsLintCustomRuleDto extends CustomRuleDto implements EsLintRuleDto 
 	@Override
 	public String getModule() {
 		return EsLintModule.MODULE_NAME;
-	}
-
-	@Override
-	public boolean isCore() {
-		return false;
 	}
 
 	public List<EsLintMessageDto> getMessages() {
@@ -71,15 +65,16 @@ public class EsLintCustomRuleDto extends CustomRuleDto implements EsLintRuleDto 
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RuleEntity toEntity() {
+	public EsLintRuleEntity toEntity() {
 		EsLintRuleEntity rule = new EsLintRuleEntity();
 		// Set inherited fields
 		rule.setName(getName());
+		rule.setAuthor(getAuthor());
 		rule.setMessage(getMessage());
 		rule.setExternalUrl(getExternalUrl());
 		rule.setPriority(getPriority());
 		// Set ESLint-specific fields
-		rule.setCore(isCore());
+		rule.setCore(isProvided());
 		rule.setMessages(
 				getMessages().stream().map(EsLintMessageDto::toEntity)
 						.collect(Collectors.toSet()));

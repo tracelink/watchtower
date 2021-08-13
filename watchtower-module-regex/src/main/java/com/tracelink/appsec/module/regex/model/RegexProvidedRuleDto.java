@@ -92,7 +92,7 @@ public class RegexProvidedRuleDto extends ProvidedRuleDto {
 	public RegexRuleEntity toEntity() {
 		RegexRuleEntity rule = new RegexRuleEntity();
 		rule.setName(getName());
-		rule.setProvided(true);
+		rule.setProvided(isProvided());
 		rule.setAuthor(getAuthor());
 		rule.setMessage(getMessage());
 		rule.setExternalUrl(getExternalUrl());

@@ -62,11 +62,6 @@ public class PMDCustomRuleDto extends CustomRuleDto implements PMDRuleDto {
 		this.properties = properties;
 	}
 
-	@Override
-	public boolean isProvided() {
-		return false;
-	}
-
 	/**
 	 * {@inheritDoc}
 	 */

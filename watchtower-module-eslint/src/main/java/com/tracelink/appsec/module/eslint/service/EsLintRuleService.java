@@ -1,7 +1,5 @@
 package com.tracelink.appsec.module.eslint.service;
 
-import java.util.stream.Collectors;
-
 import javax.validation.Validator;
 
 import org.apache.commons.lang3.StringUtils;
@@ -58,13 +56,6 @@ public class EsLintRuleService {
 		if (ruleRepository.findByName(dto.getName()) != null) {
 			throw new RuleDesignerException("An ESLint rule with the given name already exists");
 		}
-		// Set fields common to both core and custom rules
-		EsLintRuleEntity rule = new EsLintRuleEntity();
-		rule.setAuthor(dto.getAuthor());
-		rule.setCore(dto.isCore());
-		rule.setName(dto.getName());
-		rule.setPriority(dto.getPriority());
-
 		// Make sure the rule is not a core rule
 		if (engine.getCoreRules().containsKey(dto.getName())) {
 			throw new RuleDesignerException("\"" + dto.getName()
@@ -75,13 +66,8 @@ public class EsLintRuleService {
 			throw new RuleDesignerException(
 					"Please provide a create function that is not empty");
 		}
-		rule.setMessage(dto.getMessage());
-		rule.setExternalUrl(dto.getExternalUrl());
-		rule.setMessages(dto.getMessages().stream().map(EsLintMessageDto::toEntity)
-				.collect(Collectors.toSet()));
-		rule.setCreateFunction(dto.getCreateFunction());
 		// Save rule
-		ruleRepository.saveAndFlush(rule);
+		ruleRepository.saveAndFlush(dto.toEntity());
 	}
 
 	/**

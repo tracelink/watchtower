@@ -77,11 +77,13 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 		return getName();
 	}
 
-	public boolean isCustom() {
+	@JsonIgnore
+	public final boolean isCustom() {
 		return RuleDesignation.CUSTOM.equals(getRuleDesignation());
 	}
 
-	public boolean isProvided() {
+	@JsonIgnore
+	public final boolean isProvided() {
 		return RuleDesignation.PROVIDED.equals(getRuleDesignation());
 	}
 

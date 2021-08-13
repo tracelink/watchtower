@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.MustacheException;
 import com.samskivert.mustache.Template;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -64,7 +65,7 @@ public class EsLintRulesetExporter {
 		params.put("description", rulesetDto.getDescription());
 		// Custom rules are non-provided rules custom-defined with Meta objects
 		params.put("customRules",
-				esLintRules.stream().filter(r -> !((EsLintRuleDto) r).isCore())
+				esLintRules.stream().filter(r -> (r instanceof EsLintCustomRuleDto))
 						.collect(Collectors.toList()));
 		// Priorities contains all rule definitions (Provided and Custom) and their priority
 		params.put("priorities", esLintRules.stream()
