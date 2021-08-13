@@ -17,7 +17,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  * @author mcool
  */
-public class RegexRuleDto extends CustomRuleDto {
+public class RegexCustomRuleDto extends CustomRuleDto {
 
 	@NotNull(message = "File extension" + CANNOT_BE_NULL)
 	@Size(max = 255, message = "File extension cannot have a length of more than 256 characters.")
@@ -65,6 +65,7 @@ public class RegexRuleDto extends CustomRuleDto {
 	public RegexRuleEntity toEntity() {
 		RegexRuleEntity rule = new RegexRuleEntity();
 		rule.setName(getName());
+		rule.setProvided(false);
 		rule.setAuthor(getAuthor());
 		rule.setMessage(getMessage());
 		rule.setExternalUrl(getExternalUrl());

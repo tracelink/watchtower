@@ -15,11 +15,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.module.regex.RegexModule;
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto;
 import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 
 /**
@@ -39,8 +41,19 @@ public class RegexRuleEditController {
 		this.ruleService = ruleService;
 	}
 
-	@PostMapping("/rule/edit/regex/edit")
-	public String editRule(@Valid RegexRuleDto dto, BindingResult bindingResult,
+	@PostMapping("/rule/edit/regex/edit/custom")
+	public String editRule(@Valid RegexCustomRuleDto dto, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		return editRuleInner(dto, bindingResult, redirectAttributes);
+	}
+
+	@PostMapping("/rule/edit/regex/edit/provided")
+	public String editRule(@Valid RegexProvidedRuleDto dto, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		return editRuleInner(dto, bindingResult, redirectAttributes);
+	}
+
+	private String editRuleInner(RuleDto dto, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
 		// Validate and Edit rule
 		try {

@@ -7,14 +7,14 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 
 @ExtendWith(MockitoExtension.class)
 public class RegexBenchmarkingTest {
 
 	@Mock
-	RegexRuleDto rule;
+	RegexCustomRuleDto rule;
 
 	@Test
 	public void testOutputForRules() throws Exception {

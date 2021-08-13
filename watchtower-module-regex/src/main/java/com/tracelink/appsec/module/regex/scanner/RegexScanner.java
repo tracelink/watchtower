@@ -1,6 +1,6 @@
 package com.tracelink.appsec.module.regex.scanner;
 
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
@@ -67,6 +67,6 @@ public class RegexScanner implements IScanner {
 
 	@Override
 	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return RegexRuleDto.class;
+		return RegexCustomRuleDto.class;
 	}
 }

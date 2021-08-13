@@ -8,7 +8,7 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
@@ -51,8 +51,8 @@ public class RegexCallable implements Callable<ScanReport> {
 			while ((lineData = br.readLine()) != null) {
 				lineNum++;
 				for (RuleDto rule : ruleset.getAllRules()) {
-					if (rule instanceof RegexRuleDto) {
-						RegexRuleDto regexRule = (RegexRuleDto) rule;
+					if (rule instanceof RegexCustomRuleDto) {
+						RegexCustomRuleDto regexRule = (RegexCustomRuleDto) rule;
 						if (regexRule.isValidExtension(currentFile.toString())) {
 							if (findViolations(lineData, regexRule)) {
 								ScanViolation sv = new ScanViolation();
@@ -75,7 +75,7 @@ public class RegexCallable implements Callable<ScanReport> {
 		return report;
 	}
 
-	private boolean findViolations(String lineData, RegexRuleDto regexRule) {
+	private boolean findViolations(String lineData, RegexCustomRuleDto regexRule) {
 		try (Benchmarker b = benchmarking.newRuleBenchmarker(regexRule)) {
 			Pattern regexPattern = regexRule.getCompiledPattern();
 			Matcher matcher = regexPattern.matcher(lineData);

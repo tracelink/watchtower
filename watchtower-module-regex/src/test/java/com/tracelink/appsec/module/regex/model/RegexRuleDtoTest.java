@@ -15,10 +15,10 @@ public class RegexRuleDtoTest {
 	private static RulePriority priority = RulePriority.MEDIUM;
 	private static String extension = "txt";
 	private static String pattern = "AKIA[0-9A-Z]{16}";
-	private static RegexRuleDto regexRuleDto = setup();
+	private static RegexCustomRuleDto regexRuleDto = setup();
 
-	public static RegexRuleDto setup() {
-		RegexRuleDto regexRuleDto = new RegexRuleDto();
+	public static RegexCustomRuleDto setup() {
+		RegexCustomRuleDto regexRuleDto = new RegexCustomRuleDto();
 		regexRuleDto.setId(id);
 		regexRuleDto.setAuthor(author);
 		regexRuleDto.setName(name);

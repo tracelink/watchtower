@@ -5,7 +5,7 @@
     "java.util.HashSet",
     [
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "AWS API Key",
           "message": "This looks to be an AWS API Key. Please do not commit any secrets to source control.",
@@ -15,7 +15,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Slack Token",
           "message": "This looks to be a Slack Token. Please do not commit any secrets to source control.",
@@ -25,7 +25,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Slack Webhook",
           "message": "This looks to be a Slack Webhook. These services should be treated as secrets and not committed to source control.",
@@ -35,7 +35,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "RSA private key",
           "message": "This looks to be a Private Key Definition. Please do not commit any secrets to source control.",
@@ -45,7 +45,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "SSH (OPENSSH) private key",
           "message": "This looks to be a Private Key Definition. Please do not commit any secrets to source control.",
@@ -55,7 +55,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "SSH (DSA) private key",
           "message": "This looks to be a Private Key Definition. Please do not commit any secrets to source control.",
@@ -65,7 +65,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "SSH (EC) private key",
           "message": "This looks to be a Private Key Definition. Please do not commit any secrets to source control.",
@@ -75,7 +75,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "PGP private key block",
           "message": "This looks to be a Private Key Definition. Please do not commit any secrets to source control.",
@@ -85,7 +85,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Generic Secret",
           "message": "This looks to be a Generic Secret. Please do not commit any secrets to source control.",
@@ -95,7 +95,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Generic API Key",
           "message": "This looks to be some kind of API Key. Please do not commit any secrets to source control.",
@@ -105,7 +105,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Password in URL",
           "message": "This looks to be a Password configured in a URL. Please do not commit any secrets to source control.",
@@ -115,7 +115,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Generic Oauth",
           "message": "This looks to be an OAuth Token. Please do not commit any secrets to source control.",
@@ -125,7 +125,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Generic Service Account",
           "message": "This looks to be a Service Account definition. Please do not commit any secrets to source control.",
@@ -135,7 +135,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "GitHub",
           "message": "This looks to be a Github repo reference or secret. Please do not commit any secrets to source control.",
@@ -145,7 +145,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Facebook Oauth",
           "message": "This looks to be a Facebook OAuth Token. Please do not commit any secrets to source control.",
@@ -155,7 +155,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Twitter Oauth",
           "message": "This looks to be a Twitter OAuth Token. Please do not commit any secrets to source control.",
@@ -165,7 +165,7 @@
         }
       ],
       [
-        "com.tracelink.appsec.module.regex.model.RegexRuleDto",
+        "com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto",
         {
           "name": "Heroku API Key",
           "message": "This looks to be a Heroku API Key. Heroku is not an approved vendor. Please do not commit any secrets to source control.",
