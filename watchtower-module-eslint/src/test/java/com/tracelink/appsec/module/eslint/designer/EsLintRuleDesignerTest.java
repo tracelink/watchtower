@@ -84,9 +84,8 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQuery() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, DEFAULT_NAME, DEFAULT_CREATE_FUNCTION,
-						DEFAULT_MESSAGES);
+		RuleDesignerModelAndView mav =
+				ruleDesigner.query(DEFAULT_SOURCE_CODE, DEFAULT_CREATE_FUNCTION, DEFAULT_MESSAGES);
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(DEFAULT_SOURCE_CODE));
@@ -104,9 +103,8 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQueryBlankSourceCode() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(null, DEFAULT_CORE, DEFAULT_NAME, DEFAULT_CREATE_FUNCTION,
-						DEFAULT_MESSAGES);
+		RuleDesignerModelAndView mav =
+				ruleDesigner.query(null, DEFAULT_CREATE_FUNCTION, DEFAULT_MESSAGES);
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(DEFAULT_SOURCE_CODE));
@@ -126,8 +124,7 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQueryCoreBlankName() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(DEFAULT_SOURCE_CODE, true, null, null, null);
+		RuleDesignerModelAndView mav = ruleDesigner.query(DEFAULT_SOURCE_CODE, null, null);
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(DEFAULT_SOURCE_CODE));
@@ -147,8 +144,7 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQueryCore() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(DEFAULT_SOURCE_CODE, true, DEFAULT_NAME, null, null);
+		RuleDesignerModelAndView mav = ruleDesigner.query(DEFAULT_SOURCE_CODE, null, null);
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(DEFAULT_SOURCE_CODE));
@@ -168,8 +164,7 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQueryCustomBlankCreateFunction() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, null, null, null);
+		RuleDesignerModelAndView mav = ruleDesigner.query(DEFAULT_SOURCE_CODE, null, null);
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(DEFAULT_SOURCE_CODE));
@@ -189,8 +184,8 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQueryCustomInvalidMessage() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, null, DEFAULT_CREATE_FUNCTION,
+		RuleDesignerModelAndView mav =
+				ruleDesigner.query(DEFAULT_SOURCE_CODE, DEFAULT_CREATE_FUNCTION,
 						Collections.singletonList(new EsLintMessageDto("key", "")));
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
@@ -211,8 +206,7 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testQueryInvalidSourceCode() {
-		RuleDesignerModelAndView mav = ruleDesigner
-				.query(INVALID_SOURCE_CODE, true, "no-extra-semi", null, null);
+		RuleDesignerModelAndView mav = ruleDesigner.query(INVALID_SOURCE_CODE, null, null);
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(INVALID_SOURCE_CODE));

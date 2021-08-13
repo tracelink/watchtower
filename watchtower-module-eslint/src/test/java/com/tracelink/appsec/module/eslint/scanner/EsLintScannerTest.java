@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
-import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetExporter;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -23,7 +22,6 @@ public class EsLintScannerTest {
 
 	private static LinterEngine engine;
 
-	private EsLintRulesetExporter interpreter;
 	private EsLintScanner scanner;
 	private RulesetDto rulesetDto;
 
@@ -34,7 +32,6 @@ public class EsLintScannerTest {
 
 	@BeforeEach
 	public void setup() throws Exception {
-		interpreter = new EsLintRulesetExporter();
 		scanner = new EsLintScanner(engine);
 	}
 
@@ -122,7 +119,6 @@ public class EsLintScannerTest {
 		rule.setMessage("message");
 		rule.setExternalUrl("url");
 		rule.setPriority(RulePriority.LOW);
-		rule.setCore(false);
 		rule.setCreateFunction(createFunction);
 		RulesetDto ruleset = new RulesetDto();
 		ruleset.setName("ruleset");

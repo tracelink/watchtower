@@ -23,6 +23,9 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.tracelink.appsec.module.eslint.engine.json.CategoryDefinition;
+import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
+import com.tracelink.appsec.module.eslint.engine.json.ProvidedRuleDefinition;
 import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;

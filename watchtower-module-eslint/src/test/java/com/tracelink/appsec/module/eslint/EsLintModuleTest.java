@@ -8,8 +8,8 @@ import org.junit.jupiter.api.BeforeAll;
 
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
-import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -41,7 +41,6 @@ public class EsLintModuleTest extends ScannerModuleTest {
 		rule.setMessage("Message");
 		rule.setName("no-console");
 		rule.setPriority(RulePriority.MEDIUM);
-		rule.setCore(true);
 
 		testPlan.withMigration("db/eslint").withName("ESLint")
 				.withRuleSupplier(() -> {
@@ -51,7 +50,6 @@ public class EsLintModuleTest extends ScannerModuleTest {
 					customRule.setMessage("Message");
 					customRule.setName("rule-name");
 					customRule.setPriority(RulePriority.MEDIUM);
-					customRule.setCore(false);
 					EsLintMessageDto messageDto = new EsLintMessageDto();
 					messageDto.setKey("myMessage");
 					messageDto.setValue("Some helpful message");

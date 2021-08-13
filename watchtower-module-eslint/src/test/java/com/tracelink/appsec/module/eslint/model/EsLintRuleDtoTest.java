@@ -17,8 +17,6 @@ public class EsLintRuleDtoTest {
 		dto.setMessage("Some message");
 		dto.setExternalUrl("https://example.com");
 		dto.setPriority(RulePriority.MEDIUM);
-		dto.setCore(false);
-		dto.setType(EsLintRuleType.PROBLEM);
 		EsLintMessageDto messageDto = new EsLintMessageDto();
 		messageDto.setKey("unexpected");
 		messageDto.setValue("Some helpful message");
@@ -35,13 +33,7 @@ public class EsLintRuleDtoTest {
 				+ "\t\t}\n"
 				+ "\t};\n"
 				+ "}");
-		dto.setCategory("Rule Category");
-		dto.setRecommended(false);
-		dto.setSuggestion(false);
-		dto.setFixable(EsLintRuleFixable.WHITESPACE);
 		dto.setSchema("[]");
-		dto.setDeprecated(false);
-		dto.setReplacedBy("[]");
 		return dto;
 	}
 
@@ -61,11 +53,6 @@ public class EsLintRuleDtoTest {
 		Assertions.assertEquals(retMessage.getKey(), ruleMessage.getKey());
 		Assertions.assertEquals(retMessage.getValue(), ruleMessage.getValue());
 		Assertions.assertEquals(dto.getCreateFunction(), rule.getCreateFunction());
-		Assertions.assertEquals(dto.getCategory(), rule.getCategory());
-		Assertions.assertEquals(dto.getRecommended(), rule.getRecommended());
-		Assertions.assertEquals(dto.getSuggestion(), rule.getSuggestion());
-		Assertions.assertEquals(dto.getDeprecated(), rule.getDeprecated());
-		Assertions.assertEquals(dto.getReplacedBy(), rule.getReplacedBy());
 	}
 
 }

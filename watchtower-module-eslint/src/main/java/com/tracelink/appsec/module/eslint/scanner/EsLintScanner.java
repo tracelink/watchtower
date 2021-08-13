@@ -15,8 +15,8 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.gson.Gson;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
-import com.tracelink.appsec.module.eslint.engine.LinterMessage;
 import com.tracelink.appsec.module.eslint.engine.ProcessResult;
+import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
 import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetExporter;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;

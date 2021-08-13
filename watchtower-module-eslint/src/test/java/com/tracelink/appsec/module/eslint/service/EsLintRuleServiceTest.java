@@ -16,9 +16,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
-import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleEntity;
 import com.tracelink.appsec.module.eslint.repository.EsLintRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -82,7 +82,6 @@ public class EsLintRuleServiceTest {
 	@Test
 	public void testSaveCoreRuleInvalid() {
 		EsLintCustomRuleDto dto = getEsLintRuleDto();
-		dto.setCore(true);
 		try {
 			ruleService.saveRule(dto);
 			Assertions.fail("Should have thrown exception");
@@ -96,7 +95,6 @@ public class EsLintRuleServiceTest {
 	@Test
 	public void testSaveCoreRule() throws Exception {
 		EsLintCustomRuleDto dto = getEsLintRuleDto();
-		dto.setCore(true);
 		dto.setName("no-eq-null");
 
 		ruleService.saveRule(dto);
@@ -194,7 +192,6 @@ public class EsLintRuleServiceTest {
 		dto.setMessage(dtoMessage);
 		dto.setExternalUrl(dtoUrl);
 		dto.setPriority(dtoPriority);
-		dto.setCore(dtoCore);
 
 		ruleService.editRule(dto);
 		Assertions.assertEquals(0L, rule.getId());
@@ -215,7 +212,6 @@ public class EsLintRuleServiceTest {
 
 			EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 			dto.setId(dtoId);
-			dto.setCore(false);
 
 			ruleService.editRule(dto);
 		});
@@ -257,7 +253,6 @@ public class EsLintRuleServiceTest {
 		dto.setMessage(dtoMessage);
 		dto.setExternalUrl(dtoUrl);
 		dto.setPriority(dtoPriority);
-		dto.setCore(dtoCore);
 		EsLintMessageDto message = new EsLintMessageDto();
 		message.setId(0L);
 		message.setKey(dtoMessageKey);
@@ -285,7 +280,6 @@ public class EsLintRuleServiceTest {
 		rule.setMessage("This is a bad practice.");
 		rule.setExternalUrl("https://example.com");
 		rule.setPriority(RulePriority.MEDIUM_HIGH);
-		rule.setCore(false);
 		EsLintMessageDto message = new EsLintMessageDto();
 		message.setKey("myMessage");
 		message.setValue("There's something unexpected here");

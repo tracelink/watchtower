@@ -1,4 +1,4 @@
-package com.tracelink.appsec.module.eslint.engine;
+package com.tracelink.appsec.module.eslint.engine.json;
 
 /**
  * JSON model for the provided rule categories (rulesets) returned by ESLint.

@@ -3,8 +3,6 @@ package com.tracelink.appsec.module.eslint.engine.json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.module.eslint.engine.LinterMessage;
-
 public class LinterMessageTest {
 
 	@Test

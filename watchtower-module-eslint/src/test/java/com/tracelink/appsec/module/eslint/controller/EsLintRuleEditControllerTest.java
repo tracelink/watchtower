@@ -31,8 +31,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
-import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleEntity;
 import com.tracelink.appsec.module.eslint.service.EsLintRuleService;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
@@ -100,7 +100,8 @@ public class EsLintRuleEditControllerTest {
 				.andExpect(MockMvcResultMatchers.flash().attribute(
 						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 						"Successfully edited rule."));
-		ArgumentCaptor<EsLintCustomRuleDto> argumentCaptor = ArgumentCaptor.forClass(EsLintCustomRuleDto.class);
+		ArgumentCaptor<EsLintCustomRuleDto> argumentCaptor =
+				ArgumentCaptor.forClass(EsLintCustomRuleDto.class);
 		BDDMockito.verify(esLintRuleService).editRule(argumentCaptor.capture());
 		Assertions.assertEquals("new-name", argumentCaptor.getValue().getName());
 	}
@@ -207,7 +208,7 @@ public class EsLintRuleEditControllerTest {
 	}
 
 	public static EsLintCustomRuleDto getEsLintRuleDto() {
-		EsLintCustomRuleDto dto = getEsLintRule().toDto();
+		EsLintCustomRuleDto dto = (EsLintCustomRuleDto) getEsLintRule().toDto();
 		dto.setId(1L);
 		return dto;
 	}

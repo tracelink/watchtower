@@ -23,8 +23,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
-import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.service.EsLintRuleService;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
@@ -62,8 +62,7 @@ public class EsLintRuleDesignerControllerTest {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
 		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
+				.query(BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyList()))
 				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
@@ -87,8 +86,7 @@ public class EsLintRuleDesignerControllerTest {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
 		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
+				.query(BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyList()))
 				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
@@ -116,8 +114,7 @@ public class EsLintRuleDesignerControllerTest {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
 		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
+				.query(BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyList()))
 				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
@@ -145,8 +142,7 @@ public class EsLintRuleDesignerControllerTest {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
 		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
+				.query(BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyList()))
 				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
@@ -176,8 +172,7 @@ public class EsLintRuleDesignerControllerTest {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
 		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
+				.query(BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyList()))
 				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
@@ -197,7 +192,8 @@ public class EsLintRuleDesignerControllerTest {
 				.andExpect(MockMvcResultMatchers.model().attribute("success",
 						Matchers.is("Successfully saved rule: rule-name")));
 
-		ArgumentCaptor<EsLintCustomRuleDto> ruleCaptor = ArgumentCaptor.forClass(EsLintCustomRuleDto.class);
+		ArgumentCaptor<EsLintCustomRuleDto> ruleCaptor =
+				ArgumentCaptor.forClass(EsLintCustomRuleDto.class);
 		BDDMockito.verify(ruleService).saveRule(ruleCaptor.capture());
 		Assertions.assertEquals("jdoe", ruleCaptor.getValue().getAuthor());
 	}
@@ -209,7 +205,6 @@ public class EsLintRuleDesignerControllerTest {
 		rule.setMessage("This is a bad practice.");
 		rule.setExternalUrl("https://example.com");
 		rule.setPriority(RulePriority.MEDIUM_HIGH);
-		rule.setCore(false);
 		EsLintMessageDto message = new EsLintMessageDto();
 		message.setKey("myMessage");
 		message.setValue("There's something unexpected here");
