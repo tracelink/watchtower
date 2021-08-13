@@ -34,6 +34,7 @@ import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
 
@@ -326,9 +327,13 @@ public class RulesetService {
 	 *
 	 * @param ruleId ID of the rule to be removed from all rulesets
 	 * @throws RuleNotFoundException if the rule does not exist
+	 * @throws RuleException         if the rule cannot be removed
 	 */
-	public void removeRuleFromAllRulesets(long ruleId) throws RuleNotFoundException {
+	public void removeRuleFromAllRulesets(long ruleId) throws RuleNotFoundException, RuleException {
 		RuleEntity rule = ruleService.getRule(ruleId);
+		if (rule.toDto().isProvided()) {
+			throw new RuleException("Cannot delete a provided rule");
+		}
 		Collection<RulesetEntity> rulesets = rulesetRepository.findAll();
 		rulesets.forEach(ruleset -> ruleset.getRules().remove(rule));
 		rulesetRepository.saveAll(rulesets);

@@ -52,13 +52,12 @@ public class PMDDesignerController {
 
 	@PostMapping("/designer/pmd/save")
 	public RuleDesignerModelAndView saveRule(@RequestParam String name,
-			@RequestParam String message,
-			@RequestParam String description, @RequestParam String language,
+			@RequestParam String message, @RequestParam String language,
 			@RequestParam int priority, @RequestParam String query,
 			@RequestParam String externalUrl, String source, Authentication auth) {
 
 		PMDCustomRuleDto pmdDto =
-				createPMDRuleDto(name, message, description, language, priority, query,
+				createPMDRuleDto(name, message, language, priority, query,
 						externalUrl, auth);
 		RuleDesignerModelAndView mav = ruleDesigner.query(language, query, source);
 
@@ -71,7 +70,6 @@ public class PMDDesignerController {
 			mav.addObject("ruleName", name);
 			mav.addObject("ruleMessage", message);
 			mav.addObject("ruleLanguage", language);
-			mav.addObject("ruleDescription", description);
 			mav.addObject("rulePriority", priority);
 			mav.addObject("ruleExtUrl", externalUrl);
 		} else {
@@ -86,7 +84,7 @@ public class PMDDesignerController {
 		return mav;
 	}
 
-	private PMDCustomRuleDto createPMDRuleDto(String name, String message, String description,
+	private PMDCustomRuleDto createPMDRuleDto(String name, String message,
 			String language, int priority, String query, String externalUrl, Authentication auth) {
 		PMDPropertyDto property = new PMDPropertyDto();
 		property.setName("xpath");
@@ -94,7 +92,6 @@ public class PMDDesignerController {
 
 		PMDCustomRuleDto pmdDto = new PMDCustomRuleDto();
 		pmdDto.setAuthor(auth.getName());
-		// pmdDto.setDescription(description);
 		pmdDto.setExternalUrl(externalUrl);
 		pmdDto.setMessage(message);
 		pmdDto.setName(name);

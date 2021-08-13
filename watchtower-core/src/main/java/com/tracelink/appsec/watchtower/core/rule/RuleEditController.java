@@ -95,7 +95,7 @@ public class RuleEditController {
 			ruleService.deleteRule(ruleId);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully deleted rule.");
-		} catch (RuleNotFoundException e) {
+		} catch (RuleNotFoundException | RuleException e) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Cannot delete rule. " + e.getMessage());
 		}
