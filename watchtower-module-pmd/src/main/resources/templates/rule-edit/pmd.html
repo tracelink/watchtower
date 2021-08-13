@@ -1,12 +1,12 @@
 <!-- Card Footer -->
 <div class="card-footer">
     <p class="card-title text-left" th:text="${'Edit ' + (rule.isProvided() ? 'Provided' : 'Custom') + ' Rule Details'}"/>
-    <form class="d-inline" action="/rule/edit/pmd/edit" method="POST" th:object="${rule}">
+    <form class="d-inline" th:action="${'/rule/edit/pmd/edit/'+(rule.isProvided()? 'provided' : 'custom')}" method="POST" th:object="${rule}">
         <div class="row mb-2">
             <label for="name" class="col-sm-2 col-form-label">Name</label>
             <div class="col-sm-6">
                 <input type="text" class="form-control" id="name"
-                       th:value="${rule.name}" name="name">
+                       th:readonly="${rule.isProvided()}" th:value="${rule.name}" name="name">
             </div>
             <label for="priority" class="col-sm-2 col-form-label text-right">Priority</label>
             <div class="col-sm-2">
@@ -18,7 +18,7 @@
             </div>
         </div>
         <div class="row mb-2" th:unless="${rule.isProvided()}">
-	        <label for="author" class="control-label">Author</label>
+	        <label for="author" class="col-sm-2 col-form-label">Author</label>
 	        <div class="col-sm-4">
                 <input type="text" readonly class="form-control" id="author" th:value="${rule.author}"
                        name="author">
@@ -40,21 +40,14 @@
             <label for="message" class="col-sm-2">Message</label>
             <div class="col-sm-10">
                 <input class="form-control" type="text" id="message" th:value="${rule.message}"
-                       name="message">
-            </div>
-        </div>
-        <div class="row mb-2" th:unless="${rule.isProvided()}">
-            <label for="description" class="col-sm-2 col-form-label">Description</label>
-            <div class="col-sm-10">
-                <textarea rows="4" class="form-control" id="description"
-                          th:text="${rule.description}" name="description"></textarea>
+                       th:readonly="${rule.isProvided()}" name="message">
             </div>
         </div>
         <div class="row mb-2">
             <label for="externalUrl" class="col-sm-2">External URL</label>
             <div class="col-sm-10">
                 <input type="text" class="form-control" id="externalUrl"
-                       th:value="${rule.externalUrl}" name="externalUrl"/>
+                       th:readonly="${rule.isProvided()}" th:value="${rule.externalUrl}" name="externalUrl"/>
             </div>
         </div>
         <div th:unless="${rule.isProvided()}">

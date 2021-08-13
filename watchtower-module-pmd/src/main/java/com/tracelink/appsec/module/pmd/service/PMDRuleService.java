@@ -19,6 +19,7 @@ import com.tracelink.appsec.module.pmd.model.PMDRuleEntity;
 import com.tracelink.appsec.module.pmd.repository.PMDRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -73,21 +74,24 @@ public class PMDRuleService {
 	 * @param dto rule DTO whose fields will be used to edit the PMD rule
 	 * @throws RuleNotFoundException if no PMD rule exists with the same ID as the given DTO
 	 */
-	public void editRule(PMDCustomRuleDto dto) throws RuleNotFoundException {
+	public void editRule(RuleDto dto) throws RuleNotFoundException {
 		PMDRuleEntity rule = getRule(dto.getId());
-		// Set inherited fields
-		rule.setName(dto.getName());
-		rule.setMessage(dto.getMessage());
-		rule.setExternalUrl(dto.getExternalUrl());
-		rule.setPriority(dto.getPriority());
-		// Set PMD-specific fields
-		// rule.setDescription(dto.getDescription());
-		// Set PMD properties
-		for (PMDPropertyEntity propertyEntity : rule.getProperties()) {
-			for (PMDPropertyDto propertyDto : dto.getProperties()) {
-				if (propertyEntity.getId() == propertyDto.getId()) {
-					propertyEntity.setName(propertyDto.getName());
-					propertyEntity.setValue(propertyDto.getValue());
+		if (rule.isProvided()) {
+			rule.setPriority(dto.getPriority());
+		} else {
+			PMDCustomRuleDto custom = (PMDCustomRuleDto) dto;
+			// Set inherited fields
+			rule.setName(custom.getName());
+			rule.setMessage(custom.getMessage());
+			rule.setExternalUrl(custom.getExternalUrl());
+			rule.setPriority(custom.getPriority());
+			// Set PMD properties
+			for (PMDPropertyEntity propertyEntity : rule.getProperties()) {
+				for (PMDPropertyDto propertyDto : custom.getProperties()) {
+					if (propertyEntity.getId() == propertyDto.getId()) {
+						propertyEntity.setName(propertyDto.getName());
+						propertyEntity.setValue(propertyDto.getValue());
+					}
 				}
 			}
 		}

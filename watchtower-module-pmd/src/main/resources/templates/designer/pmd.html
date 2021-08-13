@@ -125,11 +125,6 @@
                        placeholder="Rule Message" th:value="${ruleMessage}"/>
               </div>
               <div class="form-group">
-                <label for="ruleDescription">Long Description</label>
-                <textarea id="ruleDescription" class="form-control" name="description"
-                          form="savePmdRuleForm" cols="60" th:text="${ruleDescription}"></textarea>
-              </div>
-              <div class="form-group">
                 <label for="ruleLanguage">Language</label>
                 <select name="language" class="form-control" id="ruleLanguage">
                   <option th:each="lang : ${supportedLanguages}" th:value="${lang}"
