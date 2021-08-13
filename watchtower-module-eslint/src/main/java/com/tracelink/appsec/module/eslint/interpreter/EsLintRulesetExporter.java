@@ -22,19 +22,18 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
- * Implementation of an {@link IRulesetInterpreter} for importing and exporting rulesets containing
- * ESLint rules.
+ * Class that exports rulesets containing ESLint rules.
  *
  * @author mcool
  */
-public class EsLintRulesetInterpreter {
+public class EsLintRulesetExporter {
 
-	private static final Logger LOG = LoggerFactory.getLogger(EsLintRulesetInterpreter.class);
+	private static final Logger LOG = LoggerFactory.getLogger(EsLintRulesetExporter.class);
 	private static final String PLEASE_CHECK_LOG = "Please check the log for more details.";
 
 	private Template rulesetTemplate;
 
-	public EsLintRulesetInterpreter() {
+	public EsLintRulesetExporter() {
 		try (InputStream is = getClass().getClassLoader()
 				.getResourceAsStream("templates/export/ruleset.js")) {
 			String exampleRuleset = IOUtils.toString(is, Charset.defaultCharset());
@@ -44,7 +43,6 @@ public class EsLintRulesetInterpreter {
 		}
 	}
 
-
 	/**
 	 * {@inheritDoc}
 	 * 
@@ -53,8 +51,8 @@ public class EsLintRulesetInterpreter {
 	public InputStream exportRuleset(RulesetDto rulesetDto)
 			throws IOException, RulesetException {
 		// Filter ruleset for ESLint rules
-		List<EsLintRuleDto> esLintRules = rulesetDto.getAllRules().stream()
-				.filter(r -> r instanceof EsLintRuleDto).map(r -> (EsLintRuleDto) r)
+		List<RuleDto> esLintRules = rulesetDto.getAllRules().stream()
+				.filter(r -> r instanceof EsLintRuleDto)
 				.collect(Collectors.toList());
 		// If there are no ESLint rules, return null
 		if (esLintRules.isEmpty()) {
@@ -64,8 +62,11 @@ public class EsLintRulesetInterpreter {
 		Map<String, Object> params = new HashMap<>();
 		params.put("name", rulesetDto.getName());
 		params.put("description", rulesetDto.getDescription());
+		// Custom rules are non-provided rules custom-defined with Meta objects
 		params.put("customRules",
-				esLintRules.stream().filter(r -> !r.isCore()).collect(Collectors.toList()));
+				esLintRules.stream().filter(r -> !((EsLintRuleDto) r).isCore())
+						.collect(Collectors.toList()));
+		// Priorities contains all rule definitions (Provided and Custom) and their priority
 		params.put("priorities", esLintRules.stream()
 				.collect(Collectors.toMap(RuleDto::getName, RuleDto::getPriority)).entrySet());
 		// Execute template and return

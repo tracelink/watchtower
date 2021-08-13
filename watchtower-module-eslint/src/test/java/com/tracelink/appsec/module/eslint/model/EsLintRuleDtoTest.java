@@ -9,8 +9,8 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
 public class EsLintRuleDtoTest {
 
-	public static EsLintRuleDto getCustomEsLintRule() {
-		EsLintRuleDto dto = new EsLintRuleDto();
+	public static EsLintCustomRuleDto getCustomEsLintRule() {
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(1L);
 		dto.setAuthor("jdoe");
 		dto.setName("eslint-rule");
@@ -47,7 +47,7 @@ public class EsLintRuleDtoTest {
 
 	@Test
 	public void testToEntity() {
-		EsLintRuleDto dto = getCustomEsLintRule();
+		EsLintCustomRuleDto dto = getCustomEsLintRule();
 		EsLintRuleEntity rule = (EsLintRuleEntity) dto.toEntity();
 		Assertions.assertNotEquals(dto.getId(), rule.getId(), 0.001);
 		Assertions.assertNull(rule.getAuthor());

@@ -18,12 +18,14 @@ import com.google.gson.JsonParser;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
+import com.tracelink.appsec.module.eslint.engine.LinterMessage;
 import com.tracelink.appsec.module.eslint.engine.ProcessResult;
-import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
+import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -46,10 +48,6 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 			+ "while (qux != null) {\n"
 			+ "  baz();\n"
 			+ "}";
-
-	private static final boolean DEFAULT_CORE = false;
-
-	private static final String DEFAULT_NAME = "no-eq-null";
 
 	private static final String DEFAULT_CREATE_FUNCTION = "create(context) {\n"
 			+ "    return {\n"
@@ -84,12 +82,10 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 */
 	@Override
 	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
-		EsLintRuleDto rule = new EsLintRuleDto();
-		rule.setCore(DEFAULT_CORE);
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setCreateFunction(DEFAULT_CREATE_FUNCTION);
 		rule.setMessages(DEFAULT_MESSAGES);
-		return query(DEFAULT_SOURCE_CODE, DEFAULT_CORE, null, DEFAULT_CREATE_FUNCTION,
-				DEFAULT_MESSAGES);
+		return query(DEFAULT_SOURCE_CODE, DEFAULT_CREATE_FUNCTION, DEFAULT_MESSAGES);
 	}
 
 	/**
@@ -98,47 +94,50 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 * the returned ModelAndView to maintain state while designing.
 	 *
 	 * @param sourceCode     source code to test the rule against
-	 * @param core           whether the rule is a core or custom rule
-	 * @param name           name of the rule (used for core rule)
 	 * @param createFunction createFunction of the rule (used for custom rule)
 	 * @param messages       messages of the rule (used for custom rule)
 	 * @return ModelAndView to display AST of source code and any scan violations to the user
 	 */
-	public RuleDesignerModelAndView query(String sourceCode, boolean core, String name,
-			String createFunction, List<EsLintMessageDto> messages) {
+	public RuleDesignerModelAndView query(String sourceCode, String createFunction,
+			List<EsLintMessageDto> messages) {
+		// Create rule to scan with
+		EsLintCustomRuleDto rule;
+		try {
+			rule = createRule(createFunction, messages);
+		} catch (RuleDesignerException e) {
+			RuleDesignerModelAndView mav = getBaseModelAndView();
+			mav.addErrorMessage(e.getMessage());
+			return mav;
+		}
+		return query(sourceCode, rule);
+
+	}
+
+	public RuleDesignerModelAndView query(String sourceCode, EsLintCustomRuleDto rule) {
 		// Build ModelAndView
 		RuleDesignerModelAndView mav = getBaseModelAndView();
-		mav.addObject("sourceCode",
-				StringUtils.isBlank(sourceCode) ? DEFAULT_SOURCE_CODE : sourceCode);
-		mav.addObject("core", core);
-		mav.addObject("name", StringUtils.isBlank(name) ? DEFAULT_NAME : name);
-		mav.addObject("createFunction",
-				StringUtils.isBlank(createFunction) ? DEFAULT_CREATE_FUNCTION : createFunction);
-		mav.addObject("messages", messages == null ? DEFAULT_MESSAGES : messages);
+		mav.addObject("rule", rule);
 
 		// Make sure rule and source code are not null
 		if (StringUtils.isBlank(sourceCode)) {
 			mav.addErrorMessage("Please provide source code to test against the rule.");
 			return mav;
 		}
-
-		// Create rule to scan with
-		EsLintRuleDto rule = createRule(mav, core, name, createFunction, messages);
-		if (rule == null) {
-			return mav;
-		}
+		mav.addObject("sourceCode", sourceCode);
 
 		// Add AST for source code and any parsing errors
 		addAst(mav, sourceCode);
+
 		// Add matches and any errors from scan
 		addMatches(mav, rule, sourceCode);
+
 		return mav;
 	}
+
 
 	/**
 	 * Create an ESLint rule from the given parameters to scan source code from the designer.
 	 *
-	 * @param mav            the {@link RuleDesignerModelAndView} that will be returned to the user
 	 * @param core           whether the rule is a core or custom rule
 	 * @param name           name of the rule (used for core rule)
 	 * @param createFunction createFunction of the rule (used for custom rule)
@@ -146,36 +145,26 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 * @return an ESLint rule representing the given parameters, or null if the parameters are
 	 *         invalid
 	 */
-	private EsLintRuleDto createRule(RuleDesignerModelAndView mav, boolean core, String name,
-			String createFunction, List<EsLintMessageDto> messages) {
+	private EsLintCustomRuleDto createRule(String createFunction, List<EsLintMessageDto> messages)
+			throws RuleDesignerException {
 		// Create rule to test
-		EsLintRuleDto rule = getBaseQueryRule();
-		rule.setCore(core);
+		EsLintCustomRuleDto rule = getBaseQueryRule();
 
 		// Make sure query parameters are valid
-		if (core) {
-			if (StringUtils.isBlank(name)) {
-				mav.addErrorMessage("Must provide a rule name for a core rule.");
-				return null;
-			}
-			rule.setName(name);
-		} else {
-			if (StringUtils.isBlank(createFunction)) {
-				mav.addErrorMessage("Must provide create function for a custom rule.");
-				return null;
-			}
-			rule.setCreateFunction(createFunction);
-			if (messages != null) {
-				if (messages.stream().anyMatch(
-						m -> m == null || StringUtils.isBlank(m.getKey()) || StringUtils
-								.isBlank(m.getValue()))) {
-					mav.addErrorMessage(
-							"Messages for a custom rule must have a valid ID and value.");
-					return null;
-				}
-				rule.setMessages(messages);
-			}
+		if (StringUtils.isBlank(createFunction)) {
+			throw new RuleDesignerException("Must provide create function for a custom rule.");
 		}
+		rule.setCreateFunction(createFunction);
+		if (messages != null) {
+			if (messages.stream().anyMatch(
+					m -> m == null || StringUtils.isBlank(m.getKey()) || StringUtils
+							.isBlank(m.getValue()))) {
+				throw new RuleDesignerException(
+						"Messages for a custom rule must have a valid ID and value.");
+			}
+			rule.setMessages(messages);
+		}
+		rule.setPriority(RulePriority.LOW);
 		return rule;
 	}
 
@@ -219,7 +208,8 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 * @param rule       the ESLint rule to scan with
 	 * @param sourceCode the source code to scan
 	 */
-	private void addMatches(RuleDesignerModelAndView mav, EsLintRuleDto rule, String sourceCode) {
+	private void addMatches(RuleDesignerModelAndView mav, EsLintCustomRuleDto rule,
+			String sourceCode) {
 		RulesetDto ruleset = new RulesetDto();
 		ruleset.setName("query-ruleset");
 		ruleset.setDescription("query-description");
@@ -257,9 +247,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	private RuleDesignerModelAndView getBaseModelAndView() {
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView("designer/eslint");
 		mav.addObject("rulePriorities", RulePriority.values());
-		mav.addObject("coreRules", engine.getCoreRules().keySet());
 		mav.addObject("help", getHelp());
-		mav.addObject("rule", new EsLintRuleDto());
 		mav.addScriptReference("/scripts/eslint-designer.js");
 		return mav;
 	}
@@ -269,8 +257,8 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 *
 	 * @return an {@link EsLintRuleDto} with mock required fields added
 	 */
-	private EsLintRuleDto getBaseQueryRule() {
-		EsLintRuleDto rule = new EsLintRuleDto();
+	private EsLintCustomRuleDto getBaseQueryRule() {
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setName("query-name");
 		rule.setPriority(RulePriority.LOW);
 		rule.setMessage("query-message");

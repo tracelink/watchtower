@@ -1,4 +1,4 @@
-package com.tracelink.appsec.module.eslint.engine.json;
+package com.tracelink.appsec.module.eslint.engine;
 
 /**
  * JSON model for the messages returned by the ESLint Linter.

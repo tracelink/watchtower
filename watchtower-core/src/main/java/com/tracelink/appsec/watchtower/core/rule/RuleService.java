@@ -116,15 +116,17 @@ public class RuleService {
 		ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
 		Validator validator = validatorFactory.getValidator();
 		// Validate fields of the rule
+		StringBuilder sb = new StringBuilder();
 		for (T ruleDto : ruleDtos) {
 			Set<ConstraintViolation<T>> violations = validator.validate(ruleDto);
-			for (ConstraintViolation<T> violation : violations) {
-				String property = violation.getPropertyPath().toString();
-				if (!"author".equals(property)) {
-					throw new RulesetException("The rule with the name \"" + ruleDto.getName()
-							+ "\" is invalid: " + violation.getMessage());
-				}
+			if (!violations.isEmpty()) {
+				sb.append("\nRule: " + ruleDto.getName() + " violations: ");
+				sb.append(violations.stream().map(v -> v.getMessage())
+						.collect(Collectors.joining(", ")));
 			}
+		}
+		if (sb.length() > 0) {
+			throw new RulesetException("One or more rules are invalid." + sb.toString());
 		}
 	}
 
@@ -143,6 +145,12 @@ public class RuleService {
 	public List<RuleEntity> importRules(Set<RuleDto> dtos, String backupAuthorName,
 			ImportOption customOption, ImportOption providedOption)
 			throws RulesetException {
+		// ensure authors are set correctly
+		dtos.stream()
+				.filter(r -> (RuleDesignation.CUSTOM.equals(r.getRuleDesignation())
+						&& StringUtils.isBlank(r.getAuthor())))
+				.forEach(r -> ((CustomRuleDto) r).setAuthor(backupAuthorName));
+
 		validateRules(dtos);
 
 		Set<RuleEntity> rules = new HashSet<>();
@@ -175,9 +183,6 @@ public class RuleService {
 			} else {
 				// new rule
 				RuleEntity ruleEntity = rule.toEntity();
-				if (StringUtils.isBlank(ruleEntity.getAuthor())) {
-					ruleEntity.setAuthor(backupAuthorName);
-				}
 				rules.add(ruleEntity);
 			}
 		}

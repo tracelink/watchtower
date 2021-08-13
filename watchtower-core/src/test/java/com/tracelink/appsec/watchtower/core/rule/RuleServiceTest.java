@@ -143,4 +143,30 @@ public class RuleServiceTest {
 		Assertions.assertEquals(rule.getName(), rules.iterator().next().getName());
 		Assertions.assertEquals(user, rules.iterator().next().getAuthor());
 	}
+
+	@Test
+	public void testImportRulesFixAuthor() throws RulesetException {
+		String user = "jdoe2";
+		rule.setAuthor(null);
+		ruleService.importRules(Collections.singleton(rule.toDto()), user, ImportOption.OVERRIDE,
+				ImportOption.OVERRIDE);
+
+		ArgumentCaptor<Iterable<RuleEntity>> argumentCaptor =
+				ArgumentCaptor.forClass(Iterable.class);
+		BDDMockito.verify(ruleRepository, Mockito.times(1)).saveAll(argumentCaptor.capture());
+		BDDMockito.verify(ruleRepository, Mockito.times(1)).flush();
+		Set<RuleEntity> rules = (Set<RuleEntity>) argumentCaptor.getValue();
+		Assertions.assertEquals(rule.getName(), rules.iterator().next().getName());
+		Assertions.assertEquals(user, rules.iterator().next().getAuthor());
+	}
+
+	@Test
+	public void testImportRulesFailValidation() throws RulesetException {
+		Throwable t = Assertions.assertThrows(RulesetException.class, () -> {
+			rule.setExternalUrl(null);
+			ruleService.importRules(Collections.singleton(rule.toDto()), "foo",
+					ImportOption.OVERRIDE, ImportOption.OVERRIDE);
+		});
+		Assertions.assertTrue(t.getMessage().contains("One or more rules are invalid"));
+	}
 }

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -20,13 +20,13 @@ public class EsLintRulesetInterpreterTest {
 
 	@RegisterExtension
 	public LogWatchExtension loggerRule =
-			LogWatchExtension.forClass(EsLintRulesetInterpreter.class);
+			LogWatchExtension.forClass(EsLintRulesetExporter.class);
 
-	private EsLintRulesetInterpreter interpreter;
+	private EsLintRulesetExporter interpreter;
 
 	@BeforeEach
 	public void setup() {
-		interpreter = new EsLintRulesetInterpreter();
+		interpreter = new EsLintRulesetExporter();
 	}
 
 	@Test
@@ -39,7 +39,7 @@ public class EsLintRulesetInterpreterTest {
 
 		String ruleName = "ruleName";
 		RulePriority priority = RulePriority.HIGH;
-		EsLintRuleDto rule = new EsLintRuleDto();
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setName(ruleName);
 		rule.setPriority(priority);
 		try (BufferedReader br = new BufferedReader(
@@ -61,7 +61,7 @@ public class EsLintRulesetInterpreterTest {
 	@Test
 	public void testExportRulesetMustacheException() throws Exception {
 		RulesetDto rulesetDto = new RulesetDto();
-		EsLintRuleDto ruleDto = new EsLintRuleDto();
+		EsLintCustomRuleDto ruleDto = new EsLintCustomRuleDto();
 		ruleDto.setName("foo");
 		ruleDto.setPriority(RulePriority.LOW);
 		rulesetDto.setRules(Collections.singleton(ruleDto));

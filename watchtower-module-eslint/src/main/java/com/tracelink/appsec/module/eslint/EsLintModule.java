@@ -97,7 +97,6 @@ public class EsLintModule extends AbstractModule {
 
 	@Override
 	public List<RulesetDto> getProvidedRulesets() {
-		// throw new RuntimeException("You didn't build this yet Chris");
-		return null;
+		return this.engine.getCoreRulesets();
 	}
 }

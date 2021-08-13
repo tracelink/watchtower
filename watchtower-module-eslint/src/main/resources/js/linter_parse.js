@@ -1,8 +1,8 @@
 const Linter = require("eslint").Linter;
-const estraverse = require("estraverse");
 
 module.exports = {
 	getCoreRules,
+	getCoreCategories,
 	parseAst
 }
 
@@ -12,16 +12,28 @@ module.exports = {
 function getCoreRules() {
 	const linter = new Linter();
 	const rulesMap = linter.getRules();
-	const rules = {};
+	const rules = [];
 	rulesMap.forEach((value, key, map) => {
 		let description = value["meta"]["docs"]["description"];
 		let url = value["meta"]["docs"]["url"];
-		rules[key] = {
+		let category = value["meta"]["docs"]["category"];
+		rules.push({
+			name: key,
 			description: description,
-			url: url
-		}
+			url: url,
+			category: category
+		});
 	});
 	return JSON.stringify(rules);
+}
+
+function getCoreCategories(){
+	const path = require('path');
+	const fs = require('fs');
+	const config = path.resolve(require.resolve('eslint'),'../../conf/category-list.json');
+	let raw = fs.readFileSync(config);
+	let categoriesList = JSON.parse(raw)['categories'];
+	return categoriesList;
 }
 
 /**

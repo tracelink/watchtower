@@ -32,7 +32,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleEntity;
 import com.tracelink.appsec.module.eslint.service.EsLintRuleService;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
@@ -77,7 +77,7 @@ public class EsLintRuleEditControllerTest {
 	@Autowired
 	private EsLintRuleEditController esLintRuleEditController;
 
-	private EsLintRuleDto esLintRule;
+	private EsLintCustomRuleDto esLintRule;
 
 	@BeforeEach
 	public void setup() {
@@ -100,7 +100,7 @@ public class EsLintRuleEditControllerTest {
 				.andExpect(MockMvcResultMatchers.flash().attribute(
 						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 						"Successfully edited rule."));
-		ArgumentCaptor<EsLintRuleDto> argumentCaptor = ArgumentCaptor.forClass(EsLintRuleDto.class);
+		ArgumentCaptor<EsLintCustomRuleDto> argumentCaptor = ArgumentCaptor.forClass(EsLintCustomRuleDto.class);
 		BDDMockito.verify(esLintRuleService).editRule(argumentCaptor.capture());
 		Assertions.assertEquals("new-name", argumentCaptor.getValue().getName());
 	}
@@ -109,7 +109,7 @@ public class EsLintRuleEditControllerTest {
 	@WithMockUser(authorities = {EsLintModule.ESLINT_RULE_EDIT_PRIVILEGE_NAME})
 	public void testEditEsLintRuleNotFound() throws Exception {
 		BDDMockito.doThrow(RuleNotFoundException.class).when(esLintRuleService)
-				.editRule(BDDMockito.any(EsLintRuleDto.class));
+				.editRule(BDDMockito.any(EsLintCustomRuleDto.class));
 		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/eslint")
 				.param("id", esLintRule.getId().toString())
 				.param("author", esLintRule.getAuthor()).param("name", "new-name")
@@ -132,7 +132,7 @@ public class EsLintRuleEditControllerTest {
 		BDDMockito.when(bindingResult.hasErrors()).thenReturn(true);
 		BDDMockito.when(bindingResult.getFieldErrors())
 				.thenReturn(Arrays.asList(new FieldError("", "", defaultMessage)));
-		EsLintRuleDto rule = getEsLintRuleDto();
+		EsLintCustomRuleDto rule = getEsLintRuleDto();
 		RedirectAttributes redirect = new RedirectAttributesModelMap();
 		Assertions.assertEquals("redirect:/rule/edit/eslint/" + rule.getId(),
 				esLintRuleEditController.editRule(rule, bindingResult, redirect));
@@ -148,7 +148,7 @@ public class EsLintRuleEditControllerTest {
 				ruleService.createsNameCollision(BDDMockito.anyLong(), BDDMockito.anyString()))
 				.thenReturn(true);
 		BindingResult bindingResult = BDDMockito.mock(BindingResult.class);
-		EsLintRuleDto rule = getEsLintRuleDto();
+		EsLintCustomRuleDto rule = getEsLintRuleDto();
 		Assertions.assertEquals("redirect:/rule/edit/eslint/" + rule.getId(),
 				esLintRuleEditController.editRule(rule, bindingResult,
 						new RedirectAttributesModelMap()));
@@ -206,8 +206,8 @@ public class EsLintRuleEditControllerTest {
 		return rule;
 	}
 
-	public static EsLintRuleDto getEsLintRuleDto() {
-		EsLintRuleDto dto = getEsLintRule().toDto();
+	public static EsLintCustomRuleDto getEsLintRuleDto() {
+		EsLintCustomRuleDto dto = getEsLintRule().toDto();
 		dto.setId(1L);
 		return dto;
 	}

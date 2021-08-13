@@ -205,8 +205,14 @@
                         <select name="ruleIds" form="editRulesModalForm" id="rulesPicker"
                                 class="selectpicker input-group" title="Select Rules"
                                 data-style="rounded border" data-live-search="true" multiple>
-                            <option th:each="rule : ${rules}" th:data-content="${rule.name}"
+                            <optgroup label="Custom">
+                            	<option th:each="rule : ${rules}" th:if="${rule.isCustom()}" th:data-content="${rule.name}"
                                     th:value="${rule.id}" th:selected="${currentRuleset.getRuleIds().contains(rule.id)}"/>
+                            </optgroup>
+                            <optgroup label="Provided">
+                            	<option th:each="rule : ${rules}" th:if="${rule.isProvided()}" th:data-content="${rule.name}"
+                                    th:value="${rule.id}" th:selected="${currentRuleset.getRuleIds().contains(rule.id)}"/>
+                            </optgroup>
                         </select>
                         <button class="btn btn-success px-2" type="submit">
                             Set Rules

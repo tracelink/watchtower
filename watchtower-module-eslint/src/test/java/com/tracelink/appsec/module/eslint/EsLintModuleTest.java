@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -35,7 +35,7 @@ public class EsLintModuleTest extends ScannerModuleTest {
 
 	@Override
 	protected void configurePluginTester(ScannerModuleTestBuilder testPlan) {
-		EsLintRuleDto rule = new EsLintRuleDto();
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setAuthor("author");
 		rule.setExternalUrl("https://example.com");
 		rule.setMessage("Message");
@@ -45,7 +45,7 @@ public class EsLintModuleTest extends ScannerModuleTest {
 
 		testPlan.withMigration("db/eslint").withName("ESLint")
 				.withRuleSupplier(() -> {
-					EsLintRuleDto customRule = new EsLintRuleDto();
+					EsLintCustomRuleDto customRule = new EsLintCustomRuleDto();
 					customRule.setAuthor("author");
 					customRule.setExternalUrl("https://example.com");
 					customRule.setMessage("Message");
@@ -70,7 +70,7 @@ public class EsLintModuleTest extends ScannerModuleTest {
 							+ "}");
 					return customRule;
 				}).withSchemaName("eslint_schema_history")
-				.withSupportedRuleClass(EsLintRuleDto.class)
+				.withSupportedRuleClass(EsLintCustomRuleDto.class)
 				.withTestScanConfigurationBuilder(
 						new TestScanConfiguration()
 								.withTargetResourceFile("/scan/simple.js")

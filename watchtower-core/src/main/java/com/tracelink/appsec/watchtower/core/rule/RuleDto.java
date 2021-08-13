@@ -77,6 +77,14 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 		return getName();
 	}
 
+	public boolean isCustom() {
+		return RuleDesignation.CUSTOM.equals(getRuleDesignation());
+	}
+
+	public boolean isProvided() {
+		return RuleDesignation.PROVIDED.equals(getRuleDesignation());
+	}
+
 	/**
 	 * This returns the name of the module that the rule is associated with.
 	 *

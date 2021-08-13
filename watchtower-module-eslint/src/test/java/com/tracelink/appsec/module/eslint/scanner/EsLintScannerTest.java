@@ -11,8 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
-import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetExporter;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -23,7 +23,7 @@ public class EsLintScannerTest {
 
 	private static LinterEngine engine;
 
-	private EsLintRulesetInterpreter interpreter;
+	private EsLintRulesetExporter interpreter;
 	private EsLintScanner scanner;
 	private RulesetDto rulesetDto;
 
@@ -34,7 +34,7 @@ public class EsLintScannerTest {
 
 	@BeforeEach
 	public void setup() throws Exception {
-		interpreter = new EsLintRulesetInterpreter();
+		interpreter = new EsLintRulesetExporter();
 		scanner = new EsLintScanner(engine);
 	}
 
@@ -110,7 +110,7 @@ public class EsLintScannerTest {
 		config.setWorkingDirectory(
 				Paths.get(getClass().getClassLoader().getResource("scan/simple.js").toURI()));
 
-		EsLintRuleDto rule = new EsLintRuleDto();
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		String createFunction = "create(context) {\n"
 				+ "    return {\n"
 				+ "        VariableDeclaration(node) {\n"
@@ -139,6 +139,6 @@ public class EsLintScannerTest {
 
 	@Test
 	public void testGetSupportedRuleClass() {
-		Assertions.assertEquals(EsLintRuleDto.class, scanner.getSupportedRuleClass());
+		Assertions.assertEquals(EsLintCustomRuleDto.class, scanner.getSupportedRuleClass());
 	}
 }

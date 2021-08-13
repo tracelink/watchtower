@@ -46,7 +46,7 @@
     <!-- End Matches -->
   </div>
   <div class="row card-group mx-0 my-3">
-    <!-- Custom/Core Rule -->
+    <!-- Custom Rule -->
     <div class="card card-small col-8 px-0">
       <div class="card-body">
         <div class="d-flex justify-content-between">
@@ -57,23 +57,10 @@
             </a>
           </h6>
           <div class="btn-toolbar">
-            <div class="btn-group btn-group-toggle ml-2" id="rule-tabs">
-              <button id="custom-tab"
-                      th:class="${core} ? 'btn btn-small btn-light' : 'btn btn-small btn-light active'">
-                Custom Rule
-              </button>
-              <button id="core-tab"
-                      th:class="${core} ? 'btn btn-small btn-light active' : 'btn btn-small btn-light'">
-                Core Rule
-              </button>
-            </div>
-          </div>
-          <div class="btn-toolbar">
             <div class="btn-group mr-1">
               <form method="POST" class="form-inline" action="/designer/eslint/query"
                     id="run-rule-form">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <input type="hidden" name="core" th:value="${core}" id="core">
                 <button class="btn btn-small btn-primary" id="runRule" name="Submit" value="Submit"
                         type="Submit">Run Rule
                 </button>
@@ -81,28 +68,18 @@
             </div>
             <div class="btn-group form-inline">
               <button class="btn btn-small btn-success" data-toggle="modal" id="save-rule-btn"
-                      th:data-target="|#save-${core ? 'core' : 'custom'}-rule-modal|">Save Rule
+                      data-target="#save-rule-modal">Save Rule
               </button>
             </div>
           </div>
         </div>
         <div class="rule-tab custom-tab mt-2">
           <textarea id="createFunction" name="createFunction" form="run-rule-form"
-                    th:text="${createFunction}"></textarea>
-        </div>
-        <div class="rule-tab core-tab mt-2">
-          <select class="selectpicker input-group" data-width="auto" data-style="rounded border"
-                  data-live-search="true" title="No core rule selected" id="name" name="name"
-                  form="run-rule-form">
-            <th:block th:each="coreRule : ${coreRules}">
-              <option th:text="${coreRule}" th:value="${coreRule}"
-                      th:selected="${coreRule.equals(name)}"></option>
-            </th:block>
-          </select>
+                    th:text="${rule.createFunction}"></textarea>
         </div>
       </div>
     </div>
-    <!-- End Custom/Core Rule -->
+    <!-- End Custom Rule -->
     <!-- Messages -->
     <div class="card card-small col-4 px-0 rule-tab custom-tab">
       <div class="card-body">
@@ -127,7 +104,7 @@
             </tr>
             </thead>
             <tbody class="messages-tbody">
-            <tr th:each="message, stat: ${messages}">
+            <tr th:each="message, stat: ${rule.messages}">
               <td class="px-1">
                 <input type="text" class="form-control" form="run-rule-form"
                        placeholder="Message ID" th:name="|messages[${stat.index}].key|"
@@ -154,7 +131,7 @@
 </div>
 
 <!-- Save Custom Rule Modal -->
-<div class="modal fade" id="save-custom-rule-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="save-rule-modal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -165,7 +142,7 @@
       </div>
       <div class="modal-body p-3">
         <form method="POST" action="/designer/eslint/save"
-              id="save-custom-rule-form">
+              id="save-rule-form">
           <div class="form-group">
             <label for="customName" class="col-form-label">Rule Name</label>
             <input type="text" class="form-control" name="name" id="customName"
@@ -192,63 +169,21 @@
           <div class="form-group">
             <label for="customCreateFunction" class="col-form-label">Create Function</label>
             <textarea class="form-control" name="createFunction" id="customCreateFunction"
-                      form="save-custom-rule-form"></textarea>
+                      form="save-rule-form"></textarea>
           </div>
-          <div class="form-group save-custom-messages">
+          <div class="form-group save-messages">
             <label class="col-form-label">Messages</label>
           </div>
+          <input type="hidden" name="author" th:value="${#authentication.getPrincipal().getUsername()}"/>
           <input type="hidden" name="sourceCode" id="customSourceCode"/>
-          <input type="hidden" name="core" value="false"/>
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-success" form="save-custom-rule-form">Save</button>
+        <button type="submit" class="btn btn-success" form="save-rule-form">Save</button>
       </div>
     </div>
   </div>
 </div>
 <!-- End Save Custom Rule Modal -->
-<!-- Save Core Rule Modal -->
-<div class="modal fade" id="save-core-rule-modal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Save Core Rule</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body p-3">
-        <form method="POST" action="/designer/eslint/save"
-              id="save-core-rule-form">
-          <div class="form-group">
-            <label for="customName" class="col-form-label">Rule Name</label>
-            <input type="text" class="form-control" name="name" id="coreName"
-                   th:value="${rule.name}" placeholder="Rule Name" readonly/>
-          </div>
-          <div class="form-group">
-            <label for="corePriority" class="col-form-label">Priority</label>
-            <select name="priority" class="form-control" id="corePriority">
-              <option th:each="priority : ${rulePriorities}"
-                      th:value="${priority.name()}" th:text="${priority.getName()}"
-                      th:selected="${priority.equals(rule.priority)}"></option>
-            </select>
-          </div>
-          <div class="save-core-messages">
-          </div>
-          <input type="hidden" name="sourceCode" id="coreSourceCode"/>
-          <input type="hidden" name="core" value="true"/>
-          <input type="hidden" name="createFunction" id="coreCreateFunction">
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-success" form="save-core-rule-form">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- End Save Core Rule Modal -->

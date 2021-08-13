@@ -15,10 +15,10 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.gson.Gson;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
+import com.tracelink.appsec.module.eslint.engine.LinterMessage;
 import com.tracelink.appsec.module.eslint.engine.ProcessResult;
-import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
-import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetExporter;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
@@ -56,7 +56,7 @@ public class EsLintScanner implements IScanner {
 	@Override
 	public ScanReport scan(ScanConfig config) {
 		ScanReport report = new ScanReport();
-		Benchmarking<EsLintRuleDto> benchmarking = new Benchmarking<>();
+		Benchmarking<EsLintCustomRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
 		try (Benchmarker totalTime = benchmarking
@@ -98,7 +98,7 @@ public class EsLintScanner implements IScanner {
 	 */
 	@Override
 	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return EsLintRuleDto.class;
+		return EsLintCustomRuleDto.class;
 	}
 
 	/**
@@ -114,7 +114,7 @@ public class EsLintScanner implements IScanner {
 		String uri = "ruleset-" + ruleset.getId();
 		Path rulesetPath = Files.createTempFile(uri, ".js").toFile().getCanonicalFile()
 				.getAbsoluteFile().toPath();
-		try (InputStream is = new EsLintRulesetInterpreter().exportRuleset(ruleset)) {
+		try (InputStream is = new EsLintRulesetExporter().exportRuleset(ruleset)) {
 			Files.copy(is, rulesetPath, StandardCopyOption.REPLACE_EXISTING);
 		}
 		return rulesetPath;
@@ -173,7 +173,7 @@ public class EsLintScanner implements IScanner {
 	private static void processMessages(List<LinterMessage> messages, ScanReport report,
 			RulesetDto ruleset, Path fileName) {
 		Set<RuleDto> esLintRules = ruleset.getAllRules().stream()
-				.filter(r -> r instanceof EsLintRuleDto).collect(Collectors.toSet());
+				.filter(r -> r instanceof EsLintCustomRuleDto).collect(Collectors.toSet());
 		for (LinterMessage message : messages) {
 			// Message is an error
 			if (message.isFatal() || message.getNodeType() == null || message.getSeverity() != 1

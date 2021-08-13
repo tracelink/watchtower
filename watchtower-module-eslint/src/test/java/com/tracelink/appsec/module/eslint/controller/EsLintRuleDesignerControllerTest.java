@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.service.EsLintRuleService;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
@@ -49,7 +49,7 @@ public class EsLintRuleDesignerControllerTest {
 	@MockBean
 	EsLintRuleService ruleService;
 
-	private EsLintRuleDto esLintRule;
+	private EsLintCustomRuleDto esLintRule;
 
 	@BeforeEach
 	public void setup() {
@@ -197,14 +197,14 @@ public class EsLintRuleDesignerControllerTest {
 				.andExpect(MockMvcResultMatchers.model().attribute("success",
 						Matchers.is("Successfully saved rule: rule-name")));
 
-		ArgumentCaptor<EsLintRuleDto> ruleCaptor = ArgumentCaptor.forClass(EsLintRuleDto.class);
+		ArgumentCaptor<EsLintCustomRuleDto> ruleCaptor = ArgumentCaptor.forClass(EsLintCustomRuleDto.class);
 		BDDMockito.verify(ruleService).saveRule(ruleCaptor.capture());
 		Assertions.assertEquals("jdoe", ruleCaptor.getValue().getAuthor());
 	}
 
 
-	private static EsLintRuleDto getEsLintRuleDto() {
-		EsLintRuleDto rule = new EsLintRuleDto();
+	private static EsLintCustomRuleDto getEsLintRuleDto() {
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setName("rule-name");
 		rule.setMessage("This is a bad practice.");
 		rule.setExternalUrl("https://example.com");

@@ -18,7 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleEntity;
 import com.tracelink.appsec.module.eslint.repository.EsLintRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -68,7 +68,7 @@ public class EsLintRuleServiceTest {
 	public void testSaveRuleAlreadyExists() {
 		BDDMockito.when(ruleRepository.findByName(RULE_NAME))
 				.thenReturn(rule);
-		EsLintRuleDto dto = new EsLintRuleDto();
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setName(RULE_NAME);
 		try {
 			ruleService.saveRule(dto);
@@ -81,7 +81,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCoreRuleInvalid() {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setCore(true);
 		try {
 			ruleService.saveRule(dto);
@@ -95,7 +95,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCoreRule() throws Exception {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setCore(true);
 		dto.setName("no-eq-null");
 
@@ -115,7 +115,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCustomRuleCoreName() {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setName("no-eq-null");
 		try {
 			ruleService.saveRule(dto);
@@ -129,7 +129,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCustomRuleBlankCreateFunction() {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setCreateFunction("");
 		try {
 			ruleService.saveRule(dto);
@@ -142,7 +142,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCustomRule() throws Exception {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 
 		ruleService.saveRule(dto);
 		ArgumentCaptor<EsLintRuleEntity> entityCaptor = ArgumentCaptor
@@ -167,7 +167,7 @@ public class EsLintRuleServiceTest {
 		Assertions.assertThrows(RuleNotFoundException.class, () -> {
 			BDDMockito.when(ruleRepository.findById(BDDMockito.anyLong()))
 					.thenReturn(Optional.empty());
-			EsLintRuleDto ruleDto = new EsLintRuleDto();
+			EsLintCustomRuleDto ruleDto = new EsLintCustomRuleDto();
 			ruleDto.setId(1L);
 			ruleService.editRule(ruleDto);
 		});
@@ -187,7 +187,7 @@ public class EsLintRuleServiceTest {
 		RulePriority dtoPriority = RulePriority.MEDIUM_HIGH;
 		boolean dtoCore = false;
 
-		EsLintRuleDto dto = new EsLintRuleDto();
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(dtoId);
 		dto.setAuthor(dtoAuthor);
 		dto.setName(dtoName);
@@ -213,7 +213,7 @@ public class EsLintRuleServiceTest {
 					.thenReturn(Optional.of(rule));
 			Long dtoId = 1L;
 
-			EsLintRuleDto dto = new EsLintRuleDto();
+			EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 			dto.setId(dtoId);
 			dto.setCore(false);
 
@@ -250,7 +250,7 @@ public class EsLintRuleServiceTest {
 		EsLintMessageEntity messageEntity = new EsLintMessageEntity();
 		rule.setMessages(Collections.singleton(messageEntity));
 
-		EsLintRuleDto dto = new EsLintRuleDto();
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(dtoId);
 		dto.setAuthor(dtoAuthor);
 		dto.setName(dtoName);
@@ -278,8 +278,8 @@ public class EsLintRuleServiceTest {
 		Assertions.assertEquals(dtoCreateFunction, rule.getCreateFunction());
 	}
 
-	private static EsLintRuleDto getEsLintRuleDto() {
-		EsLintRuleDto rule = new EsLintRuleDto();
+	private static EsLintCustomRuleDto getEsLintRuleDto() {
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setAuthor("jdoe");
 		rule.setName("rule-name");
 		rule.setMessage("This is a bad practice.");
