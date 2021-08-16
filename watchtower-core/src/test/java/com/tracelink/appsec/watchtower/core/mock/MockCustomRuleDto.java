@@ -11,7 +11,7 @@ public class MockCustomRuleDto extends CustomRuleDto {
 
 	@Override
 	public RuleEntity toEntity() {
-		MockRuleEntity entity = new MockRuleEntity(false);
+		MockRuleEntity entity = new MockRuleEntity(isProvided());
 		entity.setAuthor(getAuthor());
 		entity.setName(getName());
 		entity.setMessage(getMessage());

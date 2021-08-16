@@ -45,9 +45,14 @@ public class EsLintRulesetExporter {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 * 
-	 * @throws RulesetException
+	 * Export the given {@link RulesetDto} to a stream representing the content of the ruleset. This
+	 * will be written to a local file for scanning. Returns null if there are no rules in the
+	 * ruleset that the exporter knows how to export.
+	 *
+	 * @param rulesetDto ruleset DTO object to export
+	 * @return stream containing representation of the given ruleset, or null if there are no rules
+	 * @throws IOException      if an error occurs while creating the stream
+	 * @throws RulesetException if the ruleset cannot be converted to the export template
 	 */
 	public InputStream exportRuleset(RulesetDto rulesetDto)
 			throws IOException, RulesetException {

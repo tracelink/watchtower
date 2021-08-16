@@ -80,35 +80,15 @@ public class EsLintRuleServiceTest {
 	}
 
 	@Test
-	public void testSaveCoreRuleInvalid() {
-		EsLintCustomRuleDto dto = getEsLintRuleDto();
-		try {
-			ruleService.saveRule(dto);
-			Assertions.fail("Should have thrown exception");
-		} catch (RuleDesignerException e) {
-			MatcherAssert.assertThat(e.getMessage(),
-					Matchers.is("\"" + dto.getName()
-							+ "\" is not a core rule. Please choose from the provided list"));
-		}
-	}
-
-	@Test
 	public void testSaveCoreRule() throws Exception {
 		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setName("no-eq-null");
-
-		ruleService.saveRule(dto);
-		ArgumentCaptor<EsLintRuleEntity> entityCaptor = ArgumentCaptor
-				.forClass(EsLintRuleEntity.class);
-		BDDMockito.verify(ruleRepository).saveAndFlush(entityCaptor.capture());
-		EsLintRuleEntity entity = entityCaptor.getValue();
-		MatcherAssert.assertThat(entity.getName(), Matchers.is(dto.getName()));
-		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isProvided()));
-		MatcherAssert.assertThat(entity.getPriority(), Matchers.is(dto.getPriority()));
-		MatcherAssert.assertThat(entity.getMessage(), Matchers.not(dto.getMessage()));
-		MatcherAssert.assertThat(entity.getExternalUrl(), Matchers.not(dto.getExternalUrl()));
-		MatcherAssert.assertThat(entity.getCreateFunction(), Matchers.nullValue());
-		MatcherAssert.assertThat(entity.getMessages(), Matchers.empty());
+		try {
+			ruleService.saveRule(dto);
+		} catch (RuleDesignerException e) {
+			MatcherAssert.assertThat(e.getMessage(),
+					Matchers.containsString("is a core rule. Please provide a different name"));
+		}
 	}
 
 	@Test

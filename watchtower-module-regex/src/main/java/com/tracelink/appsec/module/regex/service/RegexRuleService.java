@@ -37,7 +37,7 @@ public class RegexRuleService {
 	private static final Logger LOG = LoggerFactory.getLogger(RegexRuleService.class);
 
 	private RegexRuleRepository ruleRepository;
-	private static final List<String> providedRulesets =
+	private static final List<String> PROVIDED_RULESETS =
 			Arrays.asList("/rules/trufflehog-regexes.json");
 	private final JsonMapper jsonMapper;
 
@@ -116,7 +116,7 @@ public class RegexRuleService {
 	}
 
 	public List<RulesetDto> getProvidedRulesets() {
-		return providedRulesets.stream().map(this::getRuleset).collect(Collectors.toList());
+		return PROVIDED_RULESETS.stream().map(this::getRuleset).collect(Collectors.toList());
 	}
 
 	private RulesetDto getRuleset(String location) {

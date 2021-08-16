@@ -79,7 +79,7 @@ public class RegexRuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = {RegexModule.REGEX_RULE_EDIT_PRIVILEGE_NAME})
 	public void testEditRegexRule() throws Exception {
-		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit")
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit/custom")
 				.param("id", regexRule.getId().toString())
 				.param("author", regexRule.getAuthor()).param("name", "New Name")
 				.param("message", regexRule.getMessage())
@@ -102,7 +102,7 @@ public class RegexRuleEditControllerTest {
 	public void testEditRegexRuleNotFound() throws Exception {
 		BDDMockito.doThrow(RuleNotFoundException.class).when(regexRuleService)
 				.editRule(BDDMockito.any(RegexCustomRuleDto.class));
-		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit")
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit/custom")
 				.param("id", regexRule.getId().toString())
 				.param("author", regexRule.getAuthor()).param("name", "New Name")
 				.param("message", regexRule.getMessage())

@@ -353,11 +353,12 @@ public class RulesetService {
 	 * @throws IllegalArgumentException if the user is null
 	 * @throws ModuleNotFoundException  if there is no interpreter associated with the given module
 	 * @throws IOException              if an error occurs while handling the input stream
-	 * @throws RulesetException         if the rules are invalid or if the ruleset cannot be created
+	 * @throws RulesetException         if the ruleset cannot be created
+	 * @throws RuleException            if the rules are invalid
 	 */
 	public RulesetDto importRuleset(InputStream inputStream, String userName)
 			throws IllegalArgumentException, ModuleNotFoundException, IOException,
-			RulesetException {
+			RulesetException, RuleException {
 		// Check that user is not null
 		if (StringUtils.isBlank(userName)) {
 			throw new IllegalArgumentException("User cannot be null.");
@@ -498,7 +499,7 @@ public class RulesetService {
 					updatedRulesets.add(resultantRuleset.toDto());
 				}
 			}
-		} catch (RulesetException e) {
+		} catch (RulesetException | RuleException e) {
 			throw new ModuleException(e);
 		}
 
@@ -544,11 +545,12 @@ public class RulesetService {
 	 * @param customOption       the option used during custom rule imports
 	 * @param providedOption     the option used during provided rule imports
 	 * @return the final ruleset after importing
-	 * @throws RulesetException if an import fails
+	 * @throws RulesetException if an import fails for a ruleset
+	 * @throws RuleException    if an import fails for a rule
 	 */
 	private RulesetEntity importOrUpdateRuleset(RulesetDto incomingRulesetDto,
 			String backupAuthorName, ImportOption customOption, ImportOption providedOption)
-			throws RulesetException {
+			throws RulesetException, RuleException {
 		RulesetEntity finalRuleset;
 
 		// Look for the ruleset in the watchtower rulesets
@@ -578,7 +580,7 @@ public class RulesetService {
 
 	private RulesetEntity updateExistingRuleset(RulesetDto incomingRulesetDto, String authorName,
 			RulesetEntity foundWatchtowerRuleset, ImportOption customOption,
-			ImportOption providedOption) throws RulesetException {
+			ImportOption providedOption) throws RulesetException, RuleException {
 		// ruleset is provided, handle separately
 		if (foundWatchtowerRuleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
 			if (providedOption.equals(ImportOption.SKIP)) {
@@ -611,7 +613,7 @@ public class RulesetService {
 
 	private RulesetEntity importNewRuleset(RulesetDto rulesetDto, String authorName,
 			ImportOption customOption, ImportOption providedOption)
-			throws RulesetException {
+			throws RulesetException, RuleException {
 		// Create ruleset
 		RulesetEntity ruleset = new RulesetEntity();
 		ruleset.setName(rulesetDto.getName());
@@ -634,7 +636,7 @@ public class RulesetService {
 	// Recurse if necessary into the inherited rulesets
 	private Set<RulesetEntity> importInheritedRulesets(RulesetDto incomingRuleset,
 			String authorName, ImportOption importOption, ImportOption providedOption)
-			throws RulesetException {
+			throws RulesetException, RuleException {
 		Set<RulesetEntity> inherited = new HashSet<>();
 		if (incomingRuleset.getRulesets().size() > 0) {
 			for (RulesetDto inheritedRuleset : incomingRuleset.getRulesets()) {

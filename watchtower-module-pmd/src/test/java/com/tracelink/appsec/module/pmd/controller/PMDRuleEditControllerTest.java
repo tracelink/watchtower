@@ -80,7 +80,7 @@ public class PMDRuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = {PMDModule.PMD_RULE_EDIT_PRIVILEGE_NAME})
 	public void testEditPmdRule() throws Exception {
-		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/pmd/edit")
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/pmd/edit/custom")
 				.param("id", pmdRule.getId().toString())
 				.param("author", pmdRule.getAuthor()).param("name", "New Name")
 				.param("message", pmdRule.getMessage())
@@ -103,7 +103,7 @@ public class PMDRuleEditControllerTest {
 	public void testEditPmdRuleNotFound() throws Exception {
 		BDDMockito.doThrow(RuleNotFoundException.class).when(pmdRuleService)
 				.editRule(BDDMockito.any(PMDCustomRuleDto.class));
-		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/pmd/edit")
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/pmd/edit/custom")
 				.param("id", pmdRule.getId().toString())
 				.param("author", pmdRule.getAuthor()).param("name", "New Name")
 				.param("message", pmdRule.getMessage())

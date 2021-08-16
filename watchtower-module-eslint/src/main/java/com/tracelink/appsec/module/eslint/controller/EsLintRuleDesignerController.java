@@ -1,5 +1,8 @@
 package com.tracelink.appsec.module.eslint.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,9 +63,11 @@ public class EsLintRuleDesignerController {
 		rule.setAuthor(auth.getName());
 		// Validate ruleset
 		if (bindingResult.hasErrors()) {
-			FieldError error = bindingResult.getFieldErrors().get(0);
+			List<FieldError> error = bindingResult.getFieldErrors();
 			RuleDesignerModelAndView mav = ruleDesigner.getRuleDesignerModelAndView();
-			mav.addErrorMessage("Cannot edit ruleset. " + error.getDefaultMessage());
+			mav.addObject("knownModules", ruleDesignerService.getKnownModulesForUser(auth));
+			mav.addErrorMessage("Failed to validate rule. " + error.stream()
+					.map(FieldError::getDefaultMessage).collect(Collectors.joining(",")));
 			return mav;
 		}
 		// Run query to get ModelAndView

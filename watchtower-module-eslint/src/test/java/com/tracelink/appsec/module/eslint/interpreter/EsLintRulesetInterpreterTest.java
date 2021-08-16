@@ -5,12 +5,15 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintRuleDtoTest;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -37,19 +40,16 @@ public class EsLintRulesetInterpreterTest {
 		rulesetDto.setName(rulesetName);
 		rulesetDto.setDescription(rulesetDesc);
 
-		String ruleName = "ruleName";
-		RulePriority priority = RulePriority.HIGH;
-		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
-		rule.setName(ruleName);
-		rule.setPriority(priority);
+		EsLintCustomRuleDto rule = EsLintRuleDtoTest.getCustomEsLintRule();
+		rulesetDto.setRules(Collections.singleton(rule));
 		try (BufferedReader br = new BufferedReader(
 				new InputStreamReader(interpreter.exportRuleset(rulesetDto)))) {
 			String exported = br.lines().collect(Collectors.joining("\n"));
 			Assertions.assertTrue(exported.contains("name: \"" + rulesetName + "\""));
 			Assertions.assertTrue(exported.contains(
 					"description: \"" + rulesetDesc + "\""));
-			Assertions.assertTrue(
-					exported.contains("\"" + ruleName + "\": " + priority.getPriority() + ""));
+			MatcherAssert.assertThat(exported, Matchers.containsString(
+					"\"" + rule.getName() + "\": " + rule.getPriority().getPriority() + ""));
 		}
 	}
 

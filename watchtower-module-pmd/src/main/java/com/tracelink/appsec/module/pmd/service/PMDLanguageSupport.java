@@ -11,6 +11,12 @@ import net.sourceforge.pmd.lang.java.JavaLanguageModule;
 import net.sourceforge.pmd.lang.scala.ScalaLanguageModule;
 import net.sourceforge.pmd.lang.xml.XmlLanguageModule;
 
+/**
+ * Enumeration of the Watchtower-supported language types from PMD
+ * 
+ * @author csmith
+ *
+ */
 public enum PMDLanguageSupport {
 	JAVA(JavaLanguageModule.NAME, JavaLanguageModule.TERSE_NAME),
 	SCALA(ScalaLanguageModule.NAME, ScalaLanguageModule.TERSE_NAME),
@@ -19,7 +25,7 @@ public enum PMDLanguageSupport {
 	private final String languageName;
 	private final Language pmdLanguage;
 
-	private PMDLanguageSupport(String languageName, String terseName) {
+	PMDLanguageSupport(String languageName, String terseName) {
 		this.languageName = languageName;
 		this.pmdLanguage = LanguageRegistry.findLanguageByTerseName(terseName);
 	}
@@ -33,6 +39,7 @@ public enum PMDLanguageSupport {
 	}
 
 
+	@Override
 	public String toString() {
 		return languageName;
 	}

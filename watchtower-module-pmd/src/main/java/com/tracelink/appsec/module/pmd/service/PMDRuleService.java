@@ -19,6 +19,7 @@ import com.tracelink.appsec.module.pmd.repository.PMDRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -188,7 +189,16 @@ public class PMDRuleService {
 		pmdOriginalRulesMap = originalRules;
 	}
 
-	public Rule makeRuleFromDto(RuleDto ruleDto) throws RuleNotFoundException {
+	/**
+	 * Method to create/find the PMD rule for the given {@linkplain RuleDto}. Will consult with the
+	 * internal ruleset or create the custom definition as needed
+	 * 
+	 * @param ruleDto the Watchtower rule to use
+	 * @return the PMD rule created for this Watchtower rule
+	 * @throws RuleException         if the rule is custom but cannot be created
+	 * @throws RuleNotFoundException if the rule is provided but cannot be found
+	 */
+	public Rule makeRuleFromDto(RuleDto ruleDto) throws RuleException, RuleNotFoundException {
 		Rule pmdRule;
 		if (ruleDto.isProvided()) {
 			PMDProvidedRuleDto provided = (PMDProvidedRuleDto) ruleDto;
@@ -214,7 +224,7 @@ public class PMDRuleService {
 							pmdRule.setProperty(desc, desc.valueFrom(prop.getValue()));
 						});
 			} catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-				throw new RuleNotFoundException(
+				throw new RuleException(
 						"Cannot create custom PMD rule " + custom.getName(), e);
 			}
 		}

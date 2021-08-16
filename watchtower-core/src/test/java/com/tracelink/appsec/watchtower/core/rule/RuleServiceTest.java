@@ -20,7 +20,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.ruleset.ImportOption;
@@ -130,7 +129,7 @@ public class RuleServiceTest {
 	}
 
 	@Test
-	public void testImportRules() throws RulesetException {
+	public void testImportRules() throws RuleException {
 		String user = "jdoe";
 		ruleService.importRules(Collections.singleton(rule.toDto()), user, ImportOption.OVERRIDE,
 				ImportOption.OVERRIDE);
@@ -145,7 +144,7 @@ public class RuleServiceTest {
 	}
 
 	@Test
-	public void testImportRulesFixAuthor() throws RulesetException {
+	public void testImportRulesFixAuthor() throws RuleException {
 		String user = "jdoe2";
 		rule.setAuthor(null);
 		ruleService.importRules(Collections.singleton(rule.toDto()), user, ImportOption.OVERRIDE,
@@ -161,8 +160,8 @@ public class RuleServiceTest {
 	}
 
 	@Test
-	public void testImportRulesFailValidation() throws RulesetException {
-		Throwable t = Assertions.assertThrows(RulesetException.class, () -> {
+	public void testImportRulesFailValidation() {
+		Throwable t = Assertions.assertThrows(RuleException.class, () -> {
 			rule.setExternalUrl(null);
 			ruleService.importRules(Collections.singleton(rule.toDto()), "foo",
 					ImportOption.OVERRIDE, ImportOption.OVERRIDE);

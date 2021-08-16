@@ -19,6 +19,7 @@ import com.tracelink.appsec.module.eslint.engine.ProcessResult;
 import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
 import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetExporter;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
@@ -173,15 +174,16 @@ public class EsLintScanner implements IScanner {
 	private static void processMessages(List<LinterMessage> messages, ScanReport report,
 			RulesetDto ruleset, Path fileName) {
 		Set<RuleDto> esLintRules = ruleset.getAllRules().stream()
-				.filter(r -> r instanceof EsLintCustomRuleDto).collect(Collectors.toSet());
+				.filter(r -> r instanceof EsLintRuleDto).collect(Collectors.toSet());
 		for (LinterMessage message : messages) {
 			// Message is an error
 			if (message.isFatal() || message.getNodeType() == null || message.getSeverity() != 1
 					|| message.getRuleId() == null) {
 				// Add error to report
 				report.addError(new ScanError(message.getMessage()));
-				// Message is a violation
-			} else {
+			}
+			// Message is a violation
+			else {
 				RuleDto rule = esLintRules.stream()
 						.filter(r -> r.getName().equals(message.getRuleId()))
 						.findFirst().orElse(null);

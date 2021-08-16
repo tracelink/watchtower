@@ -46,7 +46,6 @@ public class PMDDesignerControllerTest {
 	public void testSaveRule() throws Exception {
 		String name = "RuleName";
 		String message = "message";
-		String description = "description";
 		String language = "Java";
 		String priority = "1";
 		String query = "//";
@@ -59,7 +58,6 @@ public class PMDDesignerControllerTest {
 		mockMvc.perform(MockMvcRequestBuilders.post("/designer/pmd/save")
 				.param("name", name)
 				.param("message", message)
-				.param("description", description)
 				.param("language", language)
 				.param("priority", priority)
 				.param("query", query)
@@ -78,7 +76,6 @@ public class PMDDesignerControllerTest {
 	public void testSaveRuleFailSave() throws Exception {
 		String name = "RuleName";
 		String message = "message";
-		String description = "description";
 		String language = "Java";
 		String priority = "1";
 		String query = "//";
@@ -93,7 +90,6 @@ public class PMDDesignerControllerTest {
 		mockMvc.perform(MockMvcRequestBuilders.post("/designer/pmd/save")
 				.param("name", name)
 				.param("message", message)
-				.param("description", description)
 				.param("language", language)
 				.param("priority", priority)
 				.param("query", query)
@@ -112,7 +108,6 @@ public class PMDDesignerControllerTest {
 	public void testSaveRuleFailValidation() throws Exception {
 		String name = "RuleName";
 		String message = "message";
-		String description = "description";
 		String language = "Java";
 		String priority = "1";
 		String query = "//";
@@ -125,7 +120,6 @@ public class PMDDesignerControllerTest {
 		mockMvc.perform(MockMvcRequestBuilders.post("/designer/pmd/save")
 				.param("name", name)
 				.param("message", message)
-				.param("description", description)
 				.param("language", language)
 				.param("priority", priority)
 				.param("query", query)
@@ -134,7 +128,6 @@ public class PMDDesignerControllerTest {
 				.with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.model().attribute("ruleName", name))
 				.andExpect(MockMvcResultMatchers.model().attribute("ruleMessage", message))
-				.andExpect(MockMvcResultMatchers.model().attribute("ruleDescription", description))
 				.andExpect(MockMvcResultMatchers.model().attribute("rulePriority",
 						Integer.parseInt(priority)))
 				.andExpect(MockMvcResultMatchers.model().attribute(

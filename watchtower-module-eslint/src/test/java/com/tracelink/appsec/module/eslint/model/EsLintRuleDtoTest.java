@@ -13,7 +13,7 @@ public class EsLintRuleDtoTest {
 		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(1L);
 		dto.setAuthor("jdoe");
-		dto.setName("eslint-rule");
+		dto.setName("my-no-eq-null");
 		dto.setMessage("Some message");
 		dto.setExternalUrl("https://example.com");
 		dto.setPriority(RulePriority.MEDIUM);
@@ -42,7 +42,7 @@ public class EsLintRuleDtoTest {
 		EsLintCustomRuleDto dto = getCustomEsLintRule();
 		EsLintRuleEntity rule = (EsLintRuleEntity) dto.toEntity();
 		Assertions.assertNotEquals(dto.getId(), rule.getId(), 0.001);
-		Assertions.assertNull(rule.getAuthor());
+		Assertions.assertEquals(dto.getAuthor(), rule.getAuthor());
 		Assertions.assertEquals(dto.getName(), rule.getName());
 		Assertions.assertEquals(dto.getMessage(), rule.getMessage());
 		Assertions.assertEquals(dto.getExternalUrl(), rule.getExternalUrl());

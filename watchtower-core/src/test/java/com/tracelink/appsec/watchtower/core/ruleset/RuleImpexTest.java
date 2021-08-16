@@ -341,7 +341,7 @@ public class RuleImpexTest {
 		// importing rule has no author, will be updated by the import username option
 		MockRuleEntity rule =
 				makeNewRule("ruleName", "", "msg", "http://example.com", RulePriority.MEDIUM,
-						false);
+						true);
 		RulesetEntity ruleset =
 				makeNewRuleset("rulesetName", "Desc", RulesetDesignation.PROVIDED);
 
@@ -382,7 +382,7 @@ public class RuleImpexTest {
 		// importing rule has no author, will be updated by the import username option
 		MockRuleEntity rule =
 				makeNewRule("ruleName", "", "msg", "http://example.com", RulePriority.MEDIUM,
-						false);
+						true);
 		RulesetEntity ruleset =
 				makeNewRuleset("rulesetName", "Desc", RulesetDesignation.PROVIDED);
 		ruleset.setRules(Collections.singleton(rule));

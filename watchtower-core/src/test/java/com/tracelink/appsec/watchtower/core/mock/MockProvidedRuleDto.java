@@ -14,7 +14,7 @@ public class MockProvidedRuleDto extends ProvidedRuleDto {
 
 	@Override
 	public RuleEntity toEntity() {
-		MockRuleEntity entity = new MockRuleEntity(true);
+		MockRuleEntity entity = new MockRuleEntity(isProvided());
 		entity.setAuthor(getAuthor());
 		entity.setName(getName());
 		entity.setMessage(getMessage());

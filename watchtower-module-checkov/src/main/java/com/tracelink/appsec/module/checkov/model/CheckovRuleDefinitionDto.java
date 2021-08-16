@@ -1,5 +1,11 @@
 package com.tracelink.appsec.module.checkov.model;
 
+/**
+ * Rule Definition Dto to transfer from Checkov JSON to POJO and Entity
+ * 
+ * @author csmith
+ *
+ */
 public class CheckovRuleDefinitionDto {
 	private long id;
 
@@ -41,6 +47,11 @@ public class CheckovRuleDefinitionDto {
 		this.iac = iac;
 	}
 
+	/**
+	 * Create the DB Entity for this Definition
+	 * 
+	 * @return the {@linkplain CheckovRuleDefinitionEntity} for this DTO
+	 */
 	public CheckovRuleDefinitionEntity toEntity() {
 		CheckovRuleDefinitionEntity entity = new CheckovRuleDefinitionEntity();
 		entity.setId(getId());

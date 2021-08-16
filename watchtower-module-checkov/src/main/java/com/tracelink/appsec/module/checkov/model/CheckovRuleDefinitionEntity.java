@@ -63,6 +63,11 @@ public class CheckovRuleDefinitionEntity {
 		this.iac = iac;
 	}
 
+	/**
+	 * Create the DTO of this entity
+	 * 
+	 * @return the DTO of this entity
+	 */
 	public CheckovRuleDefinitionDto toDto() {
 		CheckovRuleDefinitionDto dto = new CheckovRuleDefinitionDto();
 		dto.setId(getId());

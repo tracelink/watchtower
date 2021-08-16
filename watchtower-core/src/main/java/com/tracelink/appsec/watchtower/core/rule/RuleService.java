@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.ruleset.ImportOption;
 
 /**
@@ -112,7 +111,7 @@ public class RuleService {
 	}
 
 
-	private <T extends RuleDto> void validateRules(Set<T> ruleDtos) throws RulesetException {
+	private <T extends RuleDto> void validateRules(Set<T> ruleDtos) throws RuleException {
 		ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
 		Validator validator = validatorFactory.getValidator();
 		// Validate fields of the rule
@@ -126,7 +125,7 @@ public class RuleService {
 			}
 		}
 		if (sb.length() > 0) {
-			throw new RulesetException("One or more rules are invalid." + sb.toString());
+			throw new RuleException("One or more rules are invalid." + sb.toString());
 		}
 	}
 
@@ -140,11 +139,11 @@ public class RuleService {
 	 * @param customOption     the option used during custom rule imports
 	 * @param providedOption   the option used during provided rule imports
 	 * @return list of database entity rules that have been imported
-	 * @throws RulesetException if there is a rule that already exists with the same name
+	 * @throws RuleException if there is a rule that already exists with the same name
 	 */
 	public List<RuleEntity> importRules(Set<RuleDto> dtos, String backupAuthorName,
 			ImportOption customOption, ImportOption providedOption)
-			throws RulesetException {
+			throws RuleException {
 		// ensure authors are set correctly
 		dtos.stream()
 				.filter(r -> (RuleDesignation.CUSTOM.equals(r.getRuleDesignation())

@@ -20,6 +20,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 
@@ -100,7 +101,7 @@ public class PMDScanner implements IScanner {
 					rules.add(ruleService.makeRuleFromDto(ruleDto));
 				}
 			}
-		} catch (RuleNotFoundException e) {
+		} catch (RuleNotFoundException | RuleException e) {
 			throw new RulesetException("Error while creating ruleset: " + e.getMessage());
 		}
 

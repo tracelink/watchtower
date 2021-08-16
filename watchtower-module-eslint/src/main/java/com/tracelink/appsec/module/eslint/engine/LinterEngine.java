@@ -236,6 +236,8 @@ public final class LinterEngine {
 						"Expected Node.js greater than v12.0.0 but received " + processResult
 								.getResults());
 			}
+		} else {
+			throw new RuntimeException("Cannot run Node.js");
 		}
 	}
 

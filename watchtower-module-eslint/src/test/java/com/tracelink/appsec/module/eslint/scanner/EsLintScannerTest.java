@@ -1,7 +1,9 @@
 package com.tracelink.appsec.module.eslint.scanner;
 
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,6 +14,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintRuleDtoTest;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -33,6 +36,12 @@ public class EsLintScannerTest {
 	@BeforeEach
 	public void setup() throws Exception {
 		scanner = new EsLintScanner(engine);
+		rulesetDto = new RulesetDto();
+		rulesetDto.setName("ESLint rules");
+		rulesetDto.setDescription("A collection of custom and core ESLint rules");
+		rulesetDto.setRules(new HashSet<>(Arrays.asList(engine.getCoreRules().get("no-console"),
+				engine.getCoreRules().get("no-eval"), EsLintRuleDtoTest.getCustomEsLintRule())));
+
 	}
 
 	@Test
@@ -43,16 +52,13 @@ public class EsLintScannerTest {
 		config.setRuleset(rulesetDto);
 		ScanReport report = scanner.scan(config);
 		Assertions.assertTrue(report.getErrors().isEmpty());
-		Assertions.assertEquals(3, report.getViolations().size());
+		Assertions.assertEquals(2, report.getViolations().size());
 		Assertions.assertTrue(report.getViolations().stream()
 				.anyMatch(v -> v.getViolationName().equals("no-console") && v.getMessage()
 						.equals("Unexpected console statement.") && v.getLineNum() == 2));
 		Assertions.assertTrue(report.getViolations().stream()
 				.anyMatch(v -> v.getViolationName().equals("no-eval") && v.getMessage()
 						.equals("eval can be harmful.") && v.getLineNum() == 3));
-		Assertions.assertTrue(report.getViolations().stream()
-				.anyMatch(v -> v.getViolationName().equals("my-no-extra-semi") && v.getMessage()
-						.equals("Unnecessary semicolon.") && v.getLineNum() == 2));
 	}
 
 	@Test
@@ -64,16 +70,13 @@ public class EsLintScannerTest {
 		config.setRuleset(rulesetDto);
 		ScanReport report = scanner.scan(config);
 		Assertions.assertTrue(report.getErrors().isEmpty());
-		Assertions.assertEquals(3, report.getViolations().size());
+		Assertions.assertEquals(2, report.getViolations().size());
 		Assertions.assertTrue(report.getViolations().stream()
 				.anyMatch(v -> v.getViolationName().equals("no-console") && v.getMessage()
 						.equals("Unexpected console statement.") && v.getLineNum() == 2));
 		Assertions.assertTrue(report.getViolations().stream()
 				.anyMatch(v -> v.getViolationName().equals("no-eval") && v.getMessage()
 						.equals("eval can be harmful.") && v.getLineNum() == 3));
-		Assertions.assertTrue(report.getViolations().stream()
-				.anyMatch(v -> v.getViolationName().equals("my-no-extra-semi") && v.getMessage()
-						.equals("Unnecessary semicolon.") && v.getLineNum() == 2));
 	}
 
 	@Test

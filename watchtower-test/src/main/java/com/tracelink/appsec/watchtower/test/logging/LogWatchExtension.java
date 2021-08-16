@@ -20,7 +20,7 @@ import ch.qos.logback.core.read.ListAppender;
  * @author csmith
  *
  */
-public class LogWatchExtension implements BeforeEachCallback, AfterEachCallback {
+public final class LogWatchExtension implements BeforeEachCallback, AfterEachCallback {
 
 	private ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
 	private Logger logger = null;
