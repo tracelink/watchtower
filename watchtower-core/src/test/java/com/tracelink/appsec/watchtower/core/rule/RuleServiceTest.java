@@ -1,15 +1,11 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.mock.MockRule;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
-import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -22,6 +18,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
+import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
+import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
+import com.tracelink.appsec.watchtower.core.ruleset.ImportOption;
 
 @ExtendWith(SpringExtension.class)
 public class RuleServiceTest {
@@ -40,13 +41,13 @@ public class RuleServiceTest {
 	@BeforeEach
 	public void setup() {
 		ruleService = new RuleService(ruleRepository);
-		rule = new MockRule();
+		rule = new MockRuleEntity();
 	}
 
 
 	@Test
 	public void testGetRules() {
-		RuleEntity rule2 = new MockRule();
+		RuleEntity rule2 = new MockRuleEntity();
 		BDDMockito.when(ruleRepository.findAll()).thenReturn(Arrays.asList(rule, rule2));
 		List<RuleDto> rules = ruleService.getRules();
 		Assertions.assertEquals(2, rules.size());
@@ -83,7 +84,7 @@ public class RuleServiceTest {
 
 	@Test
 	public void testGetRulesForModule() {
-		RuleEntity rule2 = new MockRule();
+		RuleEntity rule2 = new MockRuleEntity();
 		rule2.setName("A");
 		String scannerType = rule.toDto().getModule();
 		BDDMockito.when(ruleRepository.findAll()).thenReturn(Arrays.asList(rule, rule2));
@@ -113,13 +114,13 @@ public class RuleServiceTest {
 	@Test
 	public void testCreatesNameCollision() {
 		BDDMockito.when(ruleRepository.findByName(RULE_NAME)).thenReturn(rule);
-		Assertions.assertTrue(ruleService.createsNameCollision(1L, RULE_NAME));
+		Assertions.assertTrue(ruleService.createsNameCollision(rule.getId() + 1, RULE_NAME));
 	}
 
 	@Test
 	public void testCreatesNameCollisionSameId() {
 		BDDMockito.when(ruleRepository.findByName(RULE_NAME)).thenReturn(rule);
-		Assertions.assertFalse(ruleService.createsNameCollision(0L, RULE_NAME));
+		Assertions.assertFalse(ruleService.createsNameCollision(rule.getId(), RULE_NAME));
 	}
 
 	@Test
@@ -128,10 +129,10 @@ public class RuleServiceTest {
 	}
 
 	@Test
-	public void testImportRules() throws RulesetInterpreterException {
-		UserEntity user = new UserEntity();
-		user.setUsername("jdoe");
-		ruleService.importRules(Collections.singleton(rule.toDto()), user);
+	public void testImportRules() throws RuleException {
+		String user = "jdoe";
+		ruleService.importRules(Collections.singleton(rule.toDto()), user, ImportOption.OVERRIDE,
+				ImportOption.OVERRIDE);
 
 		ArgumentCaptor<Iterable<RuleEntity>> argumentCaptor =
 				ArgumentCaptor.forClass(Iterable.class);
@@ -139,6 +140,32 @@ public class RuleServiceTest {
 		BDDMockito.verify(ruleRepository, Mockito.times(1)).flush();
 		Set<RuleEntity> rules = (Set<RuleEntity>) argumentCaptor.getValue();
 		Assertions.assertEquals(rule.getName(), rules.iterator().next().getName());
-		Assertions.assertEquals(user.getUsername(), rules.iterator().next().getAuthor());
+		Assertions.assertEquals(user, rules.iterator().next().getAuthor());
+	}
+
+	@Test
+	public void testImportRulesFixAuthor() throws RuleException {
+		String user = "jdoe2";
+		rule.setAuthor(null);
+		ruleService.importRules(Collections.singleton(rule.toDto()), user, ImportOption.OVERRIDE,
+				ImportOption.OVERRIDE);
+
+		ArgumentCaptor<Iterable<RuleEntity>> argumentCaptor =
+				ArgumentCaptor.forClass(Iterable.class);
+		BDDMockito.verify(ruleRepository, Mockito.times(1)).saveAll(argumentCaptor.capture());
+		BDDMockito.verify(ruleRepository, Mockito.times(1)).flush();
+		Set<RuleEntity> rules = (Set<RuleEntity>) argumentCaptor.getValue();
+		Assertions.assertEquals(rule.getName(), rules.iterator().next().getName());
+		Assertions.assertEquals(user, rules.iterator().next().getAuthor());
+	}
+
+	@Test
+	public void testImportRulesFailValidation() {
+		Throwable t = Assertions.assertThrows(RuleException.class, () -> {
+			rule.setExternalUrl(null);
+			ruleService.importRules(Collections.singleton(rule.toDto()), "foo",
+					ImportOption.OVERRIDE, ImportOption.OVERRIDE);
+		});
+		Assertions.assertTrue(t.getMessage().contains("One or more rules are invalid"));
 	}
 }

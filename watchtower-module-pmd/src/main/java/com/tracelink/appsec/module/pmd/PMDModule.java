@@ -2,20 +2,21 @@ package com.tracelink.appsec.module.pmd;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.tracelink.appsec.module.pmd.designer.PMDRuleDesigner;
-import com.tracelink.appsec.module.pmd.interpreter.PMDRulesetInterpreter;
 import com.tracelink.appsec.module.pmd.ruleeditor.PMDRuleEditor;
 import com.tracelink.appsec.module.pmd.scanner.PMDScanner;
+import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Module to hold implementations for PMD rules, scanner, designer, and XML model.
@@ -29,9 +30,12 @@ public class PMDModule extends AbstractModule {
 	public static final String PMD_RULE_DESIGNER_PRIVILEGE_NAME = "PMD Rule Designer";
 
 	private PMDRuleDesigner pmdRuleDesigner;
+	private PMDRuleService pmdRuleService;
 
-	public PMDModule(@Autowired PMDRuleDesigner ruleDesigner) {
+	public PMDModule(@Autowired PMDRuleDesigner ruleDesigner,
+			@Autowired PMDRuleService ruleService) {
 		this.pmdRuleDesigner = ruleDesigner;
+		this.pmdRuleService = ruleService;
 	}
 
 	/**
@@ -63,7 +67,7 @@ public class PMDModule extends AbstractModule {
 	 */
 	@Override
 	public IScanner getScanner() {
-		return new PMDScanner();
+		return new PMDScanner(pmdRuleService);
 	}
 
 	/**
@@ -82,14 +86,6 @@ public class PMDModule extends AbstractModule {
 		return new PMDRuleEditor();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new PMDRulesetInterpreter();
-	}
-
 	@Override
 	public List<PrivilegeEntity> getModulePrivileges() {
 		return Arrays.asList(new PrivilegeEntity().setName(PMD_RULE_EDIT_PRIVILEGE_NAME)
@@ -98,5 +94,11 @@ public class PMDModule extends AbstractModule {
 				new PrivilegeEntity().setName(PMD_RULE_DESIGNER_PRIVILEGE_NAME)
 						.setCategory("Rule Designer").setDescription(
 								"User may create and test PMD rules in the Rule Designer."));
+	}
+
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		return pmdRuleService.getPMDProvidedRulesetsMap().entrySet().stream()
+				.flatMap(e -> e.getValue().stream()).collect(Collectors.toList());
 	}
 }

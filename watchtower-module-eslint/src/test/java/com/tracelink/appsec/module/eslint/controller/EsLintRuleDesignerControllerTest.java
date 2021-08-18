@@ -1,14 +1,11 @@
 package com.tracelink.appsec.module.eslint.controller;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,13 +20,12 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
-import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintRuleDtoTest;
 import com.tracelink.appsec.module.eslint.service.EsLintRuleService;
-import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
-import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.test.WatchtowerTestApplication;
 
 @ExtendWith(SpringExtension.class)
@@ -49,11 +45,11 @@ public class EsLintRuleDesignerControllerTest {
 	@MockBean
 	EsLintRuleService ruleService;
 
-	private EsLintRuleDto esLintRule;
+	private EsLintCustomRuleDto esLintRule;
 
 	@BeforeEach
 	public void setup() {
-		esLintRule = getEsLintRuleDto();
+		esLintRule = EsLintRuleDtoTest.getCustomEsLintRule();
 	}
 
 	@Test
@@ -62,15 +58,16 @@ public class EsLintRuleDesignerControllerTest {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
 		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
+				.query(BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyList()))
 				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
 		mockMvc.perform(MockMvcRequestBuilders.post("/designer/eslint/query")
 				.param("sourceCode", sourceCode)
-				.param("core", "false")
 				.param("name", esLintRule.getName())
+				.param("author", "jdoe")
+				.param("externalUrl", esLintRule.getExternalUrl())
+				.param("message", esLintRule.getMessage())
 				.param("createFunction", esLintRule.getCreateFunction())
 				.param("messages[0].key", esLintRule.getMessages().get(0).getKey())
 				.param("messages[0].value", esLintRule.getMessages().get(0).getValue())
@@ -86,16 +83,15 @@ public class EsLintRuleDesignerControllerTest {
 	public void testSaveCustomMissingRequiredFields() throws Exception {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
-		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
-				.thenReturn(mav);
+		BDDMockito.when(ruleDesigner.getRuleDesignerModelAndView()).thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
+
 		mockMvc.perform(MockMvcRequestBuilders.post("/designer/eslint/save")
 				.param("sourceCode", sourceCode)
-				.param("core", "false")
 				.param("name", esLintRule.getName())
+				.param("author", "jdoe")
+				.param("message", esLintRule.getMessage())
 				.param("createFunction", esLintRule.getCreateFunction())
 				.param("messages[0].key", esLintRule.getMessages().get(0).getKey())
 				.param("messages[0].value", esLintRule.getMessages().get(0).getValue())
@@ -105,26 +101,26 @@ public class EsLintRuleDesignerControllerTest {
 				.andExpect(MockMvcResultMatchers.model().attribute("knownModules",
 						Matchers.contains("ESLint")))
 				.andExpect(MockMvcResultMatchers.model().attribute("failure",
-						Matchers.stringContainsInOrder("Failed to validate rule.",
-								"External URL cannot be empty")));
-
+						Matchers.allOf(Matchers.containsString("Failed to validate rule."),
+								Matchers.containsString("External URL cannot be null"))));
 	}
 
 	@Test
 	@WithMockUser(authorities = {EsLintModule.ESLINT_RULE_DESIGNER_PRIVILEGE_NAME})
-	public void testSaveCoreMissingRequiredFields() throws Exception {
+	public void testSaveCustomRule() throws Exception {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
-		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
-				.thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
+		BDDMockito.when(ruleDesigner.query(BDDMockito.anyString(), BDDMockito.any()))
+				.thenReturn(mav);
 		mockMvc.perform(MockMvcRequestBuilders.post("/designer/eslint/save")
 				.param("sourceCode", sourceCode)
-				.param("core", "true")
 				.param("name", esLintRule.getName())
+				.param("author", "jdoe")
+				.param("message", esLintRule.getMessage())
+				.param("externalUrl", esLintRule.getExternalUrl())
+				.param("priority", esLintRule.getPriority().toString())
 				.param("createFunction", esLintRule.getCreateFunction())
 				.param("messages[0].key", esLintRule.getMessages().get(0).getKey())
 				.param("messages[0].value", esLintRule.getMessages().get(0).getValue())
@@ -133,99 +129,8 @@ public class EsLintRuleDesignerControllerTest {
 						Matchers.nullValue()))
 				.andExpect(MockMvcResultMatchers.model().attribute("knownModules",
 						Matchers.contains("ESLint")))
-				.andExpect(MockMvcResultMatchers.model().attribute("failure",
-						Matchers.stringContainsInOrder("Failed to validate rule.",
-								"Priority cannot be null")));
-
+				.andExpect(MockMvcResultMatchers.model().attribute(
+						WatchtowerModelAndView.FAILURE_NOTIFICATION, Matchers.emptyOrNullString()));
 	}
 
-	@Test
-	@WithMockUser(authorities = {EsLintModule.ESLINT_RULE_DESIGNER_PRIVILEGE_NAME})
-	public void testSaveCoreException() throws Exception {
-		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
-		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
-		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
-				.thenReturn(mav);
-		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
-				.thenReturn(Arrays.asList("ESLint"));
-		BDDMockito.doThrow(RuleDesignerException.class).when(ruleService)
-				.saveRule(BDDMockito.any());
-		mockMvc.perform(MockMvcRequestBuilders.post("/designer/eslint/save")
-				.param("sourceCode", sourceCode)
-				.param("core", "true")
-				.param("name", esLintRule.getName())
-				.param("priority", "MEDIUM")
-				.param("createFunction", esLintRule.getCreateFunction())
-				.param("messages[0].key", esLintRule.getMessages().get(0).getKey())
-				.param("messages[0].value", esLintRule.getMessages().get(0).getValue())
-				.with(SecurityMockMvcRequestPostProcessors.csrf()))
-				.andExpect(MockMvcResultMatchers.model().attribute("designerView",
-						Matchers.nullValue()))
-				.andExpect(MockMvcResultMatchers.model().attribute("knownModules",
-						Matchers.contains("ESLint")))
-				.andExpect(MockMvcResultMatchers.model().attribute("failure",
-						Matchers.stringContainsInOrder("Failed to save rule.")));
-	}
-
-	@Test
-	@WithMockUser(username = "jdoe",
-			authorities = {EsLintModule.ESLINT_RULE_DESIGNER_PRIVILEGE_NAME})
-	public void testSaveCore() throws Exception {
-		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
-		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
-		BDDMockito.when(ruleDesigner
-				.query(BDDMockito.anyString(), BDDMockito.anyBoolean(), BDDMockito.anyString(),
-						BDDMockito.anyString(), BDDMockito.anyList()))
-				.thenReturn(mav);
-		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
-				.thenReturn(Arrays.asList("ESLint"));
-		mockMvc.perform(MockMvcRequestBuilders.post("/designer/eslint/save")
-				.param("sourceCode", sourceCode)
-				.param("core", "true")
-				.param("name", esLintRule.getName())
-				.param("priority", "MEDIUM")
-				.param("createFunction", esLintRule.getCreateFunction())
-				.param("messages[0].key", esLintRule.getMessages().get(0).getKey())
-				.param("messages[0].value", esLintRule.getMessages().get(0).getValue())
-				.with(SecurityMockMvcRequestPostProcessors.csrf()))
-				.andExpect(MockMvcResultMatchers.model().attribute("designerView",
-						Matchers.nullValue()))
-				.andExpect(MockMvcResultMatchers.model().attribute("knownModules",
-						Matchers.contains("ESLint")))
-				.andExpect(MockMvcResultMatchers.model().attribute("success",
-						Matchers.is("Successfully saved rule: rule-name")));
-
-		ArgumentCaptor<EsLintRuleDto> ruleCaptor = ArgumentCaptor.forClass(EsLintRuleDto.class);
-		BDDMockito.verify(ruleService).saveRule(ruleCaptor.capture());
-		Assertions.assertEquals("jdoe", ruleCaptor.getValue().getAuthor());
-	}
-
-
-	private static EsLintRuleDto getEsLintRuleDto() {
-		EsLintRuleDto rule = new EsLintRuleDto();
-		rule.setName("rule-name");
-		rule.setMessage("This is a bad practice.");
-		rule.setExternalUrl("https://example.com");
-		rule.setPriority(RulePriority.MEDIUM_HIGH);
-		rule.setCore(false);
-		EsLintMessageDto message = new EsLintMessageDto();
-		message.setKey("myMessage");
-		message.setValue("There's something unexpected here");
-		rule.setMessages(Collections.singletonList(message));
-		rule.setCreateFunction("create(context) {\n"
-				+ "\treturn {\n"
-				+ "\t\tBinaryExpression(node) {\n"
-				+ "\t\t\tconst badOperator = node.operator === \"==\" || node.operator === \"!=\";\n"
-				+ "\t\t\tif (node.right.type === \"Literal\" && node.right.raw === \"null\"\n"
-				+ "\t\t\t\t\t&& badOperator || node.left.type === \"Literal\"\n"
-				+ "\t\t\t\t\t&& node.left.raw === \"null\" && badOperator) {\n"
-				+ "\t\t\t\tcontext.report({ node, messageId: \"myMessage\" });\n"
-				+ "\t\t\t}\n"
-				+ "\t\t}\n"
-				+ "\t};\n"
-				+ "}");
-		return rule;
-	}
 }

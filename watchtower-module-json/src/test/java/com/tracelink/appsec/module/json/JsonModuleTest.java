@@ -6,6 +6,7 @@ import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
+import com.tracelink.appsec.watchtower.test.ScannerModuleTestOption;
 
 public class JsonModuleTest extends ScannerModuleTest {
 
@@ -27,6 +28,7 @@ public class JsonModuleTest extends ScannerModuleTest {
 					rule.setPriority(RulePriority.MEDIUM);
 					rule.setQuery("&.*");
 					return rule;
-				}).withSchemaName("json_schema_history").withSupportedRuleClass(JsonRuleDto.class);
+				}).withSchemaName("json_schema_history").withSupportedRuleClass(JsonRuleDto.class)
+				.andIgnoreTestOption(ScannerModuleTestOption.PROVIDED_RULES);
 	}
 }

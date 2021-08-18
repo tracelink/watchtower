@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.watchtower.core.mock.MockRuleDto;
+import com.tracelink.appsec.watchtower.core.mock.MockCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
@@ -57,7 +57,7 @@ public class RulesetDtoTest {
 
 	@Test
 	public void testGetRules() {
-		RuleDto rule = new MockRuleDto();
+		RuleDto rule = new MockCustomRuleDto();
 		rule.setName("Foo");
 		rule.setPriority(RulePriority.MEDIUM);
 		r1.setRules(Collections.singleton(rule));
@@ -66,7 +66,7 @@ public class RulesetDtoTest {
 
 	@Test
 	public void testGetRuleIds() {
-		RuleDto rule = new MockRuleDto();
+		RuleDto rule = new MockCustomRuleDto();
 		rule.setId(1L);
 		r1.setRules(Collections.singleton(rule));
 		Assertions.assertEquals(new Long(1L), r1.getRuleIds().iterator().next());
@@ -78,10 +78,10 @@ public class RulesetDtoTest {
 		r2.setName("Regex Ruleset");
 		RulesetDto r3 = new RulesetDto();
 		r3.setName("Default Ruleset");
-		RuleDto pmdRule = new MockRuleDto();
+		RuleDto pmdRule = new MockCustomRuleDto();
 		pmdRule.setName("Foo");
 		pmdRule.setPriority(RulePriority.MEDIUM);
-		RuleDto regexRule = new MockRuleDto();
+		RuleDto regexRule = new MockCustomRuleDto();
 		regexRule.setName("Bar");
 		regexRule.setPriority(RulePriority.MEDIUM);
 
@@ -102,10 +102,10 @@ public class RulesetDtoTest {
 		r2.setName("Regex Ruleset");
 		RulesetDto r3 = new RulesetDto();
 		r3.setName("Default Ruleset");
-		RuleDto pmdRule = new MockRuleDto();
+		RuleDto pmdRule = new MockCustomRuleDto();
 		pmdRule.setName("Foo");
 		pmdRule.setPriority(RulePriority.MEDIUM);
-		RuleDto regexRule = new MockRuleDto();
+		RuleDto regexRule = new MockCustomRuleDto();
 		regexRule.setName("Bar");
 		regexRule.setPriority(RulePriority.MEDIUM);
 

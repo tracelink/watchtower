@@ -1,13 +1,16 @@
 package com.tracelink.appsec.module.regex.model;
 
-import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import java.util.stream.Collectors;
+
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.Table;
+
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 
 /**
  * Entity description for a Regex rule entity. Contains Regex-specific fields and inherits fields
@@ -27,6 +30,9 @@ public class RegexRuleEntity extends RuleEntity {
 	@Convert(converter = HexStringConverter.class)
 	private String regexPattern;
 
+	// @Column(name="provided")
+	private boolean provided;
+
 	public String getFileExtension() {
 		return fileExtension;
 	}
@@ -43,24 +49,42 @@ public class RegexRuleEntity extends RuleEntity {
 		this.regexPattern = regexPattern;
 	}
 
+	public boolean isProvided() {
+		return provided;
+	}
+
+	public void setProvided(boolean provided) {
+		this.provided = provided;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RegexRuleDto toDto() {
-		RegexRuleDto dto = new RegexRuleDto();
+	public RuleDto toDto() {
+		RuleDto dto;
+		if (isProvided()) {
+			RegexProvidedRuleDto provided = new RegexProvidedRuleDto();
+			provided.setMessage(getMessage());
+			provided.setExternalUrl(getExternalUrl());
+			provided.setFileExtension(getFileExtension());
+			provided.setRegexPattern(getRegexPattern());
+			dto = provided;
+		} else {
+			RegexCustomRuleDto custom = new RegexCustomRuleDto();
+			custom.setAuthor(getAuthor());
+			custom.setMessage(getMessage());
+			custom.setExternalUrl(getExternalUrl());
+			custom.setFileExtension(getFileExtension());
+			custom.setRegexPattern(getRegexPattern());
+			dto = custom;
+		}
 		// Set inherited fields
 		dto.setId(getId());
-		dto.setAuthor(getAuthor());
 		dto.setName(getName());
-		dto.setMessage(getMessage());
-		dto.setExternalUrl(getExternalUrl());
 		dto.setPriority(getPriority());
 		dto.setRulesets(
 				getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
-		// Set Regex-specific fields
-		dto.setFileExtension(getFileExtension());
-		dto.setRegexPattern(getRegexPattern());
 		return dto;
 	}
 }

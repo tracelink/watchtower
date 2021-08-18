@@ -53,7 +53,7 @@ public class OidcAuthServiceTest {
 		oidcAuthService = new OidcAuthService(userService, roleService);
 		ClientRegistration clientRegistration = ClientRegistration.withRegistrationId("oidc")
 				.clientId("ssoServer")
-				.redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
+				.redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
 				.authorizationUri("https://example.com/auth")
 				.tokenUri("https://example.com/token")
 				.userInfoUri("https://example.com/userinfo")

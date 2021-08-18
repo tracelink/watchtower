@@ -6,16 +6,16 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.tracelink.appsec.module.regex.designer.RegexRuleDesigner;
-import com.tracelink.appsec.module.regex.interpreter.RegexRulesetInterpreter;
 import com.tracelink.appsec.module.regex.ruleeditor.RegexRuleEditor;
 import com.tracelink.appsec.module.regex.scanner.RegexScanner;
+import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Module to hold implementations for Regex rules, scanner, designer, and XML model.
@@ -28,9 +28,12 @@ public class RegexModule extends AbstractModule {
 	public static final String REGEX_RULE_EDIT_PRIVILEGE_NAME = "Regex Rule Editor";
 	public static final String REGEX_RULE_DESIGNER_PRIVILEGE_NAME = "Regex Rule Designer";
 	private RegexRuleDesigner regexRuleDesigner;
+	private RegexRuleService ruleService;
 
-	public RegexModule(@Autowired RegexRuleDesigner regexRuleDesigner) {
+	public RegexModule(@Autowired RegexRuleDesigner regexRuleDesigner,
+			@Autowired RegexRuleService ruleService) {
 		this.regexRuleDesigner = regexRuleDesigner;
+		this.ruleService = ruleService;
 	}
 
 	/**
@@ -81,14 +84,6 @@ public class RegexModule extends AbstractModule {
 		return new RegexRuleEditor();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new RegexRulesetInterpreter();
-	}
-
 	@Override
 	public List<PrivilegeEntity> getModulePrivileges() {
 		return Arrays.asList(new PrivilegeEntity().setName(REGEX_RULE_EDIT_PRIVILEGE_NAME)
@@ -97,5 +92,10 @@ public class RegexModule extends AbstractModule {
 				new PrivilegeEntity().setName(REGEX_RULE_DESIGNER_PRIVILEGE_NAME)
 						.setCategory("Rule Designer").setDescription(
 								"User may create and test Regex rules in the Rule Designer."));
+	}
+
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		return ruleService.getProvidedRulesets();
 	}
 }

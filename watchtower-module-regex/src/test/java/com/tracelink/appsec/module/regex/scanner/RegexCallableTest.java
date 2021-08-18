@@ -12,7 +12,7 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -30,7 +30,7 @@ public class RegexCallableTest {
 		String fileData = "Test String to search";
 		Files.write(target, fileData.getBytes());
 		// setup rule that always finds
-		RegexRuleDto rule = BDDMockito.mock(RegexRuleDto.class);
+		RegexCustomRuleDto rule = BDDMockito.mock(RegexCustomRuleDto.class);
 		BDDMockito.given(rule.isValidExtension(BDDMockito.anyString())).willReturn(true);
 		BDDMockito.given(rule.getPriority()).willReturn(RulePriority.HIGH);
 		BDDMockito.given(ruleset.getAllRules()).willReturn(Collections.singleton(rule));
@@ -51,7 +51,7 @@ public class RegexCallableTest {
 		Files.write(target, fileData.getBytes());
 
 		// setup rule that never finds
-		RegexRuleDto rule = BDDMockito.mock(RegexRuleDto.class);
+		RegexCustomRuleDto rule = BDDMockito.mock(RegexCustomRuleDto.class);
 		BDDMockito.given(rule.isValidExtension(BDDMockito.anyString())).willReturn(true);
 		BDDMockito.given(ruleset.getAllRules()).willReturn(Collections.singleton(rule));
 		BDDMockito.given(rule.getCompiledPattern()).willReturn(Pattern.compile("$^"));
@@ -70,7 +70,7 @@ public class RegexCallableTest {
 		Files.write(target, fileData.getBytes());
 
 		// setup rule that won't match ext
-		RegexRuleDto rule = BDDMockito.mock(RegexRuleDto.class);
+		RegexCustomRuleDto rule = BDDMockito.mock(RegexCustomRuleDto.class);
 		BDDMockito.given(rule.isValidExtension(BDDMockito.anyString())).willReturn(false);
 		BDDMockito.given(ruleset.getAllRules()).willReturn(Collections.singleton(rule));
 

@@ -7,9 +7,16 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Represents a data transfer object for the {@link RuleEntity}. All fields in this object are in
  * plain text. Contains the fields inherited by all rule DTOs, regardless of type.
+ * <p>
+ * Note To Implementors: This Dto is used throughout Watchtower to transfer between Import/Export
+ * items, Scanners, Rule Entities, etc so it must contain the superset of all data needed for each.
+ * Additionally, as this is used for Import/Export, you may need to configure fields and/or methods
+ * with the {@linkplain JsonIgnore} annotation.
  *
  * @author mcool
  */
@@ -18,35 +25,15 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	protected static final String CANNOT_BE_EMPTY = " cannot be empty.";
 	private Long id;
 
-	@NotNull(message = "Author" + CANNOT_BE_NULL)
-	@NotEmpty(message = "Author" + CANNOT_BE_EMPTY)
-	private String author;
-
 	@NotNull(message = "Name" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Name" + CANNOT_BE_EMPTY)
 	@Size(max = 100, message = "Name cannot have a length of more than 100 characters.")
 	private String name;
 
-	@NotNull(message = "Message" + CANNOT_BE_NULL)
-	@NotEmpty(message = "Message" + CANNOT_BE_EMPTY)
-	private String message;
-
-	@NotNull(message = "External URL" + CANNOT_BE_NULL)
-	@NotEmpty(message = "External URL" + CANNOT_BE_EMPTY)
-	@Size(max = 255, message = "External URL cannot have a length of more than 256 characters.")
-	private String externalUrl;
-
 	@NotNull(message = "Priority" + CANNOT_BE_NULL)
 	private RulePriority priority;
 
 	private Set<String> rulesets = new TreeSet<>();
-
-	/**
-	 * This returns the name of the module that the rule is associated with.
-	 *
-	 * @return module name, representing the rule type
-	 */
-	public abstract String getModule();
 
 	public Long getId() {
 		return id;
@@ -56,36 +43,12 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 		this.id = id;
 	}
 
-	public String getAuthor() {
-		return author;
-	}
-
-	public void setAuthor(String author) {
-		this.author = author;
-	}
-
 	public String getName() {
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public String getExternalUrl() {
-		return externalUrl;
-	}
-
-	public void setExternalUrl(String externalUrl) {
-		this.externalUrl = externalUrl;
 	}
 
 	public RulePriority getPriority() {
@@ -108,6 +71,37 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	public int compareTo(RuleDto o) {
 		return getName().compareTo(o.getName());
 	}
+
+	@Override
+	public String toString() {
+		return getName();
+	}
+
+	@JsonIgnore
+	public final boolean isCustom() {
+		return RuleDesignation.CUSTOM.equals(getRuleDesignation());
+	}
+
+	@JsonIgnore
+	public final boolean isProvided() {
+		return RuleDesignation.PROVIDED.equals(getRuleDesignation());
+	}
+
+	/**
+	 * This returns the name of the module that the rule is associated with.
+	 *
+	 * @return module name, representing the rule type
+	 */
+	@JsonIgnore
+	public abstract String getModule();
+
+	public abstract String getAuthor();
+
+	public abstract String getMessage();
+
+	public abstract String getExternalUrl();
+
+	public abstract RuleDesignation getRuleDesignation();
 
 	/**
 	 * Converts this data transfer object into a database entity object. Used to help import rules

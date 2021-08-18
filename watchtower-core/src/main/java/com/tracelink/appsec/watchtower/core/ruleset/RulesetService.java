@@ -1,7 +1,10 @@
 package com.tracelink.appsec.watchtower.core.ruleset;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,34 +12,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
 
@@ -47,16 +46,12 @@ import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
  */
 @Service
 public class RulesetService {
+	private static final Logger LOG = LoggerFactory.getLogger(RulesetService.class);
 
 	private RulesetRepository rulesetRepository;
 	private RuleService ruleService;
 	private RepositoryRepository repositoryRepository;
-
-	/**
-	 * Map from module name to ruleset interpreter
-	 */
-	private Map<String, IRulesetInterpreter> interpreterMap =
-			new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private JsonMapper mapper;
 
 	/**
 	 * Creates an instance of this service with a {@link RulesetRepository} and a
@@ -72,27 +67,17 @@ public class RulesetService {
 		this.rulesetRepository = rulesetRepository;
 		this.ruleService = ruleService;
 		this.repositoryRepository = repositoryRepository;
+		PolymorphicTypeValidator validator = createTypeValidator();
+		mapper = JsonMapper.builder().polymorphicTypeValidator(validator)
+				.activateDefaultTyping(validator).build();
 	}
 
-	/**
-	 * Registers a ruleset interpreter with this service to be used for ruleset import and export.
-	 *
-	 * @param module      the module name
-	 * @param interpreter the ruleset interpreter
-	 * @throws IllegalArgumentException if module is blank or interpreter is null
-	 * @throws ModuleException          if interpreter already exists for the given module
-	 */
-	public void registerInterpreter(String module, IRulesetInterpreter interpreter)
-			throws IllegalArgumentException, ModuleException {
-		if (StringUtils.isBlank(module) || interpreter == null) {
-			throw new IllegalArgumentException(
-					"Module name and ruleset interpreter cannot be null.");
-		}
-		if (interpreterMap.containsKey(module)) {
-			throw new ModuleException(
-					"A ruleset interpreter for the given module already exists: " + module);
-		}
-		interpreterMap.put(module, interpreter);
+	private PolymorphicTypeValidator createTypeValidator() {
+		return BasicPolymorphicTypeValidator.builder()
+				.allowIfBaseType(RuleDto.class)
+				.allowIfBaseType(Set.class)
+				.allowIfBaseType(RulesetDto.class)
+				.build();
 	}
 
 	/**
@@ -120,8 +105,7 @@ public class RulesetService {
 	 *                          "Default" and there is already a default ruleset
 	 */
 	public RulesetEntity createRuleset(String name, String description,
-			RulesetDesignation designation)
-			throws RulesetException {
+			RulesetDesignation designation) throws RulesetException {
 		if (StringUtils.isBlank(name) || StringUtils.isBlank(description) || designation == null) {
 			throw new IllegalArgumentException(
 					"Please provide a ruleset name, description and designation that are not null or empty.");
@@ -132,10 +116,10 @@ public class RulesetService {
 					"A ruleset must be created as either primary or supporting.");
 		}
 		// Check for name collisions
-		try {
-			getRuleset(name);
-		} catch (RulesetNotFoundException e) {
-			RulesetEntity ruleset = new RulesetEntity();
+
+		RulesetEntity ruleset = rulesetRepository.findByName(name);
+		if (ruleset == null) {
+			ruleset = new RulesetEntity();
 			ruleset.setName(name);
 			ruleset.setDescription(description);
 			ruleset.setDesignation(designation);
@@ -151,9 +135,18 @@ public class RulesetService {
 	 *
 	 * @param id ID of the ruleset to delete
 	 * @throws RulesetNotFoundException if no ruleset with the given ID exists
+	 * @throws RulesetException         if the id belongs to a Provided ruleset
 	 */
-	public void deleteRuleset(long id) throws RulesetNotFoundException {
+	public void deleteRuleset(long id) throws RulesetNotFoundException, RulesetException {
 		RulesetEntity ruleset = getRuleset(id);
+		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			throw new RulesetException("Cannot delete a Provided ruleset");
+		}
+		deleteRulesetInternal(ruleset);
+	}
+
+	private void deleteRulesetInternal(RulesetEntity ruleset)
+			throws RulesetNotFoundException, RulesetException {
 		// Remove all rulesets and rules from this ruleset
 		ruleset.getRulesets().clear();
 		ruleset.getRules().clear();
@@ -183,17 +176,25 @@ public class RulesetService {
 	public void editRuleset(RulesetDto rulesetDto)
 			throws RulesetNotFoundException, RulesetException {
 		RulesetEntity ruleset = getRuleset(rulesetDto.getId());
+		// Check to avoid changing Provided rulesets
+		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			throw new RulesetException("Cannot modify a Provided Ruleset");
+		}
 		// Make sure values are not null or empty
 		if (StringUtils.isBlank(rulesetDto.getName())
 				|| StringUtils.isBlank(rulesetDto.getDescription())) {
 			throw new IllegalArgumentException(
 					"Please provide a ruleset name and description that are not null or empty.");
 		}
-		// Make sure designation is not null or default
+		// Make sure designation is not null or provided. Ruleset may be default if the previous was
+		// default too
 		if (rulesetDto.getDesignation() == null
-				|| rulesetDto.getDesignation().equals(RulesetDesignation.DEFAULT)) {
+				|| rulesetDto.getDesignation().equals(RulesetDesignation.PROVIDED)
+				|| (rulesetDto.getDesignation().equals(RulesetDesignation.DEFAULT)
+						&& !ruleset.getDesignation().equals(RulesetDesignation.DEFAULT))) {
 			throw new IllegalArgumentException("Please provide a valid ruleset designation.");
 		}
+
 		// Make sure we do not have a name collision
 		if (createsNameCollision(rulesetDto.getId(), rulesetDto.getName())) {
 			throw new RulesetException(
@@ -230,6 +231,11 @@ public class RulesetService {
 	public void setInheritedRulesets(long rulesetId, List<Long> inheritedRulesetIds)
 			throws RulesetNotFoundException, RulesetException {
 		RulesetEntity ruleset = getRuleset(rulesetId);
+		// Check that we do not create inheritance on a Provided ruleset
+		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			throw new RulesetException(
+					"Cannot have a provided ruleset inherit from any other ruleset.");
+		}
 		Set<RulesetEntity> inheritedRulesets = new HashSet<>();
 		for (Long inheritedRulesetId : inheritedRulesetIds) {
 			RulesetEntity inheritedRuleset = getRuleset(inheritedRulesetId);
@@ -246,10 +252,12 @@ public class RulesetService {
 		// Check that we do not create a supporting ruleset that inherits from a primary ruleset
 		if (ruleset.getDesignation().equals(RulesetDesignation.SUPPORTING)
 				&& inheritedRulesets.stream()
-						.anyMatch(r -> !r.getDesignation().equals(RulesetDesignation.SUPPORTING))) {
+						.anyMatch(r -> (r.getDesignation().equals(RulesetDesignation.PRIMARY)
+								|| r.getDesignation().equals(RulesetDesignation.DEFAULT)))) {
 			throw new RulesetException("Supporting rulesets cannot inherit from primary rulesets.");
 		}
 		ruleset.setRulesets(inheritedRulesets);
+
 		rulesetRepository.saveAndFlush(ruleset);
 	}
 
@@ -280,10 +288,11 @@ public class RulesetService {
 	 * default designation from the current default ruleset, if it exists.
 	 *
 	 * @param rulesetId ID of the ruleset to set as the default
+	 * @return The configured default ruleset, or null if the default ruleset is un-set
 	 * @throws RulesetNotFoundException if no ruleset with the given ID exists
 	 * @throws RulesetException         if a supporting ruleset is being set as the default
 	 */
-	public void setDefaultRuleset(long rulesetId)
+	public RulesetEntity setDefaultRuleset(long rulesetId)
 			throws RulesetNotFoundException, RulesetException {
 		if (rulesetId == -1L) {
 			// Set current default to primary
@@ -292,12 +301,14 @@ public class RulesetService {
 				defaultRuleset.setDesignation(RulesetDesignation.PRIMARY);
 				rulesetRepository.saveAndFlush(defaultRuleset);
 			}
+			return null;
 		} else {
 			// Check that given ruleset is valid
 			RulesetEntity ruleset = getRuleset(rulesetId);
-			if (ruleset.getDesignation().equals(RulesetDesignation.SUPPORTING)) {
+			if (ruleset.getDesignation().equals(RulesetDesignation.SUPPORTING) ||
+					ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
 				throw new RulesetException(
-						"Cannot set a supporting ruleset as the default ruleset.");
+						"Can only set a primary ruleset as the default ruleset.");
 			}
 			// Set current default to primary
 			RulesetEntity defaultRuleset = getDefaultRuleset();
@@ -307,7 +318,7 @@ public class RulesetService {
 			}
 			// Set given ruleset to default
 			ruleset.setDesignation(RulesetDesignation.DEFAULT);
-			rulesetRepository.saveAndFlush(ruleset);
+			return rulesetRepository.saveAndFlush(ruleset);
 		}
 	}
 
@@ -317,9 +328,13 @@ public class RulesetService {
 	 *
 	 * @param ruleId ID of the rule to be removed from all rulesets
 	 * @throws RuleNotFoundException if the rule does not exist
+	 * @throws RuleException         if the rule cannot be removed
 	 */
-	public void removeRuleFromAllRulesets(long ruleId) throws RuleNotFoundException {
+	public void removeRuleFromAllRulesets(long ruleId) throws RuleNotFoundException, RuleException {
 		RuleEntity rule = ruleService.getRule(ruleId);
+		if (rule.toDto().isProvided()) {
+			throw new RuleException("Cannot delete a provided rule");
+		}
 		Collection<RulesetEntity> rulesets = rulesetRepository.findAll();
 		rulesets.forEach(ruleset -> ruleset.getRules().remove(rule));
 		rulesetRepository.saveAll(rulesets);
@@ -332,41 +347,27 @@ public class RulesetService {
 	 * ruleset will be created and no rules will be imported. Creates a ruleset if no ruleset with
 	 * the name in the file exists.
 	 *
-	 * @param module      module associated with the ruleset interpreter to use for import
 	 * @param inputStream stream of file containing ruleset to import
-	 * @param user        user to assign as author of new rules
-	 * @throws IllegalArgumentException    if the user is null
-	 * @throws ModuleNotFoundException     if there is no interpreter associated with the given
-	 *                                     module
-	 * @throws IOException                 if an error occurs while handling the input stream
-	 * @throws RulesetInterpreterException if the ruleset cannot be imported
-	 * @throws RulesetException            if the rules are invalid or if the ruleset cannot be
-	 *                                     created
+	 * @param userName    user to assign as author of new rules
+	 * @return the imported ruleset
+	 * @throws IllegalArgumentException if the user is null
+	 * @throws ModuleNotFoundException  if there is no interpreter associated with the given module
+	 * @throws IOException              if an error occurs while handling the input stream
+	 * @throws RulesetException         if the ruleset cannot be created
+	 * @throws RuleException            if the rules are invalid
 	 */
-	public void importRuleset(String module, InputStream inputStream, UserEntity user)
+	public RulesetDto importRuleset(InputStream inputStream, String userName)
 			throws IllegalArgumentException, ModuleNotFoundException, IOException,
-			RulesetInterpreterException, RulesetException {
+			RulesetException, RuleException {
 		// Check that user is not null
-		if (user == null) {
+		if (StringUtils.isBlank(userName)) {
 			throw new IllegalArgumentException("User cannot be null.");
 		}
 		// Convert ruleset to DTO
-		RulesetDto rulesetDto = getRulesetInterpreter(module).importRuleset(inputStream);
-		// Validate rules
-		validateRules(rulesetDto.getRules());
-		// Create ruleset if it does not already exist
-		RulesetEntity ruleset;
-		try {
-			ruleset = getRuleset(rulesetDto.getName());
-		} catch (RulesetNotFoundException e) {
-			ruleset = createRuleset(rulesetDto.getName(), rulesetDto.getDescription(),
-					RulesetDesignation.SUPPORTING);
-		}
-		// Import rules
-		List<RuleEntity> rules = ruleService.importRules(rulesetDto.getRules(), user);
-		// Set rules for the ruleset
-		ruleset.getRules().addAll(rules);
-		rulesetRepository.saveAndFlush(ruleset);
+		RulesetDto rulesetDto = mapper.readValue(inputStream, RulesetDto.class);
+		// TODO allow configuration of these options?
+		return importOrUpdateRuleset(rulesetDto, userName, ImportOption.UPDATE,
+				ImportOption.UPDATE).toDto();
 	}
 
 	/**
@@ -376,16 +377,16 @@ public class RulesetService {
 	 *
 	 * @param id       of the ruleset to export
 	 * @param response HTTP response to attach the zip file to
-	 * @throws RulesetNotFoundException    if no ruleset exists for the given ID
-	 * @throws RulesetException            if there are no rules to be exported
-	 * @throws IOException                 if there is an issue exporting to a stream
-	 * @throws RulesetInterpreterException if there is an issue exporting the ruleset from the
-	 *                                     interpreter
+	 * @throws RulesetNotFoundException if no ruleset exists for the given ID
+	 * @throws RulesetException         if there are no rules to be exported
+	 * @throws IOException              if there is an issue exporting to a stream
 	 */
 	public void exportRuleset(long id, HttpServletResponse response)
-			throws RulesetNotFoundException, RulesetException, IOException,
-			RulesetInterpreterException {
+			throws RulesetNotFoundException, RulesetException, IOException {
 		RulesetDto rulesetDto = getRuleset(id).toDto();
+		if (rulesetDto.isProvided()) {
+			throw new RulesetException("Cannot export a Provided Ruleset");
+		}
 		// Check that there are rules to export
 		if (rulesetDto.getNumRules() == 0) {
 			throw new RulesetException(
@@ -395,66 +396,20 @@ public class RulesetService {
 		String rulesetName = rulesetDto.getName().replaceAll("\\s", "-");
 		// Set response headers
 		response.setStatus(HttpServletResponse.SC_OK);
-		response.setHeader(HttpHeaders.CONTENT_TYPE, "application/zip");
+		response.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
 		response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-				"attachment; filename=\"" + rulesetName + ".zip\"");
+				"attachment; filename=\"" + rulesetName + ".json\"");
 
-		ZipOutputStream outputStream = new ZipOutputStream(response.getOutputStream());
+		OutputStream outputStream = response.getOutputStream();
+		InputStream inputStream =
+				new ByteArrayInputStream(mapper.writeValueAsString(rulesetDto).getBytes());
 
-		for (Map.Entry<String, IRulesetInterpreter> interpreterEntry : interpreterMap.entrySet()) {
-			String fileName =
-					rulesetName + "-" + interpreterEntry.getKey() + "."
-							+ interpreterEntry.getValue().getExtension();
-			InputStream inputStream = interpreterEntry.getValue().exportRuleset(rulesetDto);
-			// There are no rules for this interpreter in the ruleset, skip to next interpreter
-			if (inputStream == null) {
-				continue;
-			}
-			// Create and write zip entry
-			ZipEntry zipEntry = new ZipEntry(fileName);
-			zipEntry.setSize(inputStream.available());
-			outputStream.putNextEntry(zipEntry);
-			StreamUtils.copy(inputStream, outputStream);
-			inputStream.close();
-			outputStream.closeEntry();
-		}
-		outputStream.finish();
+		StreamUtils.copy(inputStream, outputStream);
+
+		inputStream.close();
 		outputStream.flush();
 		outputStream.close();
 		response.flushBuffer();
-	}
-
-	/**
-	 * Given a ruleType/Module name, provide an input stream that allows the example ruleset to be
-	 * downloaded
-	 * 
-	 * @param ruleType the type of the module/rule
-	 * @return an inputStream of the example ruleset, or null if not defined
-	 * @throws ModuleNotFoundException     if the Module is unknown
-	 * @throws IOException                 if the example ruleset cannot be exported or a streaming
-	 *                                     error occurs
-	 * @throws RulesetInterpreterException if the example ruleset cannot be exported
-	 */
-	public InputStreamResource downloadExampleRuleset(String ruleType)
-			throws ModuleNotFoundException, IOException, RulesetInterpreterException {
-		IRulesetInterpreter interpreter = getRulesetInterpreter(ruleType);
-		InputStream is = interpreter.exportExampleRuleset();
-		if (is == null) {
-			return null;
-		}
-		return new InputStreamResource(is) {
-			@Override
-			public String getFilename() {
-				return ruleType + "." + interpreter.getExtension();
-			}
-
-			@Override
-			public long contentLength() throws IOException {
-				// A content length < 0 forces the Response to stream the data without checking its
-				// length which would require re-reading the stream and causes an exception
-				return -1L;
-			}
-		};
 	}
 
 	/**
@@ -498,41 +453,252 @@ public class RulesetService {
 		}
 	}
 
-	private <T extends RuleDto> void validateRules(Set<T> ruleDtos) throws RulesetException {
-		ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
-		Validator validator = validatorFactory.getValidator();
-		// Validate fields of the rule
-		for (T ruleDto : ruleDtos) {
-			Set<ConstraintViolation<T>> violations = validator.validate(ruleDto);
-			for (ConstraintViolation<T> violation : violations) {
-				String property = violation.getPropertyPath().toString();
-				if (!"author".equals(property)) {
-					throw new RulesetException(
-							"The rule with the name \"" + ruleDto.getName() + "\" is invalid: "
-									+ violation
-											.getMessage());
+	/**
+	 * Register the provided rulesets from the module during startup. This will override all
+	 * provided rules, rulesets, and remove deprecated/removed rules and rulesets that were imported
+	 * from an earlier version of the module
+	 * 
+	 * @param moduleName               the name of the module
+	 * @param incomingProvidedRulesets the rulesets to import
+	 * @return the imported rulesets
+	 * @throws ModuleException if any import fails
+	 */
+	public List<RulesetDto> registerProvidedRulesets(String moduleName,
+			List<RulesetDto> incomingProvidedRulesets)
+			throws ModuleException {
+		List<RulesetDto> updatedRulesets = new ArrayList<RulesetDto>();
+		List<RulesetDto> relevantWatchtowerProvidedRulesets =
+				getRulesets().stream().filter(
+						ruleset -> ruleset.isProvided() && ruleset.getName().startsWith(moduleName))
+						.collect(Collectors.toList());
+		try {
+			for (RulesetDto incomingRulesetDto : incomingProvidedRulesets) {
+				// Make sure ruleset is designated properly
+				if (!incomingRulesetDto.isProvided()) {
+					throw new ModuleException(
+							"Trying to register a provided ruleset, but not designated correctly. Module "
+									+ moduleName + " ruleset " + incomingRulesetDto.getName());
+				}
+				List<RuleDto> nonProvidedRules = incomingRulesetDto.getRules().stream()
+						.filter(r -> !r.isProvided()).collect(Collectors.toList());
+				if (!nonProvidedRules.isEmpty()) {
+					throw new ModuleException(
+							"Trying to register a provided ruleset, but not all rules are marked provided. Module "
+									+ moduleName + " ruleset " + incomingRulesetDto.getName()
+									+ " rules: " + Strings.join(nonProvidedRules, ','));
+				}
+
+				// Ensure the correct naming convention of the provided ruleset
+				if (!incomingRulesetDto.getName().startsWith(moduleName)) {
+					incomingRulesetDto.setName(moduleName + " - " + incomingRulesetDto.getName());
+				}
+
+				RulesetEntity resultantRuleset = importOrUpdateRuleset(incomingRulesetDto, "system",
+						ImportOption.UPDATE, ImportOption.OVERRIDE);
+				if (resultantRuleset != null) {
+					updatedRulesets.add(resultantRuleset.toDto());
 				}
 			}
+		} catch (RulesetException | RuleException e) {
+			throw new ModuleException(e);
 		}
-		// Make sure rules do not already exist with the given names
-		for (T ruleDto : ruleDtos) {
-			RuleEntity rule = ruleService.getRule(ruleDto.getName());
-			if (rule != null) {
-				// Fail if we find a rule
+
+		// Finally, check for orphaned watchtower rules and rulesets (no longer provided)
+		removeDeprecatedProvidedRules(updatedRulesets, relevantWatchtowerProvidedRulesets);
+		removeDeprecatedProvidedRulesets(updatedRulesets, relevantWatchtowerProvidedRulesets,
+				moduleName);
+		return updatedRulesets;
+	}
+
+	/**
+	 * import or update the provided ruleset and its contained rules. It follows this process:
+	 * 
+	 * <pre>
+	 * If the ruleset exists
+	 *     If the ruleset should be updated
+	 *         The ruleset object will be updated
+	 *         For every rule in the ruleset
+	 *             If the rule exists
+	 *                 If the rule should be updated
+	 *                     The rule object will be updated
+	 *                 Else
+	 *                     Skip
+	 *             Else (if the rule is new)
+	 *                 Create the rule object
+	 *     Else 
+	 *         skip
+	 * Else (if the ruleset is new)
+	 *     Create the new ruleset object
+	 *     For every rule in the ruleset
+	 *         If the rule exists
+	 *             If the rule should be updated
+	 *                 The rule object will be updated
+	 *             Else
+	 *                 Skip
+	 *         Else (if the rule is new)
+	 *             Create the rule object
+	 * Return the new finalized Ruleset object
+	 * </pre>
+	 * 
+	 * @param incomingRulesetDto the ruleset object to import
+	 * @param backupAuthorName   the author name to use on rule objects that have no author assigned
+	 * @param customOption       the option used during custom rule imports
+	 * @param providedOption     the option used during provided rule imports
+	 * @return the final ruleset after importing
+	 * @throws RulesetException if an import fails for a ruleset
+	 * @throws RuleException    if an import fails for a rule
+	 */
+	private RulesetEntity importOrUpdateRuleset(RulesetDto incomingRulesetDto,
+			String backupAuthorName, ImportOption customOption, ImportOption providedOption)
+			throws RulesetException, RuleException {
+		RulesetEntity finalRuleset;
+
+		// Look for the ruleset in the watchtower rulesets
+		RulesetEntity foundWatchtowerRuleset =
+				rulesetRepository.findByName(incomingRulesetDto.getName());
+		if (foundWatchtowerRuleset != null) {
+			// Existing ruleset known by watchtower, update
+			LOG.debug("Found Watchtower Ruleset for name {}, updating",
+					incomingRulesetDto.getName());
+			finalRuleset = updateExistingRuleset(incomingRulesetDto, backupAuthorName,
+					foundWatchtowerRuleset, customOption, providedOption);
+		} else {
+			// This is a new ruleset, so import it normally
+			LOG.debug("No existing Watchtower Ruleset for name {}, importing as new",
+					incomingRulesetDto.getName());
+			try {
+				finalRuleset = importNewRuleset(incomingRulesetDto, backupAuthorName,
+						customOption, providedOption);
+			} catch (RulesetException e) {
 				throw new RulesetException(
-						"A rule with the name \"" + ruleDto.getName() + "\" already exists.");
+						"Failed to import Ruleset: " + incomingRulesetDto.getName(),
+						e);
+			}
+		}
+		return finalRuleset;
+	}
+
+	private RulesetEntity updateExistingRuleset(RulesetDto incomingRulesetDto, String authorName,
+			RulesetEntity foundWatchtowerRuleset, ImportOption customOption,
+			ImportOption providedOption) throws RulesetException, RuleException {
+		// ruleset is provided, handle separately
+		if (foundWatchtowerRuleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
+			if (providedOption.equals(ImportOption.SKIP)) {
+				LOG.debug(
+						"Skipping update of provided ruleset {}. Will still update rules in ruleset if configured",
+						incomingRulesetDto.getName());
+			} else {
+				foundWatchtowerRuleset.setBlockingLevel(incomingRulesetDto.getBlockingLevel());
+				foundWatchtowerRuleset.setDescription(incomingRulesetDto.getDescription());
+			}
+		} else if (customOption.equals(ImportOption.SKIP)) {
+			// Skip
+			LOG.debug(
+					"Skipping update of ruleset {}. Will still attempt update of rules in ruleset",
+					incomingRulesetDto.getName());
+		}
+		// ruleset update/override are treated the same
+		else {
+			foundWatchtowerRuleset.setBlockingLevel(incomingRulesetDto.getBlockingLevel());
+			foundWatchtowerRuleset.setDescription(incomingRulesetDto.getDescription());
+			foundWatchtowerRuleset.setDesignation(incomingRulesetDto.getDesignation());
+		}
+		List<RuleEntity> rules =
+				ruleService.importRules(incomingRulesetDto.getRules(), authorName, customOption,
+						providedOption);
+		// Set rules for the ruleset
+		foundWatchtowerRuleset.setRules(new HashSet<>(rules));
+		return rulesetRepository.saveAndFlush(foundWatchtowerRuleset);
+	}
+
+	private RulesetEntity importNewRuleset(RulesetDto rulesetDto, String authorName,
+			ImportOption customOption, ImportOption providedOption)
+			throws RulesetException, RuleException {
+		// Create ruleset
+		RulesetEntity ruleset = new RulesetEntity();
+		ruleset.setName(rulesetDto.getName());
+		ruleset.setDescription(rulesetDto.getDescription());
+		ruleset.setDesignation(rulesetDto.getDesignation() == null ? RulesetDesignation.SUPPORTING
+				: rulesetDto.getDesignation());
+		ruleset.setBlockingLevel(rulesetDto.getBlockingLevel());
+		// Import rules
+		List<RuleEntity> rules =
+				ruleService.importRules(rulesetDto.getRules(), authorName, customOption,
+						providedOption);
+		// Set rules for the ruleset
+		ruleset.setRules(new HashSet<>(rules));
+		ruleset.setRulesets(
+				importInheritedRulesets(rulesetDto, authorName, customOption,
+						providedOption));
+		return rulesetRepository.saveAndFlush(ruleset);
+	}
+
+	// Recurse if necessary into the inherited rulesets
+	private Set<RulesetEntity> importInheritedRulesets(RulesetDto incomingRuleset,
+			String authorName, ImportOption importOption, ImportOption providedOption)
+			throws RulesetException, RuleException {
+		Set<RulesetEntity> inherited = new HashSet<>();
+		if (incomingRuleset.getRulesets().size() > 0) {
+			for (RulesetDto inheritedRuleset : incomingRuleset.getRulesets()) {
+				inherited.add(
+						importOrUpdateRuleset(inheritedRuleset, authorName, importOption,
+								providedOption));
+			}
+		}
+		return inherited;
+	}
+
+	private void removeDeprecatedProvidedRules(
+			List<RulesetDto> currentProvidedRulesets,
+			List<RulesetDto> originalProvidedRulesets) {
+		// create lists of original (pre import) rules and new rules for this module
+		List<RuleDto> originalRules = originalProvidedRulesets.stream()
+				.flatMap(ors -> ors.getRules().stream()).collect(Collectors.toList());
+		List<RuleDto> currentRules = currentProvidedRulesets.stream()
+				.flatMap(ors -> ors.getRules().stream()).collect(Collectors.toList());
+
+		// compare lists so that any rule in the original list, but not in the new list is deleted
+		originalRules.stream().filter(
+				or -> currentRules.stream().noneMatch(cr -> cr.getName().equals(or.getName())))
+				.forEach(r -> {
+					try {
+						ruleService.deleteRule(r.getId());
+					} catch (RuleNotFoundException e) {
+						LOG.warn(
+								"Attempting to remove deprecated Provided rule {}, but it wasn't found",
+								r.getName());
+					}
+				});
+	}
+
+	private void removeDeprecatedProvidedRulesets(List<RulesetDto> updatedRulesets,
+			List<RulesetDto> relevantWatchtowerProvidedRulesets, String moduleName)
+			throws ModuleException {
+		/*
+		 * get all watchtower provided rulesets where the ruleset name fits the naming convention
+		 * for this module
+		 */
+		Map<String, RulesetDto> relevantWatchtowerProvidedRulesetsMap =
+				relevantWatchtowerProvidedRulesets.stream()
+						.collect(Collectors.toMap(RulesetDto::getName, r -> r));
+		updatedRulesets.forEach(r -> relevantWatchtowerProvidedRulesetsMap.remove(r.getName()));
+
+		if (relevantWatchtowerProvidedRulesetsMap.isEmpty()) {
+			return;
+		}
+		LOG.debug("Found {} deprecated rulesets", relevantWatchtowerProvidedRulesetsMap.size());
+		for (RulesetDto orphanedRuleset : relevantWatchtowerProvidedRulesetsMap.values()) {
+			LOG.debug("Deleting ruleset: {} and all sub-rules", orphanedRuleset.getName());
+			RulesetEntity orphanedEntity =
+					rulesetRepository.findByName(orphanedRuleset.getName());
+			try {
+				deleteRulesetInternal(orphanedEntity);
+			} catch (RulesetNotFoundException | RulesetException e) {
+				throw new ModuleException(
+						"Exception while deleting provided, orphaned ruleset: "
+								+ orphanedEntity.getName(),
+						e);
 			}
 		}
 	}
-
-	private IRulesetInterpreter getRulesetInterpreter(String interpreter)
-			throws ModuleNotFoundException {
-		if (!interpreterMap.containsKey(interpreter)) {
-			throw new ModuleNotFoundException(
-					"No ruleset interpreter exists for the given type: " + interpreter);
-		}
-		return interpreterMap.get(interpreter);
-	}
-
-
 }

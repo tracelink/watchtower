@@ -1,6 +1,5 @@
 package com.tracelink.appsec.watchtower.web.dev;
 
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +19,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.auth.service.UserService;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
@@ -68,7 +65,6 @@ public class DevelopmentSetup {
 
 	private final Environment environment;
 	private final APIIntegrationService apiService;
-	private final UserService userService;
 	private final RulesetService rulesetService;
 	private final RulesetRepository rulesetRepository;
 	private final RepositoryService repositoryService;
@@ -82,7 +78,6 @@ public class DevelopmentSetup {
 
 	public DevelopmentSetup(@Autowired Environment environment,
 			@Autowired APIIntegrationService apiService,
-			@Autowired UserService userService,
 			@Autowired RulesetService rulesetService,
 			@Autowired RulesetRepository rulesetRepository,
 			@Autowired RepositoryService repositoryService,
@@ -95,7 +90,6 @@ public class DevelopmentSetup {
 			@Autowired MetricsCacheService metricsService) {
 		this.environment = environment;
 		this.apiService = apiService;
-		this.userService = userService;
 		this.rulesetService = rulesetService;
 		this.rulesetRepository = rulesetRepository;
 		this.repositoryService = repositoryService;
@@ -120,7 +114,6 @@ public class DevelopmentSetup {
 		if (!environment.acceptsProfiles(Profiles.of(ALLOWED_PROFILE))) {
 			return;
 		}
-
 		new Thread(() -> {
 			metricsService.pause();
 			LOG.info("Beginning Dev Setup");
@@ -142,10 +135,6 @@ public class DevelopmentSetup {
 			LOG.info("Dev Setup Complete");
 			metricsService.resume();
 		}).start();
-	}
-
-	private UserEntity getAdminUser() {
-		return userService.findByUsername("admin");
 	}
 
 	private void addApiSettings() throws ApiIntegrationException {
@@ -172,8 +161,6 @@ public class DevelopmentSetup {
 	}
 
 	private void importRules() throws Exception {
-		importRuleset("pmd", "rules/security.xml");
-		importRuleset("regex", "rules/trufflehog-regexes.xml");
 		RulesetEntity defaultRuleset = rulesetService.createRuleset("Default Dev Ruleset",
 				"Default Dev Rulesets", RulesetDesignation.PRIMARY);
 
@@ -183,13 +170,6 @@ public class DevelopmentSetup {
 
 		RulesetEntity saved = rulesetRepository.saveAndFlush(defaultRuleset);
 		rulesetService.setDefaultRuleset(saved.getId());
-	}
-
-	private void importRuleset(String module, String location) throws Exception {
-		try (InputStream rulesetStream = this.getClass().getClassLoader()
-				.getResourceAsStream(location)) {
-			rulesetService.importRuleset(module, rulesetStream, getAdminUser());
-		}
 	}
 
 	private void addPRScanHistory(Random random) {

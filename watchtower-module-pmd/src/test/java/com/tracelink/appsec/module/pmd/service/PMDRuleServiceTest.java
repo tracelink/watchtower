@@ -12,9 +12,9 @@ import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyEntity;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDRuleEntity;
 import com.tracelink.appsec.module.pmd.repository.PMDRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -67,13 +67,12 @@ public class PMDRuleServiceTest {
 		RulePriority dtoPriority = RulePriority.MEDIUM_HIGH;
 		String dtoLang = "javascript";
 		String dtoClass = "Class.java";
-		String dtoDescription = "Bad practice";
 		String dtoXPath = "CDATA";
 
 		PMDPropertyEntity propertyEntity = new PMDPropertyEntity();
 		rule.setProperties(Collections.singleton(propertyEntity));
 
-		PMDRuleDto dto = new PMDRuleDto();
+		PMDCustomRuleDto dto = new PMDCustomRuleDto();
 		dto.setId(dtoId);
 		dto.setAuthor(dtoAuthor);
 		dto.setName(dtoName);
@@ -82,7 +81,6 @@ public class PMDRuleServiceTest {
 		dto.setPriority(dtoPriority);
 		dto.setParserLanguage(dtoLang);
 		dto.setRuleClass(dtoClass);
-		dto.setDescription(dtoDescription);
 		PMDPropertyDto property = new PMDPropertyDto();
 		property.setId(0L);
 		property.setName("xpath");
@@ -98,7 +96,6 @@ public class PMDRuleServiceTest {
 		Assertions.assertEquals(dtoPriority, rule.getPriority());
 		Assertions.assertNull(rule.getParserLanguage());
 		Assertions.assertNull(rule.getRuleClass());
-		Assertions.assertEquals(dtoDescription, rule.getDescription());
 		PMDPropertyEntity retProp = rule.getProperties().iterator().next();
 		Assertions.assertEquals("xpath", retProp.getName());
 		Assertions.assertEquals(dtoXPath, retProp.getValue());
@@ -108,7 +105,7 @@ public class PMDRuleServiceTest {
 	public void testSaveNewRule() throws Exception {
 		BDDMockito.when(ruleRepository.findByName(BDDMockito.anyString()))
 				.thenReturn(null);
-		PMDRuleDto dto = new PMDRuleDto();
+		PMDCustomRuleDto dto = new PMDCustomRuleDto();
 		dto.setParserLanguage("Scala");
 		ruleService.saveNewRule(dto);
 		ArgumentCaptor<PMDRuleEntity> ruleCaptor = ArgumentCaptor.forClass(PMDRuleEntity.class);
@@ -122,7 +119,7 @@ public class PMDRuleServiceTest {
 			BDDMockito.when(ruleRepository.findByName(BDDMockito.any()))
 					.thenReturn(new PMDRuleEntity());
 
-			ruleService.saveNewRule(BDDMockito.mock(PMDRuleDto.class));
+			ruleService.saveNewRule(BDDMockito.mock(PMDCustomRuleDto.class));
 		});
 	}
 
@@ -131,7 +128,7 @@ public class PMDRuleServiceTest {
 		Assertions.assertThrows(RuleDesignerException.class, () -> {
 			BDDMockito.when(ruleRepository.findByName(BDDMockito.anyString()))
 					.thenReturn(null);
-			PMDRuleDto dto = BDDMockito.mock(PMDRuleDto.class);
+			PMDCustomRuleDto dto = BDDMockito.mock(PMDCustomRuleDto.class);
 			BDDMockito.when(dto.getParserLanguage()).thenReturn("Foo");
 			ruleService.saveNewRule(dto);
 		});

@@ -17,7 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.module.regex.RegexModule;
 import com.tracelink.appsec.module.regex.designer.RegexRuleDesigner;
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
@@ -55,11 +55,11 @@ public class RegexDesignerController {
 			@RequestParam String source, Authentication auth,
 			RedirectAttributes redirectAttributes) {
 
-		RegexRuleDto regexDto = createRegexRuleDto(name, message, fileExtension, priority, query,
+		RegexCustomRuleDto regexDto = createRegexRuleDto(name, message, fileExtension, priority, query,
 				externalUrl, auth);
 		RuleDesignerModelAndView mav = designerService.query(query, source);
 
-		Set<ConstraintViolation<RegexRuleDto>> violations = validator.validate(regexDto);
+		Set<ConstraintViolation<RegexCustomRuleDto>> violations = validator.validate(regexDto);
 		if (!violations.isEmpty()) {
 			String vioMessage =
 					violations.stream().map(ConstraintViolation::getMessage)
@@ -83,9 +83,9 @@ public class RegexDesignerController {
 		return mav;
 	}
 
-	private RegexRuleDto createRegexRuleDto(String name, String message, String fileExtension,
+	private RegexCustomRuleDto createRegexRuleDto(String name, String message, String fileExtension,
 			int priority, String query, String externalUrl, Authentication auth) {
-		RegexRuleDto regexDto = new RegexRuleDto();
+		RegexCustomRuleDto regexDto = new RegexCustomRuleDto();
 		regexDto.setAuthor(auth.getName());
 		regexDto.setExternalUrl(externalUrl);
 		regexDto.setMessage(message);

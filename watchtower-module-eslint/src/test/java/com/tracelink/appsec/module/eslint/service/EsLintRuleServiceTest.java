@@ -16,9 +16,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleEntity;
 import com.tracelink.appsec.module.eslint.repository.EsLintRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -68,7 +68,7 @@ public class EsLintRuleServiceTest {
 	public void testSaveRuleAlreadyExists() {
 		BDDMockito.when(ruleRepository.findByName(RULE_NAME))
 				.thenReturn(rule);
-		EsLintRuleDto dto = new EsLintRuleDto();
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setName(RULE_NAME);
 		try {
 			ruleService.saveRule(dto);
@@ -80,42 +80,20 @@ public class EsLintRuleServiceTest {
 	}
 
 	@Test
-	public void testSaveCoreRuleInvalid() {
-		EsLintRuleDto dto = getEsLintRuleDto();
-		dto.setCore(true);
+	public void testSaveCoreRule() throws Exception {
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
+		dto.setName("no-eq-null");
 		try {
 			ruleService.saveRule(dto);
-			Assertions.fail("Should have thrown exception");
 		} catch (RuleDesignerException e) {
 			MatcherAssert.assertThat(e.getMessage(),
-					Matchers.is("\"" + dto.getName()
-							+ "\" is not a core rule. Please choose from the provided list"));
+					Matchers.containsString("is a core rule. Please provide a different name"));
 		}
 	}
 
 	@Test
-	public void testSaveCoreRule() throws Exception {
-		EsLintRuleDto dto = getEsLintRuleDto();
-		dto.setCore(true);
-		dto.setName("no-eq-null");
-
-		ruleService.saveRule(dto);
-		ArgumentCaptor<EsLintRuleEntity> entityCaptor = ArgumentCaptor
-				.forClass(EsLintRuleEntity.class);
-		BDDMockito.verify(ruleRepository).saveAndFlush(entityCaptor.capture());
-		EsLintRuleEntity entity = entityCaptor.getValue();
-		MatcherAssert.assertThat(entity.getName(), Matchers.is(dto.getName()));
-		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isCore()));
-		MatcherAssert.assertThat(entity.getPriority(), Matchers.is(dto.getPriority()));
-		MatcherAssert.assertThat(entity.getMessage(), Matchers.not(dto.getMessage()));
-		MatcherAssert.assertThat(entity.getExternalUrl(), Matchers.not(dto.getExternalUrl()));
-		MatcherAssert.assertThat(entity.getCreateFunction(), Matchers.nullValue());
-		MatcherAssert.assertThat(entity.getMessages(), Matchers.empty());
-	}
-
-	@Test
 	public void testSaveCustomRuleCoreName() {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setName("no-eq-null");
 		try {
 			ruleService.saveRule(dto);
@@ -129,7 +107,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCustomRuleBlankCreateFunction() {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 		dto.setCreateFunction("");
 		try {
 			ruleService.saveRule(dto);
@@ -142,7 +120,7 @@ public class EsLintRuleServiceTest {
 
 	@Test
 	public void testSaveCustomRule() throws Exception {
-		EsLintRuleDto dto = getEsLintRuleDto();
+		EsLintCustomRuleDto dto = getEsLintRuleDto();
 
 		ruleService.saveRule(dto);
 		ArgumentCaptor<EsLintRuleEntity> entityCaptor = ArgumentCaptor
@@ -150,7 +128,7 @@ public class EsLintRuleServiceTest {
 		BDDMockito.verify(ruleRepository).saveAndFlush(entityCaptor.capture());
 		EsLintRuleEntity entity = entityCaptor.getValue();
 		MatcherAssert.assertThat(entity.getName(), Matchers.is(dto.getName()));
-		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isCore()));
+		MatcherAssert.assertThat(entity.isCore(), Matchers.is(dto.isProvided()));
 		MatcherAssert.assertThat(entity.getPriority(), Matchers.is(dto.getPriority()));
 		MatcherAssert.assertThat(entity.getMessage(), Matchers.is(dto.getMessage()));
 		MatcherAssert.assertThat(entity.getExternalUrl(), Matchers.is(dto.getExternalUrl()));
@@ -167,7 +145,7 @@ public class EsLintRuleServiceTest {
 		Assertions.assertThrows(RuleNotFoundException.class, () -> {
 			BDDMockito.when(ruleRepository.findById(BDDMockito.anyLong()))
 					.thenReturn(Optional.empty());
-			EsLintRuleDto ruleDto = new EsLintRuleDto();
+			EsLintCustomRuleDto ruleDto = new EsLintCustomRuleDto();
 			ruleDto.setId(1L);
 			ruleService.editRule(ruleDto);
 		});
@@ -185,16 +163,14 @@ public class EsLintRuleServiceTest {
 		String dtoMessage = "This is a bad practice.";
 		String dtoUrl = "https://example.com";
 		RulePriority dtoPriority = RulePriority.MEDIUM_HIGH;
-		boolean dtoCore = false;
 
-		EsLintRuleDto dto = new EsLintRuleDto();
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(dtoId);
 		dto.setAuthor(dtoAuthor);
 		dto.setName(dtoName);
 		dto.setMessage(dtoMessage);
 		dto.setExternalUrl(dtoUrl);
 		dto.setPriority(dtoPriority);
-		dto.setCore(dtoCore);
 
 		ruleService.editRule(dto);
 		Assertions.assertEquals(0L, rule.getId());
@@ -213,9 +189,8 @@ public class EsLintRuleServiceTest {
 					.thenReturn(Optional.of(rule));
 			Long dtoId = 1L;
 
-			EsLintRuleDto dto = new EsLintRuleDto();
+			EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 			dto.setId(dtoId);
-			dto.setCore(false);
 
 			ruleService.editRule(dto);
 		});
@@ -250,14 +225,13 @@ public class EsLintRuleServiceTest {
 		EsLintMessageEntity messageEntity = new EsLintMessageEntity();
 		rule.setMessages(Collections.singleton(messageEntity));
 
-		EsLintRuleDto dto = new EsLintRuleDto();
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(dtoId);
 		dto.setAuthor(dtoAuthor);
 		dto.setName(dtoName);
 		dto.setMessage(dtoMessage);
 		dto.setExternalUrl(dtoUrl);
 		dto.setPriority(dtoPriority);
-		dto.setCore(dtoCore);
 		EsLintMessageDto message = new EsLintMessageDto();
 		message.setId(0L);
 		message.setKey(dtoMessageKey);
@@ -278,14 +252,13 @@ public class EsLintRuleServiceTest {
 		Assertions.assertEquals(dtoCreateFunction, rule.getCreateFunction());
 	}
 
-	private static EsLintRuleDto getEsLintRuleDto() {
-		EsLintRuleDto rule = new EsLintRuleDto();
+	private static EsLintCustomRuleDto getEsLintRuleDto() {
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setAuthor("jdoe");
 		rule.setName("rule-name");
 		rule.setMessage("This is a bad practice.");
 		rule.setExternalUrl("https://example.com");
 		rule.setPriority(RulePriority.MEDIUM_HIGH);
-		rule.setCore(false);
 		EsLintMessageDto message = new EsLintMessageDto();
 		message.setKey("myMessage");
 		message.setValue("There's something unexpected here");

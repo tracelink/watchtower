@@ -1,12 +1,12 @@
 <!-- Card Footer -->
 <div class="card-footer">
     <p class="card-title text-left">Edit Rule Details</p>
-    <form class="d-inline" action="/rule/edit/regex/edit" method="POST">
+    <form class="d-inline" th:action="${'/rule/edit/regex/edit/'+(rule.isProvided()?'provided':'core')}" method="POST">
         <div class="row mb-2">
             <label for="name" class="col-sm-2 col-form-label">Name</label>
             <div class="col-sm-6">
                 <input type="text" class="form-control" id="name"
-                       th:value="${rule.name}" name="name">
+                       th:value="${rule.name}" name="name" th:readonly="${rule.isProvided()}">
             </div>
             <label for="priority" class="col-sm-2 col-form-label text-right">Priority</label>
             <div class="col-sm-2">
@@ -29,6 +29,7 @@
             <div class="col-sm-8">
                 <input type="text" class="form-control" id="fileExtension"
                        th:value="${rule.fileExtension}" name="fileExtension"
+                       th:readonly="${rule.isProvided()}"
                        placeholder="If this field is left empty, all file types will be scanned">
             </div>
         </div>
@@ -36,7 +37,7 @@
             <label for="ruleMessage" class="col-sm-2">Message</label>
             <div class="col-sm-10">
                                             <textarea class="form-control" rows="4" id="ruleMessage"
-                                                      th:text="${rule.message}"
+                                                      th:text="${rule.message}" th:readonly="${rule.isProvided()}"
                                                       name="message"></textarea>
             </div>
         </div>
@@ -44,7 +45,7 @@
             <label for="externalUrl" class="col-sm-2">External URL</label>
             <div class="col-sm-10">
                 <input type="text" class="form-control" id="externalUrl"
-                       th:value="${rule.externalUrl}"
+                       th:value="${rule.externalUrl}" th:readonly="${rule.isProvided()}"
                        name="externalUrl"/>
             </div>
         </div>
@@ -52,7 +53,8 @@
             <label for="regexPattern" class="col-sm-2">Regex Pattern</label>
             <div class="col-sm-10">
                     <textarea class="form-control" rows="4" id="regexPattern"
-                              th:text="${rule.regexPattern}" name="regexPattern"></textarea>
+                              th:text="${rule.regexPattern}" th:readonly="${rule.isProvided()}" 
+                              name="regexPattern"></textarea>
             </div>
         </div>
         <div class="row">

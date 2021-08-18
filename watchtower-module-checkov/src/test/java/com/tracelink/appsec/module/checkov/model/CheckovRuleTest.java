@@ -8,7 +8,6 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
 public class CheckovRuleTest {
 	public static final String NAME = "DTO";
-	public static final String AUTHOR = "User";
 	public static final String ENTITY = "ENT";
 	public static final String IAC = "IAC";
 	public static final String TYPE = "Type";
@@ -16,15 +15,15 @@ public class CheckovRuleTest {
 	public static final String MESSAGE = "message";
 	public static final RulePriority PRIORITY = RulePriority.HIGH;
 
-	public static CheckovRuleDto createModelRule(boolean core) {
-		CheckovRuleDto dto = new CheckovRuleDto();
+	public static CheckovProvidedRuleDto createModelRule(boolean core) {
+		CheckovProvidedRuleDto dto = new CheckovProvidedRuleDto();
 		dto.setId(1L);
 		dto.setName(NAME);
-		dto.setAuthor(AUTHOR);
-		dto.setCheckovEntity(ENTITY);
-		dto.setCheckovIac(IAC);
-		dto.setCheckovType(TYPE);
-		dto.setCoreRule(core);
+		CheckovRuleDefinitionDto def = new CheckovRuleDefinitionDto();
+		def.setEntity(ENTITY);
+		def.setIac(IAC);
+		def.setType(TYPE);
+		dto.getDefinitions().add(def);
 		dto.setExternalUrl(EXT_URL);
 		dto.setMessage(MESSAGE);
 		dto.setPriority(PRIORITY);
@@ -33,45 +32,29 @@ public class CheckovRuleTest {
 
 	@Test
 	public void testDTO() {
-		String code = "somecode";
-		CheckovRuleDto dto = CheckovRuleTest.createModelRule(true);
-		dto.setCode(code);
+		CheckovProvidedRuleDto dto = CheckovRuleTest.createModelRule(true);
 		Assertions.assertEquals(1L, dto.getId().longValue());
 		Assertions.assertEquals(NAME, dto.getName());
-		Assertions.assertEquals(AUTHOR, dto.getAuthor());
-		Assertions.assertEquals(ENTITY, dto.getCheckovEntity());
-		Assertions.assertEquals(IAC, dto.getCheckovIac());
-		Assertions.assertEquals(TYPE, dto.getCheckovType());
-		Assertions.assertEquals(true, dto.isCoreRule());
+		Assertions.assertEquals("system", dto.getAuthor());
 		Assertions.assertEquals(EXT_URL, dto.getExternalUrl());
 		Assertions.assertEquals(MESSAGE, dto.getMessage());
 		Assertions.assertEquals(PRIORITY, dto.getPriority());
-		Assertions.assertEquals(code, dto.getCode());
+
+		CheckovRuleDefinitionDto def = dto.getDefinitions().get(0);
+		Assertions.assertEquals(ENTITY, def.getEntity());
+		Assertions.assertEquals(IAC, def.getIac());
+		Assertions.assertEquals(TYPE, def.getType());
 
 		CheckovRuleEntity rule = dto.toEntity();
 		Assertions.assertEquals(NAME, rule.getName());
-		Assertions.assertEquals(AUTHOR, rule.getAuthor());
-		Assertions.assertEquals(ENTITY, rule.getEntity());
-		Assertions.assertEquals(IAC, rule.getIac());
-		Assertions.assertEquals(TYPE, rule.getType());
-		Assertions.assertEquals(true, rule.isCoreRule());
+		Assertions.assertEquals("system", rule.getAuthor());
 		Assertions.assertEquals(EXT_URL, rule.getExternalUrl());
 		Assertions.assertEquals(MESSAGE, rule.getMessage());
 		Assertions.assertEquals(PRIORITY, rule.getPriority());
-		Assertions.assertEquals(code, rule.getCode());
 
-		CheckovRuleDto dto2 = rule.toDto();
-		Assertions.assertEquals(NAME, dto2.getName());
-		Assertions.assertEquals(AUTHOR, dto2.getAuthor());
-		Assertions.assertEquals(ENTITY, dto2.getCheckovEntity());
-		Assertions.assertEquals(IAC, dto2.getCheckovIac());
-		Assertions.assertEquals(TYPE, dto2.getCheckovType());
-		Assertions.assertEquals(true, dto2.isCoreRule());
-		Assertions.assertEquals(EXT_URL, dto2.getExternalUrl());
-		Assertions.assertEquals(MESSAGE, dto2.getMessage());
-		Assertions.assertEquals(PRIORITY, dto2.getPriority());
-		Assertions.assertEquals(code, dto2.getCode());
-
-
+		CheckovRuleDefinitionEntity defEnt = rule.getDefinitions().iterator().next();
+		Assertions.assertEquals(ENTITY, defEnt.getEntity());
+		Assertions.assertEquals(IAC, defEnt.getIac());
+		Assertions.assertEquals(TYPE, defEnt.getType());
 	}
 }

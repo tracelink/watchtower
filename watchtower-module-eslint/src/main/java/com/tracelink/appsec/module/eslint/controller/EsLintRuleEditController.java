@@ -15,11 +15,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
+import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
 import com.tracelink.appsec.module.eslint.service.EsLintRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 
 /**
@@ -40,8 +42,19 @@ public class EsLintRuleEditController {
 		this.ruleService = ruleService;
 	}
 
-	@PostMapping("/rule/edit/eslint")
-	public String editRule(@Valid EsLintRuleDto dto, BindingResult bindingResult,
+	@PostMapping("/rule/edit/eslint/custom")
+	public String editRule(@Valid EsLintCustomRuleDto dto, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		return editRuleInner(dto, bindingResult, redirectAttributes);
+	}
+
+	@PostMapping("/rule/edit/eslint/core")
+	public String editRule(@Valid EsLintProvidedRuleDto dto, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		return editRuleInner(dto, bindingResult, redirectAttributes);
+	}
+
+	private String editRuleInner(RuleDto dto, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
 		// Validate and Edit rule
 		try {

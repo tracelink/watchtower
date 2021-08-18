@@ -1,9 +1,9 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.persistence.AttributeConverter;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -21,8 +21,11 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 
 /**
  * Entity description for the rule entity. Contains the fields inherited by all rules, regardless of
@@ -65,6 +68,10 @@ public abstract class RuleEntity {
 
 	public long getId() {
 		return id;
+	}
+
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	public String getAuthor() {

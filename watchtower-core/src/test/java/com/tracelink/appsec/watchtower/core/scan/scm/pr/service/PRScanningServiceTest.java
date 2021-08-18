@@ -21,7 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
 import com.tracelink.appsec.watchtower.core.logging.LogsService;
-import com.tracelink.appsec.watchtower.core.mock.MockRule;
+import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -256,7 +256,7 @@ public class PRScanningServiceTest {
 
 	private void setupDefaultMocks() throws ScanRejectedException {
 		RulesetEntity ruleset = new RulesetEntity();
-		ruleset.setRules(Collections.singleton(new MockRule()));
+		ruleset.setRules(Collections.singleton(new MockRuleEntity()));
 		RepositoryEntity repo = new RepositoryEntity();
 		repo.setRuleset(ruleset);
 		BDDMockito.when(mockRepoService.upsertRepo(BDDMockito.any(), BDDMockito.any()))

@@ -8,15 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.editor.EsLintRuleEditor;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
-import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
 import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Module to hold implementations for ESLint rules, scanner, designer, editor and interpreter.
@@ -86,14 +85,6 @@ public class EsLintModule extends AbstractModule {
 		return new EsLintRuleEditor();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new EsLintRulesetInterpreter(engine);
-	}
-
 	@Override
 	public List<PrivilegeEntity> getModulePrivileges() {
 		return Arrays.asList(new PrivilegeEntity().setName(ESLINT_RULE_EDIT_PRIVILEGE_NAME)
@@ -102,5 +93,10 @@ public class EsLintModule extends AbstractModule {
 				new PrivilegeEntity().setName(ESLINT_RULE_DESIGNER_PRIVILEGE_NAME)
 						.setCategory("Rule Designer").setDescription(
 								"User may create and test ESLint rules in the Rule Designer. Caution! This may lead to remote code execution as the rules are run as server-side javascript on the Watchtower machine"));
+	}
+
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		return this.engine.getCoreRulesets();
 	}
 }

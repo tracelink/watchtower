@@ -5,20 +5,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
 /**
- * Represents the data transfer object for the {@link RulesetEntity}. All rules
- * and rulesets contained in the entity are converted to DTOs. This class also
- * contains some convenience methods used in the UI.
+ * Represents the data transfer object for the {@link RulesetEntity}. All rules and rulesets
+ * contained in the entity are converted to DTOs. This class also contains some convenience methods
+ * used in the UI.
  *
  * @author mcool
  */
@@ -96,7 +96,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	}
 
 	public Set<RuleDto> getRules() {
-		return new TreeSet<>(rules);
+		return rules;
 	}
 
 	public void setRules(Set<RuleDto> rules) {
@@ -108,36 +108,53 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return true if this ruleset has the default designation, false otherwise
 	 */
+	@JsonIgnore
 	public boolean isDefault() {
-		return designation.equals(RulesetDesignation.DEFAULT);
+		return RulesetDesignation.DEFAULT.equals(designation);
+	}
+
+	@JsonIgnore
+	public boolean isPrimary() {
+		return RulesetDesignation.PRIMARY.equals(designation) || isDefault();
 	}
 
 	/**
 	 * Determines whether this ruleset is a supporting ruleset.
 	 *
-	 * @return true if this ruleset has the supporting designation, false
-	 * otherwise
+	 * @return true if this ruleset has the supporting designation, false otherwise
 	 */
+	@JsonIgnore
 	public boolean isSupporting() {
-		return designation.equals(RulesetDesignation.SUPPORTING);
+		return RulesetDesignation.SUPPORTING.equals(designation);
 	}
 
 	/**
-	 * Gets the number of unique rules in this ruleset, including inherited
-	 * rules.
+	 * Determines whether this ruleset is a provided ruleset.
+	 *
+	 * @return true if this ruleset has the provided designation, false otherwise
+	 */
+	@JsonIgnore
+	public boolean isProvided() {
+		return RulesetDesignation.PROVIDED.equals(designation);
+	}
+
+	/**
+	 * Gets the number of unique rules in this ruleset, including inherited rules.
 	 *
 	 * @return number of unique rules in this ruleset
 	 */
+	@JsonIgnore
 	public int getNumRules() {
 		return getAllRules().size();
 	}
 
 	/**
-	 * Gets a map of all inherited rules. The key is the rule DTO and the value
-	 * is the name of the ruleset it is inherited from.
+	 * Gets a map of all inherited rules. The key is the rule DTO and the value is the name of the
+	 * ruleset it is inherited from.
 	 *
 	 * @return map from rule to ruleset it is inherited from
 	 */
+	@JsonIgnore
 	public Map<RuleDto, String> getInheritedRules() {
 		Map<RuleDto, String> inheritedRules = new TreeMap<>();
 		for (RulesetDto ruleset : rulesets) {
@@ -152,6 +169,7 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 *
 	 * @return a list of IDs to rules in this ruleset
 	 */
+	@JsonIgnore
 	public Set<Long> getRuleIds() {
 		return rules.stream().map(RuleDto::getId).collect(Collectors.toSet());
 	}
@@ -163,16 +181,22 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	}
 
 	/**
-	 * Gets a set of all rules contained in this ruleset, including those that
-	 * are inherited from other rulesets.
+	 * Gets a set of all rules contained in this ruleset, including those that are inherited from
+	 * other rulesets.
 	 *
 	 * @return set of all rules in this ruleset
 	 */
+	@JsonIgnore
 	public Set<RuleDto> getAllRules() {
-		Set<RuleDto> allRules = new TreeSet<>(rules);
+		Set<RuleDto> allRules = new HashSet<>(rules);
 		for (RulesetDto ruleset : rulesets) {
 			allRules.addAll(ruleset.getAllRules());
 		}
 		return allRules;
+	}
+
+	@Override
+	public String toString() {
+		return getName();
 	}
 }

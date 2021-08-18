@@ -1,4 +1,4 @@
-# Watchtower Module: ESLint
+# Watchtower Module: Checkov
 
 This module integrates with the [Checkov](https://www.checkov.io/)
 scanner to scan infrastructure-as-code files (such as Terraform or Kubernetes) for common issues.

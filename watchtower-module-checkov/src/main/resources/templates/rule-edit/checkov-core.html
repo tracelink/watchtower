@@ -34,20 +34,35 @@
       </div>
     </div>
     <div class="form-row mb-2">
-      <div class="col-sm-4">
-        <label for="message">Type</label>
-        <input type="text" readonly class="form-control" id="type" th:value="${rule.getCheckovType()}"
-               name="type"/>
-      </div>
-      <div class="col-sm-4">
-        <label for="externalUrl">Entity</label>
-        <input type="text" readonly class="form-control" id="entity"
-               th:value="${rule.getCheckovEntity()}" name="entity"/>
-      </div>
-      <div class="col-sm-4">
-        <label for="externalUrl">IaC</label>
-        <input type="text" readonly class="form-control" id="iac"
-               th:value="${rule.getCheckovIac()}" name="iac"/>
+      <div class="col">
+        <label for="message">Definitions</label>
+        <table class="table mb-0">
+          	<thead class="bg-light">
+	          	<tr>
+	              <th scope="col" class="border-0">Type</th>
+	              <th scope="col" class="border-0">Entity</th>
+	              <th scope="col" class="border-0">IaC</th>
+	          	</tr>
+          	</thead>
+          	<tbody>
+	          	<th:block th:each="def : ${rule.getDefinitions()}">
+	              <tr>
+	                  <td>
+						<input type="text" readonly class="form-control" id="type" 
+							th:value="${def.type}" name="type"/>
+			          </td>
+	                  <td>
+ 						<input type="text" readonly class="form-control" id="entity"
+			               	th:value="${def.entity}" name="entity"/>
+					  </td>
+	                  <td>
+	                    <input type="text" readonly class="form-control" id="iac"
+			               	th:value="${def.iac}" name="iac"/>
+					  </td>
+	              </tr>
+	          	</th:block>
+        	</tbody>
+      	</table>
       </div>
     </div>
     <div class="row">

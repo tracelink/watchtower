@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.module.regex.RegexModule;
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.module.regex.scanner.RegexBenchmarking;
 import com.tracelink.appsec.module.regex.scanner.RegexCallable;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
@@ -87,7 +87,7 @@ public class RegexRuleDesigner implements IRuleDesigner {
 		try (FileWriter fw = new FileWriter(temp.toFile())) {
 			fw.write(code);
 		}
-		RegexRuleDto rule = new RegexRuleDto();
+		RegexCustomRuleDto rule = new RegexCustomRuleDto();
 		rule.setName("Test Rule");
 		rule.setPriority(RulePriority.LOW);
 		rule.setRegexPattern(query);
