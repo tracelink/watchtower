@@ -54,8 +54,10 @@ public class EsLintRulesetInterpreter implements IRulesetInterpreter {
 	private static final String PLEASE_CHECK_LOG = "Please check the log for more details.";
 
 	private Template rulesetTemplate;
+	private final LinterEngine engine;
 
-	public EsLintRulesetInterpreter() {
+	public EsLintRulesetInterpreter(LinterEngine engine) {
+		this.engine = engine;
 		try (InputStream is = getClass().getClassLoader()
 				.getResourceAsStream("templates/export/ruleset.js")) {
 			String exampleRuleset = IOUtils.toString(is, Charset.defaultCharset());
@@ -140,7 +142,7 @@ public class EsLintRulesetInterpreter implements IRulesetInterpreter {
 	 */
 	private EsLintRulesetJsonModel parseRuleset(String ruleset) throws RulesetInterpreterException {
 		// Parse the ruleset
-		ProcessResult parseResult = LinterEngine.getInstance().parseRuleset(ruleset);
+		ProcessResult parseResult = engine.parseRuleset(ruleset);
 		// Check if an error occurred while parsing
 		if (parseResult.hasErrors()) {
 			throw new RulesetInterpreterException(
@@ -210,7 +212,7 @@ public class EsLintRulesetInterpreter implements IRulesetInterpreter {
 		Set<String> customRules = rules.stream().map(RuleDto::getName)
 				.collect(Collectors.toSet());
 
-		Map<String, Map<String, String>> coreRules = LinterEngine.getInstance().getCoreRules();
+		Map<String, Map<String, String>> coreRules = engine.getCoreRules();
 
 		for (Map.Entry<String, Integer> priorityEntry : priorities.entrySet()) {
 			String name = priorityEntry.getKey();

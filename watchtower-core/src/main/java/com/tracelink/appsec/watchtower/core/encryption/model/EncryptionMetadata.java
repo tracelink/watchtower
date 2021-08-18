@@ -1,6 +1,9 @@
 package com.tracelink.appsec.watchtower.core.encryption.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -9,9 +12,9 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 /**
- * Model for Watchtower encryption metadata. Includes the date and time of the last key encryption key
- * rotation, as well as whether auto-rotation of data encryption keys is enabled and the period (in
- * days) between rotations.
+ * Model for Watchtower encryption metadata. Includes the date and time of the last key encryption
+ * key rotation, as well as whether auto-rotation of data encryption keys is enabled and the period
+ * (in days) between rotations.
  *
  * @author mcool
  */
@@ -45,6 +48,11 @@ public class EncryptionMetadata {
 		this.lastRotationDateTime = lastRotationDateTime;
 	}
 
+	public long getLastRotationDateTimeMillis() {
+		return lastRotationDateTime == null ? 0L
+				: lastRotationDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+	}
+
 	public boolean isRotationScheduleEnabled() {
 		return rotationScheduleEnabled;
 	}
@@ -59,5 +67,14 @@ public class EncryptionMetadata {
 
 	public void setRotationPeriod(Integer rotationPeriod) {
 		this.rotationPeriod = rotationPeriod;
+	}
+
+	public LocalDate getNextRotationDate(DataEncryptionKey dek) {
+		return dek.getLastRotationDateTime().toLocalDate().plusDays(getRotationPeriod());
+	}
+
+	public long getNextRotationDateMillis(DataEncryptionKey dek) {
+		return getNextRotationDate(dek).atStartOfDay().toInstant(ZoneOffset.UTC)
+				.toEpochMilli();
 	}
 }

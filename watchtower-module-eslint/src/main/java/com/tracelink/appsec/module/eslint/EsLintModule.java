@@ -3,6 +3,8 @@ package com.tracelink.appsec.module.eslint;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.tracelink.appsec.module.eslint.designer.EsLintRuleDesigner;
 import com.tracelink.appsec.module.eslint.editor.EsLintRuleEditor;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
@@ -28,9 +30,12 @@ public class EsLintModule extends AbstractModule {
 	public static final String ESLINT_RULE_EDIT_PRIVILEGE_NAME = "ESLint Rule Editor";
 	public static final String ESLINT_RULE_DESIGNER_PRIVILEGE_NAME = "ESLint Rule Designer";
 
-	public EsLintModule() {
-		// ensure the LinterEngine is started
-		LinterEngine.getInstance();
+	private LinterEngine engine;
+	private EsLintRuleDesigner designer;
+
+	public EsLintModule(@Autowired LinterEngine engine, @Autowired EsLintRuleDesigner designer) {
+		this.engine = engine;
+		this.designer = designer;
 	}
 
 	/**
@@ -62,7 +67,7 @@ public class EsLintModule extends AbstractModule {
 	 */
 	@Override
 	public IScanner getScanner() {
-		return new EsLintScanner();
+		return new EsLintScanner(engine);
 	}
 
 	/**
@@ -70,7 +75,7 @@ public class EsLintModule extends AbstractModule {
 	 */
 	@Override
 	public IRuleDesigner getRuleDesigner() {
-		return new EsLintRuleDesigner();
+		return designer;
 	}
 
 	/**
@@ -86,7 +91,7 @@ public class EsLintModule extends AbstractModule {
 	 */
 	@Override
 	public IRulesetInterpreter getInterpreter() {
-		return new EsLintRulesetInterpreter();
+		return new EsLintRulesetInterpreter(engine);
 	}
 
 	@Override

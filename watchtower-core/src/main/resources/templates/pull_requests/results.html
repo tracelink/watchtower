@@ -49,7 +49,7 @@
                        </thead>
                        <tbody>
                            <tr th:each="result : ${results}">
-                               <td class="py-1" th:text="${#temporals.format(result.getDate(), 'MMM d, yyy HH:mm:ss')}" th:data-order="${result.getDate()}">Date Reviewed</td>
+                               <td class="py-1 localizetime" th:text="${result.getDateMillis()}" th:data-order="${result.getDate()}">Date Reviewed</td>
                                <td class="py-1" th:text="${result.getApiLabel()}">SCM ID</td>
                                <td class="py-1">
                                		<a th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank"/>

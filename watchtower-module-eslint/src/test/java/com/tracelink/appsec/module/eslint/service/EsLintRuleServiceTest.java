@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,7 @@ import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageEntity;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
@@ -32,12 +34,19 @@ public class EsLintRuleServiceTest {
 	@MockBean
 	private EsLintRuleRepository ruleRepository;
 
+	private static LinterEngine engine;
+
 	private EsLintRuleService ruleService;
 	private EsLintRuleEntity rule;
 
+	@BeforeAll
+	public static void init() {
+		engine = new LinterEngine();
+	}
+
 	@BeforeEach
 	public void setup() {
-		ruleService = new EsLintRuleService(ruleRepository);
+		ruleService = new EsLintRuleService(ruleRepository, engine);
 		rule = new EsLintRuleEntity();
 		rule.setName(RULE_NAME);
 	}

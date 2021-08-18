@@ -6,3 +6,4 @@
 *.iml
 **/target/
 **/non-blank
+*/eslint_work

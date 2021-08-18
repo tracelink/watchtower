@@ -321,6 +321,11 @@ live in a special folder in their respective packages to avoid name collisions. 
 that you do not unintentionally re-use an existing schema history table name, Module name, or URI as
 this will clash with the other Module.
 
+Several class selectors have been customized for the UI. These include:
+
+`datatable-invert` will begin datatables listing in reverse order (mostly for incrementing IDs and dates)
+`localizetime` will convert an html tag that exactly contains the epoch millis/seconds into a localized datetime string of the client's browser (Month Day, Year, Hours:Minutes:Seconds)
+
 ## Authors
 
 [Chris Smith](https://github.com/tophersmith)  

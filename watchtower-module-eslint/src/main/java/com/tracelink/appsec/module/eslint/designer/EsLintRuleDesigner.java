@@ -72,8 +72,11 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 
 	private final EsLintScanner scanner;
 
-	public EsLintRuleDesigner() {
-		this.scanner = new EsLintScanner();
+	private final LinterEngine engine;
+
+	public EsLintRuleDesigner(LinterEngine engine) {
+		this.scanner = new EsLintScanner(engine);
+		this.engine = engine;
 	}
 
 	/**
@@ -185,7 +188,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 */
 	private void addAst(RuleDesignerModelAndView mav, String sourceCode) {
 		// Parse the ruleset
-		ProcessResult parseResult = LinterEngine.getInstance().parseAst(sourceCode);
+		ProcessResult parseResult = engine.parseAst(sourceCode);
 		// Check if an error occurred while parsing
 		if (parseResult.hasErrors()) {
 			mav.addErrorMessage(CANNOT_PARSE_SOURCE_CODE + ": " + parseResult.getErrors());
@@ -254,7 +257,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	private RuleDesignerModelAndView getBaseModelAndView() {
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView("designer/eslint");
 		mav.addObject("rulePriorities", RulePriority.values());
-		mav.addObject("coreRules", LinterEngine.getInstance().getCoreRules().keySet());
+		mav.addObject("coreRules", engine.getCoreRules().keySet());
 		mav.addObject("help", getHelp());
 		mav.addObject("rule", new EsLintRuleDto());
 		mav.addScriptReference("/scripts/eslint-designer.js");

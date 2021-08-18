@@ -1,12 +1,11 @@
 package com.tracelink.appsec.module.eslint.engine;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,22 +16,21 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
 
 /**
- * The primary ESLint execution class. Singleton class to ensure that Node, ESLint and Estraverse
- * are installed at the correct version, and to handle execution of JavaScript functions for ESLint
- * features. If this class cannot initialize properly, Watchtower should not start up.
+ * The primary ESLint execution class. Ensures that Node, ESLint and Estraverse are installed at the
+ * correct version, and to handle execution of JavaScript functions for ESLint features. If this
+ * class cannot initialize properly, Watchtower should not start up.
  *
  * @author mcool
  */
+@Service
 public final class LinterEngine {
-
-	private static LinterEngine INSTANCE;
-
 	private static final Gson GSON = new Gson();
 	private static final TypeToken<Map<String, Map<String, String>>> CORE_RULES_TYPE_TOKEN =
 			new TypeToken<Map<String, Map<String, String>>>() {
@@ -53,20 +51,18 @@ public final class LinterEngine {
 	private final Path eslintDirectory;
 	private Map<String, Map<String, String>> coreRules;
 
-	private LinterEngine() {
+	public LinterEngine() {
 		try {
 			// Create ESLint directory
-			eslintDirectory = Files.createTempDirectory(null).toAbsolutePath();
-			if (eslintDirectory.toFile().exists()) {
-				FileUtils.forceDelete(eslintDirectory.toFile());
-			}
+			eslintDirectory = Files.createDirectories(Paths.get("eslint_work")).toAbsolutePath();
+			LOG.info("Using ESLint directory: " + eslintDirectory.toString());
 			// Copy JS resources to ESLint directory
 			copyJsResources(eslintDirectory);
 			// Check node version
 			checkNodeVersion();
 			LOG.info("Node installed correctly");
 			// Install ESLint and check version
-			installNpmPackageAtVersion("eslint", ESLINT_VERSION, "--save-dev");
+			installNpmPackageAtVersion("eslint", ESLINT_VERSION);
 			LOG.info("ESLint installed correctly");
 			// Install Estraverse and check version
 			installNpmPackageAtVersion("estraverse", ESTRAVERSE_VERSION);
@@ -74,18 +70,6 @@ public final class LinterEngine {
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize ESLint Engine", e);
 		}
-	}
-
-	/**
-	 * Get the singleton EsLintEngine instance.
-	 *
-	 * @return the EsLintEngine instance
-	 */
-	public static LinterEngine getInstance() {
-		if (INSTANCE == null) {
-			INSTANCE = new LinterEngine();
-		}
-		return INSTANCE;
 	}
 
 	/**
@@ -153,19 +137,14 @@ public final class LinterEngine {
 	 * @throws IOException if the JS files do not exist in the ESLint directory
 	 */
 	private void copyJsResources(Path targetDir) throws IOException {
-		Files.createDirectories(targetDir);
-		// Copy JS resources to ESLint directory
-		try (InputStream is = getClass().getClassLoader()
-				.getResourceAsStream("js/" + LINTER_SCAN)) {
-			Path destPath = Files.createFile(targetDir.resolve(LINTER_SCAN));
-			OutputStream os = new FileOutputStream(destPath.toFile());
-			IOUtils.copy(is, os);
-		}
-		try (InputStream is = getClass().getClassLoader()
-				.getResourceAsStream("js/" + LINTER_PARSE)) {
-			Path destPath = Files.createFile(targetDir.resolve(LINTER_PARSE));
-			OutputStream os = new FileOutputStream(destPath.toFile());
-			IOUtils.copy(is, os);
+		// Copy JS resources to ESLint directory, overwriting any existing files
+		String[] resources = {LINTER_SCAN, LINTER_PARSE};
+		for (String resource : resources) {
+			Path dest = targetDir.resolve(resource);
+			try (InputStream is = getClass().getClassLoader()
+					.getResourceAsStream("js/" + resource)) {
+				FileUtils.copyToFile(is, dest.toFile());
+			}
 		}
 
 		// Make sure the JS files exist
@@ -214,12 +193,11 @@ public final class LinterEngine {
 		List<String> versionCommand = Arrays
 				.asList("npm", "list", "--depth=0");
 		ProcessResult versionResult = runCommand(versionCommand);
-
 		// if the package is at the right version, move on. Otherwise log errors
 		if (versionResult.hasResults()) {
 			String targetString = npmPackage + "@" + version;
 			if (versionResult.getResults().contains(targetString)) {
-				// already at correct version
+				LOG.info(targetString + " already installed");
 				return;
 			}
 		} else if (versionResult.hasErrors()) {
