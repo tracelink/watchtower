@@ -55,8 +55,9 @@ public class RegexRuleService {
 						.allowIfBaseType(RulesetDto.class)
 						.build();
 
-		jsonMapper =
-				JsonMapper.builder().polymorphicTypeValidator(v).activateDefaultTyping(v).build();
+		jsonMapper = JsonMapper.builder()
+				.polymorphicTypeValidator(v)
+				.activateDefaultTyping(v).build();
 	}
 
 	/**

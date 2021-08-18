@@ -157,10 +157,7 @@ public class RuleService {
 			LOG.debug("Importing Rule {}", rule.getName());
 			RuleEntity found = ruleRepository.findByName(rule.getName());
 			if (found != null) {
-				if (customOption.equals(ImportOption.SKIP)) {
-					// don't update, just skip
-					LOG.debug("Skipping update of rule {}", rule.getName());
-				} else if (rule.getRuleDesignation().equals(RuleDesignation.PROVIDED)) {
+				if (rule.getRuleDesignation().equals(RuleDesignation.PROVIDED)) {
 					// On update, only update the priority
 					if (providedOption.equals(ImportOption.SKIP)) {
 						LOG.debug("Skipping update of provided rule {}", rule.getName());
@@ -174,10 +171,15 @@ public class RuleService {
 						rules.add(ruleEntity);
 					}
 				} else {
-					// update the old rule with the new info
-					RuleEntity ruleEntity = rule.toEntity();
-					ruleEntity.setId(found.getId());
-					rules.add(ruleEntity);
+					if (customOption.equals(ImportOption.SKIP)) {
+						// don't update, just skip
+						LOG.debug("Skipping update of rule {}", rule.getName());
+					} else {
+						// update the old rule with the new info
+						RuleEntity ruleEntity = rule.toEntity();
+						ruleEntity.setId(found.getId());
+						rules.add(ruleEntity);
+					}
 				}
 			} else {
 				// new rule

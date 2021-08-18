@@ -1,7 +1,7 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
 /**
- * Identify the function of a Rule
+ * Identify the designation of a Rule
  * 
  * @author csmith
  *

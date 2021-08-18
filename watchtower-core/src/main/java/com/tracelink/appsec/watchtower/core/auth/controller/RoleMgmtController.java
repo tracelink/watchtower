@@ -51,7 +51,6 @@ public class RoleMgmtController {
 		WatchtowerModelAndView mv = new WatchtowerModelAndView("admin/rolemgmt");
 		mv.addObject("roles", roleService.findAllRoles());
 		mv.addObject("defaultRole", roleService.findDefaultRole());
-		mv.addScriptReference("/scripts/modal-delete-role.js");
 		return mv;
 	}
 

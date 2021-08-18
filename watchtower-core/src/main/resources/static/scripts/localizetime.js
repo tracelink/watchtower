@@ -7,10 +7,14 @@ $(document).ready(function() {
 			minute: '2-digit',
 			second:'2-digit'
 		};
-	$('.localizetime').html(function(i, html){
-		if(isNaN(html)){
-			return html;
-		}
-		return luxon.DateTime.fromMillis(Number(html)).toLocaleString(datetimeopts);
-	});
+	function localizeWT(){
+		$('.localizetime').html(function(i, html){
+			if(isNaN(html)){
+				return html;
+			}
+			return luxon.DateTime.fromMillis(Number(html)).toLocaleString(datetimeopts);
+		});
+	}
+	$('.datatable, .datatable-invert').on('draw.dt', localizeWT);
+	localizeWT();
 });
