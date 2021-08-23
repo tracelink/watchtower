@@ -158,16 +158,15 @@ public class RuleService {
 			RuleEntity found = ruleRepository.findByName(rule.getName());
 			if (found != null) {
 				if (rule.getRuleDesignation().equals(RuleDesignation.PROVIDED)) {
-					ProvidedRuleDto provided = (ProvidedRuleDto) rule;
 					// On update, only update the priority
 					if (providedOption.equals(ImportOption.SKIP)) {
-						LOG.debug("Skipping update of provided rule {}", provided.getName());
+						LOG.debug("Skipping update of provided rule {}", rule.getName());
 					} else if (providedOption.equals(ImportOption.UPDATE)) {
-						found.setPriority(provided.getPriority());
+						found.setPriority(rule.getPriority());
 						rules.add(found);
 					} else if (providedOption.equals(ImportOption.OVERRIDE)) {
 						// update the old rule with the new info
-						RuleEntity ruleEntity = provided.toEntity();
+						RuleEntity ruleEntity = rule.toEntity();
 						ruleEntity.setId(found.getId());
 						ruleEntity.setPriority(found.getPriority());
 						rules.add(ruleEntity);
