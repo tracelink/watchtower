@@ -2,11 +2,13 @@ package com.tracelink.appsec.watchtower.core.logging;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +76,7 @@ public class LoggingController {
 		Resource resource;
 		try {
 			file = logsService.generateLogsZip().toFile();
-			resource = new InputStreamResource(new FileInputStream(file));
+			resource = new AutoDeleteInputStreamResource(file);
 		} catch (IOException e) {
 			LOG.error("Exception while zipping logs", e);
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Exception while zipping logs");
@@ -86,4 +88,21 @@ public class LoggingController {
 				.body(resource);
 	}
 
+	/**
+	 * After the file was sent and the stream closed, delete the file to do full cleanup.
+	 * 
+	 * @author csmith
+	 *
+	 */
+	class AutoDeleteInputStreamResource extends InputStreamResource {
+		public AutoDeleteInputStreamResource(File file) throws FileNotFoundException {
+			super(new FileInputStream(file) {
+				@Override
+				public void close() throws IOException {
+					super.close();
+					FileUtils.deleteQuietly(file);
+				}
+			});
+		}
+	}
 }

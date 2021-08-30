@@ -168,6 +168,7 @@ public class RuleService {
 						// update the old rule with the new info
 						RuleEntity ruleEntity = rule.toEntity();
 						ruleEntity.setId(found.getId());
+						ruleEntity.getRulesets().addAll(found.getRulesets());
 						ruleEntity.setPriority(found.getPriority());
 						rules.add(ruleEntity);
 					}

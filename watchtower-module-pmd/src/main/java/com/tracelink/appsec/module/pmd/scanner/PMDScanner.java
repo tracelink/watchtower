@@ -58,11 +58,14 @@ public class PMDScanner implements IScanner {
 	@Override
 	public PMDReport scan(ScanConfig config) {
 		// Write PMD rules to an XML file
-		Path rulesetPath;
+		Path rulesetPath = null;
 		try {
 			rulesetPath = writeRulesetToFile(config.getRuleset());
 		} catch (Exception e) {
 			LOG.error("Exception writing ruleset to resources", e);
+			if (rulesetPath != null) {
+				FileUtils.deleteQuietly(rulesetPath.toFile());
+			}
 			return null;
 		}
 		// Create configuration
