@@ -2,6 +2,7 @@ package com.tracelink.appsec.watchtower.core.scan;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 
@@ -19,6 +20,9 @@ public abstract class AbstractScanningService {
 
 	private PauseableThreadPoolTaskExecutor executor;
 	private boolean isQuiesced = false;
+
+	@Value("${watchtower.runAfterStartup:true}")
+	private boolean runAfterStartup = true;
 
 	protected AbstractScanningService(int executorThreads) {
 		this.executor = new PauseableThreadPoolTaskExecutor(executorThreads);
@@ -87,5 +91,13 @@ public abstract class AbstractScanningService {
 	 * when the server went down and now.
 	 */
 	@EventListener(ApplicationReadyEvent.class)
+	public void afterStartup() {
+		if (runAfterStartup) {
+			recoverFromDowntime();
+		} else {
+			LOG.info("Skipping Downtime Recovery due to 'runAfterStartup' being false");
+		}
+	}
+
 	protected abstract void recoverFromDowntime();
 }
