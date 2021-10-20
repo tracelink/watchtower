@@ -114,6 +114,8 @@ There are two built-in ways to authenticate to Watchtower.
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.
 
+At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull Requests that have not been scanned in each configured repository and adds them to the scanning queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
+
 ## Authorization
 
 Watchtower defines several roles and privileges in order to restrict access to resources on the
