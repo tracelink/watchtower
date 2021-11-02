@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: watchtower-container 
-        image: 256762526792.dkr.ecr.us-east-1.amazonaws.com/watchtower:latest
+        image: !!!IMAGE_LOCATION!!!
         ports:
         - containerPort: 7777
         imagePullPolicy: Always
@@ -56,7 +56,7 @@ metadata:
     kubernetes.io/ingress.class: alb
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
     service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
-    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:256762526792:certificate/6e89f4b4-3ec3-4bb8-9561-2677a3f636f1
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: !!!CERTIFICATE!!!
 spec:
   type: LoadBalancer
   selector:
