@@ -1,7 +1,7 @@
 <!-- Card Footer -->
 <div class="card-footer">
     <p class="card-title text-left">Edit Rule Details</p>
-    <form class="d-inline" th:action="${'/rule/edit/regex/edit/'+(rule.isProvided()?'provided':'core')}" method="POST">
+    <form class="d-inline" th:action="${'/rule/edit/regex/edit/'+(rule.isProvided()?'provided':'custom')}" method="POST">
         <div class="row mb-2">
             <label for="name" class="col-sm-2 col-form-label">Name</label>
             <div class="col-sm-6">

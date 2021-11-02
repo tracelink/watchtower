@@ -92,6 +92,7 @@ public class BBCloudApi implements IScmApi {
 				LOG.error("Bad response: " + response.getStatus()
 						+ " while testing connection for PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while connecting to Bitbucket for PR " + pullRequest.getPRString(),
@@ -171,6 +172,7 @@ public class BBCloudApi implements IScmApi {
 				LOG.error("Bad response: " + response.getStatus() + " while getting git diff file "
 						+ filePath
 						+ " for PR " + pullRequest.getPRString());
+				LOG.debug(new String(response.getBody()));
 			}
 		} catch (IOException e) {
 			LOG.error(
@@ -215,6 +217,7 @@ public class BBCloudApi implements IScmApi {
 				LOG.error("Bad response: " + response.getStatus()
 						+ " while getting more Pull Request information for PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while getting more Pull Request information for PR "
@@ -252,6 +255,7 @@ public class BBCloudApi implements IScmApi {
 			if (response.getStatus() != 201) {
 				LOG.error("Bad response: " + response.getStatus() + " while sending report for PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while sending report for PR " + pullRequest.getPRString(), e);
@@ -278,6 +282,7 @@ public class BBCloudApi implements IScmApi {
 			if (response.getStatus() != 200) {
 				LOG.error("Bad response: " + response.getStatus() + " while declining PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while declining PR " + pullRequest.getPRString(), e);
@@ -307,6 +312,7 @@ public class BBCloudApi implements IScmApi {
 				if (response.getStatus() != 200) {
 					LOG.error("Bad response: " + response.getStatus()
 							+ " while getting PRs for repository " + repoName);
+					LOG.debug(response.getBody().toString());
 					break;
 				}
 				JSONObject body = response.getBody().getObject();
