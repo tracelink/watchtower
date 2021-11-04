@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watchtower-deployment
+  namespace: watchtower
+  labels:
+    app: watchtower
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: watchtower
+  template:
+    metadata:
+      labels:
+        app: watchtower
+    spec:
+      containers:
+      - name: watchtower-container 
+        image: !!!IMAGE_LOCATION!!!
+        ports:
+        - containerPort: 7777
+        imagePullPolicy: Always
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: prd
+        - name: SERVER_PORT
+          value: '7777'
+        - name: watchtower.runAfterStartup
+          value: 'false'
+        - name: JDBC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: watchtower-secrets
+              key: db_url
+        - name: JDBC_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: watchtower-secrets
+              key: db_user
+        - name: JDBC_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: watchtower-secrets
+              key: db_pass
+       
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: watchtower-service
+  labels:
+    app: watchtower
+  namespace: watchtower
+  annotations:
+    kubernetes.io/ingress.class: alb
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: !!!CERTIFICATE!!!
+spec:
+  type: LoadBalancer
+  selector:
+    app: watchtower
+  ports:
+    - name: watchtower
+      port: 443
+      targetPort: 7777

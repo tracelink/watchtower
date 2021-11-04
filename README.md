@@ -79,6 +79,8 @@ environment variables listed in [Docker.env](Docker.env), then type `docker-comp
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
 
+There are two files included to aid deploying to Kubernetes. [deploy](deploy.yaml) is a basic EKS deployment model that can be tailored to fit your needs and [watchtower-secrets](watchtower-secrets.yaml) can be used to supply the db secrets to your EKS system using the Kubernetes configMap. For production usage, it is recommended to put these secrets into a secrets manager, based on your application's needs and infrastructure's availability.
+
 If you are running directly from the jar file and not via Docker, note that some modules require
 specific setup as noted in their respective READMEs.
 
