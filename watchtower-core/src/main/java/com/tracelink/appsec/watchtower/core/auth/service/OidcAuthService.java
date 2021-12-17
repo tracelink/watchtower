@@ -1,10 +1,12 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
+import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
+import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +19,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
-
-import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
-import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 
 /**
  * Service to store and retrieve users in the database, if they login via OpenID Connect. When users
@@ -74,10 +72,7 @@ public class OidcAuthService extends OidcUserService {
 		UserEntity localUser = userService.findByUsername(username);
 		if (localUser != null) {
 			// Check if the local user has the same SSO id
-			if (localUser.getSsoId() != null && localUser.getSsoId()
-					.equals(oidcUser.getSubject())) {
-				user = localUser;
-			} else {
+			if (localUser.getSsoId() == null) {
 				// There is a username collision, prevent login
 				LOGGER.warn("User with username \"" + username
 						+ "\" attempted to login via SSO, but already has a local user account.");
@@ -85,6 +80,8 @@ public class OidcAuthService extends OidcUserService {
 				throw new OAuth2AuthenticationException(oauth2Error,
 						"A local user with the username \"" + username
 								+ "\" already exists. Please login with the provided form instead of SSO.");
+			} else {
+				user = localUser;
 			}
 		} else {
 			user = userService.findBySsoId(oidcUser.getSubject());
@@ -100,6 +97,12 @@ public class OidcAuthService extends OidcUserService {
 			RoleEntity userRole = roleService.findDefaultRole();
 			user.setRoles(Collections.singleton(userRole));
 			user.setCreated(new Date());
+			userService.updateUser(user);
+		}
+
+		// Update local ssoId if the SSO subject has changed
+		if (!user.getSsoId().equals(oidcUser.getSubject())) {
+			user.setSsoId(oidcUser.getSubject());
 			userService.updateUser(user);
 		}
 

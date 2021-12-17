@@ -1,11 +1,13 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
+import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
+import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,10 +27,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
-import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 
 @ExtendWith(SpringExtension.class)
 public class OidcAuthServiceTest {
@@ -208,5 +206,20 @@ public class OidcAuthServiceTest {
 		Assertions.assertEquals(1, oidcUser.getAuthorities().size());
 		Assertions.assertEquals(role.getRoleName(),
 				oidcUser.getAuthorities().iterator().next().getAuthority());
+	}
+
+	@Test
+	public void testLoadUserExistingSsoUserNewSsoId() {
+		UserEntity user = new UserEntity();
+		user.setUsername("email@example.com");
+		user.setSsoId("1234567890");
+		user.setEnabled(1);
+
+		BDDMockito.when(userService.findByUsername(email)).thenReturn(null);
+		BDDMockito.when(userService.findBySsoId(sub)).thenReturn(user);
+		OidcUser oidcUser = oidcAuthService.loadUser(oidcUserRequest);
+
+		BDDMockito.verify(userService, Mockito.times(2)).updateUser(user);
+		Assertions.assertEquals(sub, user.getSsoId());
 	}
 }
