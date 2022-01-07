@@ -1,12 +1,10 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
-import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
-import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +17,11 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
+
+import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
+import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 
 /**
  * Service to store and retrieve users in the database, if they login via OpenID Connect. When users
@@ -119,10 +122,10 @@ public class OidcAuthService extends OidcUserService {
 
 		// Get database roles and privileges
 		Collection<GrantedAuthority> authorities =
-				user.getRoles().isEmpty() ? Collections.emptySet()
-						: user.getRoles().stream()
-								.map(RoleEntity::getRoleName).map(SimpleGrantedAuthority::new)
-								.collect(Collectors.toSet());
+				user.getRoles()
+						.stream().flatMap(r -> r.getPrivileges().stream())
+						.map(PrivilegeEntity::getName).map(SimpleGrantedAuthority::new)
+						.collect(Collectors.toSet());
 
 		return new OidcUserDetails(oidcUser, authorities);
 	}
