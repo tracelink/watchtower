@@ -203,9 +203,11 @@ public abstract class AbstractModule {
 	@EventListener(classes = ContextRefreshedEvent.class)
 	public void afterModulesLoaded() {
 		try {
-			if (getProvidedRulesets() != null) {
-				LOG.info("Importing Provided rules for {}", getName());
-				rulesetService.registerProvidedRulesets(getName(), getProvidedRulesets());
+			List<RulesetDto> providedRulesets = getProvidedRulesets();
+			if (providedRulesets != null) {
+				LOG.info("Importing Provided rules for {} Starting", getName());
+				rulesetService.registerProvidedRulesets(getName(), providedRulesets);
+				LOG.info("Importing Provided rules for {} Complete", getName());
 			}
 		} catch (ModuleException e) {
 			throw new RuntimeException(

@@ -10,14 +10,14 @@ spring:
   thymeleaf:
     cache:  true
 
-#  security:
-#    oauth2:
-#      client:
-#        registration:
-#          oidc:
-#            client-id: ${CLIENT_ID}
-#            client-secret: ${CLIENT_SECRET}
-#            scope: openid, email
-#        provider:
-#          oidc:
-#            issuer-uri: ${ISSUER_URI}
+  security:
+    oauth2:
+      client:
+        registration:
+          oidc:
+            client-id: ${CLIENT_ID}
+            client-secret: ${CLIENT_SECRET}
+            scope: openid, email
+        provider:
+          oidc:
+            issuer-uri: ${ISSUER_URI}

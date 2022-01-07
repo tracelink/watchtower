@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -176,10 +176,8 @@ public class UserMgmtControllerTest {
 		String username = "csmith";
 		UserEntity user = createMockUser(username);
 		BDDMockito.when(mockUserService.findById(BDDMockito.anyLong())).thenReturn(user);
-		Set<RoleEntity> roles = new HashSet<RoleEntity>();
 		RoleEntity adminRole = BDDMockito.mock(RoleEntity.class);
 
-		BDDMockito.when(user.getRoles()).thenReturn(roles);
 		BDDMockito.when(mockRoleService.findRoleById(BDDMockito.anyLong()))
 				.thenReturn(adminRole);
 		int id = 123;
@@ -195,8 +193,10 @@ public class UserMgmtControllerTest {
 						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 						Matchers.containsString(
 								"User information for " + username + " saved successfully")));
-
-		MatcherAssert.assertThat(roles, Matchers.contains(adminRole));
+		ArgumentCaptor<HashSet> roleCapture = ArgumentCaptor.forClass(HashSet.class);
+		BDDMockito.verify(user).setRoles(roleCapture.capture());
+		MatcherAssert.assertThat((HashSet<RoleEntity>) roleCapture.getValue(),
+				Matchers.contains(adminRole));
 	}
 
 	///////////////////

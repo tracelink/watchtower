@@ -103,9 +103,9 @@ public class UserMgmtController {
 			if (role == -1) {
 				user.setRoles(new HashSet<>());
 			}
-			// or add the correct one
+			// or set the correct one
 			else {
-				user.getRoles().add(roleEntity);
+				user.setRoles(new HashSet<>(Arrays.asList(roleEntity)));
 			}
 			// Update enabled
 			user.setEnabled(enabled);
