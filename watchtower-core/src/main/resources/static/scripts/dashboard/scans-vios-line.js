@@ -105,20 +105,20 @@ class WatchtowerScanViolationsLineChart{
 	updateLineTimePeriod = async (event) => {
 		let period = event.target.value;
 			
-		const scansResponse = await fetch(`/metrics/scans-by-period?period=${period}&type=${this.scanType}`);
+		const scansResponse = await fetch(`/rest/metrics/scans-by-period?period=${period}&type=${this.scanType}`);
 		const scansResult = await scansResponse.json();
 		
-		const violationsResponse = await fetch(`/metrics/violations-by-period?period=${period}&type=${this.scanType}`);
+		const violationsResponse = await fetch(`/rest/metrics/violations-by-period?period=${period}&type=${this.scanType}`);
 		const violationsResult = await violationsResponse.json();
 		
 		this.updateLineData(scansResult, violationsResult);
 	};
 	
 	lineContentLoad = async () => {
-		const scansResponse = await fetch(`/metrics/scans-by-period?period=last-four-weeks&type=${this.scanType}`);
+		const scansResponse = await fetch(`/rest/metrics/scans-by-period?period=last-four-weeks&type=${this.scanType}`);
 		const scansResult = await scansResponse.json();
 		
-		const violationsResponse = await fetch(`/metrics/violations-by-period?period=last-four-weeks&type=${this.scanType}`);
+		const violationsResponse = await fetch(`/rest/metrics/violations-by-period?period=last-four-weeks&type=${this.scanType}`);
 		const violationsResult = await violationsResponse.json();
 		
 		this.updateLineData(scansResult, violationsResult);

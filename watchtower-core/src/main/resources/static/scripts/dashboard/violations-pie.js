@@ -64,13 +64,13 @@ class WatchtowerViolationsPieChart {
 	updatePieTimePeriod = async (event) => {
 		let period = event.target.value;
 			
-		const response = await fetch(`/metrics/violations-by-type?period=${period}&type=${this.scanType}`);
+		const response = await fetch(`/rest/metrics/violations-by-type?period=${period}&type=${this.scanType}`);
 		const result = await response.json();
 		this.updatePieData(result);
 	};
 	
 	pieContentLoad = async () => {
-		const response = await fetch(`/metrics/violations-by-type?period=last-four-weeks&type=${this.scanType}`);
+		const response = await fetch(`/rest/metrics/violations-by-type?period=last-four-weeks&type=${this.scanType}`);
 		const result = await response.json();
 		this.updatePieData(result);
 	

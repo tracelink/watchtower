@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.upload.controller;
+package com.tracelink.appsec.watchtower.core.rest.scan.upload;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,7 @@ import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanningSe
  * @author csmith
  */
 @RestController
+@RequestMapping("/rest/uploadscan")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_SUBMIT_NAME + "')")
 public class UploadScanRestController {
 	private static final Logger LOG = LoggerFactory.getLogger(UploadScanRestController.class);
@@ -45,7 +47,7 @@ public class UploadScanRestController {
 		this.uploadScanResultService = uploadScanResultService;
 	}
 
-	@PostMapping("/rest/uploadscan")
+	@PostMapping()
 	ResponseEntity<UploadScanResult> scanUpload(@RequestParam Optional<String> name,
 			@RequestParam Optional<String> ruleset,
 			@RequestBody MultipartFile uploadFile,
@@ -79,7 +81,7 @@ public class UploadScanRestController {
 		return ResponseEntity.ok(uploadScanResultService.generateResultForTicket(ticket));
 	}
 
-	@GetMapping("/rest/uploadscan/{ticket}")
+	@GetMapping("/{ticket}")
 	ResponseEntity<UploadScanResult> getResultForTicket(@PathVariable String ticket) {
 		return ResponseEntity.ok(uploadScanResultService.generateResultForTicket(ticket));
 	}

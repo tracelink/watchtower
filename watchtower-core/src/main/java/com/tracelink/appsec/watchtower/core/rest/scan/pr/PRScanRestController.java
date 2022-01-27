@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.pr.controller;
+package com.tracelink.appsec.watchtower.core.rest.scan.pr;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
@@ -27,6 +28,7 @@ import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanningServic
  * @author csmith
  */
 @RestController
+@RequestMapping("/rest/scan")
 @PreAuthorize("permitAll()")
 public class PRScanRestController {
 	private static final Logger LOG = LoggerFactory.getLogger(PRScanRestController.class);
@@ -49,7 +51,7 @@ public class PRScanRestController {
 		this.apiService = apiService;
 	}
 
-	@PostMapping("/rest/scan/{source}")
+	@PostMapping("/{source}")
 	ResponseEntity<String> scanPullRequest(@PathVariable String source,
 			@RequestBody String pullRequest,
 			HttpServletRequest request) {

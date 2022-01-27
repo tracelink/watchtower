@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.upload.controller;
+package com.tracelink.appsec.watchtower.core.rest.scan.upload;
 
 import java.io.IOException;
 import java.nio.file.Paths;
