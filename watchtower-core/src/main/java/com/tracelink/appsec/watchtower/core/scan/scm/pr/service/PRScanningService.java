@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
@@ -57,8 +58,9 @@ public class PRScanningService extends AbstractScanningService {
 			@Autowired RepositoryService repoService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired ScanRegistrationService scanRegistrationService,
-			@Autowired APIIntegrationService apiService) {
-		super(4);
+			@Autowired APIIntegrationService apiService,
+			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
+		super(4, recoverFromDowntime);
 		this.scmFactoryService = scmFactoryService;
 		this.logService = logService;
 		this.repoService = repoService;

@@ -28,6 +28,8 @@ spec:
           value: '7777'
         - name: watchtower.runAfterStartup
           value: 'false'
+        - name: watchtower.allowedRegistration
+          value: 'true'
         - name: JDBC_URL
           valueFrom:
             configMapKeyRef:

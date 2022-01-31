@@ -16,6 +16,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.servlet.ModelAndView;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -32,7 +33,8 @@ public class LoginControllerTest {
 	public void testGetLogin() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.get("/login"))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
-				.andExpect(MockMvcResultMatchers.view().name(Matchers.is("login")));
+				.andExpect(MockMvcResultMatchers.view().name(Matchers.is("login")))
+				.andExpect(MockMvcResultMatchers.model().attribute("allowRegistration", true));
 	}
 
 	@Test
@@ -44,8 +46,17 @@ public class LoginControllerTest {
 				BDDMockito.mock(ClientRegistrationRepository.class);
 		BDDMockito.when(clientRegistrationRepository.findByRegistrationId("oidc"))
 				.thenReturn(clientRegistration);
-		LoginController loginController = new LoginController(clientRegistrationRepository);
-		Assertions.assertEquals("login-sso", loginController.login());
+		LoginController loginController = new LoginController(clientRegistrationRepository, true);
+		ModelAndView mav = loginController.login();
+		Assertions.assertEquals("login-sso", mav.getViewName());
+	}
+
+	@Test
+	public void testGetLoginNoRegister() {
+		LoginController loginController = new LoginController(null, false);
+		ModelAndView mav = loginController.login();
+		Assertions.assertEquals("login", mav.getViewName());
+		Assertions.assertEquals(false, mav.getModel().get("allowRegistration"));
 	}
 
 }

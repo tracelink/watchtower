@@ -74,7 +74,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockLogsService.getLogsLevel()).thenReturn(Level.INFO);
 		this.scanningService =
 				new PRScanningService(mockScanFactory, mockLogsService, mockRepoService,
-						mockScanResultService, mockScanRegistrationService, mockApiService);
+						mockScanResultService, mockScanRegistrationService, mockApiService, false);
 	}
 
 	@Test

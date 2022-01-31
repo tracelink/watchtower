@@ -3,6 +3,7 @@ package com.tracelink.appsec.watchtower.web.controller;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
  * @author csmith
  */
 @Controller
+@ConditionalOnProperty(prefix = "watchtower", name = "allowRegistration", matchIfMissing = true)
 public class RegistrationController {
 	private UserService userService;
 
