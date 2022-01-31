@@ -98,14 +98,14 @@ class WatchtowerViolationsBarChart{
 	updateBarTimePeriod = async (event) => {
 		let period = event.target.value;
 			
-		const response = await fetch(`/metrics/violations-by-period-and-type?period=${period}&type=${this.scanType}`);
+		const response = await fetch(`/rest/metrics/violations-by-period-and-type?period=${period}&type=${this.scanType}`);
 		const result = await response.json();
 		
 		this.updateBarData(result);
 	};
 	
 	barContentLoad = async () => {
-		const response = await fetch(`/metrics/violations-by-period-and-type?period=last-four-weeks&type=${this.scanType}`);
+		const response = await fetch(`/rest/metrics/violations-by-period-and-type?period=last-four-weeks&type=${this.scanType}`);
 		const result = await response.json();
 		
 		this.updateBarData(result);

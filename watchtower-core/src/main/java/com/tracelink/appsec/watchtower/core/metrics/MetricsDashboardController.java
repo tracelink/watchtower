@@ -57,4 +57,5 @@ public class MetricsDashboardController {
 		}
 		return topLevelMetrics;
 	}
+
 }
