@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.security.sasl.AuthenticationException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,6 +22,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.repository.UserRepository;
+import com.tracelink.appsec.watchtower.core.auth.service.checker.UserPasswordRequirementsChecker;
 
 /**
  * Service that performs functions to update users in the database for user management. Also allows
@@ -39,13 +40,16 @@ public class UserService implements UserDetailsService {
 
 	private final RoleService roleService;
 
+	private final UserPasswordRequirementsChecker pwChecker;
 
 	public UserService(@Autowired PasswordEncoder passwordEncoder,
 			@Autowired UserRepository userRepository,
-			@Autowired RoleService roleService) {
+			@Autowired RoleService roleService,
+			@Autowired UserPasswordRequirementsChecker pwChecker) {
 		this.passwordEncoder = passwordEncoder;
 		this.userRepository = userRepository;
 		this.roleService = roleService;
+		this.pwChecker = pwChecker;
 	}
 
 	void ensureDefaultUsers(RoleEntity adminRole) {
@@ -111,8 +115,10 @@ public class UserService implements UserDetailsService {
 	 *
 	 * @param username the user's username
 	 * @param password the user's password
+	 * @throws BadCredentialsException if the password does not meet the
+	 *                                 {@linkplain UserPasswordRequirementsChecker} requirements
 	 */
-	public void registerNewUser(String username, String password) {
+	public void registerNewUser(String username, String password) throws BadCredentialsException {
 		UserEntity user = createUser(username, password);
 		RoleEntity defaultUserRole = roleService.findDefaultRole();
 		if (defaultUserRole != null) {
@@ -121,13 +127,18 @@ public class UserService implements UserDetailsService {
 		userRepository.save(user);
 	}
 
-	private UserEntity createUser(String username, String password) {
+	private UserEntity createUser(String username, String password) throws BadCredentialsException {
 		UserEntity user = new UserEntity();
 		user.setCreated(new Date());
 		user.setUsername(username);
+		checkPasswordAllowed(password);
 		user.setPassword(passwordEncoder.encode(password));
 		user.setEnabled(1);
 		return user;
+	}
+
+	private void checkPasswordAllowed(String password) throws BadCredentialsException {
+		pwChecker.check(password);
 	}
 
 	/**
@@ -198,11 +209,12 @@ public class UserService implements UserDetailsService {
 			throws AuthenticationException {
 		UserEntity user = findByUsername(name);
 		if (user.getSsoId() != null) {
-			throw new AuthenticationException(
+			throw new UsernameNotFoundException(
 					"You cannot update your password if you authenticate using SSO.");
 		}
+		checkPasswordAllowed(newPassword);
 		if (!checkPassword(user, currentPassword)) {
-			throw new AuthenticationException("Your current password is invalid");
+			throw new BadCredentialsException("Your current password is invalid");
 		}
 		user.setPassword(passwordEncoder.encode(newPassword));
 		updateUser(user);

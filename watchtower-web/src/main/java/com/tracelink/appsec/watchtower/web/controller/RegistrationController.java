@@ -3,6 +3,8 @@ package com.tracelink.appsec.watchtower.web.controller;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserRegistrationForm;
 import com.tracelink.appsec.watchtower.core.auth.service.UserService;
+import com.tracelink.appsec.watchtower.core.auth.service.checker.UserPasswordRequirementsChecker;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 
 /**
@@ -22,16 +25,23 @@ import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
  * @author csmith
  */
 @Controller
+@ConditionalOnProperty(prefix = "watchtower", name = "allowRegistration", matchIfMissing = true)
 public class RegistrationController {
 	private UserService userService;
+	private UserPasswordRequirementsChecker checker;
 
-	public RegistrationController(@Autowired UserService userService) {
+	public RegistrationController(@Autowired UserService userService,
+			@Autowired UserPasswordRequirementsChecker checker) {
 		this.userService = userService;
+		this.checker = checker;
 	}
 
 	@GetMapping("/register")
-	public String registerForm(UserRegistrationForm form) {
-		return "register";
+	public ModelAndView registerForm(UserRegistrationForm form) {
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("register");
+		mav.addObject("pwRequirements", checker.getRequirementsStatement());
+		return mav;
 	}
 
 	@PostMapping("/register")
@@ -50,12 +60,15 @@ public class RegistrationController {
 			bindingResult.rejectValue("passwordConfirmation", "error.user",
 					"Passwords don't match");
 		}
+		try {
+			userService.registerNewUser(form.getUsername(), form.getPassword());
+		} catch (BadCredentialsException e) {
+			bindingResult.rejectValue("password", "error.user", "Password does not meet policy");
+		}
 
 		if (bindingResult.hasErrors()) {
 			modelAndView.setViewName("register");
 		} else {
-			userService.registerNewUser(form.getUsername(), form.getPassword());
-
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"User account created successfully. Please sign in.");
 
