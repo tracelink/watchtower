@@ -112,7 +112,7 @@ There are two built-in ways to authenticate to Watchtower.
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.
 
-By default, there is a self-registration process that allows a user to join Watchtower and is assigned a default role as described in the Authorization section. This registration can be turned off by setting the configuration `watchtower.allowedRegistration` to false. This could be used once the app is migrated to SSO and at least one local user account is created to protect against duplicate accounts.
+By default, there is a self-registration process that allows a user to join Watchtower and is assigned a default role as described in the Authorization section. This registration can be turned off by setting the configuration `watchtower.allowRegistration` to false. This could be used once the app is migrated to SSO and at least one local user account is created to protect against duplicate accounts.
 
 At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull Requests that have not been scanned in each configured repository and adds them to the scanning queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
 
