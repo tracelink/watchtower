@@ -106,12 +106,8 @@ System Admin so that administrators cannot get locked out while modifying users 
 
 There are two built-in ways to authenticate to Watchtower.
 
-1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users
-   authenticate to Watchtower directly. This is configured by default.
-2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open
-   ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`
-   , `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as
-   in [here](./watchtower-web/src/main/resources/application-prd.yaml).
+1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users authenticate to Watchtower directly. This is configured by default. A basic password checking policy class is installed already [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/auth/service/checker/ComplexityUserPasswordRequirementsChecker.java), implementors can override this in configuration classes as done [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/configuration/WatchtowerConfiguration.java). 
+2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`, `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as in [here](./watchtower-web/src/main/resources/application-prd.yaml).
 
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.

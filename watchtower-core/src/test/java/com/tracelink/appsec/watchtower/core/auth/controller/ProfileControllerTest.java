@@ -3,8 +3,6 @@ package com.tracelink.appsec.watchtower.core.auth.controller;
 import java.security.KeyException;
 import java.util.Date;
 
-import javax.security.sasl.AuthenticationException;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -77,7 +76,7 @@ public class ProfileControllerTest {
 
 		BDDMockito.when(mockUserService.findByUsername(BDDMockito.anyString()))
 				.thenReturn(user);
-		BDDMockito.willThrow(new AuthenticationException()).given(mockUserService).changePassword(
+		BDDMockito.willThrow(UsernameNotFoundException.class).given(mockUserService).changePassword(
 				BDDMockito.anyString(), BDDMockito.anyString(), BDDMockito.anyString());
 
 		mockMvc.perform(
