@@ -112,21 +112,25 @@ public class BBCloudApi implements IScmApi {
 				pullRequest.getCommitHash().substring(0, 7));
 		try (FileOutputStream fw = new FileOutputStream(tempFile.toFile())) {
 			AtomicReference<IOException> e = new AtomicReference<>(null);
-			makeGetRequest(url, null)
-					.thenConsume(r -> {
-						try {
-							if (r.getStatus() != 200) {
-								throw new IOException("Response code is " + r.getStatus());
+			int retries = 5;
+			do {
+				makeGetRequest(url, null)
+						.thenConsume(r -> {
+							try {
+								if (r.getStatus() != 200) {
+									throw new IOException("Response code is " + r.getStatus());
+								}
+								IOUtils.copyLarge(r.getContent(), fw);
+							} catch (IOException ex) {
+								e.set(ex);
 							}
-							IOUtils.copyLarge(r.getContent(), fw);
-						} catch (IOException ex) {
-							e.set(ex);
-						}
-					});
-			if (e.get() != null) {
-				LOG.error("Bad response during download: " + e.get().getMessage());
-				throw e.get();
-			}
+						});
+				if (e.get() != null) {
+					LOG.error("Bad response during download: " + e.get().getMessage());
+					throw e.get();
+				}
+				retries--;
+			} while (retries > 0 && e.get() == null);
 		}
 		Path tempDir = Files.createTempDirectory(null);
 		unzip(tempFile.toFile(), tempDir);
