@@ -21,7 +21,7 @@ public class LoginController {
 
 	public LoginController(
 			@Autowired(required = false) ClientRegistrationRepository clientRegistrationRepository,
-			@Value(value = "${watchtower.allowRegistration?:true}") boolean allowRegistration) {
+			@Value(value = "${watchtower.allowRegistration:true}") boolean allowRegistration) {
 		this.clientRegistrationRepository = clientRegistrationRepository;
 		this.allowRegistration = allowRegistration;
 	}
