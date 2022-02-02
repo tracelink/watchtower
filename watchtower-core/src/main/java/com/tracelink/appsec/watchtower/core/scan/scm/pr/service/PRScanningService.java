@@ -59,8 +59,9 @@ public class PRScanningService extends AbstractScanningService {
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired ScanRegistrationService scanRegistrationService,
 			@Autowired APIIntegrationService apiService,
+			@Value("${watchtower.threads.prscan:4}") int threads,
 			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
-		super(4, recoverFromDowntime);
+		super(threads, recoverFromDowntime);
 		this.scmFactoryService = scmFactoryService;
 		this.logService = logService;
 		this.repoService = repoService;
