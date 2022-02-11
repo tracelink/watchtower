@@ -76,7 +76,8 @@ public class RepositoryService {
 	}
 
 	/**
-	 * Update/Insert a repository using the api label and default ruleset
+	 * Update/Insert a repository using the api label and default ruleset. Ensures the repository is
+	 * in the enabled state
 	 *
 	 * @param apiLabel the api label to add this repo name to
 	 * @param repoName the new repository name
@@ -91,7 +92,13 @@ public class RepositoryService {
 			repo.setRuleset(rulesetService.getDefaultRuleset());
 		}
 		repo.setLastReviewedDate(System.currentTimeMillis());
+		repo.setEnabled(true);
 		return repoRepo.save(repo);
+	}
+
+	public RepositoryEntity disableRepo(RepositoryEntity repo) {
+		repo.setEnabled(false);
+		return repoRepo.saveAndFlush(repo);
 	}
 
 }

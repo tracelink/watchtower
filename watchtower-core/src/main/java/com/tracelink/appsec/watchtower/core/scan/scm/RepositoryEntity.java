@@ -15,69 +15,79 @@ import javax.persistence.Table;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 
 /**
- * Entity description for a repository. Holds information about a repository in
- * a given SCM
+ * Entity description for a repository. Holds information about a repository in a given SCM
  *
  * @author csmith
  */
 @Entity
 @Table(name = "repositories")
 public class RepositoryEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "repo_entity_id")
-    private long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "repo_entity_id")
+	private long id;
 
-    @Column(name = "last_review_date")
-    private long lastReviewedDate;
+	@Column(name = "last_review_date")
+	private long lastReviewedDate;
 
-    @Column(name = "api_label")
-    private String apiLabel;
+	@Column(name = "api_label")
+	private String apiLabel;
 
-    @Column(name = "repo_name")
-    private String repoName;
+	@Column(name = "repo_name")
+	private String repoName;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "ruleset_id")
-    private RulesetEntity ruleset;
+	@Column(name = "enabled")
+	private boolean enabled;
 
-    public long getId() {
-        return id;
-    }
+	@OneToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "ruleset_id")
+	private RulesetEntity ruleset;
 
-    public long getLastReviewedDate() {
-        return lastReviewedDate;
-    }
+	public long getId() {
+		return id;
+	}
 
-    public Date getLastReviewedDateAsDate() {
-        return new Date(lastReviewedDate);
-    }
+	public long getLastReviewedDate() {
+		return lastReviewedDate;
+	}
 
-    public void setLastReviewedDate(long lastReviewedDate) {
-        this.lastReviewedDate = lastReviewedDate;
-    }
+	public Date getLastReviewedDateAsDate() {
+		return new Date(lastReviewedDate);
+	}
 
-    public String getApiLabel() {
-        return apiLabel;
-    }
+	public void setLastReviewedDate(long lastReviewedDate) {
+		this.lastReviewedDate = lastReviewedDate;
+	}
 
-    public void setApiLabel(String apiLabel) {
-        this.apiLabel = apiLabel;
-    }
+	public String getApiLabel() {
+		return apiLabel;
+	}
 
-    public String getRepoName() {
-        return repoName;
-    }
+	public void setApiLabel(String apiLabel) {
+		this.apiLabel = apiLabel;
+	}
 
-    public void setRepoName(String repoName) {
-        this.repoName = repoName;
-    }
+	public String getRepoName() {
+		return repoName;
+	}
 
-    public RulesetEntity getRuleset() {
-        return ruleset;
-    }
+	public void setRepoName(String repoName) {
+		this.repoName = repoName;
+	}
 
-    public void setRuleset(RulesetEntity ruleset) {
-        this.ruleset = ruleset;
-    }
+	public RulesetEntity getRuleset() {
+		return ruleset;
+	}
+
+	public void setRuleset(RulesetEntity ruleset) {
+		this.ruleset = ruleset;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
 }

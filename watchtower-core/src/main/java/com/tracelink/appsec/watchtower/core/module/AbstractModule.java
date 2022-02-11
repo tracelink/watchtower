@@ -203,7 +203,10 @@ public abstract class AbstractModule {
 	@EventListener(classes = ContextRefreshedEvent.class)
 	public void afterModulesLoaded() {
 		try {
+			long s = System.currentTimeMillis();
 			List<RulesetDto> providedRulesets = getProvidedRulesets();
+			long e = System.currentTimeMillis();
+			LOG.info("Checkov Get Provided rules took: " + (e - s) + " milliseconds");
 			if (providedRulesets != null) {
 				LOG.info("Importing Provided rules for {} Starting", getName());
 				rulesetService.registerProvidedRulesets(getName(), providedRulesets);

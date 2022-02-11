@@ -339,6 +339,26 @@ public class BBCloudApi implements IScmApi {
 		return openPrs;
 	}
 
+	@Override
+	public boolean isRepositoryActive(String repoName) {
+		boolean active = true;
+		String url = buildRequestUrl(apiEntity.makeApiWorkspaceUrl(), repoName);
+		try {
+			HttpResponse<JsonNode> response = makeGetRequest(url, null).asJson();
+
+			int retries = 5;
+			while (response.getStatus() == 429) {
+				handleRateLimiter(response.getHeaders(), retries--);
+				response = makeGetRequest(url, null).asJson();
+			}
+
+			active = response.getStatus() == 200;
+		} catch (UnirestException e) {
+			LOG.error("Exception while testing if repository " + repoName + " exists", e);
+		}
+		return active;
+	}
+
 	/**
 	 * create a simple URL path from a base and path elements
 	 * 
@@ -409,4 +429,5 @@ public class BBCloudApi implements IScmApi {
 			LOG.error("Exception while sleeping during Bitbucket API retry", e);
 		}
 	}
+
 }

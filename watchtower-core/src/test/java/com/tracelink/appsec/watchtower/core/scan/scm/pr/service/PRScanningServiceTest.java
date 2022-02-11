@@ -180,6 +180,7 @@ public class PRScanningServiceTest {
 
 		RepositoryEntity mockRepoEntity = BDDMockito.mock(RepositoryEntity.class);
 		BDDMockito.when(mockRepoEntity.getRepoName()).thenReturn(repoName);
+		BDDMockito.when(mockRepoEntity.isEnabled()).thenReturn(true);
 		BDDMockito.when(mockRepoService.getAllRepos())
 				.thenReturn(
 						Collections.singletonMap(apiLabel,
@@ -215,6 +216,7 @@ public class PRScanningServiceTest {
 		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
 		BDDMockito.when(mockApi.getOpenPullRequestsForRepository(repoName))
 				.thenReturn(Arrays.asList(prSeenReviewed, prSeenNotReviewed, prUnknown));
+		BDDMockito.when(mockApi.isRepositoryActive(BDDMockito.anyString())).thenReturn(true);
 
 		BDDMockito.when(mockScanFactory.createApiForApiEntity(mockApiEntity)).thenReturn(mockApi);
 
@@ -253,6 +255,172 @@ public class PRScanningServiceTest {
 		BDDMockito.verify(mockApi, BDDMockito.times(2)).updatePRData(prCaptor.capture());
 		List<PullRequest> capturedPrs = prCaptor.getAllValues();
 		MatcherAssert.assertThat(capturedPrs, Matchers.hasItems(prUnknown, prSeenNotReviewed));
+	}
+
+	@Test
+	public void testRecoverFromDowntimeDeadRepo() throws Exception {
+		String apiLabel = "api";
+		String repoName = "repo";
+
+		RepositoryEntity mockRepoEntity = BDDMockito.mock(RepositoryEntity.class);
+		BDDMockito.when(mockRepoEntity.getRepoName()).thenReturn(repoName);
+		BDDMockito.when(mockRepoEntity.isEnabled()).thenReturn(true);
+		BDDMockito.when(mockRepoService.getAllRepos())
+				.thenReturn(
+						Collections.singletonMap(apiLabel,
+								Collections.singletonList(mockRepoEntity)));
+
+		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(mockApiService.getAllSettings())
+				.thenReturn(Collections.singletonList(mockApiEntity));
+		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(mockApiEntity);
+
+		String prSeenReviewedId = "123";
+		String prSeenNotReviewedId = "234";
+		String prUnknownId = "345";
+		PullRequest prSeenReviewed = BDDMockito.mock(PullRequest.class);
+		BDDMockito.when(prSeenReviewed.getPrId()).thenReturn(prSeenReviewedId);
+		BDDMockito.when(prSeenReviewed.getPRString()).thenReturn("SR");
+		BDDMockito.when(prSeenReviewed.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(prSeenReviewed.getRepoName()).thenReturn(repoName);
+
+		PullRequest prSeenNotReviewed = BDDMockito.mock(PullRequest.class);
+		BDDMockito.when(prSeenNotReviewed.getPrId()).thenReturn(prSeenNotReviewedId);
+		BDDMockito.when(prSeenNotReviewed.getPRString()).thenReturn("SNR");
+		BDDMockito.when(prSeenNotReviewed.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(prSeenNotReviewed.getRepoName()).thenReturn(repoName);
+
+		PullRequest prUnknown = BDDMockito.mock(PullRequest.class);
+		BDDMockito.when(prUnknown.getPrId()).thenReturn(prUnknownId);
+		BDDMockito.when(prUnknown.getPRString()).thenReturn("U");
+		BDDMockito.when(prUnknown.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(prUnknown.getRepoName()).thenReturn(repoName);
+
+		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
+		BDDMockito.when(mockApi.getOpenPullRequestsForRepository(repoName))
+				.thenReturn(Arrays.asList(prSeenReviewed, prSeenNotReviewed, prUnknown));
+		BDDMockito.when(mockApi.isRepositoryActive(BDDMockito.anyString())).thenReturn(false);
+
+		BDDMockito.when(mockScanFactory.createApiForApiEntity(mockApiEntity)).thenReturn(mockApi);
+
+		PullRequestContainerEntity prceSeenReviewed =
+				BDDMockito.mock(PullRequestContainerEntity.class);
+		BDDMockito.when(prceSeenReviewed.getLastReviewedDate()).thenReturn(2L);
+		BDDMockito.when(prSeenReviewed.getUpdateTime()).thenReturn(1L);
+
+		PullRequestContainerEntity prceSeenNotReviewed =
+				BDDMockito.mock(PullRequestContainerEntity.class);
+		BDDMockito.when(prceSeenNotReviewed.getLastReviewedDate()).thenReturn(1L);
+		BDDMockito.when(prSeenNotReviewed.getUpdateTime()).thenReturn(2L);
+
+		BDDMockito.when(
+				mockScanResultService.getPullRequestByLabelRepoAndId(apiLabel, repoName,
+						prSeenReviewedId))
+				.thenReturn(prceSeenReviewed);
+		BDDMockito.when(
+				mockScanResultService.getPullRequestByLabelRepoAndId(apiLabel, repoName,
+						prSeenNotReviewedId))
+				.thenReturn(prceSeenNotReviewed);
+		BDDMockito.when(
+				mockScanResultService.getPullRequestByLabelRepoAndId(apiLabel, repoName,
+						prUnknownId))
+				.thenReturn(null);
+
+		BDDMockito.when(mockRepoService.upsertRepo(apiLabel, repoName)).thenReturn(mockRepoEntity);
+		BDDMockito.when(mockRepoEntity.getRuleset()).thenReturn(new RulesetEntity());
+
+		BDDMockito.when(mockScanRegistrationService.isEmpty()).thenReturn(false);
+		BDDMockito.when(mockScanFactory.createApiForApiEntity(mockApiEntity)).thenReturn(mockApi);
+
+		ArgumentCaptor<PullRequest> prCaptor = ArgumentCaptor.forClass(PullRequest.class);
+
+		scanningService.recoverFromDowntime();
+		BDDMockito.verify(mockApi, BDDMockito.times(0)).updatePRData(prCaptor.capture());
+		BDDMockito.verify(mockRepoService).disableRepo(mockRepoEntity);
+	}
+
+	@Test
+	public void testRecoverFromDowntimeAlreadyDeadRepo() throws Exception {
+		String apiLabel = "api";
+		String repoName = "repo";
+
+		RepositoryEntity mockRepoEntity = BDDMockito.mock(RepositoryEntity.class);
+		BDDMockito.when(mockRepoEntity.getRepoName()).thenReturn(repoName);
+		BDDMockito.when(mockRepoEntity.isEnabled()).thenReturn(false);
+		BDDMockito.when(mockRepoService.getAllRepos())
+				.thenReturn(
+						Collections.singletonMap(apiLabel,
+								Collections.singletonList(mockRepoEntity)));
+
+		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(mockApiService.getAllSettings())
+				.thenReturn(Collections.singletonList(mockApiEntity));
+		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(mockApiEntity);
+
+		String prSeenReviewedId = "123";
+		String prSeenNotReviewedId = "234";
+		String prUnknownId = "345";
+		PullRequest prSeenReviewed = BDDMockito.mock(PullRequest.class);
+		BDDMockito.when(prSeenReviewed.getPrId()).thenReturn(prSeenReviewedId);
+		BDDMockito.when(prSeenReviewed.getPRString()).thenReturn("SR");
+		BDDMockito.when(prSeenReviewed.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(prSeenReviewed.getRepoName()).thenReturn(repoName);
+
+		PullRequest prSeenNotReviewed = BDDMockito.mock(PullRequest.class);
+		BDDMockito.when(prSeenNotReviewed.getPrId()).thenReturn(prSeenNotReviewedId);
+		BDDMockito.when(prSeenNotReviewed.getPRString()).thenReturn("SNR");
+		BDDMockito.when(prSeenNotReviewed.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(prSeenNotReviewed.getRepoName()).thenReturn(repoName);
+
+		PullRequest prUnknown = BDDMockito.mock(PullRequest.class);
+		BDDMockito.when(prUnknown.getPrId()).thenReturn(prUnknownId);
+		BDDMockito.when(prUnknown.getPRString()).thenReturn("U");
+		BDDMockito.when(prUnknown.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(prUnknown.getRepoName()).thenReturn(repoName);
+
+		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
+		BDDMockito.when(mockApi.getOpenPullRequestsForRepository(repoName))
+				.thenReturn(Arrays.asList(prSeenReviewed, prSeenNotReviewed, prUnknown));
+		BDDMockito.when(mockApi.isRepositoryActive(BDDMockito.anyString())).thenReturn(false);
+
+		BDDMockito.when(mockScanFactory.createApiForApiEntity(mockApiEntity)).thenReturn(mockApi);
+
+		PullRequestContainerEntity prceSeenReviewed =
+				BDDMockito.mock(PullRequestContainerEntity.class);
+		BDDMockito.when(prceSeenReviewed.getLastReviewedDate()).thenReturn(2L);
+		BDDMockito.when(prSeenReviewed.getUpdateTime()).thenReturn(1L);
+
+		PullRequestContainerEntity prceSeenNotReviewed =
+				BDDMockito.mock(PullRequestContainerEntity.class);
+		BDDMockito.when(prceSeenNotReviewed.getLastReviewedDate()).thenReturn(1L);
+		BDDMockito.when(prSeenNotReviewed.getUpdateTime()).thenReturn(2L);
+
+		BDDMockito.when(
+				mockScanResultService.getPullRequestByLabelRepoAndId(apiLabel, repoName,
+						prSeenReviewedId))
+				.thenReturn(prceSeenReviewed);
+		BDDMockito.when(
+				mockScanResultService.getPullRequestByLabelRepoAndId(apiLabel, repoName,
+						prSeenNotReviewedId))
+				.thenReturn(prceSeenNotReviewed);
+		BDDMockito.when(
+				mockScanResultService.getPullRequestByLabelRepoAndId(apiLabel, repoName,
+						prUnknownId))
+				.thenReturn(null);
+
+		BDDMockito.when(mockRepoService.upsertRepo(apiLabel, repoName)).thenReturn(mockRepoEntity);
+		BDDMockito.when(mockRepoEntity.getRuleset()).thenReturn(new RulesetEntity());
+
+		BDDMockito.when(mockScanRegistrationService.isEmpty()).thenReturn(false);
+		BDDMockito.when(mockScanFactory.createApiForApiEntity(mockApiEntity)).thenReturn(mockApi);
+
+		ArgumentCaptor<PullRequest> prCaptor = ArgumentCaptor.forClass(PullRequest.class);
+
+		scanningService.recoverFromDowntime();
+		BDDMockito.verify(mockApi, BDDMockito.times(0)).updatePRData(prCaptor.capture());
+		BDDMockito.verify(mockRepoService, BDDMockito.times(0)).disableRepo(mockRepoEntity);
 	}
 
 	private void setupDefaultMocks() throws ScanRejectedException {

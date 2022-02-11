@@ -98,5 +98,8 @@ public abstract class AbstractScanningService {
 		}
 	}
 
+	/**
+	 * Do any work necessary to get the scan engine back to where it should be after downtime
+	 */
 	protected abstract void recoverFromDowntime();
 }
