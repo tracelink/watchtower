@@ -27,6 +27,7 @@ own type of rules, which are then aggregated into rulesets and applied to code d
 - [What is a Module](#what-is-a-module)
 - [Modules Available](#modules-available)
 - [Customization](#customization)
+- [Configuration](#configuration)
 - [Contributions](#contributions)
 - [Authors](#authors)
 - [License](#license)
@@ -309,6 +310,19 @@ variables can be removed from the application.properties file to disable encrypt
 Watchtower contains an admin page to view the current DEKs and manage their rotations. DEKs can be
 rotated manually (if, for example, there is reason to believe they are compromised), or a schedule
 can be set to automatically rotate all keys after a certain number of days.
+
+## Configuration
+| Configuration Key | Default Value | Value Options | Description|
+|-------------------|---------------|---------------|------------|
+|SPRING_PROFILES_ACTIVE|(blank)|prd, dev, prdtest, (custom)|Different built-in configuration parameters. `prd` is for production spring properties and requires a database configuration and sso configuration . `dev` uses an in-memory database and requires no setup. `prdtest` is for production-like testing such as a local docker container. `(custom)` is the implementor's choice. Any deployment can provide its own application.properties and override all properties.|
+|SERVER_PORT| 8081 in `dev` 7777 otherwise | Any port number | This is the port on which Watchtower's web server listens|
+|JDBC_URL|(blank)|any jdbc url|The URL used to connect to the MySQL backend|
+|JDBC_USERNAME|(blank)|any string|The JDBC username used to authenticate to MySQL|
+|JDBC_PASSWORD|(blank)|any string|The JDBC password used to authenticate to MySQL|
+|watchtower.runAfterStartup| true|true/false|Should Watchtower run the "After Startup" processes. This runs a downtime recovery operation to try to "catch-up" from any Watchtower downtime.|
+|watchtower.allowRegistration|true|true/false|Should Watchtower enable Self-Service Registration (buttons and screens)|
+|watchtower.threads.prscan|4|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning pull requests|
+|watchtower.threads.uploadscan|2|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning file uploads|
 
 ## Contributions
 

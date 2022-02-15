@@ -51,7 +51,7 @@ public class UploadScanningServiceTest {
 	@BeforeEach
 	public void setup() {
 		this.scanningService = new UploadScanningService(mockLogService, mockRulesetService,
-				mockScanRegistrationService, mockUploadScanResultService, false);
+				mockScanRegistrationService, mockUploadScanResultService, 2, false);
 	}
 
 	@Test

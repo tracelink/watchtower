@@ -59,8 +59,9 @@ public class PRScanningService extends AbstractScanningService {
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired ScanRegistrationService scanRegistrationService,
 			@Autowired APIIntegrationService apiService,
+			@Value("${watchtower.threads.prscan:4}") int threads,
 			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
-		super(4, recoverFromDowntime);
+		super(threads, recoverFromDowntime);
 		this.scmFactoryService = scmFactoryService;
 		this.logService = logService;
 		this.repoService = repoService;
@@ -117,6 +118,13 @@ public class PRScanningService extends AbstractScanningService {
 		CompletableFuture.runAsync(scanAgent, getExecutor());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * This will attempt to recover all PRs not scanned in each repository the system knows about
+	 * for every SCM connection. If it detects repositories no longer available, it will disable
+	 * them and not check for Pull Requests
+	 */
 	@Override
 	protected void recoverFromDowntime() {
 		List<PullRequest> prs = new ArrayList<>();
@@ -148,9 +156,18 @@ public class PRScanningService extends AbstractScanningService {
 			List<RepositoryEntity> repos =
 					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
 			for (RepositoryEntity repo : repos) {
-				LOG.debug("Recovering Repo " + repo.getRepoName());
-				List<PullRequest> recovered = recoverByRepo(entity, api, repo);
-				prs.addAll(recovered);
+				if (!repo.isEnabled()) {
+					continue;
+				}
+				String repoName = repo.getRepoName();
+				if (!api.isRepositoryActive(repoName)) {
+					LOG.info("Disabling dead repository " + repoName);
+					repoService.disableRepo(repo);
+				} else {
+					LOG.debug("Recovering Repo " + repoName);
+					List<PullRequest> recovered = recoverByRepo(entity, api, repo);
+					prs.addAll(recovered);
+				}
 			}
 		} catch (ApiIntegrationException e) {
 			LOG.error("Could not create API " + entity.getApiLabel() + " for recovery", e);

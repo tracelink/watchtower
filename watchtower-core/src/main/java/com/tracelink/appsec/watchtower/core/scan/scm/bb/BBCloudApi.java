@@ -112,21 +112,25 @@ public class BBCloudApi implements IScmApi {
 				pullRequest.getCommitHash().substring(0, 7));
 		try (FileOutputStream fw = new FileOutputStream(tempFile.toFile())) {
 			AtomicReference<IOException> e = new AtomicReference<>(null);
-			makeGetRequest(url, null)
-					.thenConsume(r -> {
-						try {
-							if (r.getStatus() != 200) {
-								throw new IOException("Response code is " + r.getStatus());
+			int retries = 5;
+			do {
+				makeGetRequest(url, null)
+						.thenConsume(r -> {
+							try {
+								if (r.getStatus() != 200) {
+									throw new IOException("Response code is " + r.getStatus());
+								}
+								IOUtils.copyLarge(r.getContent(), fw);
+							} catch (IOException ex) {
+								e.set(ex);
 							}
-							IOUtils.copyLarge(r.getContent(), fw);
-						} catch (IOException ex) {
-							e.set(ex);
-						}
-					});
-			if (e.get() != null) {
-				LOG.error("Bad response during download: " + e.get().getMessage());
-				throw e.get();
-			}
+						});
+				if (e.get() != null) {
+					LOG.error("Bad response during download: " + e.get().getMessage());
+					throw e.get();
+				}
+				retries--;
+			} while (retries > 0 && e.get() == null);
 		}
 		Path tempDir = Files.createTempDirectory(null);
 		unzip(tempFile.toFile(), tempDir);
@@ -335,6 +339,26 @@ public class BBCloudApi implements IScmApi {
 		return openPrs;
 	}
 
+	@Override
+	public boolean isRepositoryActive(String repoName) {
+		boolean active = true;
+		String url = buildRequestUrl(apiEntity.makeApiWorkspaceUrl(), repoName);
+		try {
+			HttpResponse<JsonNode> response = makeGetRequest(url, null).asJson();
+
+			int retries = 5;
+			while (response.getStatus() == 429) {
+				handleRateLimiter(response.getHeaders(), retries--);
+				response = makeGetRequest(url, null).asJson();
+			}
+
+			active = response.getStatus() == 200;
+		} catch (UnirestException e) {
+			LOG.error("Exception while testing if repository " + repoName + " exists", e);
+		}
+		return active;
+	}
+
 	/**
 	 * create a simple URL path from a base and path elements
 	 * 
@@ -405,4 +429,5 @@ public class BBCloudApi implements IScmApi {
 			LOG.error("Exception while sleeping during Bitbucket API retry", e);
 		}
 	}
+
 }

@@ -38,6 +38,8 @@ public class PauseableThreadPoolTaskExecutor extends ExecutorConfigurationSuppor
 		super();
 		setWaitForTasksToCompleteOnShutdown(true);
 		setAwaitTerminationSeconds(SHUTDOWN_TIMEOUT);
+		Assert.state(numThreads > 0,
+				"Number of threads for Task Executor must be a positive integer");
 		this.threads = numThreads;
 	}
 

@@ -57,8 +57,9 @@ public class UploadScanningService extends AbstractScanningService {
 			@Autowired RulesetService rulesetService,
 			@Autowired ScanRegistrationService scanRegistrationService,
 			@Autowired UploadScanResultService uploadScanResultService,
+			@Value("${watchtower.threads.uploadscan:2}") int threads,
 			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
-		super(2, recoverFromDowntime);
+		super(threads, recoverFromDowntime);
 		this.logService = logService;
 		this.rulesetService = rulesetService;
 		this.scanRegistrationService = scanRegistrationService;

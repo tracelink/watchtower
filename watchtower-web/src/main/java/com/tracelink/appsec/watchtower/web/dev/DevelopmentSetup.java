@@ -129,6 +129,7 @@ public class DevelopmentSetup {
 				LOG.info("PR Scan History Added");
 				addUploadScanHistory(random);
 				LOG.info("Upload Scan History Added");
+				setSomeReposDisabled(random);
 			} catch (Exception e) {
 				LOG.info("Dev Setup Failed", e);
 			}
@@ -324,4 +325,8 @@ public class DevelopmentSetup {
 		} while (!pageEntity.isLast());
 	}
 
+	private void setSomeReposDisabled(Random random) {
+		repositoryService.disableRepo(repositoryService.upsertRepo(API_LABEL_1, "Disabled repo1"));
+		repositoryService.disableRepo(repositoryService.upsertRepo(API_LABEL_2, "Disabled repo2"));
+	}
 }
