@@ -31,7 +31,7 @@ spec:
         - name: watchtower.allowRegistration
           value: 'true'
         - name: watchtower.threads.prscan
-          value: '2'
+          value: '4'
         - name: watchtower.threads.uploadscan
           value: '2'
         - name: JDBC_URL
