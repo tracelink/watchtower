@@ -16,8 +16,6 @@ public class CheckovRuleEditor implements IRuleEditor {
 
 	@Override
 	public RuleEditModelAndView getRuleEditModelAndView(RuleDto rule) {
-		// boolean core = ((CheckovRuleDto) rule).isCoreRule();
-		// String ruleEditView = core ? "rule-edit/checkov-core" : "rule-edit/checkov";
 		String ruleEditView = "rule-edit/checkov-core";
 		RuleEditModelAndView mav = new RuleEditModelAndView(ruleEditView);
 		mav.addObject("rule", rule);

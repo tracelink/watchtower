@@ -4,8 +4,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import javax.security.sasl.AuthenticationException;
-
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -15,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -26,6 +26,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.repository.UserRepository;
+import com.tracelink.appsec.watchtower.core.auth.service.checker.UserPasswordRequirementsChecker;
 
 @ExtendWith(SpringExtension.class)
 public class UserServiceTest {
@@ -39,12 +40,13 @@ public class UserServiceTest {
 	@MockBean
 	private RoleService mockRoleService;
 
-
+	@MockBean
+	private UserPasswordRequirementsChecker mockPwChecker;
 
 	@BeforeEach
 	public void setup() {
 		this.userService = new UserService(passwordEncoder, mockUserRepository,
-				mockRoleService);
+				mockRoleService, mockPwChecker);
 	}
 
 	@Test
@@ -192,6 +194,18 @@ public class UserServiceTest {
 		} catch (AuthenticationException e) {
 			MatcherAssert.assertThat(e.getMessage(),
 					Matchers.containsString("password is invalid"));
+		}
+	}
+
+	@Test
+	public void testBadPassword() {
+		BDDMockito.willThrow(BadCredentialsException.class).given(mockPwChecker)
+				.check(BDDMockito.anyString());
+		try {
+			userService.registerNewUser("user", "wrong");
+			Assertions.fail("Should throw exception");
+		} catch (AuthenticationException e) {
+			// expected
 		}
 	}
 

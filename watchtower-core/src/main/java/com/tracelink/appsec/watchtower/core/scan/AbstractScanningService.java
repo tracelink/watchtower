@@ -20,10 +20,13 @@ public abstract class AbstractScanningService {
 	private PauseableThreadPoolTaskExecutor executor;
 	private boolean isQuiesced = false;
 
-	protected AbstractScanningService(int executorThreads) {
+	private final boolean runAfterStartup;
+
+	protected AbstractScanningService(int executorThreads, boolean shouldRecoverFromDowntime) {
 		this.executor = new PauseableThreadPoolTaskExecutor(executorThreads);
 		this.executor.setBeanName(this.getClass().getSimpleName());
 		this.executor.initialize();
+		this.runAfterStartup = shouldRecoverFromDowntime;
 	}
 
 	public PauseableThreadPoolTaskExecutor getExecutor() {
@@ -87,5 +90,16 @@ public abstract class AbstractScanningService {
 	 * when the server went down and now.
 	 */
 	@EventListener(ApplicationReadyEvent.class)
+	public void afterStartup() {
+		if (runAfterStartup) {
+			recoverFromDowntime();
+		} else {
+			LOG.info("Skipping Downtime Recovery due to 'runAfterStartup' being false");
+		}
+	}
+
+	/**
+	 * Do any work necessary to get the scan engine back to where it should be after downtime
+	 */
 	protected abstract void recoverFromDowntime();
 }

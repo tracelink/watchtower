@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,8 +56,10 @@ public class UploadScanningService extends AbstractScanningService {
 	public UploadScanningService(@Autowired LogsService logService,
 			@Autowired RulesetService rulesetService,
 			@Autowired ScanRegistrationService scanRegistrationService,
-			@Autowired UploadScanResultService uploadScanResultService) {
-		super(2);
+			@Autowired UploadScanResultService uploadScanResultService,
+			@Value("${watchtower.threads.uploadscan:2}") int threads,
+			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
+		super(threads, recoverFromDowntime);
 		this.logService = logService;
 		this.rulesetService = rulesetService;
 		this.scanRegistrationService = scanRegistrationService;

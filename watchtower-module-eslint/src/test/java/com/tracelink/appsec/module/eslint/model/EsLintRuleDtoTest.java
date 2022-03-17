@@ -9,16 +9,14 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
 public class EsLintRuleDtoTest {
 
-	public static EsLintRuleDto getCustomEsLintRule() {
-		EsLintRuleDto dto = new EsLintRuleDto();
+	public static EsLintCustomRuleDto getCustomEsLintRule() {
+		EsLintCustomRuleDto dto = new EsLintCustomRuleDto();
 		dto.setId(1L);
 		dto.setAuthor("jdoe");
-		dto.setName("eslint-rule");
+		dto.setName("my-no-eq-null");
 		dto.setMessage("Some message");
 		dto.setExternalUrl("https://example.com");
 		dto.setPriority(RulePriority.MEDIUM);
-		dto.setCore(false);
-		dto.setType(EsLintRuleType.PROBLEM);
 		EsLintMessageDto messageDto = new EsLintMessageDto();
 		messageDto.setKey("unexpected");
 		messageDto.setValue("Some helpful message");
@@ -35,37 +33,26 @@ public class EsLintRuleDtoTest {
 				+ "\t\t}\n"
 				+ "\t};\n"
 				+ "}");
-		dto.setCategory("Rule Category");
-		dto.setRecommended(false);
-		dto.setSuggestion(false);
-		dto.setFixable(EsLintRuleFixable.WHITESPACE);
 		dto.setSchema("[]");
-		dto.setDeprecated(false);
-		dto.setReplacedBy("[]");
 		return dto;
 	}
 
 	@Test
 	public void testToEntity() {
-		EsLintRuleDto dto = getCustomEsLintRule();
+		EsLintCustomRuleDto dto = getCustomEsLintRule();
 		EsLintRuleEntity rule = (EsLintRuleEntity) dto.toEntity();
 		Assertions.assertNotEquals(dto.getId(), rule.getId(), 0.001);
-		Assertions.assertNull(rule.getAuthor());
+		Assertions.assertEquals(dto.getAuthor(), rule.getAuthor());
 		Assertions.assertEquals(dto.getName(), rule.getName());
 		Assertions.assertEquals(dto.getMessage(), rule.getMessage());
 		Assertions.assertEquals(dto.getExternalUrl(), rule.getExternalUrl());
 		Assertions.assertEquals(dto.getPriority(), rule.getPriority());
-		Assertions.assertEquals(dto.isCore(), rule.isCore());
+		Assertions.assertEquals(dto.isProvided(), rule.isCore());
 		EsLintMessageDto retMessage = dto.getMessages().get(0);
 		EsLintMessageEntity ruleMessage = rule.getMessages().iterator().next();
 		Assertions.assertEquals(retMessage.getKey(), ruleMessage.getKey());
 		Assertions.assertEquals(retMessage.getValue(), ruleMessage.getValue());
 		Assertions.assertEquals(dto.getCreateFunction(), rule.getCreateFunction());
-		Assertions.assertEquals(dto.getCategory(), rule.getCategory());
-		Assertions.assertEquals(dto.getRecommended(), rule.getRecommended());
-		Assertions.assertEquals(dto.getSuggestion(), rule.getSuggestion());
-		Assertions.assertEquals(dto.getDeprecated(), rule.getDeprecated());
-		Assertions.assertEquals(dto.getReplacedBy(), rule.getReplacedBy());
 	}
 
 }

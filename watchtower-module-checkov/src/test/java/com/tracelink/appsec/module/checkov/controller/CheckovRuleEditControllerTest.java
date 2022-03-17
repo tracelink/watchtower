@@ -18,7 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import com.tracelink.appsec.module.checkov.CheckovModule;
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.module.checkov.model.CheckovRuleTest;
 import com.tracelink.appsec.module.checkov.service.CheckovRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -46,7 +46,7 @@ public class CheckovRuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = CheckovModule.CHECKOV_RULE_PRIVILEGE_NAME)
 	public void testEditRule() throws Exception {
-		CheckovRuleDto dto = CheckovRuleTest.createModelRule(true);
+		CheckovProvidedRuleDto dto = CheckovRuleTest.createModelRule(true);
 		RedirectAttributes attr = new RedirectAttributesModelMap();
 		BindingResult bindingResult = BDDMockito.mock(BindingResult.class);
 		BDDMockito.when(bindingResult.hasErrors()).thenReturn(false);
@@ -63,7 +63,7 @@ public class CheckovRuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = CheckovModule.CHECKOV_RULE_PRIVILEGE_NAME)
 	public void testEditRuleNotFound() throws Exception {
-		CheckovRuleDto dto = CheckovRuleTest.createModelRule(true);
+		CheckovProvidedRuleDto dto = CheckovRuleTest.createModelRule(true);
 		RedirectAttributes attr = new RedirectAttributesModelMap();
 		BindingResult bindingResult = BDDMockito.mock(BindingResult.class);
 		BDDMockito.when(bindingResult.hasErrors()).thenReturn(false);
@@ -71,7 +71,7 @@ public class CheckovRuleEditControllerTest {
 				ruleService.createsNameCollision(BDDMockito.anyLong(), BDDMockito.anyString()))
 				.thenReturn(false);
 		BDDMockito.willThrow(RuleNotFoundException.class).given(checkovRuleService)
-				.editRule(BDDMockito.any());
+				.editProvidedRule(BDDMockito.any());
 		checkovController.editRule(dto, bindingResult, attr);
 		MatcherAssert.assertThat(
 				attr.getFlashAttributes().get(WatchtowerModelAndView.FAILURE_NOTIFICATION)
@@ -83,7 +83,7 @@ public class CheckovRuleEditControllerTest {
 	@WithMockUser(authorities = CheckovModule.CHECKOV_RULE_PRIVILEGE_NAME)
 	public void testEditRuleBindingErrors() throws Exception {
 		String message = "errorMessage";
-		CheckovRuleDto dto = CheckovRuleTest.createModelRule(true);
+		CheckovProvidedRuleDto dto = CheckovRuleTest.createModelRule(true);
 		RedirectAttributes attr = new RedirectAttributesModelMap();
 		BindingResult bindingResult = BDDMockito.mock(BindingResult.class);
 		BDDMockito.when(bindingResult.hasErrors()).thenReturn(true);
@@ -101,7 +101,7 @@ public class CheckovRuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = CheckovModule.CHECKOV_RULE_PRIVILEGE_NAME)
 	public void testEditRuleCollision() throws Exception {
-		CheckovRuleDto dto = CheckovRuleTest.createModelRule(true);
+		CheckovProvidedRuleDto dto = CheckovRuleTest.createModelRule(true);
 		RedirectAttributes attr = new RedirectAttributesModelMap();
 		BindingResult bindingResult = BDDMockito.mock(BindingResult.class);
 		BDDMockito.when(bindingResult.hasErrors()).thenReturn(false);

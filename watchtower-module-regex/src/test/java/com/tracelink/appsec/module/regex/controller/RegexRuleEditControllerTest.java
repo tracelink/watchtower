@@ -26,7 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import com.tracelink.appsec.module.regex.RegexModule;
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.module.regex.model.RegexRuleEntity;
 import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.auth.service.UserService;
@@ -69,7 +69,7 @@ public class RegexRuleEditControllerTest {
 	private RegexRuleEditController regexRuleEditController;
 
 
-	private RegexRuleDto regexRule;
+	private RegexCustomRuleDto regexRule;
 
 	@BeforeEach
 	public void setup() {
@@ -79,7 +79,7 @@ public class RegexRuleEditControllerTest {
 	@Test
 	@WithMockUser(authorities = {RegexModule.REGEX_RULE_EDIT_PRIVILEGE_NAME})
 	public void testEditRegexRule() throws Exception {
-		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit")
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit/custom")
 				.param("id", regexRule.getId().toString())
 				.param("author", regexRule.getAuthor()).param("name", "New Name")
 				.param("message", regexRule.getMessage())
@@ -91,7 +91,8 @@ public class RegexRuleEditControllerTest {
 				.andExpect(MockMvcResultMatchers.flash().attribute(
 						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 						"Successfully edited rule."));
-		ArgumentCaptor<RegexRuleDto> argumentCaptor = ArgumentCaptor.forClass(RegexRuleDto.class);
+		ArgumentCaptor<RegexCustomRuleDto> argumentCaptor =
+				ArgumentCaptor.forClass(RegexCustomRuleDto.class);
 		BDDMockito.verify(regexRuleService).editRule(argumentCaptor.capture());
 		Assertions.assertEquals("New Name", argumentCaptor.getValue().getName());
 	}
@@ -100,8 +101,8 @@ public class RegexRuleEditControllerTest {
 	@WithMockUser(authorities = {RegexModule.REGEX_RULE_EDIT_PRIVILEGE_NAME})
 	public void testEditRegexRuleNotFound() throws Exception {
 		BDDMockito.doThrow(RuleNotFoundException.class).when(regexRuleService)
-				.editRule(BDDMockito.any(RegexRuleDto.class));
-		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit")
+				.editRule(BDDMockito.any(RegexCustomRuleDto.class));
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/edit/custom")
 				.param("id", regexRule.getId().toString())
 				.param("author", regexRule.getAuthor()).param("name", "New Name")
 				.param("message", regexRule.getMessage())
@@ -123,7 +124,7 @@ public class RegexRuleEditControllerTest {
 		BDDMockito.when(bindingResult.hasErrors()).thenReturn(true);
 		BDDMockito.when(bindingResult.getFieldErrors())
 				.thenReturn(Arrays.asList(new FieldError("", "", defaultMessage)));
-		RegexRuleDto rule = getRegexRuleDto();
+		RegexCustomRuleDto rule = getRegexRuleDto();
 		RedirectAttributes redirect = new RedirectAttributesModelMap();
 		Assertions.assertEquals("redirect:/rule/edit/regex/" + rule.getId(),
 				regexRuleEditController.editRule(rule, bindingResult,
@@ -143,7 +144,7 @@ public class RegexRuleEditControllerTest {
 		BDDMockito.when(
 				ruleService.createsNameCollision(BDDMockito.anyLong(), BDDMockito.anyString()))
 				.thenReturn(true);
-		RegexRuleDto rule = getRegexRuleDto();
+		RegexCustomRuleDto rule = getRegexRuleDto();
 		RedirectAttributes redirect = new RedirectAttributesModelMap();
 		Assertions.assertEquals("redirect:/rule/edit/regex/" + rule.getId(),
 				regexRuleEditController.editRule(rule, bindingResult,
@@ -164,6 +165,7 @@ public class RegexRuleEditControllerTest {
 		RegexRuleEntity rule = new RegexRuleEntity();
 		rule.setAuthor(author);
 		rule.setName(name);
+		rule.setProvided(false);
 		rule.setMessage(message);
 		rule.setExternalUrl(url);
 		rule.setPriority(priority);
@@ -172,8 +174,8 @@ public class RegexRuleEditControllerTest {
 		return rule;
 	}
 
-	public static RegexRuleDto getRegexRuleDto() {
-		RegexRuleDto dto = getRegexRule().toDto();
+	public static RegexCustomRuleDto getRegexRuleDto() {
+		RegexCustomRuleDto dto = (RegexCustomRuleDto) getRegexRule().toDto();
 		dto.setId(2L);
 		return dto;
 	}

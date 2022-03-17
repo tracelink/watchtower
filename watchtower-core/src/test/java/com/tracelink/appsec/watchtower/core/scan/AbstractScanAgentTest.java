@@ -19,7 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
-import com.tracelink.appsec.watchtower.core.mock.MockRuleDto;
+import com.tracelink.appsec.watchtower.core.mock.MockCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -117,7 +117,7 @@ public class AbstractScanAgentTest {
 	@Test
 	public void testGetNoRulesForScanner() throws Exception {
 		IScanner scanner = BDDMockito.mock(IScanner.class);
-		BDDMockito.doReturn(MockRuleDto.class).when(scanner).getSupportedRuleClass();
+		BDDMockito.doReturn(MockCustomRuleDto.class).when(scanner).getSupportedRuleClass();
 		RuleDto rule = BDDMockito.mock(RuleDto.class);
 		BDDMockito.when(mockRuleset.getAllRules()).thenReturn(Collections.singleton(rule));
 

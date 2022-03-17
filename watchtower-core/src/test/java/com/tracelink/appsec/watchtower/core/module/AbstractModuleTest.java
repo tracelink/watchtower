@@ -20,11 +20,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
 import com.tracelink.appsec.watchtower.core.rule.RuleEditorService;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 
@@ -49,9 +49,6 @@ public class AbstractModuleTest {
 
 	@Mock
 	private IRuleDesigner mockDesigner;
-
-	@Mock
-	private IRulesetInterpreter mockInterpreter;
 
 	@Mock
 	private IRuleEditor mockRuleManager;
@@ -133,14 +130,6 @@ public class AbstractModuleTest {
 	}
 
 	@Test
-	public void testBuildModuleRegisterWithRulesetService() throws Exception {
-		AbstractModule module = injectMocks(new MockModule());
-		module.buildModule();
-		BDDMockito.verify(mockRulesetService, Mockito.times(1)).registerInterpreter(moduleName,
-				mockInterpreter);
-	}
-
-	@Test
 	public void testBuildModuleNameNull() {
 		Assertions.assertThrows(IllegalStateException.class,
 				() -> {
@@ -202,14 +191,13 @@ public class AbstractModuleTest {
 		}
 
 		@Override
-		public IRulesetInterpreter getInterpreter() {
-			return mockInterpreter;
-		}
-
-		@Override
 		public List<PrivilegeEntity> getModulePrivileges() {
 			return null;
 		}
 
+		@Override
+		public List<RulesetDto> getProvidedRulesets() {
+			return null;
+		}
 	}
 }

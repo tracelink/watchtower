@@ -92,6 +92,7 @@ public class BBCloudApi implements IScmApi {
 				LOG.error("Bad response: " + response.getStatus()
 						+ " while testing connection for PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while connecting to Bitbucket for PR " + pullRequest.getPRString(),
@@ -111,21 +112,25 @@ public class BBCloudApi implements IScmApi {
 				pullRequest.getCommitHash().substring(0, 7));
 		try (FileOutputStream fw = new FileOutputStream(tempFile.toFile())) {
 			AtomicReference<IOException> e = new AtomicReference<>(null);
-			makeGetRequest(url, null)
-					.thenConsume(r -> {
-						try {
-							if (r.getStatus() != 200) {
-								throw new IOException("Response code is " + r.getStatus());
+			int retries = 5;
+			do {
+				makeGetRequest(url, null)
+						.thenConsume(r -> {
+							try {
+								if (r.getStatus() != 200) {
+									throw new IOException("Response code is " + r.getStatus());
+								}
+								IOUtils.copyLarge(r.getContent(), fw);
+							} catch (IOException ex) {
+								e.set(ex);
 							}
-							IOUtils.copyLarge(r.getContent(), fw);
-						} catch (IOException ex) {
-							e.set(ex);
-						}
-					});
-			if (e.get() != null) {
-				LOG.error("Bad response during download: " + e.get().getMessage());
-				throw e.get();
-			}
+						});
+				if (e.get() != null) {
+					LOG.error("Bad response during download: " + e.get().getMessage());
+					throw e.get();
+				}
+				retries--;
+			} while (retries > 0 && e.get() == null);
 		}
 		Path tempDir = Files.createTempDirectory(null);
 		unzip(tempFile.toFile(), tempDir);
@@ -171,6 +176,7 @@ public class BBCloudApi implements IScmApi {
 				LOG.error("Bad response: " + response.getStatus() + " while getting git diff file "
 						+ filePath
 						+ " for PR " + pullRequest.getPRString());
+				LOG.debug(new String(response.getBody()));
 			}
 		} catch (IOException e) {
 			LOG.error(
@@ -215,6 +221,7 @@ public class BBCloudApi implements IScmApi {
 				LOG.error("Bad response: " + response.getStatus()
 						+ " while getting more Pull Request information for PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while getting more Pull Request information for PR "
@@ -252,6 +259,7 @@ public class BBCloudApi implements IScmApi {
 			if (response.getStatus() != 201) {
 				LOG.error("Bad response: " + response.getStatus() + " while sending report for PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while sending report for PR " + pullRequest.getPRString(), e);
@@ -278,6 +286,7 @@ public class BBCloudApi implements IScmApi {
 			if (response.getStatus() != 200) {
 				LOG.error("Bad response: " + response.getStatus() + " while declining PR "
 						+ pullRequest.getPRString());
+				LOG.debug(response.getBody());
 			}
 		} catch (UnirestException e) {
 			LOG.error("Exception while declining PR " + pullRequest.getPRString(), e);
@@ -307,6 +316,7 @@ public class BBCloudApi implements IScmApi {
 				if (response.getStatus() != 200) {
 					LOG.error("Bad response: " + response.getStatus()
 							+ " while getting PRs for repository " + repoName);
+					LOG.debug(response.getBody().toString());
 					break;
 				}
 				JSONObject body = response.getBody().getObject();
@@ -327,6 +337,26 @@ public class BBCloudApi implements IScmApi {
 		}
 
 		return openPrs;
+	}
+
+	@Override
+	public boolean isRepositoryActive(String repoName) {
+		boolean active = true;
+		String url = buildRequestUrl(apiEntity.makeApiWorkspaceUrl(), repoName);
+		try {
+			HttpResponse<JsonNode> response = makeGetRequest(url, null).asJson();
+
+			int retries = 5;
+			while (response.getStatus() == 429) {
+				handleRateLimiter(response.getHeaders(), retries--);
+				response = makeGetRequest(url, null).asJson();
+			}
+
+			active = response.getStatus() == 200;
+		} catch (UnirestException e) {
+			LOG.error("Exception while testing if repository " + repoName + " exists", e);
+		}
+		return active;
 	}
 
 	/**
@@ -399,4 +429,5 @@ public class BBCloudApi implements IScmApi {
 			LOG.error("Exception while sleeping during Bitbucket API retry", e);
 		}
 	}
+
 }

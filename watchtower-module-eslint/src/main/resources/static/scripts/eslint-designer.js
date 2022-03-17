@@ -29,9 +29,6 @@ $(document).ready(function() {
     });
     createFunctionReader.setSize(null, 240);
 
-	// Configure custom and core rule switcher
-    configureRuleTabs();
-
     // Configure button to add message
     $(".add-message").on("click", addMessage);
 
@@ -42,31 +39,6 @@ $(document).ready(function() {
 	configureCustomRuleModal(createFunctionReader);
 	configureCoreRuleModal();
 });
-
-function configureRuleTabs() {
-	// Only show active tab content on first load
-	$(".rule-tab").hide();
-	let active = $("#rule-tabs").children().filter('.active').attr('id');
-    $("." + active).show();
-
-	// Switch between tabs
-    $("#rule-tabs").children().on('click', function(e) {
-    	// Show correct tab content and highlight tab button
-    	var id = e.target.id;
-    	$(".rule-tab").hide();
-    	$("#rule-tabs").children().removeClass('active');
-        $("." + id).show();
-        $("#" + id).addClass('active');
-		// Update form value of "core" for running rule
-        if (id.includes("core")) {
-        	$("#core").val("true");
-        	$("#save-rule-btn").attr("data-target" , "#save-core-rule-modal");
-        } else {
-        	$("#core").val("false");
-        	$("#save-rule-btn").attr("data-target" , "#save-custom-rule-modal");
-        }
-    });
-}
 
 function addMessage(event) {
 	const index = $(".messages-tbody tr").length;
@@ -105,12 +77,12 @@ function updateMessageIndices(i, input) {
 
 function configureCustomRuleModal(createFunctionReader) {
 	// Configure custom rule modal on open
-    $('#save-custom-rule-modal').on('show.bs.modal', function(e) {
-    	$(".save-custom-messages .messages-table").remove();
-    	$(".messages-table").clone().appendTo(".save-custom-messages");
-    	$(".save-custom-messages input").prop("readOnly", true);
-    	$(".save-custom-messages input").attr("form", "save-custom-rule-form");
-    	$(".save-custom-messages tr").each(function (i, tr) {
+    $('#save-rule-modal').on('show.bs.modal', function(e) {
+    	$(".save-messages .messages-table").remove();
+    	$(".messages-table").clone().appendTo(".save-messages");
+    	$(".save-messages input").prop("readOnly", true);
+    	$(".save-messages input").attr("form", "save-rule-form");
+    	$(".save-messages tr").each(function (i, tr) {
     		$(tr).children().last().remove();
     	});
     	let createFunction = $("#createFunction").val();
@@ -120,23 +92,8 @@ function configureCustomRuleModal(createFunctionReader) {
 	});
 
 	// Solves issue where CodeMirror does not display when modal is opened
-	$('#save-custom-rule-modal').on('shown.bs.modal', function(e) {
+	$('#save-rule-modal').on('shown.bs.modal', function(e) {
 		createFunctionReader.refresh();
 	});
 }
 
-function configureCoreRuleModal() {
-	// Configure core rule modal on open
-    $('#save-core-rule-modal').on('show.bs.modal', function(e) {
-    	$(".save-core-messages").empty();
-    	$(".messages-table input").clone().appendTo(".save-core-messages");
-    	$(".save-core-messages input").prop("type", "hidden");
-    	$(".save-core-messages input").attr("form", "save-core-rule-form");
-        let name = $("#name").val();
-        $("#coreName").val(name);
-        let sourceCode = $("#sourceCode").val();
-        $("#coreSourceCode").val(sourceCode);
-        let createFunction = $("#createFunction").val();
-        $("#coreCreateFunction").val(createFunction);
-    });
-}

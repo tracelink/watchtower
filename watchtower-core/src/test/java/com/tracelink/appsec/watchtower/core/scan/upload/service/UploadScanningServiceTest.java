@@ -51,7 +51,7 @@ public class UploadScanningServiceTest {
 	@BeforeEach
 	public void setup() {
 		this.scanningService = new UploadScanningService(mockLogService, mockRulesetService,
-				mockScanRegistrationService, mockUploadScanResultService);
+				mockScanRegistrationService, mockUploadScanResultService, 2, false);
 	}
 
 	@Test
@@ -183,7 +183,8 @@ public class UploadScanningServiceTest {
 			scanningService.doUploadScan(scan);
 			Assertions.fail("Should throw exception");
 		} catch (ScanRejectedException e) {
-			MatcherAssert.assertThat(e.getMessage(), Matchers.containsString("no scanners configured"));
+			MatcherAssert.assertThat(e.getMessage(),
+					Matchers.containsString("no scanners configured"));
 		}
 	}
 

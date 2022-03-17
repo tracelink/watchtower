@@ -84,4 +84,12 @@ public interface IScmApi {
 	 * @return a list of open pull requests
 	 */
 	List<PullRequest> getOpenPullRequestsForRepository(String repoName);
+
+	/**
+	 * For a given repository, test if the repository is still active in the SCM
+	 * 
+	 * @param repoName the repository name to check
+	 * @return true if the repo still exists in the SCM, false otherwise
+	 */
+	boolean isRepositoryActive(String repoName);
 }

@@ -1,27 +1,19 @@
 package com.tracelink.appsec.watchtower.test;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.function.Consumer;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -171,59 +163,10 @@ public abstract class ScannerModuleTest {
 	}
 
 	@Test
-	public void testImportExport() throws Exception {
+	public void testProvidedRulesExist() {
 		Assumptions.assumeFalse(
-				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.INTERPRETER));
-		IRulesetInterpreter impex = this.moduleUnderTest.getInterpreter();
-		Assertions.assertNotNull(impex);
-
-		RulesetDto rulesetDto = new RulesetDto();
-		rulesetDto.setName("test");
-		rulesetDto.setDescription("test");
-		rulesetDto.setRules(Collections.singleton(this.scannerTester.getRuleSupplier().get()));
-
-		Path temp = Files.createTempFile(null, null);
-		RulesetDto importedRuleset = null;
-		try {
-			try (InputStream is = impex.exportRuleset(rulesetDto);
-					FileWriter fw = new FileWriter(temp.toFile())) {
-				IOUtils.copy(is, fw, Charset.defaultCharset());
-			}
-			try (FileInputStream fis = new FileInputStream(temp.toFile())) {
-				importedRuleset = impex.importRuleset(fis);
-			}
-		} finally {
-			FileUtils.deleteQuietly(temp.toFile());
-		}
-		Assertions.assertNotNull(importedRuleset);
-		MatcherAssert.assertThat(importedRuleset.getAllRules(),
-				Matchers.hasSize(rulesetDto.getAllRules().size()));
-		for (RuleDto impRule : importedRuleset.getAllRules()) {
-			boolean found = false;
-			for (RuleDto rule : rulesetDto.getAllRules()) {
-				if (rule.getName().equals(impRule.getName())) {
-					found = true;
-					Assertions.assertEquals(impRule.getExternalUrl(), rule.getExternalUrl());
-					Assertions.assertEquals(impRule.getMessage(), rule.getMessage());
-					Assertions.assertEquals(impRule.getModule(), rule.getModule());
-					Assertions.assertEquals(impRule.getPriority(), rule.getPriority());
-				}
-			}
-			Assertions.assertTrue(found,
-					"Could not find a matching rule after export/import for rule: "
-							+ impRule.getName());
-		}
-	}
-
-	@Test
-	public void testExampleDownload() throws Exception {
-		Assumptions.assumeFalse(
-				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.INTERPRETER));
-
-		IRulesetInterpreter interpreter = this.moduleUnderTest.getInterpreter();
-		Assertions.assertNotNull(interpreter);
-
-		InputStream is = interpreter.exportExampleRuleset();
-		Assertions.assertNotNull(is);
+				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.PROVIDED_RULES));
+		Assertions.assertNotNull(this.moduleUnderTest.getProvidedRulesets());
+		Assertions.assertNotEquals(0, this.moduleUnderTest.getProvidedRulesets().size());
 	}
 }

@@ -2,18 +2,18 @@ package com.tracelink.appsec.module.checkov;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.tracelink.appsec.module.checkov.editor.CheckovRuleEditor;
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
-import com.tracelink.appsec.module.checkov.interpreter.CheckovRulesetInterpreter;
 import com.tracelink.appsec.module.checkov.scanner.CheckovScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
-import com.tracelink.appsec.watchtower.core.module.interpreter.IRulesetInterpreter;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Checkov is a scanner for Intrastructure As Code (IAC) maintained by Bridgecrew at
@@ -88,14 +88,6 @@ public class CheckovModule extends AbstractModule {
 		return new CheckovRuleEditor();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IRulesetInterpreter getInterpreter() {
-		return new CheckovRulesetInterpreter(engine);
-	}
-
 	@Override
 	public List<PrivilegeEntity> getModulePrivileges() {
 		return Arrays.asList(new PrivilegeEntity().setName(CHECKOV_RULE_PRIVILEGE_NAME)
@@ -103,4 +95,9 @@ public class CheckovModule extends AbstractModule {
 						"Users may Edit Checkov rules in the Rule Editor. Caution! This privilege allows Code Execution on the Watchtower machine as Checkov runs directly as a python task"));
 	}
 
+	@Override
+	public List<RulesetDto> getProvidedRulesets() {
+		return engine.getCoreRulesets().values().stream()
+				.collect(Collectors.toList());
+	}
 }

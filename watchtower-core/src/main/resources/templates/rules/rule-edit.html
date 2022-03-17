@@ -34,8 +34,21 @@
         <h6 class="card-title mb-0">Rules</h6>
       </div>
       <div class="card-body">
+      	<p class="card-title">Custom Rules</p>
+        <ul class="list-group list-group-flush text-center border-bottom mb-4">
+          <a th:each="rule : ${rules}"
+          	 th:if="${rule.isCustom()}"
+             th:class="'list-group-item list-group-item-action ruleLink px-0' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
+             th:id="${rule.id} + '-link'"
+             th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
+             th:text="${rule.name}"
+             th:data-value="${rule.id}">
+          </a>
+        </ul>
+        <p class="card-title">Provided Rules</p>
         <ul class="list-group list-group-flush text-center">
           <a th:each="rule : ${rules}"
+             th:if="${rule.isProvided()}"
              th:class="'list-group-item list-group-item-action ruleLink px-0' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
              th:id="${rule.id} + '-link'"
              th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
@@ -49,7 +62,7 @@
   <!-- End Rules -->
   <!-- Rule Details -->
   <div class="col-lg-9 col-md-12 col-sm-12">
-    <div class="card card-small mb-4">
+    <div class="card card-small mb-4 scrollable-6">
       <!-- Card Header -->
       <div class="card-header border-bottom">
         <div class="d-flex align-items-center">

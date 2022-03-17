@@ -10,7 +10,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 
 public class CheckovEngineTest {
 
@@ -26,8 +26,8 @@ public class CheckovEngineTest {
 			}
 			CheckovEngine engine = new CheckovEngine();
 			MatcherAssert.assertThat(engine.getCoreRules(),
-					Matchers.aMapWithSize(Matchers.greaterThan(0)));
-			CheckovRuleDto rule = new CheckovRuleDto();
+					Matchers.hasSize(Matchers.greaterThan(0)));
+			CheckovProvidedRuleDto rule = new CheckovProvidedRuleDto();
 			rule.setName("TEST");
 			// rather than test that checkov finds anything (I'm not testing checkov), test that the
 			// directory scan doesn't throw issues

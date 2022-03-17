@@ -42,16 +42,16 @@ public enum CorePrivilege {
 			"User may modify the current assignment of rulesets to known repositories in each SCM."),
 
 	/* Core Rules */
-	RULESET_MGMT_MODIFY(CorePrivilege.RULESET_MGMT_MODIFY_NAME, CorePrivilege.RULES_CATEGORY,
-			"User may access and change data about Rulesets including Hierarchy, default rulesets, and blocking."),
 	RULE_MODIFY(CorePrivilege.RULE_MODIFY_NAME, CorePrivilege.RULES_CATEGORY,
 			"User may modify or delete an existing rule. Individual Scanners may implement additional privileges."),
 	RULE_DESIGNER(CorePrivilege.RULE_DESIGNER_NAME, CorePrivilege.RULES_CATEGORY,
 			"User may access the Rule Designer. Individual Scanners may implement additional privileges."),
 	RULESETS_VIEW(CorePrivilege.RULESETS_VIEW_NAME, CorePrivilege.RULES_CATEGORY,
-			"User may view all rulesets in the system and the rules in the rulesets as well as export any ruleset."),
+			"User may view all rulesets in the system and the rules in the rulesets."),
 	RULESETS_MODIFY(CorePrivilege.RULESETS_MODIFY_NAME, CorePrivilege.RULES_CATEGORY,
 			"User may modify any ruleset in the system."),
+	RULESETS_IMPEX(CorePrivilege.RULESETS_IMPEX_NAME, CorePrivilege.RULES_CATEGORY,
+			"User may import and export rulesets. Caution: Importing rulesets can overwrite existing rules, modifying system accuracy"),
 
 	/* Core Scan */
 	SCAN_DASHBOARDS(CorePrivilege.SCAN_DASHBOARDS_NAME, CorePrivilege.SCAN_CATEGORY,
@@ -88,11 +88,12 @@ public enum CorePrivilege {
 	public static final String REPO_SETTINGS_MODIFY_NAME = "Repository Settings Modify";
 
 	/* Core Rules Names */
-	public static final String RULESET_MGMT_MODIFY_NAME = "Ruleset Management Access";
 	public static final String RULE_MODIFY_NAME = "Rule Modify";
 	public static final String RULE_DESIGNER_NAME = "Rule Designer";
 	public static final String RULESETS_VIEW_NAME = "Ruleset View";
 	public static final String RULESETS_MODIFY_NAME = "Ruleset Modify";
+	public static final String RULESETS_IMPEX_NAME = "Ruleset Import/Export";
+
 
 	/* Core Scan Names */
 	public static final String SCAN_DASHBOARDS_NAME = "Scan Dashboard View";

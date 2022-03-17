@@ -9,9 +9,13 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
  */
 public class RulesetException extends Exception {
 
-    private static final long serialVersionUID = -4739411865229553870L;
+	private static final long serialVersionUID = -4739411865229553870L;
 
-    public RulesetException(String message) {
-        super(message);
-    }
+	public RulesetException(String message) {
+		super(message);
+	}
+
+	public RulesetException(String message, Exception e) {
+		super(message, e);
+	}
 }

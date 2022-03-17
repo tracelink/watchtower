@@ -1,10 +1,15 @@
 package com.tracelink.appsec.module.checkov.model;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
@@ -19,81 +24,47 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 @Entity
 @Table(name = "checkov_rules")
 public class CheckovRuleEntity extends RuleEntity {
+	@Column(name = "provided")
+	private boolean provided;
 
-	@Column(name = "core")
-	private boolean coreRule;
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+	@JoinColumn(name = "rule_id", nullable = false)
+	private Set<CheckovRuleDefinitionEntity> definitions = new LinkedHashSet<>();
 
-	@Column(name = "checkovtype")
-	private String type;
+	public boolean isProvided() {
+		return provided;
+	}
 
-	@Column(name = "entity")
-	private String entity;
+	public void setProvided(boolean provided) {
+		this.provided = provided;
+	}
 
-	@Column(name = "iac")
-	private String iac;
+	public Set<CheckovRuleDefinitionEntity> getDefinitions() {
+		return definitions;
+	}
 
-	@Column(name = "code")
-	@Convert(converter = HexStringConverter.class)
-	private String code;
+	public void setDefinitions(Set<CheckovRuleDefinitionEntity> definitions) {
+		this.definitions = definitions;
+	}
 
 	@Override
-	public CheckovRuleDto toDto() {
-		// Set inherited fields
-		CheckovRuleDto dto = new CheckovRuleDto();
-		dto.setId(getId());
-		dto.setAuthor(getAuthor());
-		dto.setName(getName());
-		dto.setMessage(getMessage());
-		dto.setExternalUrl(getExternalUrl());
-		dto.setPriority(getPriority());
-		dto.setRulesets(
-				getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
-		// Set Checkov-specific fields
-		dto.setCoreRule(isCoreRule());
-		dto.setCheckovType(getType());
-		dto.setCheckovEntity(getEntity());
-		dto.setCheckovIac(getIac());
-		dto.setCode(getCode());
-		return dto;
+	public CheckovProvidedRuleDto toDto() {
+		if (isProvided()) {
+			// Set inherited fields
+			CheckovProvidedRuleDto dto = new CheckovProvidedRuleDto();
+			dto.setId(getId());
+			dto.setName(getName());
+			dto.setMessage(getMessage());
+			dto.setExternalUrl(getExternalUrl());
+			dto.setPriority(getPriority());
+			dto.setRulesets(
+					getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
+			dto.setDefinitions(getDefinitions().stream().map(CheckovRuleDefinitionEntity::toDto)
+					.collect(Collectors.toList()));
+			return dto;
+		} else {
+			throw new IllegalArgumentException("Checkov does not support custom rules");
+		}
 	}
 
-	public boolean isCoreRule() {
-		return coreRule;
-	}
-
-	public void setCoreRule(boolean coreRule) {
-		this.coreRule = coreRule;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public String getEntity() {
-		return entity;
-	}
-
-	public void setEntity(String entity) {
-		this.entity = entity;
-	}
-
-	public String getIac() {
-		return iac;
-	}
-
-	public void setIac(String iac) {
-		this.iac = iac;
-	}
-
-	public String getCode() {
-		return code;
-	}
-
-	public void setCode(String code) {
-		this.code = code;
-	}
 }

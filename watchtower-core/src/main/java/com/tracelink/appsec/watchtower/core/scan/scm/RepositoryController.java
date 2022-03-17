@@ -43,7 +43,7 @@ public class RepositoryController {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("configuration/repository");
 		mav.addObject("repos", repoService.getAllRepos());
 		mav.addObject("rulesets",
-				rulesetService.getRulesets().stream().filter(r -> !r.isSupporting())
+				rulesetService.getRulesets().stream().filter(r -> r.isPrimary())
 						.collect(Collectors.toList()));
 		mav.addScriptReference("/scripts/reposwitcher.js");
 		return mav;

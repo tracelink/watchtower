@@ -27,6 +27,7 @@ own type of rules, which are then aggregated into rulesets and applied to code d
 - [What is a Module](#what-is-a-module)
 - [Modules Available](#modules-available)
 - [Customization](#customization)
+- [Configuration](#configuration)
 - [Contributions](#contributions)
 - [Authors](#authors)
 - [License](#license)
@@ -79,6 +80,8 @@ environment variables listed in [Docker.env](Docker.env), then type `docker-comp
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
 
+There are two files included to aid deploying to Kubernetes. [deploy](deploy.yaml) is a basic EKS deployment model that can be tailored to fit your needs and [watchtower-secrets](watchtower-secrets.yaml) can be used to supply the db secrets to your EKS system using the Kubernetes configMap. For production usage, it is recommended to put these secrets into a secrets manager, based on your application's needs and infrastructure's availability.
+
 If you are running directly from the jar file and not via Docker, note that some modules require
 specific setup as noted in their respective READMEs.
 
@@ -104,15 +107,17 @@ System Admin so that administrators cannot get locked out while modifying users 
 
 There are two built-in ways to authenticate to Watchtower.
 
-1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users
-   authenticate to Watchtower directly. This is configured by default.
-2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open
-   ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`
-   , `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as
-   in [here](./watchtower-web/src/main/resources/application-prd.yaml).
+1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users authenticate to Watchtower directly. This is configured by default. A basic password checking policy class is installed already [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/auth/service/checker/ComplexityUserPasswordRequirementsChecker.java), implementors can override this in configuration classes as done [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/configuration/WatchtowerConfiguration.java). 
+2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`, `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as in [here](./watchtower-web/src/main/resources/application-prd.yaml).
 
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.
+
+By default, there is a self-registration process that allows a user to join Watchtower and is assigned a default role as described in the Authorization section. This registration can be turned off by setting the configuration `watchtower.allowRegistration` to false. This could be used once the app is migrated to SSO and at least one local user account is created to protect against duplicate accounts.
+
+At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull Requests that have not been scanned in each configured repository and adds them to the scanning queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
+
+
 
 ## Authorization
 
@@ -305,6 +310,19 @@ variables can be removed from the application.properties file to disable encrypt
 Watchtower contains an admin page to view the current DEKs and manage their rotations. DEKs can be
 rotated manually (if, for example, there is reason to believe they are compromised), or a schedule
 can be set to automatically rotate all keys after a certain number of days.
+
+## Configuration
+| Configuration Key | Default Value | Value Options | Description|
+|-------------------|---------------|---------------|------------|
+|SPRING_PROFILES_ACTIVE|(blank)|prd, dev, prdtest, (custom)|Different built-in configuration parameters. `prd` is for production spring properties and requires a database configuration and sso configuration . `dev` uses an in-memory database and requires no setup. `prdtest` is for production-like testing such as a local docker container. `(custom)` is the implementor's choice. Any deployment can provide its own application.properties and override all properties.|
+|SERVER_PORT| 8081 in `dev` 7777 otherwise | Any port number | This is the port on which Watchtower's web server listens|
+|JDBC_URL|(blank)|any jdbc url|The URL used to connect to the MySQL backend|
+|JDBC_USERNAME|(blank)|any string|The JDBC username used to authenticate to MySQL|
+|JDBC_PASSWORD|(blank)|any string|The JDBC password used to authenticate to MySQL|
+|watchtower.runAfterStartup| true|true/false|Should Watchtower run the "After Startup" processes. This runs a downtime recovery operation to try to "catch-up" from any Watchtower downtime.|
+|watchtower.allowRegistration|true|true/false|Should Watchtower enable Self-Service Registration (buttons and screens)|
+|watchtower.threads.prscan|4|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning pull requests|
+|watchtower.threads.uploadscan|2|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning file uploads|
 
 ## Contributions
 

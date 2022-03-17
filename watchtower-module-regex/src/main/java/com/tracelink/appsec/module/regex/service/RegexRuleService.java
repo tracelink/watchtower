@@ -1,13 +1,31 @@
 package com.tracelink.appsec.module.regex.service;
 
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto;
 import com.tracelink.appsec.module.regex.model.RegexRuleEntity;
 import com.tracelink.appsec.module.regex.repository.RegexRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Handles logic to retrieve and edit Regex rules.
@@ -16,8 +34,12 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class RegexRuleService {
+	private static final Logger LOG = LoggerFactory.getLogger(RegexRuleService.class);
 
 	private RegexRuleRepository ruleRepository;
+	private static final List<String> PROVIDED_RULESETS =
+			Arrays.asList("/rules/trufflehog-regexes.json");
+	private final JsonMapper jsonMapper;
 
 	/**
 	 * Creates and instance of this service with a {@link RegexRuleRepository}.
@@ -26,6 +48,16 @@ public class RegexRuleService {
 	 */
 	public RegexRuleService(@Autowired RegexRuleRepository ruleRepository) {
 		this.ruleRepository = ruleRepository;
+		PolymorphicTypeValidator v =
+				BasicPolymorphicTypeValidator.builder()
+						.allowIfBaseType(RuleDto.class)
+						.allowIfBaseType(Set.class)
+						.allowIfBaseType(RulesetDto.class)
+						.build();
+
+		jsonMapper = JsonMapper.builder()
+				.polymorphicTypeValidator(v)
+				.activateDefaultTyping(v).build();
 	}
 
 	/**
@@ -44,23 +76,27 @@ public class RegexRuleService {
 	}
 
 	/**
-	 * Edits the Regex rule with the same ID as the given {@link RegexRuleDto}. Updates select
+	 * Edits the Regex rule with the same ID as the given {@link RegexCustomRuleDto}. Updates select
 	 * fields of the rule with values from the DTO.
 	 *
 	 * @param dto rule DTO whose fields will be used to edit the Regex rule
 	 * @throws RuleNotFoundException if no Regex rule exists with the same ID as the given DTO
 	 */
-	public void editRule(RegexRuleDto dto)
+	public void editRule(RuleDto dto)
 			throws RuleNotFoundException {
 		RegexRuleEntity rule = getRule(dto.getId());
-		// Set inherited fields
-		rule.setName(dto.getName());
-		rule.setMessage(dto.getMessage());
-		rule.setExternalUrl(dto.getExternalUrl());
-		rule.setPriority(dto.getPriority());
-		// Set Regex-specific fields
-		rule.setFileExtension(dto.getFileExtension());
-		rule.setRegexPattern(dto.getRegexPattern());
+		if (rule.isProvided()) {
+			rule.setPriority(dto.getPriority());
+		} else {
+			RegexCustomRuleDto custom = (RegexCustomRuleDto) dto;
+			rule.setName(custom.getName());
+			rule.setPriority(custom.getPriority());
+			rule.setMessage(custom.getMessage());
+			rule.setExternalUrl(custom.getExternalUrl());
+			rule.setFileExtension(custom.getFileExtension());
+			rule.setRegexPattern(custom.getRegexPattern());
+		}
+
 		ruleRepository.saveAndFlush(rule);
 	}
 
@@ -70,7 +106,7 @@ public class RegexRuleService {
 	 * @param dto the rule data to save
 	 * @throws RuleDesignerException if the rule name already exists
 	 */
-	public void saveNewRule(RegexRuleDto dto) throws RuleDesignerException {
+	public void saveNewRule(RegexCustomRuleDto dto) throws RuleDesignerException {
 		if (ruleRepository.findByName(dto.getName()) != null) {
 			throw new RuleDesignerException(
 					"Rule with the name " + dto.getName() + " already exists");
@@ -78,6 +114,25 @@ public class RegexRuleService {
 		RegexRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());
 		ruleRepository.saveAndFlush(entity);
+	}
+
+	public List<RulesetDto> getProvidedRulesets() {
+		return PROVIDED_RULESETS.stream().map(this::getRuleset).collect(Collectors.toList());
+	}
+
+	private RulesetDto getRuleset(String location) {
+		try (InputStream is = getClass().getResourceAsStream(location)) {
+			RulesetDto dto = jsonMapper.readValue(is, RulesetDto.class);
+			dto.getRules().stream().map(r -> (RegexProvidedRuleDto) r).forEach(r -> {
+				r.setPriority(RulePriority.LOW);
+			});
+			dto.setDesignation(RulesetDesignation.PROVIDED);
+			dto.setBlockingLevel(RulePriority.LOW);
+			return dto;
+		} catch (IOException e) {
+			LOG.error("Unable to get Regex Rules at location " + location, e);
+		}
+		return null;
 	}
 
 }

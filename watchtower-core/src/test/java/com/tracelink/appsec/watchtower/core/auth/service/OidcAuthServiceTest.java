@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
+import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 
@@ -53,7 +54,7 @@ public class OidcAuthServiceTest {
 		oidcAuthService = new OidcAuthService(userService, roleService);
 		ClientRegistration clientRegistration = ClientRegistration.withRegistrationId("oidc")
 				.clientId("ssoServer")
-				.redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
+				.redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
 				.authorizationUri("https://example.com/auth")
 				.tokenUri("https://example.com/token")
 				.userInfoUri("https://example.com/userinfo")
@@ -76,8 +77,11 @@ public class OidcAuthServiceTest {
 	@Test
 	public void testLoadUser() {
 		RoleEntity role = new RoleEntity();
-		String roleName = "foobar";
-		role.setRoleName(roleName);
+		role.setRoleName("test");
+		PrivilegeEntity priv = new PrivilegeEntity();
+		String privName = "foobar";
+		priv.setName(privName);
+		role.setPrivileges(Collections.singleton(priv));
 		BDDMockito.when(roleService.findDefaultRole()).thenReturn(role);
 		OidcUser oidcUser = oidcAuthService.loadUser(oidcUserRequest);
 
@@ -95,7 +99,7 @@ public class OidcAuthServiceTest {
 		Assertions.assertTrue(oidcUser instanceof OidcUserDetails);
 		Assertions.assertEquals(email, oidcUser.getName());
 		Assertions.assertEquals(1, oidcUser.getAuthorities().size());
-		Assertions.assertEquals(roleName,
+		Assertions.assertEquals(privName,
 				oidcUser.getAuthorities().iterator().next().getAuthority());
 		Assertions.assertEquals(claims, oidcUser.getClaims());
 		Assertions.assertEquals(idToken, oidcUser.getIdToken());
@@ -196,6 +200,9 @@ public class OidcAuthServiceTest {
 
 		RoleEntity role = new RoleEntity();
 		role.setRoleName("SpecialRole");
+		PrivilegeEntity priv = new PrivilegeEntity();
+		priv.setName("priv");
+		role.setPrivileges(Collections.singleton(priv));
 		user.setRoles(Collections.singleton(role));
 
 		BDDMockito.when(userService.findByUsername(email)).thenReturn(null);
@@ -206,7 +213,22 @@ public class OidcAuthServiceTest {
 		Assertions.assertEquals(email, user.getUsername());
 
 		Assertions.assertEquals(1, oidcUser.getAuthorities().size());
-		Assertions.assertEquals(role.getRoleName(),
+		Assertions.assertEquals(priv.getName(),
 				oidcUser.getAuthorities().iterator().next().getAuthority());
+	}
+
+	@Test
+	public void testLoadUserExistingSsoUserNewSsoId() {
+		UserEntity user = new UserEntity();
+		user.setUsername("email@example.com");
+		user.setSsoId("1234567890");
+		user.setEnabled(1);
+
+		BDDMockito.when(userService.findByUsername(email)).thenReturn(null);
+		BDDMockito.when(userService.findBySsoId(sub)).thenReturn(user);
+		OidcUser oidcUser = oidcAuthService.loadUser(oidcUserRequest);
+
+		BDDMockito.verify(userService, Mockito.times(2)).updateUser(user);
+		Assertions.assertEquals(sub, user.getSsoId());
 	}
 }

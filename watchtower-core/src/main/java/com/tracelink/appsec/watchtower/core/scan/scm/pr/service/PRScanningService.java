@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
@@ -57,8 +58,10 @@ public class PRScanningService extends AbstractScanningService {
 			@Autowired RepositoryService repoService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired ScanRegistrationService scanRegistrationService,
-			@Autowired APIIntegrationService apiService) {
-		super(4);
+			@Autowired APIIntegrationService apiService,
+			@Value("${watchtower.threads.prscan:4}") int threads,
+			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
+		super(threads, recoverFromDowntime);
 		this.scmFactoryService = scmFactoryService;
 		this.logService = logService;
 		this.repoService = repoService;
@@ -115,6 +118,13 @@ public class PRScanningService extends AbstractScanningService {
 		CompletableFuture.runAsync(scanAgent, getExecutor());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * This will attempt to recover all PRs not scanned in each repository the system knows about
+	 * for every SCM connection. If it detects repositories no longer available, it will disable
+	 * them and not check for Pull Requests
+	 */
 	@Override
 	protected void recoverFromDowntime() {
 		List<PullRequest> prs = new ArrayList<>();
@@ -146,9 +156,18 @@ public class PRScanningService extends AbstractScanningService {
 			List<RepositoryEntity> repos =
 					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
 			for (RepositoryEntity repo : repos) {
-				LOG.debug("Recovering Repo " + repo.getRepoName());
-				List<PullRequest> recovered = recoverByRepo(entity, api, repo);
-				prs.addAll(recovered);
+				if (!repo.isEnabled()) {
+					continue;
+				}
+				String repoName = repo.getRepoName();
+				if (!api.isRepositoryActive(repoName)) {
+					LOG.info("Disabling dead repository " + repoName);
+					repoService.disableRepo(repo);
+				} else {
+					LOG.debug("Recovering Repo " + repoName);
+					List<PullRequest> recovered = recoverByRepo(entity, api, repo);
+					prs.addAll(recovered);
+				}
 			}
 		} catch (ApiIntegrationException e) {
 			LOG.error("Could not create API " + entity.getApiLabel() + " for recovery", e);
@@ -161,20 +180,26 @@ public class PRScanningService extends AbstractScanningService {
 		long repoLastReview = repo.getLastReviewedDate();
 		List<PullRequest> prUpdates = api.getOpenPullRequestsForRepository(repo.getRepoName())
 				.stream().filter(pr -> {
-					PullRequestContainerEntity prEntity =
-							prScanResultService.getPullRequestByLabelRepoAndId(entity.getApiLabel(),
-									repo.getRepoName(), pr.getPrId());
-					// This is an ancient pr and older than our last check on the repository.
-					if (repoLastReview > pr.getUpdateTime()) {
-						return false;
-					}
-					// if we haven't seen this PR add it
-					if (prEntity == null) {
-						return true;
-					}
-					// if we have seen it, but reviewed it before its last update, add it
-					if (prEntity.getLastReviewedDate() < pr.getUpdateTime()) {
-						return true;
+					LOG.debug("Working on pr: " + pr.getPrId());
+					try {
+						PullRequestContainerEntity prEntity =
+								prScanResultService.getPullRequestByLabelRepoAndId(
+										entity.getApiLabel(), repo.getRepoName(), pr.getPrId());
+
+						// This is an ancient pr and older than our last check on the repository.
+						if (repoLastReview > pr.getUpdateTime()) {
+							return false;
+						}
+						// if we haven't seen this PR add it
+						if (prEntity == null) {
+							return true;
+						}
+						// if we have seen it, but reviewed it before its last update, add it
+						if (prEntity.getLastReviewedDate() < pr.getUpdateTime()) {
+							return true;
+						}
+					} catch (Exception e) {
+						LOG.error("Exception while trying to recover " + pr.getPRString(), e);
 					}
 					// otherwise we've seen it and reviewed it after the last update, so skip
 					return false;

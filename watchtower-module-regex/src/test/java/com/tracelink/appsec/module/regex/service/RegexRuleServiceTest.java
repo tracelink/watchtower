@@ -10,7 +10,7 @@ import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.module.regex.model.RegexRuleEntity;
 import com.tracelink.appsec.module.regex.repository.RegexRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -64,7 +64,7 @@ public class RegexRuleServiceTest {
 		String dtoFileExt = "";
 		String dtoRegexPattern = "[abcdef]";
 
-		RegexRuleDto dto = new RegexRuleDto();
+		RegexCustomRuleDto dto = new RegexCustomRuleDto();
 		dto.setId(dtoId);
 		dto.setAuthor(dtoAuthor);
 		dto.setName(dtoName);
@@ -90,14 +90,14 @@ public class RegexRuleServiceTest {
 		Assertions.assertThrows(RuleDesignerException.class, () -> {
 			BDDMockito.when(ruleRepository.findByName(BDDMockito.any()))
 					.thenReturn(new RegexRuleEntity());
-			ruleService.saveNewRule(new RegexRuleDto());
+			ruleService.saveNewRule(new RegexCustomRuleDto());
 		});
 	}
 
 	@Test
 	public void testSaveNewRule() throws Exception {
 		RegexRuleEntity entity = BDDMockito.mock(RegexRuleEntity.class);
-		RegexRuleDto dto = BDDMockito.mock(RegexRuleDto.class);
+		RegexCustomRuleDto dto = BDDMockito.mock(RegexCustomRuleDto.class);
 		BDDMockito.when(dto.toEntity()).thenReturn(entity);
 		ruleService.saveNewRule(dto);
 		BDDMockito.verify(ruleRepository).saveAndFlush(entity);

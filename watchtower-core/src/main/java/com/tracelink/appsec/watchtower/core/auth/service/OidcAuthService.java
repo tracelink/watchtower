@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.auth.model.OidcUserDetails;
+import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 
@@ -74,10 +75,7 @@ public class OidcAuthService extends OidcUserService {
 		UserEntity localUser = userService.findByUsername(username);
 		if (localUser != null) {
 			// Check if the local user has the same SSO id
-			if (localUser.getSsoId() != null && localUser.getSsoId()
-					.equals(oidcUser.getSubject())) {
-				user = localUser;
-			} else {
+			if (localUser.getSsoId() == null) {
 				// There is a username collision, prevent login
 				LOGGER.warn("User with username \"" + username
 						+ "\" attempted to login via SSO, but already has a local user account.");
@@ -85,6 +83,8 @@ public class OidcAuthService extends OidcUserService {
 				throw new OAuth2AuthenticationException(oauth2Error,
 						"A local user with the username \"" + username
 								+ "\" already exists. Please login with the provided form instead of SSO.");
+			} else {
+				user = localUser;
 			}
 		} else {
 			user = userService.findBySsoId(oidcUser.getSubject());
@@ -103,6 +103,12 @@ public class OidcAuthService extends OidcUserService {
 			userService.updateUser(user);
 		}
 
+		// Update local ssoId if the SSO subject has changed
+		if (!user.getSsoId().equals(oidcUser.getSubject())) {
+			user.setSsoId(oidcUser.getSubject());
+			userService.updateUser(user);
+		}
+
 		// Update local username if the user's email has been updated in the SSO
 		if (!user.getUsername().equals(username)) {
 			user.setUsername(username);
@@ -116,10 +122,10 @@ public class OidcAuthService extends OidcUserService {
 
 		// Get database roles and privileges
 		Collection<GrantedAuthority> authorities =
-				user.getRoles().isEmpty() ? Collections.emptySet()
-						: user.getRoles().stream()
-								.map(RoleEntity::getRoleName).map(SimpleGrantedAuthority::new)
-								.collect(Collectors.toSet());
+				user.getRoles()
+						.stream().flatMap(r -> r.getPrivileges().stream())
+						.map(PrivilegeEntity::getName).map(SimpleGrantedAuthority::new)
+						.collect(Collectors.toSet());
 
 		return new OidcUserDetails(oidcUser, authorities);
 	}

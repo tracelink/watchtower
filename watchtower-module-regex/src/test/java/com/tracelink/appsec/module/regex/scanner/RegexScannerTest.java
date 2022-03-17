@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tracelink.appsec.module.regex.controller.RegexRuleEditControllerTest;
-import com.tracelink.appsec.module.regex.model.RegexRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
@@ -32,7 +32,7 @@ public class RegexScannerTest {
 	@Test
 	public void testSentinelScanWithBenchmarking() throws Exception {
 		RulesetDto ruleset = new RulesetDto();
-		RegexRuleDto rule = RegexRuleEditControllerTest.getRegexRuleDto();
+		RegexCustomRuleDto rule = RegexRuleEditControllerTest.getRegexRuleDto();
 		ruleset.setRules(Collections.singleton(rule));
 		ScanConfig config = new ScanConfig();
 		config.setRuleset(ruleset);
@@ -53,6 +53,6 @@ public class RegexScannerTest {
 
 	@Test
 	public void testSupportedRules() {
-		Assertions.assertEquals(RegexRuleDto.class, new RegexScanner().getSupportedRuleClass());
+		Assertions.assertEquals(RegexCustomRuleDto.class, new RegexScanner().getSupportedRuleClass());
 	}
 }

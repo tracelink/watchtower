@@ -31,12 +31,13 @@ public class ShutdownHandlerTest {
 	}
 
 	@Test
-	public void applicationShutdownTest() {
+	public void applicationShutdownTest() throws Exception {
 		// get the injected mock ctx and scan into the handler
-		MockitoAnnotations.initMocks(this);
-		handler.executeShutdown();
-		BDDMockito.verify(prScan, BDDMockito.times(1)).shutdown();
-		BDDMockito.verify(upScan, BDDMockito.times(1)).shutdown();
+		try (AutoCloseable closeable = MockitoAnnotations.openMocks(this)) {
+			handler.executeShutdown();
+			BDDMockito.verify(prScan, BDDMockito.times(1)).shutdown();
+			BDDMockito.verify(upScan, BDDMockito.times(1)).shutdown();
+		}
 	}
 
 }

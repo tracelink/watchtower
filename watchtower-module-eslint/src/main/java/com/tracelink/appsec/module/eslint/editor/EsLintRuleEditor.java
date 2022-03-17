@@ -1,7 +1,6 @@
 package com.tracelink.appsec.module.eslint.editor;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
-import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditModelAndView;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -20,7 +19,7 @@ public class EsLintRuleEditor implements IRuleEditor {
 	 */
 	@Override
 	public RuleEditModelAndView getRuleEditModelAndView(RuleDto rule) {
-		boolean core = ((EsLintRuleDto) rule).isCore();
+		boolean core = rule.isProvided();
 		String ruleEditView = core ? "rule-edit/eslint-core" : "rule-edit/eslint";
 		RuleEditModelAndView mav = new RuleEditModelAndView(ruleEditView);
 		mav.addObject("rule", rule);

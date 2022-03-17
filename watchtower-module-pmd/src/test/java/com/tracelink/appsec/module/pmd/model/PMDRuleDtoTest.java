@@ -17,12 +17,11 @@ public class PMDRuleDtoTest {
 	private static RulePriority priority = RulePriority.MEDIUM;
 	private static String parserLanguage = "java";
 	private static String ruleClass = "net.sourceforge.pmd.lang.rule.XPathRule";
-	private static String description = "This is a bad practice.";
 	private static String xpath = "//PrimaryPrefix[Name[starts-with(@Image,\"System.out\")";
-	private PMDRuleDto pmdRuleDto = setup();
+	private PMDCustomRuleDto pmdRuleDto = setup();
 
-	public static PMDRuleDto setup() {
-		PMDRuleDto pmdRuleDto = new PMDRuleDto();
+	public static PMDCustomRuleDto setup() {
+		PMDCustomRuleDto pmdRuleDto = new PMDCustomRuleDto();
 		pmdRuleDto.setId(id);
 		pmdRuleDto.setAuthor(author);
 		pmdRuleDto.setName(name);
@@ -31,7 +30,6 @@ public class PMDRuleDtoTest {
 		pmdRuleDto.setPriority(priority);
 		pmdRuleDto.setParserLanguage(parserLanguage);
 		pmdRuleDto.setRuleClass(ruleClass);
-		pmdRuleDto.setDescription(description);
 		PMDPropertyDto property = new PMDPropertyDto();
 		property.setName("xpath");
 		property.setValue(xpath);
@@ -50,7 +48,6 @@ public class PMDRuleDtoTest {
 		Assertions.assertEquals(priority, pmdRuleDto.getPriority());
 		Assertions.assertEquals(parserLanguage, pmdRuleDto.getParserLanguage());
 		Assertions.assertEquals(ruleClass, pmdRuleDto.getRuleClass());
-		Assertions.assertEquals(description, pmdRuleDto.getDescription());
 		Assertions.assertEquals("xpath", pmdRuleDto.getProperties().iterator().next().getName());
 		Assertions.assertEquals(xpath, pmdRuleDto.getProperties().iterator().next().getValue());
 	}
@@ -66,7 +63,6 @@ public class PMDRuleDtoTest {
 		Assertions.assertEquals(priority, pmdRule.getPriority());
 		Assertions.assertEquals(parserLanguage, pmdRule.getParserLanguage());
 		Assertions.assertEquals(ruleClass, pmdRule.getRuleClass());
-		Assertions.assertEquals(description, pmdRule.getDescription());
 		Assertions.assertEquals("xpath", pmdRule.getProperties().iterator().next().getName());
 		Assertions.assertEquals(xpath, pmdRule.getProperties().iterator().next().getValue());
 	}

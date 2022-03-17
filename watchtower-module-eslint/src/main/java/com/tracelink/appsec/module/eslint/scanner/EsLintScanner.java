@@ -17,12 +17,13 @@ import com.google.gson.Gson;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.engine.ProcessResult;
 import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
-import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetInterpreter;
+import com.tracelink.appsec.module.eslint.interpreter.EsLintRulesetExporter;
+import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
-import com.tracelink.appsec.watchtower.core.module.interpreter.RulesetInterpreterException;
+import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
@@ -56,7 +57,7 @@ public class EsLintScanner implements IScanner {
 	@Override
 	public ScanReport scan(ScanConfig config) {
 		ScanReport report = new ScanReport();
-		Benchmarking<EsLintRuleDto> benchmarking = new Benchmarking<>();
+		Benchmarking<EsLintCustomRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
 		try (Benchmarker totalTime = benchmarking
@@ -65,7 +66,7 @@ public class EsLintScanner implements IScanner {
 			Path rulesetPath;
 			try {
 				rulesetPath = writeRulesetToFile(config.getRuleset());
-			} catch (IOException | RulesetInterpreterException e) {
+			} catch (IOException | RulesetException e) {
 				report.addError(
 						new ScanError(
 								"Exception writing ESLint ruleset to file: " + e.getMessage()));
@@ -98,7 +99,7 @@ public class EsLintScanner implements IScanner {
 	 */
 	@Override
 	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return EsLintRuleDto.class;
+		return EsLintCustomRuleDto.class;
 	}
 
 	/**
@@ -110,11 +111,11 @@ public class EsLintScanner implements IScanner {
 	 * @throws IOException if an I/O exception is thrown while creating or writing to the file
 	 */
 	private Path writeRulesetToFile(RulesetDto ruleset)
-			throws IOException, RulesetInterpreterException {
+			throws IOException, RulesetException {
 		String uri = "ruleset-" + ruleset.getId();
 		Path rulesetPath = Files.createTempFile(uri, ".js").toFile().getCanonicalFile()
 				.getAbsoluteFile().toPath();
-		try (InputStream is = new EsLintRulesetInterpreter(engine).exportRuleset(ruleset)) {
+		try (InputStream is = new EsLintRulesetExporter().exportRuleset(ruleset)) {
 			Files.copy(is, rulesetPath, StandardCopyOption.REPLACE_EXISTING);
 		}
 		return rulesetPath;
@@ -180,8 +181,9 @@ public class EsLintScanner implements IScanner {
 					|| message.getRuleId() == null) {
 				// Add error to report
 				report.addError(new ScanError(message.getMessage()));
-				// Message is a violation
-			} else {
+			}
+			// Message is a violation
+			else {
 				RuleDto rule = esLintRules.stream()
 						.filter(r -> r.getName().equals(message.getRuleId()))
 						.findFirst().orElse(null);

@@ -11,16 +11,25 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.tracelink.appsec.module.eslint.engine.json.CategoryDefinition;
 import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
+import com.tracelink.appsec.module.eslint.engine.json.ProvidedRuleDefinition;
+import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * The primary ESLint execution class. Ensures that Node, ESLint and Estraverse are installed at the
@@ -32,8 +41,11 @@ import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
 @Service
 public final class LinterEngine {
 	private static final Gson GSON = new Gson();
-	private static final TypeToken<Map<String, Map<String, String>>> CORE_RULES_TYPE_TOKEN =
-			new TypeToken<Map<String, Map<String, String>>>() {
+	private static final TypeToken<List<ProvidedRuleDefinition>> CORE_RULES_TYPE_TOKEN =
+			new TypeToken<List<ProvidedRuleDefinition>>() {
+			};
+	private TypeToken<List<CategoryDefinition>> CORE_RULESETS_TYPE_TOKEN =
+			new TypeToken<List<CategoryDefinition>>() {
 			};
 	public static final TypeToken<List<LinterMessage>> MESSAGES_TYPE_TOKEN =
 			new TypeToken<List<LinterMessage>>() {
@@ -44,12 +56,12 @@ public final class LinterEngine {
 
 	private static final int NODE_VERSION_MAJOR = 12;
 	private static final String ESLINT_VERSION = "7.24.0";
-	private static final String ESTRAVERSE_VERSION = "5.2.0";
 
 	// Note: LOG is not static so we can write to it before engine instance has been constructed
 	private final Logger LOG = LoggerFactory.getLogger(LinterEngine.class);
 	private final Path eslintDirectory;
-	private Map<String, Map<String, String>> coreRules;
+	private Map<String, EsLintProvidedRuleDto> coreRules;
+	private List<RulesetDto> coreRulesets;
 
 	public LinterEngine() {
 		try {
@@ -64,9 +76,6 @@ public final class LinterEngine {
 			// Install ESLint and check version
 			installNpmPackageAtVersion("eslint", ESLINT_VERSION);
 			LOG.info("ESLint installed correctly");
-			// Install Estraverse and check version
-			installNpmPackageAtVersion("estraverse", ESTRAVERSE_VERSION);
-			LOG.info("Estraverse installed correctly");
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize ESLint Engine", e);
 		}
@@ -78,20 +87,81 @@ public final class LinterEngine {
 	 *
 	 * @return map of core rules, including descriptions and external URLs for each
 	 */
-	public Map<String, Map<String, String>> getCoreRules() {
+	public Map<String, EsLintProvidedRuleDto> getCoreRules() {
 		if (coreRules == null) {
-			ProcessResult processResult = executeJsFunction(LINTER_PARSE, "getCoreRules");
-			if (processResult.hasErrors()) {
-				LOG.warn("Errors getting core rules for ESLint:\n" + processResult.getErrors());
-			}
-			if (processResult.hasResults()) {
-				coreRules = GSON
-						.fromJson(processResult.getResults(), CORE_RULES_TYPE_TOKEN.getType());
-			} else {
-				coreRules = Collections.emptyMap();
-			}
+			makeCoreRulesRulesets();
 		}
-		return Collections.unmodifiableMap(coreRules);
+		return coreRules;
+	}
+
+	public List<RulesetDto> getCoreRulesets() {
+		if (coreRulesets == null) {
+			makeCoreRulesRulesets();
+		}
+		return coreRulesets;
+	}
+
+	private void makeCoreRulesRulesets() {
+		ProcessResult coreRulesResult = executeJsFunction(LINTER_PARSE, "getCoreRules");
+		ProcessResult coreRulesetsResult = executeJsFunction(LINTER_PARSE, "getCoreCategories");
+		if (coreRulesResult.hasErrors()) {
+			LOG.warn("Errors getting core rules for ESLint:\n" + coreRulesResult.getErrors());
+		}
+		if (coreRulesetsResult.hasErrors()) {
+			LOG.warn("Errors getting core rulesets for ESLint:\n" + coreRulesResult.getErrors());
+		}
+		Map<String, String> coreRulesetsDescriptionMap;
+		if (coreRulesetsResult.hasResults()) {
+			List<CategoryDefinition> categoryDefinitions =
+					GSON.fromJson(coreRulesetsResult.getResults(),
+							CORE_RULESETS_TYPE_TOKEN.getType());
+			coreRulesetsDescriptionMap = categoryDefinitions.stream()
+					.collect(Collectors.toMap(CategoryDefinition::getName,
+							(c -> {
+								String desc = c.getDescription();
+								if (desc.endsWith(":")) {
+									desc = StringUtils.chop(desc);
+								}
+								return desc;
+							}), (f, s) -> s, TreeMap::new));
+		} else {
+			coreRulesetsDescriptionMap = Collections.emptyMap();
+		}
+		if (coreRulesResult.hasResults()) {
+			Map<String, EsLintProvidedRuleDto> rulesMap =
+					new TreeMap<String, EsLintProvidedRuleDto>();
+			Map<String, RulesetDto> rulesetsMap = new TreeMap<String, RulesetDto>();
+
+			List<ProvidedRuleDefinition> providedRules = GSON
+					.fromJson(coreRulesResult.getResults(), CORE_RULES_TYPE_TOKEN.getType());
+			for (ProvidedRuleDefinition def : providedRules) {
+				EsLintProvidedRuleDto rule = new EsLintProvidedRuleDto();
+				rule.setName(def.getName());
+				rule.setMessage(def.getDescription());
+				rule.setExternalUrl(def.getUrl());
+				rule.setPriority(RulePriority.LOW);
+
+				rulesMap.put(rule.getName(), rule);
+				RulesetDto ruleset = rulesetsMap.get(def.getCategory());
+				if (ruleset == null) {
+					ruleset = new RulesetDto();
+					ruleset.setName(def.getCategory());
+					ruleset.setDescription(coreRulesetsDescriptionMap.containsKey(def.getCategory())
+							? coreRulesetsDescriptionMap.get(def.getCategory())
+							: "Ruleset for EsLint Category " + def.getCategory());
+					ruleset.setDesignation(RulesetDesignation.PROVIDED);
+				}
+				ruleset.getRules().add(rule);
+				rulesetsMap.put(def.getCategory(), ruleset);
+			}
+
+			coreRules = rulesMap;
+			coreRulesets = rulesetsMap.values().stream().sorted().collect(Collectors.toList());
+
+		} else {
+			coreRules = Collections.emptyMap();
+			coreRulesets = Collections.emptyList();
+		}
 	}
 
 	/**
@@ -106,17 +176,6 @@ public final class LinterEngine {
 	public ProcessResult scanCode(String lines, String directory, String file, String ruleset) {
 		return executeJsFunction(LINTER_SCAN, "scanCode", escapeCommandLineArgument(lines),
 				directory, file, ruleset);
-	}
-
-	/**
-	 * Parses the given ruleset using the ESLint Linter and Estraverse.
-	 *
-	 * @param ruleset ruleset to parse into JSON
-	 * @return {@link ProcessResult} containing the ruleset as JSON, or messages from the Linter if
-	 *         there are errors
-	 */
-	public ProcessResult parseRuleset(String ruleset) {
-		return executeJsFunction(LINTER_PARSE, "parseRuleset", escapeCommandLineArgument(ruleset));
 	}
 
 	/**
@@ -177,6 +236,8 @@ public final class LinterEngine {
 						"Expected Node.js greater than v12.0.0 but received " + processResult
 								.getResults());
 			}
+		} else {
+			throw new RuntimeException("Cannot run Node.js");
 		}
 	}
 

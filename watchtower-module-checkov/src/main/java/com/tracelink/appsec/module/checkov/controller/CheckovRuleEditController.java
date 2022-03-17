@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.module.checkov.CheckovModule;
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.module.checkov.service.CheckovRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
@@ -41,12 +41,12 @@ public class CheckovRuleEditController {
 	}
 
 	@PostMapping("/rule/edit/checkov")
-	public String editRule(@Valid CheckovRuleDto dto, BindingResult bindingResult,
+	public String editRule(@Valid CheckovProvidedRuleDto dto, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
 		// Validate and Edit rule
 		try {
 			validateRule(dto.getId(), dto.getName(), bindingResult);
-			checkovRuleService.editRule(dto);
+			checkovRuleService.editProvidedRule(dto);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully edited rule.");
 		} catch (RuleNotFoundException | RuleEditorException e) {

@@ -15,11 +15,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
-import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
+import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
+import com.tracelink.appsec.module.pmd.model.PMDProvidedRuleDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditorException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 
 /**
@@ -39,8 +41,19 @@ public class PMDRuleEditController {
 		this.ruleService = ruleService;
 	}
 
-	@PostMapping("/rule/edit/pmd/edit")
-	public String editRule(@Valid PMDRuleDto dto, BindingResult bindingResult,
+	@PostMapping("/rule/edit/pmd/edit/provided")
+	public String editRule(@Valid PMDProvidedRuleDto dto, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		return editRuleInner(dto, bindingResult, redirectAttributes);
+	}
+
+	@PostMapping("/rule/edit/pmd/edit/custom")
+	public String editRule(@Valid PMDCustomRuleDto dto, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		return editRuleInner(dto, bindingResult, redirectAttributes);
+	}
+
+	private String editRuleInner(RuleDto dto, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
 		// Validate and Edit rule
 		try {

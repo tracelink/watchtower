@@ -2,7 +2,6 @@ package com.tracelink.appsec.module.checkov.scanner;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -12,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
-import com.tracelink.appsec.module.checkov.model.CheckovRuleDto;
+import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
@@ -40,14 +39,14 @@ public class CheckovScanner implements IScanner {
 	@Override
 	public ScanReport scan(ScanConfig config) {
 		ScanReport report = new ScanReport();
-		Benchmarking<CheckovRuleDto> benchmarking = new Benchmarking<>();
+		Benchmarking<CheckovProvidedRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
 		// Run processor
 		try (Benchmarker totalTime = benchmarking
 				.newBenchmarker(TimerType.DefaultTimerType.WALL_CLOCK)) {
 
-			List<CheckovRuleDto> checkovRules = getCheckovRules(config.getRuleset());
+			List<CheckovProvidedRuleDto> checkovRules = getCheckovRules(config.getRuleset());
 
 			JsonObject result;
 			try (Benchmarker scanTime =
@@ -68,32 +67,16 @@ public class CheckovScanner implements IScanner {
 		return report;
 	}
 
-	private List<CheckovRuleDto> getCheckovRules(RulesetDto ruleset) {
-		List<CheckovRuleDto> checkovRules = ruleset.getAllRules().stream()
-				.filter(r -> r instanceof CheckovRuleDto)
-				.map(r -> (CheckovRuleDto) r)
+	private List<CheckovProvidedRuleDto> getCheckovRules(RulesetDto ruleset) {
+		List<CheckovProvidedRuleDto> checkovRules = ruleset.getAllRules().stream()
+				.filter(r -> r instanceof CheckovProvidedRuleDto)
+				.map(r -> (CheckovProvidedRuleDto) r)
 				.collect(Collectors.toList());
-
-		// Verify that the rules marked as core are actually core rules
-		Map<String, CheckovRuleDto> coreRules = engine.getCoreRules();
-		List<CheckovRuleDto> missingCoreRules =
-				checkovRules.stream().filter(CheckovRuleDto::isCoreRule)
-						.filter(r -> !coreRules.containsKey(r.getName()))
-						.collect(Collectors.toList());
-
-		if (!missingCoreRules.isEmpty()) {
-			checkovRules.removeAll(missingCoreRules);
-			LOGGER.error(
-					"The following Rules are missing from Checkov's Core Ruleset and will be skipped. Ruleset: "
-							+ ruleset.getName() + " Rules Missing: "
-							+ missingCoreRules.stream().map(CheckovRuleDto::getName)
-									.collect(Collectors.joining(", ")));
-		}
 
 		return checkovRules;
 	}
 
-	private void addResultsToReport(JsonObject result, List<CheckovRuleDto> rules,
+	private void addResultsToReport(JsonObject result, List<CheckovProvidedRuleDto> rules,
 			ScanReport report, Path workingDirectory) {
 		if (result.has("errors")) {
 			report.addError(
@@ -107,10 +90,10 @@ public class CheckovScanner implements IScanner {
 					if (f.isJsonObject()) {
 						JsonObject fail = f.getAsJsonObject();
 						String failName = fail.get("check_id").getAsString();
-						Optional<CheckovRuleDto> foundRule = rules.stream()
+						Optional<CheckovProvidedRuleDto> foundRule = rules.stream()
 								.filter(r -> r.getName().equals(failName)).findFirst();
 						if (foundRule.isPresent()) {
-							CheckovRuleDto rule = foundRule.get();
+							RuleDto rule = foundRule.get();
 							ScanViolation violation = new ScanViolation();
 							violation.setFileName(workingDirectory
 									.resolve(fail.get("file_path").getAsString().substring(1))
@@ -138,7 +121,7 @@ public class CheckovScanner implements IScanner {
 
 	@Override
 	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return CheckovRuleDto.class;
+		return CheckovProvidedRuleDto.class;
 	}
 
 }
