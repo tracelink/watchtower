@@ -19,12 +19,12 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PRScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
@@ -45,7 +45,7 @@ public class PRScanningService extends AbstractScanningService {
 
 	private LogsService logService;
 
-	private RepositoryService repoService;
+	private ScmRepositoryService repoService;
 
 	private PRScanResultService prScanResultService;
 
@@ -55,7 +55,7 @@ public class PRScanningService extends AbstractScanningService {
 
 	public PRScanningService(@Autowired ScmFactoryService scmFactoryService,
 			@Autowired LogsService logService,
-			@Autowired RepositoryService repoService,
+			@Autowired ScmRepositoryService repoService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired ScanRegistrationService scanRegistrationService,
 			@Autowired APIIntegrationService apiService,
@@ -88,7 +88,7 @@ public class PRScanningService extends AbstractScanningService {
 			throw new ScanRejectedException("Quiesced. Did not schedule PR: " + prName);
 		}
 
-		RepositoryEntity repo = repoService.upsertRepo(pr.getApiLabel(), pr.getRepoName());
+		ScmRepositoryEntity repo = repoService.upsertRepo(pr.getApiLabel(), pr.getRepoName());
 		RulesetEntity ruleset = repo.getRuleset();
 
 		// Skip scan if repository is not configured with a ruleset
@@ -128,7 +128,7 @@ public class PRScanningService extends AbstractScanningService {
 	@Override
 	protected void recoverFromDowntime() {
 		List<PullRequest> prs = new ArrayList<>();
-		Map<String, List<RepositoryEntity>> repoMap = repoService.getAllRepos();
+		Map<String, List<ScmRepositoryEntity>> repoMap = repoService.getAllRepos();
 		for (APIIntegrationEntity entity : apiService.getAllSettings()) {
 			LOG.debug("Recovering using API " + entity.getApiLabel());
 			List<PullRequest> recovered = recoverByApi(repoMap, entity);
@@ -148,14 +148,14 @@ public class PRScanningService extends AbstractScanningService {
 		}
 	}
 
-	private List<PullRequest> recoverByApi(Map<String, List<RepositoryEntity>> repoMap,
+	private List<PullRequest> recoverByApi(Map<String, List<ScmRepositoryEntity>> repoMap,
 			APIIntegrationEntity entity) {
 		List<PullRequest> prs = new ArrayList<>();
 		try {
 			IScmApi api = scmFactoryService.createApiForApiEntity(entity);
-			List<RepositoryEntity> repos =
+			List<ScmRepositoryEntity> repos =
 					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
-			for (RepositoryEntity repo : repos) {
+			for (ScmRepositoryEntity repo : repos) {
 				if (!repo.isEnabled()) {
 					continue;
 				}
@@ -176,7 +176,7 @@ public class PRScanningService extends AbstractScanningService {
 	}
 
 	private List<PullRequest> recoverByRepo(APIIntegrationEntity entity, IScmApi api,
-			RepositoryEntity repo) {
+			ScmRepositoryEntity repo) {
 		long repoLastReview = repo.getLastReviewedDate();
 		List<PullRequest> prUpdates = api.getOpenPullRequestsForRepository(repo.getRepoName())
 				.stream().filter(pr -> {

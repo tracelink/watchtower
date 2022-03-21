@@ -14,7 +14,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundExcept
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
 
 /**
  * Handles logic around SCM repositories and their rulesets
@@ -22,13 +22,13 @@ import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrati
  * @author csmith, mcool
  */
 @Service
-public class RepositoryService {
+public class ScmRepositoryService {
 
-	private RepositoryRepository repoRepo;
+	private ScmRepositoryRepository repoRepo;
 
 	private RulesetService rulesetService;
 
-	public RepositoryService(@Autowired RepositoryRepository repoRepo,
+	public ScmRepositoryService(@Autowired ScmRepositoryRepository repoRepo,
 			@Autowired RulesetService rulesetService) {
 		this.repoRepo = repoRepo;
 		this.rulesetService = rulesetService;
@@ -39,12 +39,12 @@ public class RepositoryService {
 	 *
 	 * @return a Map of each Api Label to a list of their known repos
 	 */
-	public Map<String, List<RepositoryEntity>> getAllRepos() {
-		Map<String, List<RepositoryEntity>> allRepos =
+	public Map<String, List<ScmRepositoryEntity>> getAllRepos() {
+		Map<String, List<ScmRepositoryEntity>> allRepos =
 				repoRepo.findAll().stream().collect(Collectors.groupingBy(
-						RepositoryEntity::getApiLabel, TreeMap::new, Collectors.toList()));
+						ScmRepositoryEntity::getApiLabel, TreeMap::new, Collectors.toList()));
 		allRepos.values()
-				.forEach(list -> list.sort(Comparator.comparing(RepositoryEntity::getRepoName)));
+				.forEach(list -> list.sort(Comparator.comparing(ScmRepositoryEntity::getRepoName)));
 		return allRepos;
 	}
 
@@ -67,7 +67,7 @@ public class RepositoryService {
 			throw new RulesetException(
 					"Cannot assign a supporting ruleset to a repository. Please select a primary ruleset.");
 		}
-		RepositoryEntity repo = repoRepo.findByApiLabelAndRepoName(apiLabel, repoName);
+		ScmRepositoryEntity repo = repoRepo.findByApiLabelAndRepoName(apiLabel, repoName);
 		if (repo == null) {
 			throw new ApiIntegrationException("Unknown API label");
 		}
@@ -83,10 +83,10 @@ public class RepositoryService {
 	 * @param repoName the new repository name
 	 * @return the upserted Respository information
 	 */
-	public RepositoryEntity upsertRepo(String apiLabel, String repoName) {
-		RepositoryEntity repo = repoRepo.findByApiLabelAndRepoName(apiLabel, repoName);
+	public ScmRepositoryEntity upsertRepo(String apiLabel, String repoName) {
+		ScmRepositoryEntity repo = repoRepo.findByApiLabelAndRepoName(apiLabel, repoName);
 		if (repo == null) {
-			repo = new RepositoryEntity();
+			repo = new ScmRepositoryEntity();
 			repo.setApiLabel(apiLabel);
 			repo.setRepoName(repoName);
 			repo.setRuleset(rulesetService.getDefaultRuleset());
@@ -96,7 +96,7 @@ public class RepositoryService {
 		return repoRepo.save(repo);
 	}
 
-	public RepositoryEntity disableRepo(RepositoryEntity repo) {
+	public ScmRepositoryEntity disableRepo(ScmRepositoryEntity repo) {
 		repo.setEnabled(false);
 		return repoRepo.saveAndFlush(repo);
 	}

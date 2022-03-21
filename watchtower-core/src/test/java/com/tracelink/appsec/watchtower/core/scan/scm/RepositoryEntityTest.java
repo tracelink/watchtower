@@ -12,12 +12,12 @@ public class RepositoryEntityTest {
 	@Test
 	public void testDAO() {
 		long lastReviewedDate = System.currentTimeMillis();
-		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
 		String repoName = "repoName";
 		RulesetEntity rulesetEntity = new RulesetEntity();
 		rulesetEntity.setName("Default");
 
-		RepositoryEntity entity = new RepositoryEntity();
+		ScmRepositoryEntity entity = new ScmRepositoryEntity();
 		entity.setApiLabel(apiLabel);
 		entity.setLastReviewedDate(lastReviewedDate);
 		entity.setRepoName(repoName);

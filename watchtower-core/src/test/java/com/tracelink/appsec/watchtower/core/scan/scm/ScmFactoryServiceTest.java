@@ -9,11 +9,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBCloudApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBCloudIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudApi;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBPullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBPullRequestTest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
@@ -58,9 +58,9 @@ public class ScmFactoryServiceTest {
 
 		BBCloudIntegrationEntity entity =
 				(BBCloudIntegrationEntity) scannerFactory
-						.makeEntityForParams(ApiType.BITBUCKET_CLOUD, params);
+						.makeEntityForParams(ScmApiType.BITBUCKET_CLOUD, params);
 		Assertions.assertEquals(apiLabel, entity.getApiLabel());
-		Assertions.assertEquals(ApiType.BITBUCKET_CLOUD, entity.getApiType());
+		Assertions.assertEquals(ScmApiType.BITBUCKET_CLOUD, entity.getApiType());
 		Assertions.assertEquals(user, entity.getUser());
 		Assertions.assertEquals(auth, entity.getAuth());
 		Assertions.assertEquals(workspace, entity.getWorkspace());

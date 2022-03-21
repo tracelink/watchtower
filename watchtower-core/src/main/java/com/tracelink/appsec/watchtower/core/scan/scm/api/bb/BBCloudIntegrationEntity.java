@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.bb;
+package com.tracelink.appsec.watchtower.core.scan.scm.api.bb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,9 +14,9 @@ import javax.persistence.Table;
 import org.apache.commons.lang3.StringUtils;
 
 import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
-import com.tracelink.appsec.watchtower.core.scan.scm.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
 
 /**
  * Entity for the Bitbucket Cloud Integration API
@@ -136,7 +136,7 @@ public class BBCloudIntegrationEntity extends APIIntegrationEntity {
 	}
 
 	@Override
-	public ApiType getApiType() {
-		return ApiType.BITBUCKET_CLOUD;
+	public ScmApiType getApiType() {
+		return ScmApiType.BITBUCKET_CLOUD;
 	}
 }

@@ -24,11 +24,11 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetRepository;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
@@ -67,7 +67,7 @@ public class DevelopmentSetup {
 	private final APIIntegrationService apiService;
 	private final RulesetService rulesetService;
 	private final RulesetRepository rulesetRepository;
-	private final RepositoryService repositoryService;
+	private final ScmRepositoryService repositoryService;
 	private final PRScanResultService prScanResultService;
 	private final PRContainerRepository prRepo;
 	private final UploadScanResultService uploadScanResultService;
@@ -80,7 +80,7 @@ public class DevelopmentSetup {
 			@Autowired APIIntegrationService apiService,
 			@Autowired RulesetService rulesetService,
 			@Autowired RulesetRepository rulesetRepository,
-			@Autowired RepositoryService repositoryService,
+			@Autowired ScmRepositoryService repositoryService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired PRContainerRepository prRepo,
 			@Autowired UploadScanResultService uploadScanResultService,
@@ -174,11 +174,11 @@ public class DevelopmentSetup {
 	}
 
 	private void addPRScanHistory(Random random) {
-		List<RepositoryEntity> repos =
+		List<ScmRepositoryEntity> repos =
 				repositoryService.getAllRepos().values().stream().flatMap(List::stream)
 						.collect(Collectors.toList());
 		for (int i = 0; i < PR_NUM_SIZE; i++) {
-			RepositoryEntity repo = repos.get(random.nextInt(repos.size()));
+			ScmRepositoryEntity repo = repos.get(random.nextInt(repos.size()));
 			boolean activeState = random.nextBoolean();
 			savePr(activeState, repo, random);
 		}
@@ -216,7 +216,7 @@ public class DevelopmentSetup {
 		} while (!pageEntity.isLast());
 	}
 
-	private void savePr(boolean activeState, RepositoryEntity repo, Random random) {
+	private void savePr(boolean activeState, ScmRepositoryEntity repo, Random random) {
 		PullRequest pr = new PullRequest(repo.getApiLabel());
 		pr.setAuthor("testAuthor");
 		pr.setDestinationBranch("masterTest");

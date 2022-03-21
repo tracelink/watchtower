@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.apiintegration;
+package com.tracelink.appsec.watchtower.core.scan.scm.api;
 
 import java.util.List;
 

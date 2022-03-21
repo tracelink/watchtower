@@ -4,12 +4,12 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBCloudApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBCloudIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudApi;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBPullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 
 /**
@@ -48,14 +48,14 @@ public class ScmFactoryService {
 	}
 
 	/**
-	 * Create and fill the correct entity for the given {@linkplain ApiType} and request parameters
+	 * Create and fill the correct entity for the given {@linkplain ScmApiType} and request parameters
 	 * 
-	 * @param type       the {@linkplain ApiType}
+	 * @param type       the {@linkplain ScmApiType}
 	 * @param parameters the request parameters
 	 * @return an {@linkplain APIIntegrationEntity} filled with values from the request params
 	 * @throws ApiIntegrationException if the api type is unknown, or the entity cannot be created
 	 */
-	public APIIntegrationEntity makeEntityForParams(ApiType type, Map<String, String> parameters)
+	public APIIntegrationEntity makeEntityForParams(ScmApiType type, Map<String, String> parameters)
 			throws ApiIntegrationException {
 		APIIntegrationEntity entity;
 		switch (type) {

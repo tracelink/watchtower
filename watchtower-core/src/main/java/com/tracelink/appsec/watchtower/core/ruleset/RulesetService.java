@@ -37,7 +37,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryRepository;
 
 /**
  * Handles logic to retrieve and edit rulesets.
@@ -50,7 +50,7 @@ public class RulesetService {
 
 	private RulesetRepository rulesetRepository;
 	private RuleService ruleService;
-	private RepositoryRepository repositoryRepository;
+	private ScmRepositoryRepository repositoryRepository;
 	private JsonMapper mapper;
 
 	/**
@@ -63,7 +63,7 @@ public class RulesetService {
 	 */
 	public RulesetService(@Autowired RulesetRepository rulesetRepository,
 			@Autowired RuleService ruleService,
-			@Autowired RepositoryRepository repositoryRepository) {
+			@Autowired ScmRepositoryRepository repositoryRepository) {
 		this.rulesetRepository = rulesetRepository;
 		this.ruleService = ruleService;
 		this.repositoryRepository = repositoryRepository;

@@ -18,22 +18,22 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 @ExtendWith(SpringExtension.class)
 public class RepositoryServiceTest {
 
-	RepositoryService repoService;
+	ScmRepositoryService repoService;
 
 	@MockBean
-	RepositoryRepository mockRepoRepo;
+	ScmRepositoryRepository mockRepoRepo;
 
 	@MockBean
 	RulesetService mockRulesetService;
 
 	@BeforeEach
 	public void setup() {
-		this.repoService = new RepositoryService(mockRepoRepo, mockRulesetService);
+		this.repoService = new ScmRepositoryService(mockRepoRepo, mockRulesetService);
 	}
 
 	@Test
 	public void testSetRulesetForRepo() throws Exception {
-		RepositoryEntity entity = new RepositoryEntity();
+		ScmRepositoryEntity entity = new ScmRepositoryEntity();
 		BDDMockito
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
 						BDDMockito.anyString()))
@@ -51,7 +51,7 @@ public class RepositoryServiceTest {
 	public void testSetRulesetForRepoSupporting() throws Exception {
 		Assertions.assertThrows(RulesetException.class,
 				() -> {
-					RepositoryEntity entity = new RepositoryEntity();
+					ScmRepositoryEntity entity = new ScmRepositoryEntity();
 					BDDMockito
 							.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
 									BDDMockito.anyString()))
@@ -67,19 +67,19 @@ public class RepositoryServiceTest {
 	@Test
 	public void testUpsertRepoUpdate() {
 		long originalRevDate = 0L;
-		RepositoryEntity entity = new RepositoryEntity();
+		ScmRepositoryEntity entity = new ScmRepositoryEntity();
 		entity.setLastReviewedDate(originalRevDate);
 		BDDMockito
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
 						BDDMockito.anyString()))
 				.thenReturn(entity);
-		repoService.upsertRepo(ApiType.BITBUCKET_CLOUD.getTypeName(), "");
+		repoService.upsertRepo(ScmApiType.BITBUCKET_CLOUD.getTypeName(), "");
 		Assertions.assertTrue(entity.getLastReviewedDate() > originalRevDate);
 	}
 
 	@Test
 	public void testUpsertRepoInsert() {
-		String type = ApiType.BITBUCKET_CLOUD.getTypeName();
+		String type = ScmApiType.BITBUCKET_CLOUD.getTypeName();
 		String repoName = "foobar";
 		BDDMockito
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
@@ -87,11 +87,11 @@ public class RepositoryServiceTest {
 				.thenReturn(null);
 		repoService.upsertRepo(type, repoName);
 
-		ArgumentCaptor<RepositoryEntity> entityCaptor =
-				ArgumentCaptor.forClass(RepositoryEntity.class);
+		ArgumentCaptor<ScmRepositoryEntity> entityCaptor =
+				ArgumentCaptor.forClass(ScmRepositoryEntity.class);
 		BDDMockito.verify(mockRepoRepo).save(entityCaptor.capture());
 
-		RepositoryEntity entity = entityCaptor.getValue();
+		ScmRepositoryEntity entity = entityCaptor.getValue();
 		Assertions.assertEquals(type, entity.getApiLabel());
 		Assertions.assertEquals(repoName, entity.getRepoName());
 		Assertions.assertTrue(entity.getLastReviewedDate() > 0L);

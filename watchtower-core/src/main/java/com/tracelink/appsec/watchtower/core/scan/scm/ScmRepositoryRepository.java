@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
  * @author csmith
  */
 @Repository(value = "repoRepository")
-public interface RepositoryRepository extends JpaRepository<RepositoryEntity, Long> {
+public interface ScmRepositoryRepository extends JpaRepository<ScmRepositoryEntity, Long> {
 
-	RepositoryEntity findByApiLabelAndRepoName(String apiLabel, String repoName);
+	ScmRepositoryEntity findByApiLabelAndRepoName(String apiLabel, String repoName);
 }

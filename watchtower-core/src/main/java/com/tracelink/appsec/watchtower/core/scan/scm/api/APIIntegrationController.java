@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.apiintegration;
+package com.tracelink.appsec.watchtower.core.scan.scm.api;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.scm.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
 import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
 
@@ -45,7 +45,7 @@ public class APIIntegrationController {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("configuration/apisettings");
 
 		List<String> types =
-				Stream.of(ApiType.values()).map(s -> s.getTypeName()).collect(Collectors.toList());
+				Stream.of(ScmApiType.values()).map(s -> s.getTypeName()).collect(Collectors.toList());
 
 		mav.addObject("apiTypeNames", types);
 		mav.addObject("apiSettings", apiService.getAllSettings());
@@ -58,7 +58,7 @@ public class APIIntegrationController {
 	public WatchtowerModelAndView createApi(@RequestParam String apiType,
 			RedirectAttributes redirectAttributes) {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("configuration/apiconfigure");
-		ApiType type = ApiType.typeForName(apiType);
+		ScmApiType type = ScmApiType.typeForName(apiType);
 		if (type == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown API");
@@ -109,7 +109,7 @@ public class APIIntegrationController {
 			@RequestParam Optional<Long> apiId,
 			@RequestParam Map<String, String> parameters,
 			RedirectAttributes redirectAttributes) {
-		ApiType api = ApiType.typeForName(apiType);
+		ScmApiType api = ScmApiType.typeForName(apiType);
 		if (api == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown API");

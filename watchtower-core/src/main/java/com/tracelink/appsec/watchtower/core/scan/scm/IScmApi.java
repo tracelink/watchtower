@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.data.DiffFile;
 

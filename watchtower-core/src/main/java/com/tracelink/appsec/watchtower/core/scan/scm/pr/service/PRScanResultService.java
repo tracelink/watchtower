@@ -17,9 +17,9 @@ import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
@@ -44,7 +44,7 @@ public class PRScanResultService
 
 	private PRContainerRepository prRepo;
 
-	private RepositoryRepository repoRepo;
+	private ScmRepositoryRepository repoRepo;
 
 	private PRScanRepository scanRepo;
 
@@ -55,7 +55,7 @@ public class PRScanResultService
 	private APIIntegrationService apiIntegrationService;
 
 	public PRScanResultService(
-			@Autowired PRContainerRepository prRepo, @Autowired RepositoryRepository repoRepo,
+			@Autowired PRContainerRepository prRepo, @Autowired ScmRepositoryRepository repoRepo,
 			@Autowired PRScanRepository scanRepo, @Autowired PRViolationRepository vioRepo,
 			@Autowired RuleService ruleService,
 			@Autowired APIIntegrationService apiIntegrationService) {

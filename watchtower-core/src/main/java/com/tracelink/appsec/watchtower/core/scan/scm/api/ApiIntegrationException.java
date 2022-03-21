@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.apiintegration;
+package com.tracelink.appsec.watchtower.core.scan.scm.api;
 
 /**
  * Thrown to indicate an issue has happened related to an {@linkplain APIIntegrationEntity}

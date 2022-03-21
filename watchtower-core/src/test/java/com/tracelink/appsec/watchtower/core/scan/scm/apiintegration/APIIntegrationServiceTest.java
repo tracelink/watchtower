@@ -8,6 +8,11 @@ import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationRepository;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+
 @ExtendWith(SpringExtension.class)
 public class APIIntegrationServiceTest {
 

@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.apiintegration;
+package com.tracelink.appsec.watchtower.core.scan.scm.api;
 
 import java.util.Map;
 
@@ -11,7 +11,7 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
 
 /**
  * Entity description for the abstract API entity inherited object. Holds information about the api
@@ -64,11 +64,11 @@ public abstract class APIIntegrationEntity {
 	}
 
 	/**
-	 * Get the {@linkplain ApiType} for this Integration Entity
+	 * Get the {@linkplain ScmApiType} for this Integration Entity
 	 * 
-	 * @return the {@linkplain ApiType}
+	 * @return the {@linkplain ScmApiType}
 	 */
-	public abstract ApiType getApiType();
+	public abstract ScmApiType getApiType();
 
 	/**
 	 * Given a set of parameters from an HTTP request, populate the settings for this object

@@ -17,11 +17,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.scan.scm.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBPullRequestTest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
@@ -69,7 +69,7 @@ public class PRScanRestControllerTest {
 
 	@Test
 	public void testScanPRFailure() throws Exception {
-		String type = ApiType.BITBUCKET_CLOUD.getTypeName();
+		String type = ScmApiType.BITBUCKET_CLOUD.getTypeName();
 		BDDMockito.willThrow(RejectedExecutionException.class).given(mockScanService)
 				.doPullRequestScan(BDDMockito.any());
 		BDDMockito.when(mockApiService.findByEndpoint(type))

@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.scm.bb;
+package com.tracelink.appsec.watchtower.core.scan.scm.api.bb;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -23,7 +23,7 @@ import org.springframework.http.HttpStatus;
 import com.jayway.jsonpath.JsonPath;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.data.DiffFile;
 

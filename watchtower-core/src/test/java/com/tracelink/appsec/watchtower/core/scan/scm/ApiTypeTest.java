@@ -7,13 +7,13 @@ public class ApiTypeTest {
 
 	@Test
 	public void testAll() {
-		ApiType type = ApiType.BITBUCKET_CLOUD;
-		Assertions.assertEquals(type, ApiType.typeForName(type.getTypeName()));
+		ScmApiType type = ScmApiType.BITBUCKET_CLOUD;
+		Assertions.assertEquals(type, ScmApiType.typeForName(type.getTypeName()));
 	}
 
 	@Test
 	public void testNull() {
-		Assertions.assertNull(ApiType.typeForName(""));
+		Assertions.assertNull(ScmApiType.typeForName(""));
 	}
 
 }

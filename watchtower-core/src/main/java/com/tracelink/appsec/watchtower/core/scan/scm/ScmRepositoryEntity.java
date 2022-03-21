@@ -21,7 +21,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
  */
 @Entity
 @Table(name = "repositories")
-public class RepositoryEntity {
+public class ScmRepositoryEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "repo_entity_id")

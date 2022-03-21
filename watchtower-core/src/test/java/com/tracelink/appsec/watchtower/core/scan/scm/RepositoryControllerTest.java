@@ -36,7 +36,7 @@ public class RepositoryControllerTest {
 	private MockMvc mockMvc;
 
 	@MockBean
-	private RepositoryService mockRepoService;
+	private ScmRepositoryService mockRepoService;
 
 	@MockBean
 	private RulesetService mockRulesetService;
@@ -47,9 +47,9 @@ public class RepositoryControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.REPO_SETTINGS_VIEW_NAME})
 	public void testGetRepos() throws Exception {
-		Map<String, List<RepositoryEntity>> repos = new LinkedHashMap<>();
-		List<RepositoryEntity> entities = new ArrayList<>();
-		entities.add(BDDMockito.mock(RepositoryEntity.class));
+		Map<String, List<ScmRepositoryEntity>> repos = new LinkedHashMap<>();
+		List<ScmRepositoryEntity> entities = new ArrayList<>();
+		entities.add(BDDMockito.mock(ScmRepositoryEntity.class));
 		repos.put("ApiLabel", entities);
 
 		BDDMockito.when(mockRepoService.getAllRepos()).thenReturn(repos);
@@ -63,7 +63,7 @@ public class RepositoryControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.REPO_SETTINGS_MODIFY_NAME})
 	public void testSetRulesetForRepoSuccess() throws Exception {
-		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
 		String repo = "repo";
 		RulesetEntity rulesetEntity = new RulesetEntity();
 		rulesetEntity.setName("Default");
@@ -97,7 +97,7 @@ public class RepositoryControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.REPO_SETTINGS_MODIFY_NAME})
 	public void testSetRulesetForRepoRulesetFailure() throws Exception {
-		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
 		String repo = "repo";
 		BDDMockito.doThrow(RulesetNotFoundException.class).when(mockRepoService)
 				.setRulesetForRepo(BDDMockito.anyLong(), BDDMockito.anyString(),

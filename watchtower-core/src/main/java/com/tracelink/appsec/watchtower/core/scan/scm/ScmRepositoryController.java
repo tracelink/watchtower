@@ -16,7 +16,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
 
 /**
  * Controller for displaying repositories and their rulesets as well as changing rulesets
@@ -26,13 +26,13 @@ import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.ApiIntegrati
 @Controller
 @RequestMapping("/repository")
 @PreAuthorize("hasAuthority('" + CorePrivilege.REPO_SETTINGS_VIEW_NAME + "')")
-public class RepositoryController {
+public class ScmRepositoryController {
 
-	private RepositoryService repoService;
+	private ScmRepositoryService repoService;
 
 	private RulesetService rulesetService;
 
-	public RepositoryController(@Autowired RepositoryService repoService,
+	public ScmRepositoryController(@Autowired ScmRepositoryService repoService,
 			@Autowired RulesetService rulesetService) {
 		this.repoService = repoService;
 		this.rulesetService = rulesetService;

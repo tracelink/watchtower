@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;

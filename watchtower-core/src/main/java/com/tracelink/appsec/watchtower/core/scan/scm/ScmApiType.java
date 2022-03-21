@@ -12,7 +12,7 @@ import javax.persistence.Converter;
  *
  * @author csmith
  */
-public enum ApiType {
+public enum ScmApiType {
 	/**
 	 * The Bitbucket API
 	 */
@@ -24,7 +24,7 @@ public enum ApiType {
 	private final String template;
 
 
-	ApiType(String typeName, String template) {
+	ScmApiType(String typeName, String template) {
 		this.typeName = typeName;
 		this.template = template;
 	}
@@ -50,8 +50,8 @@ public enum ApiType {
 	 * @param name the string representation of the ApiType
 	 * @return an ApiType for this name, or null
 	 */
-	public static ApiType typeForName(String name) {
-		for (ApiType t : ApiType.values()) {
+	public static ScmApiType typeForName(String name) {
+		for (ScmApiType t : ScmApiType.values()) {
 			if (t.getTypeName().equalsIgnoreCase(name)) {
 				return t;
 			}
@@ -60,21 +60,21 @@ public enum ApiType {
 	}
 
 	/**
-	 * Converts the {@linkplain ApiType} into a String for storage in the DB
+	 * Converts the {@linkplain ScmApiType} into a String for storage in the DB
 	 *
 	 * @author csmith
 	 */
 	@Converter
-	public static class ApiTypeConverter implements AttributeConverter<ApiType, String> {
+	public static class ApiTypeConverter implements AttributeConverter<ScmApiType, String> {
 
 		@Override
-		public String convertToDatabaseColumn(ApiType attribute) {
+		public String convertToDatabaseColumn(ScmApiType attribute) {
 			return attribute.getTypeName();
 		}
 
 		@Override
-		public ApiType convertToEntityAttribute(String dbData) {
-			return ApiType.typeForName(dbData);
+		public ScmApiType convertToEntityAttribute(String dbData) {
+			return ScmApiType.typeForName(dbData);
 		}
 
 	}
