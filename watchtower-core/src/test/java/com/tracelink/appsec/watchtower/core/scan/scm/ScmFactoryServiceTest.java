@@ -9,14 +9,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBPullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBPullRequestTest;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.IWatchtowerApi;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBCloudApi;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 
 @ExtendWith(SpringExtension.class)
 public class ScmFactoryServiceTest {
@@ -26,23 +25,9 @@ public class ScmFactoryServiceTest {
 	@Mock
 	private PullRequest mockPR;
 
-	private ScmFactoryService scannerFactory = new ScmFactoryService();
+	private ApiFactoryService scannerFactory = new ApiFactoryService();
 
 
-	@Test
-	public void testCreatePrFromAutomation() throws Exception {
-		APIIntegrationEntity entity = new BBCloudIntegrationEntity();
-		PullRequest pr = scannerFactory.createPrFromAutomation(entity,
-				BBPullRequestTest.buildStandardJSONString());
-		Assertions.assertTrue(pr instanceof BBPullRequest);
-		BBPullRequest bbpr = (BBPullRequest) pr;
-		Assertions.assertEquals(BBPullRequestTest.author, bbpr.getAuthor());
-		Assertions.assertEquals(BBPullRequestTest.sourceBranch, bbpr.getSourceBranch());
-		Assertions.assertEquals(BBPullRequestTest.destinationBranch, bbpr.getDestinationBranch());
-		Assertions.assertEquals(BBPullRequestTest.repo, bbpr.getRepoName());
-		Assertions.assertEquals(BBPullRequestTest.prId, Integer.parseInt(bbpr.getPrId()));
-		Assertions.assertEquals(PullRequestState.ACTIVE, bbpr.getState());
-	}
 
 	@Test
 	public void testMakeEntityFromParams() throws ApiIntegrationException {
@@ -58,9 +43,9 @@ public class ScmFactoryServiceTest {
 
 		BBCloudIntegrationEntity entity =
 				(BBCloudIntegrationEntity) scannerFactory
-						.makeEntityForParams(ScmApiType.BITBUCKET_CLOUD, params);
+						.makeEntityForParams(ApiType.BITBUCKET_CLOUD, params);
 		Assertions.assertEquals(apiLabel, entity.getApiLabel());
-		Assertions.assertEquals(ScmApiType.BITBUCKET_CLOUD, entity.getApiType());
+		Assertions.assertEquals(ApiType.BITBUCKET_CLOUD, entity.getApiType());
 		Assertions.assertEquals(user, entity.getUser());
 		Assertions.assertEquals(auth, entity.getAuth());
 		Assertions.assertEquals(workspace, entity.getWorkspace());
@@ -68,7 +53,7 @@ public class ScmFactoryServiceTest {
 
 	@Test
 	public void testCreateApiForApiEntity() throws ApiIntegrationException {
-		IScmApi api = scannerFactory.createApiForApiEntity(new BBCloudIntegrationEntity());
+		IWatchtowerApi api = scannerFactory.createApiForApiEntity(new BBCloudIntegrationEntity());
 		Assertions.assertTrue(api instanceof BBCloudApi);
 	}
 

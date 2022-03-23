@@ -24,9 +24,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryRepository;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestTest;
@@ -199,7 +199,7 @@ public class PRScanResultServiceTest {
 		long submitDate = 1L;
 		long startDate = 100L;
 		long endDate = 1000L;
-		String apiType = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiType = ApiType.BITBUCKET_CLOUD.getTypeName();
 		String repoName = "repo";
 
 		PullRequestScanEntity se =
@@ -243,7 +243,7 @@ public class PRScanResultServiceTest {
 		long submitDate = 1L;
 		long startDate = 100L;
 		long endDate = 1000L;
-		String apiType = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiType = ApiType.BITBUCKET_CLOUD.getTypeName();
 		String repoName = "repo";
 
 		PullRequestScanEntity se =

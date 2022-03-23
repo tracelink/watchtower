@@ -4,15 +4,15 @@ import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.AbstractScmScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.processor.AbstractProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.CallableCreator;
 import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 
 /**
  * Scanner that processes a file as JSON and runs a JSONPath query against it.
@@ -20,10 +20,10 @@ import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcess
  * @author csmith
  *
  */
-public class JsonScanner implements IScanner {
+public class JsonScanner extends AbstractScmScanner {
 
 	@Override
-	public ScanReport scan(ScanConfig config) {
+	public ScanReport scan(ScmScanConfig config) {
 		ScanReport report = new ScanReport();
 		Benchmarking<JsonRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
@@ -64,4 +64,5 @@ public class JsonScanner implements IScanner {
 	private CallableCreator getCreator() {
 		return (file, ruleset) -> new JsonCallable(file, ruleset);
 	}
+
 }

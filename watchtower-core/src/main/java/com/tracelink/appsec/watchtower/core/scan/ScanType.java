@@ -7,7 +7,12 @@ package com.tracelink.appsec.watchtower.core.scan;
  *
  */
 public enum ScanType {
-	PULL_REQUEST("pull_request", "Pull Request"), UPLOAD("upload", "Upload");
+	// Code Scans
+	PULL_REQUEST("pull_request", "Pull Request"),
+	UPLOAD("upload", "Upload"),
+	// Container Scans
+	CONTAINER("container_scans", "Container"),
+	;
 
 	private final String typeName;
 	private final String displayName;

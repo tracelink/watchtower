@@ -14,7 +14,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundExcept
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 
 /**
  * Handles logic around SCM repositories and their rulesets

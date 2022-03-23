@@ -3,6 +3,7 @@ package com.tracelink.appsec.watchtower.core.scan.scm.pr.controller;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.hamcrest.Matchers;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -17,13 +18,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBPullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.bb.BBPullRequestTest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanningService;
@@ -43,7 +44,7 @@ public class PRScanRestControllerTest {
 	private PRScanResultService mockResultService;
 
 	@MockBean
-	private ScmFactoryService mockScmFactory;
+	private ApiFactoryService mockScmFactory;
 
 	@MockBean
 	private APIIntegrationService mockApiService;
@@ -51,31 +52,29 @@ public class PRScanRestControllerTest {
 	@Test
 	public void testScanPRSuccess() throws Exception {
 		APIIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
-		String prJSON = BBPullRequestTest.buildStandardJSONString();
+		JSONObject prJSON = BBPullRequestTest.buildJSON();
+		prJSON.getJSONObject("pullrequest").put("state", PullRequestState.ACTIVE);
 		String apiLabel = "apiLabel";
-		PullRequest pr = new PullRequest(apiLabel);
-		pr.setState(PullRequestState.ACTIVE);
-		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(apiEntity);
-		BDDMockito.when(mockScmFactory.createPrFromAutomation(apiEntity, prJSON)).thenReturn(pr);
+		BDDMockito.when(mockApiService.findByEndpoint(BDDMockito.anyString()))
+				.thenReturn(apiEntity);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/scan/" + apiLabel)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(prJSON)).andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+				.content(prJSON.toString()))
+				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.content()
 						.string(Matchers.is("Added scan successfully")));
 
-		BDDMockito.verify(mockScanService).doPullRequestScan(pr);
+		BDDMockito.verify(mockScanService).doPullRequestScan(BDDMockito.any(BBPullRequest.class));
 	}
 
 	@Test
 	public void testScanPRFailure() throws Exception {
-		String type = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String type = ApiType.BITBUCKET_CLOUD.getTypeName();
 		BDDMockito.willThrow(RejectedExecutionException.class).given(mockScanService)
 				.doPullRequestScan(BDDMockito.any());
 		BDDMockito.when(mockApiService.findByEndpoint(type))
 				.thenReturn(BDDMockito.mock(APIIntegrationEntity.class));
-		BDDMockito.when(mockScmFactory.createPrFromAutomation(BDDMockito.any(),
-				BDDMockito.anyString())).thenReturn(new PullRequest(""));
 
 		String prJSON = BBPullRequestTest.buildStandardJSONString();
 
@@ -89,12 +88,10 @@ public class PRScanRestControllerTest {
 	@Test
 	public void testResolveOnDeclinedPr() throws Exception {
 		APIIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
-		String prJSON = BBPullRequestTest.buildJSON().toString();
+		JSONObject prJSON = BBPullRequestTest.buildJSON();
+		prJSON.getJSONObject("pullrequest").put("state", PullRequestState.DECLINED);
 		String apiLabel = "apiLabel";
-		PullRequest pr = new PullRequest(apiLabel);
-		pr.setState(PullRequestState.DECLINED);
 		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(apiEntity);
-		BDDMockito.when(mockScmFactory.createPrFromAutomation(apiEntity, prJSON)).thenReturn(pr);
 
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/scan/" + apiLabel)
@@ -105,7 +102,7 @@ public class PRScanRestControllerTest {
 						.string(Matchers.containsString("PR already declined")));
 
 		BDDMockito.verify(mockScanService, BDDMockito.never()).doPullRequestScan(BDDMockito.any());
-		BDDMockito.verify(mockResultService).markPrResolved(pr);
+		BDDMockito.verify(mockResultService).markPrResolved(BDDMockito.any(BBPullRequest.class));
 	}
 
 }

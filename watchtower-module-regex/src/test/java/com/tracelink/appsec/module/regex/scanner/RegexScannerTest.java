@@ -13,9 +13,9 @@ import com.tracelink.appsec.module.regex.controller.RegexRuleEditControllerTest;
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 
 @ExtendWith(MockitoExtension.class)
 public class RegexScannerTest {
@@ -34,7 +34,7 @@ public class RegexScannerTest {
 		RulesetDto ruleset = new RulesetDto();
 		RegexCustomRuleDto rule = RegexRuleEditControllerTest.getRegexRuleDto();
 		ruleset.setRules(Collections.singleton(rule));
-		ScanConfig config = new ScanConfig();
+		ScmScanConfig config = new ScmScanConfig();
 		config.setRuleset(ruleset);
 		config.setBenchmarkEnabled(true);
 		config.setWorkingDirectory(Files.createTempDirectory(null));
@@ -53,6 +53,7 @@ public class RegexScannerTest {
 
 	@Test
 	public void testSupportedRules() {
-		Assertions.assertEquals(RegexCustomRuleDto.class, new RegexScanner().getSupportedRuleClass());
+		Assertions.assertEquals(RegexCustomRuleDto.class,
+				new RegexScanner().getSupportedRuleClass());
 	}
 }

@@ -16,7 +16,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 
 /**
  * Controller for displaying repositories and their rulesets as well as changing rulesets

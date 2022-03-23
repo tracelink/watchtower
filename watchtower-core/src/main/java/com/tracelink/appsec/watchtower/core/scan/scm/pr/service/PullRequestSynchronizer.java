@@ -9,11 +9,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
@@ -32,14 +32,14 @@ public class PullRequestSynchronizer {
 
 	private PRContainerRepository prRepo;
 
-	private ScmFactoryService scanFactoryService;
+	private ApiFactoryService scanFactoryService;
 
 	private PRScanResultService prResultService;
 
 	private APIIntegrationService apiIntegrationService;
 
 	public PullRequestSynchronizer(@Autowired PRContainerRepository prRepo,
-			@Autowired ScmFactoryService scanFactoryService,
+			@Autowired ApiFactoryService scanFactoryService,
 			@Autowired PRScanResultService prResultService,
 			@Autowired APIIntegrationService apiIntegrationService) {
 		this.prRepo = prRepo;
@@ -70,7 +70,7 @@ public class PullRequestSynchronizer {
 					PullRequest pr = entity.toPullRequest();
 					APIIntegrationEntity apiEntity =
 							apiIntegrationService.findByLabel(pr.getApiLabel());
-					IScmApi api = scanFactoryService.createApiForApiEntity(apiEntity);
+					IScmApi api = (IScmApi) scanFactoryService.createApiForApiEntity(apiEntity);
 					PullRequest filledPR = api.updatePRData(pr);
 					if (filledPR.getState() == PullRequestState.DECLINED) {
 						prResultService.markPrResolved(filledPR);

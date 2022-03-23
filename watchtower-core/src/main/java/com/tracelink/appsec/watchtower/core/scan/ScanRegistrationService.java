@@ -1,6 +1,8 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -42,8 +44,16 @@ public class ScanRegistrationService {
 		scanners.put(module, scanner);
 	}
 
-	public Collection<IScanner> getScanners() {
-		return this.scanners.values();
+	@SuppressWarnings("unchecked")
+	public <C extends AbstractScanConfig> Collection<IScanner<C>> getScanners(
+			Class<C> configClass) {
+		List<IScanner<C>> scanners = new ArrayList<>();
+		for (IScanner<?> scanner : this.scanners.values()) {
+			if (configClass.isAssignableFrom(scanner.getSupportedConfigClass())) {
+				scanners.add((IScanner<C>) scanner);
+			}
+		}
+		return scanners;
 	}
 
 	public boolean isEmpty() {

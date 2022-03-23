@@ -18,13 +18,14 @@ import com.tracelink.appsec.watchtower.core.logging.LogsService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PRScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
@@ -41,7 +42,7 @@ import ch.qos.logback.classic.Level;
 public class PRScanningService extends AbstractScanningService {
 	private static Logger LOG = LoggerFactory.getLogger(PRScanningService.class);
 
-	private ScmFactoryService scmFactoryService;
+	private ApiFactoryService scmFactoryService;
 
 	private LogsService logService;
 
@@ -53,7 +54,7 @@ public class PRScanningService extends AbstractScanningService {
 
 	private APIIntegrationService apiService;
 
-	public PRScanningService(@Autowired ScmFactoryService scmFactoryService,
+	public PRScanningService(@Autowired ApiFactoryService scmFactoryService,
 			@Autowired LogsService logService,
 			@Autowired ScmRepositoryService repoService,
 			@Autowired PRScanResultService prScanResultService,
@@ -104,14 +105,14 @@ public class PRScanningService extends AbstractScanningService {
 			return;
 		}
 		APIIntegrationEntity apiEntity = apiService.findByEndpoint(pr.getApiLabel());
-		IScmApi api = scmFactoryService.createApiForApiEntity(apiEntity);
+		IScmApi api = (IScmApi) scmFactoryService.createApiForApiEntity(apiEntity);
 		pr = api.updatePRData(pr);
 
 		// Create scan agent
 		PRScanAgent scanAgent = new PRScanAgent(pr)
 				.withApi(api)
 				.withScanResultService(prScanResultService)
-				.withScanners(scanRegistrationService.getScanners())
+				.withScanners(scanRegistrationService.getScanners(ScmScanConfig.class))
 				.withRuleset(ruleset.toDto())
 				.withBenchmarkEnabled(!logService.getLogsLevel().isGreaterOrEqual(Level.INFO));
 
@@ -152,7 +153,7 @@ public class PRScanningService extends AbstractScanningService {
 			APIIntegrationEntity entity) {
 		List<PullRequest> prs = new ArrayList<>();
 		try {
-			IScmApi api = scmFactoryService.createApiForApiEntity(entity);
+			IScmApi api = (IScmApi) scmFactoryService.createApiForApiEntity(entity);
 			List<ScmRepositoryEntity> repos =
 					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
 			for (ScmRepositoryEntity repo : repos) {

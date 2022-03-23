@@ -6,13 +6,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
 
 public class RepositoryEntityTest {
 
 	@Test
 	public void testDAO() {
 		long lastReviewedDate = System.currentTimeMillis();
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		String repoName = "repoName";
 		RulesetEntity rulesetEntity = new RulesetEntity();
 		rulesetEntity.setName("Default");

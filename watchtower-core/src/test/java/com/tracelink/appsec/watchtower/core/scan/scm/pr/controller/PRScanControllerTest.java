@@ -24,9 +24,9 @@ import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
@@ -46,7 +46,7 @@ public class PRScanControllerTest {
 	private PRScanResultService mockScanResultService;
 
 	@MockBean
-	private ScmFactoryService mockScannerFactory;
+	private ApiFactoryService mockScannerFactory;
 
 	///////////////////
 	// Get scan
@@ -121,7 +121,7 @@ public class PRScanControllerTest {
 				.doPullRequestScan(BDDMockito.any());
 		String prid = "213";
 		String repo = "repo";
-		String type = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String type = ApiType.BITBUCKET_CLOUD.getTypeName();
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/scan").param("prid", prid).param("repo", repo)
 				.param("type", type)

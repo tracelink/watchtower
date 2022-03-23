@@ -14,6 +14,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
 
 @ExtendWith(SpringExtension.class)
 public class RepositoryServiceTest {
@@ -73,13 +74,13 @@ public class RepositoryServiceTest {
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
 						BDDMockito.anyString()))
 				.thenReturn(entity);
-		repoService.upsertRepo(ScmApiType.BITBUCKET_CLOUD.getTypeName(), "");
+		repoService.upsertRepo(ApiType.BITBUCKET_CLOUD.getTypeName(), "");
 		Assertions.assertTrue(entity.getLastReviewedDate() > originalRevDate);
 	}
 
 	@Test
 	public void testUpsertRepoInsert() {
-		String type = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String type = ApiType.BITBUCKET_CLOUD.getTypeName();
 		String repoName = "foobar";
 		BDDMockito
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),

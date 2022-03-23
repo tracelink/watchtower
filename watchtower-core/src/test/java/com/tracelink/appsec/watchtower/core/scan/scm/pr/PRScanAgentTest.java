@@ -24,7 +24,7 @@ import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.report.ScanViolation;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.data.DiffFile;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
 

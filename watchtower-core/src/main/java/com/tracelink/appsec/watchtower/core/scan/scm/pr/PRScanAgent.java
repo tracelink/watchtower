@@ -28,8 +28,8 @@ import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanAgent;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.scm.AbstractScmScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.data.DiffFile;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
@@ -41,12 +41,11 @@ import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultServ
  * @author csmith, mcool
  */
 public class PRScanAgent extends
-		AbstractScanAgent<PRScanAgent> {
+		AbstractScmScanAgent<PRScanAgent> {
 	private static Logger LOG = LoggerFactory.getLogger(PRScanAgent.class);
 	private static final String SEP = "  \n";
 
 	private PullRequest pullRequest;
-	private Path workingDirectory;
 	private long startTime;
 
 	private IScmApi api;
@@ -55,7 +54,6 @@ public class PRScanAgent extends
 	public PRScanAgent(PullRequest pullRequest) {
 		super(pullRequest.getPRString());
 		this.pullRequest = pullRequest;
-		workingDirectory = createWorkingDirectory();
 	}
 
 	/**
@@ -150,11 +148,6 @@ public class PRScanAgent extends
 	}
 
 	@Override
-	protected Path getWorkingDirectory() {
-		return workingDirectory;
-	}
-
-	@Override
 	protected void handleScanException(Exception e) {
 		LOG.error("Exception while scanning. Scan Name: " + getScanName(), e);
 	}
@@ -176,8 +169,8 @@ public class PRScanAgent extends
 	 */
 	private void collectFiles() throws ScanInitializationException {
 		try {
-			api.downloadSourceForPullRequest(pullRequest, workingDirectory);
-			Files.walkFileTree(workingDirectory, new FileVisitor<Path>() {
+			api.downloadSourceForPullRequest(pullRequest, getWorkingDirectory());
+			Files.walkFileTree(getWorkingDirectory(), new FileVisitor<Path>() {
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
 						throws IOException {

@@ -22,19 +22,19 @@ import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
 import com.tracelink.appsec.watchtower.core.logging.LogsService;
 import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.AbstractScmScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
 
@@ -47,7 +47,7 @@ public class PRScanningServiceTest {
 			CoreLogWatchExtension.forClass(PRScanningService.class);
 
 	@MockBean
-	private ScmFactoryService mockScanFactory;
+	private ApiFactoryService mockScanFactory;
 
 	@MockBean
 	private LogsService mockLogsService;
@@ -88,7 +88,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockApi.updatePRData(BDDMockito.any())).thenAnswer(e -> e.getArgument(0));
 		// Test that scan runs as expected
 		BDDMockito.when(mockScanRegistrationService.isEmpty()).thenReturn(false);
-		BDDMockito.when(mockScanRegistrationService.getScanners())
+		BDDMockito.when(mockScanRegistrationService.getScanners(ScmScanConfig.class))
 				.thenReturn(Collections.singleton(new MockScanner()));
 		scanningService.doPullRequestScan(mockPR);
 		// ran without exceptions is expected
@@ -432,10 +432,10 @@ public class PRScanningServiceTest {
 				.thenReturn(repo);
 	}
 
-	private class MockScanner implements IScanner {
+	private class MockScanner extends AbstractScmScanner {
 
 		@Override
-		public ScanReport scan(ScanConfig config) {
+		public ScanReport scan(ScmScanConfig config) {
 			return null;
 		}
 

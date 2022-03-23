@@ -26,6 +26,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanContainerEntity;
 
@@ -231,7 +232,8 @@ public class UploadScanningServiceTest {
 
 			scanningService.recoverFromDowntime();
 			// testing the agent code is called
-			BDDMockito.verify(mockScanRegistrationService, BDDMockito.times(2)).getScanners();
+			BDDMockito.verify(mockScanRegistrationService, BDDMockito.times(2))
+					.getScanners(ScmScanConfig.class);
 			Assertions.assertFalse(file1.toFile().exists());
 			Assertions.assertFalse(file2.toFile().exists());
 		} finally {

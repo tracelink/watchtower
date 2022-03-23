@@ -9,27 +9,30 @@ import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageApiFactory;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrApi;
+import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrImage;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageRepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageRepositoryRepository;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
 
 @Service
 public class EcrScanningService extends AbstractScanningService {
 	private static Logger LOG = LoggerFactory.getLogger(EcrScanningService.class);
 
-	private ImageApiFactory imageApiFactory;
+	private ApiFactoryService apiFactory;
 	private ImageRepositoryRepository imageRepoRepository;
 	private APIIntegrationService apiIntegrationService;
 
 	private EcrScanResultService ecrScanResultService;
 
-	public EcrScanningService(@Autowired ImageApiFactory imageApiFactory,
+	public EcrScanningService(@Autowired ApiFactoryService apiFactory,
 			@Autowired ImageRepositoryRepository imageRepoRepository,
 			@Autowired EcrScanResultService ecrScanResultService) {
 		super(1, false);
-		this.imageApiFactory = imageApiFactory;
+		this.apiFactory = apiFactory;
 		this.imageRepoRepository = imageRepoRepository;
 		this.ecrScanResultService = ecrScanResultService;
 	}
@@ -38,8 +41,9 @@ public class EcrScanningService extends AbstractScanningService {
 	 * Scan the incoming image
 	 * 
 	 * @param image the ECR Image to be scanned
+	 * @throws ApiIntegrationException
 	 */
-	public void doEcrScan(EcrImage image) {
+	public void doEcrScan(EcrImage image) throws ApiIntegrationException {
 		ImageRepositoryEntity repository = imageRepoRepository
 				.upsertRepository(image.getAccountId(), image.getRepository());
 
@@ -53,11 +57,11 @@ public class EcrScanningService extends AbstractScanningService {
 
 		APIIntegrationEntity apiIntegration =
 				apiIntegrationService.findByEndpoint(image.getAccountId());
-		EcrApi api = imageApiFactory
-				.createApiForApiIntegration(apiIntegration);
+		EcrApi api = (EcrApi) apiFactory
+				.createApiForApiEntity(apiIntegration);
 
 		// Create scan agent
-		EcrScanAgent scanAgent = new EcrScanAgent(image)
+		EcrScanAgent scanAgent = new EcrScanAgent(image.getImageName())
 				.withApi(api)
 				.withScanResultService(ecrScanResultService)
 				.withRuleset(allowlist.toDto());

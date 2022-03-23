@@ -21,13 +21,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
-import com.tracelink.appsec.watchtower.core.scan.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBCloudIntegrationEntity;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -40,7 +40,7 @@ public class APIIntegrationControllerTest {
 	APIIntegrationService mockApiService;
 
 	@MockBean
-	ScmFactoryService mockScmService;
+	ApiFactoryService mockScmService;
 
 	///////////////////
 	// Get apisettings
@@ -52,7 +52,7 @@ public class APIIntegrationControllerTest {
 		BDDMockito.when(mockApiService.getAllSettings()).thenReturn(integrations);
 		mockMvc.perform(MockMvcRequestBuilders.get("/apisettings"))
 				.andExpect(MockMvcResultMatchers.model().attribute("apiTypeNames",
-						Matchers.hasItems(ScmApiType.BITBUCKET_CLOUD.getTypeName())))
+						Matchers.hasItems(ApiType.BITBUCKET_CLOUD.getTypeName())))
 				.andExpect(MockMvcResultMatchers.model().attribute("apiSettings",
 						Matchers.is(integrations)));
 	}
@@ -64,7 +64,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testCreateApi() throws Exception {
-		ScmApiType type = ScmApiType.BITBUCKET_CLOUD;
+		ApiType type = ApiType.BITBUCKET_CLOUD;
 		mockMvc.perform(MockMvcRequestBuilders.get("/apisettings/create").param("apiType",
 				type.getTypeName()))
 				.andExpect(MockMvcResultMatchers.model().attribute("apiType", type))
@@ -128,7 +128,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testDeleteSettingsSuccess() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
 				.thenReturn(BDDMockito.mock(APIIntegrationEntity.class));
 		mockMvc.perform(
@@ -157,7 +157,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testUpdateSettingsNewSetting() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		APIIntegrationEntity entity = BDDMockito.mock(APIIntegrationEntity.class);
 		BDDMockito.when(mockScmService.makeEntityForParams(BDDMockito.any(), BDDMockito.any()))
 				.thenReturn(entity);
@@ -171,7 +171,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testUpdateSettingsExistingSetting() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
 		BDDMockito.when(mockScmService.makeEntityForParams(BDDMockito.any(), BDDMockito.any()))
 				.thenReturn(mockEntity);
@@ -191,7 +191,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
 	public void testTestConnectionSuccess() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
 		BDDMockito.when(mockEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
@@ -211,7 +211,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
 	public void testTestConnectionFail() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
 		BDDMockito.when(mockEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
@@ -230,7 +230,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
 	public void testTestConnectionUnknown() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/apisettings/testConnection")
 						.param("apiLabel", apiLabel)

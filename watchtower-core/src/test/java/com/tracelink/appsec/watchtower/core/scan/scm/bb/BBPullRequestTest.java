@@ -9,7 +9,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBPullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
 
 public class BBPullRequestTest {

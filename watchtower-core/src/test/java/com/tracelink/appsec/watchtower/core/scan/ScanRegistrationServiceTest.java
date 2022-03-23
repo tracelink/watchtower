@@ -9,6 +9,7 @@ import org.mockito.BDDMockito;
 
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 
 public class ScanRegistrationServiceTest {
 
@@ -23,9 +24,11 @@ public class ScanRegistrationServiceTest {
 	public void testRegister() throws Exception {
 		Assertions.assertTrue(registrationService.isEmpty());
 		IScanner mockScanner = BDDMockito.mock(IScanner.class);
+		BDDMockito.when(mockScanner.getSupportedConfigClass()).thenReturn(ScmScanConfig.class);
 		registrationService.registerScanner("mock", mockScanner);
 		Assertions.assertFalse(registrationService.isEmpty());
-		MatcherAssert.assertThat(registrationService.getScanners(), Matchers.contains(mockScanner));
+		MatcherAssert.assertThat(registrationService.getScanners(ScmScanConfig.class),
+				Matchers.contains(mockScanner));
 	}
 
 	@Test

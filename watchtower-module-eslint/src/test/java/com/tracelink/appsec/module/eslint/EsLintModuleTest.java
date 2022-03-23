@@ -22,7 +22,7 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
+import com.tracelink.appsec.watchtower.test.ScmTestScanConfiguration;
 
 public class EsLintModuleTest extends ScannerModuleTest {
 
@@ -73,7 +73,7 @@ public class EsLintModuleTest extends ScannerModuleTest {
 				.withRuleSupplier(ruleSupplier).withSchemaName("eslint_schema_history")
 				.withSupportedRuleClass(EsLintCustomRuleDto.class)
 				.withTestScanConfigurationBuilder(
-						new TestScanConfiguration()
+						new ScmTestScanConfiguration()
 								.withTargetResourceFile("/scan/simple.js")
 								.withRuleset(new RulesetDto() {
 									{

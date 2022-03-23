@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanAgent;
+import com.tracelink.appsec.watchtower.core.scan.scm.AbstractScmScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
@@ -28,10 +28,9 @@ import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResult
  *
  * @author csmith
  */
-public class UploadScanAgent extends AbstractScanAgent<UploadScanAgent> {
+public class UploadScanAgent extends AbstractScmScanAgent<UploadScanAgent> {
 	private static Logger LOG = LoggerFactory.getLogger(UploadScanAgent.class);
 
-	private Path workingDirectory;
 	private Path zipFile;
 	private UploadScanResultService uploadScanResultService;
 	private String uploadTicket;
@@ -39,7 +38,6 @@ public class UploadScanAgent extends AbstractScanAgent<UploadScanAgent> {
 	public UploadScanAgent(UploadScanContainerEntity upload) {
 		super(upload.getName());
 		this.uploadTicket = upload.getTicket();
-		this.workingDirectory = createWorkingDirectory();
 		this.zipFile = upload.getZipPath();
 	}
 
@@ -63,7 +61,7 @@ public class UploadScanAgent extends AbstractScanAgent<UploadScanAgent> {
 		}
 		this.uploadScanResultService.markScanInProgress(uploadTicket);
 		try {
-			secureUnzipBlock(new ZipFile(this.zipFile.toFile()), workingDirectory.toFile());
+			secureUnzipBlock(new ZipFile(this.zipFile.toFile()), getWorkingDirectory().toFile());
 		} catch (IOException e) {
 			throw new ScanInitializationException("Failed to unzip", e);
 		}
@@ -82,11 +80,6 @@ public class UploadScanAgent extends AbstractScanAgent<UploadScanAgent> {
 	}
 
 	@Override
-	protected Path getWorkingDirectory() {
-		return workingDirectory;
-	}
-
-	@Override
 	protected void handleScanException(Exception e) {
 		LOG.error("Exception while scanning. Scan Name: " + getScanName() + " TicketId: "
 				+ uploadTicket, e);
@@ -95,7 +88,7 @@ public class UploadScanAgent extends AbstractScanAgent<UploadScanAgent> {
 
 	@Override
 	protected void clean() {
-		FileUtils.deleteQuietly(workingDirectory.toFile());
+		FileUtils.deleteQuietly(getWorkingDirectory().toFile());
 		FileUtils.deleteQuietly(zipFile.toFile());
 	}
 

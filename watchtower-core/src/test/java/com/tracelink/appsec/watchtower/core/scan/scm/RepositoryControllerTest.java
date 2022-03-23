@@ -26,6 +26,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundExcept
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -63,7 +64,7 @@ public class RepositoryControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.REPO_SETTINGS_MODIFY_NAME})
 	public void testSetRulesetForRepoSuccess() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		String repo = "repo";
 		RulesetEntity rulesetEntity = new RulesetEntity();
 		rulesetEntity.setName("Default");
@@ -97,7 +98,7 @@ public class RepositoryControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.REPO_SETTINGS_MODIFY_NAME})
 	public void testSetRulesetForRepoRulesetFailure() throws Exception {
-		String apiLabel = ScmApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		String repo = "repo";
 		BDDMockito.doThrow(RulesetNotFoundException.class).when(mockRepoService)
 				.setRulesetForRepo(BDDMockito.anyLong(), BDDMockito.anyString(),

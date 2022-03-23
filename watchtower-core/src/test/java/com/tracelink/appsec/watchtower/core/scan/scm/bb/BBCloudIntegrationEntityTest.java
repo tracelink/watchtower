@@ -8,9 +8,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmApiType;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBCloudIntegrationEntity;
 
 public class BBCloudIntegrationEntityTest {
 
@@ -26,7 +26,7 @@ public class BBCloudIntegrationEntityTest {
 		entity.setUser(user);
 		entity.setAuth(auth);
 		Assertions.assertEquals(apiLabel, entity.getApiLabel());
-		Assertions.assertEquals(ScmApiType.BITBUCKET_CLOUD, entity.getApiType());
+		Assertions.assertEquals(ApiType.BITBUCKET_CLOUD, entity.getApiType());
 		Assertions.assertEquals(user, entity.getUser());
 		Assertions.assertEquals(auth, entity.getAuth());
 		Assertions.assertEquals(workspace, entity.getWorkspace());
@@ -64,7 +64,7 @@ public class BBCloudIntegrationEntityTest {
 		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
 		entity.configureEntityFromParameters(params);
 		Assertions.assertEquals(apiLabel, entity.getApiLabel());
-		Assertions.assertEquals(ScmApiType.BITBUCKET_CLOUD, entity.getApiType());
+		Assertions.assertEquals(ApiType.BITBUCKET_CLOUD, entity.getApiType());
 		Assertions.assertEquals(user, entity.getUser());
 		Assertions.assertEquals(auth, entity.getAuth());
 		Assertions.assertEquals(workspace, entity.getWorkspace());

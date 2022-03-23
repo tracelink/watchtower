@@ -24,6 +24,7 @@ import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.scm.AbstractScmScanAgent;
 
 @ExtendWith(SpringExtension.class)
 public class AbstractScanAgentTest {
@@ -34,9 +35,10 @@ public class AbstractScanAgentTest {
 	private RulesetDto mockRuleset;
 
 	@RegisterExtension
-	public CoreLogWatchExtension logWatcher = CoreLogWatchExtension.forClass(AbstractScanAgent.class);
+	public CoreLogWatchExtension logWatcher =
+			CoreLogWatchExtension.forClass(AbstractScanAgent.class);
 
-	class MockScanAgent extends AbstractScanAgent<MockScanAgent> {
+	class MockScanAgent extends AbstractScmScanAgent<MockScanAgent> {
 		Path wd;
 		List<ScanReport> reports;
 
@@ -50,12 +52,17 @@ public class AbstractScanAgentTest {
 		}
 
 		@Override
+		protected void initialize() throws ScanInitializationException {
+			super.initialize();
+		}
+
+		@Override
 		protected void report(List<ScanReport> reports) {
 			this.reports = reports;
 		}
 
 		@Override
-		protected Path getWorkingDirectory() {
+		public Path getWorkingDirectory() {
 			return wd;
 		}
 

@@ -17,9 +17,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.ManualPullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
@@ -40,13 +40,13 @@ public class PRScanController {
 
 	private PRScanResultService prScanResultService;
 
-	private ScmFactoryService scannerFactoryService;
+	private ApiFactoryService scannerFactoryService;
 
 	private APIIntegrationService apiIntegrationService;
 
 	public PRScanController(@Autowired PRScanningService scanService,
 			@Autowired PRScanResultService prScanResultService,
-			@Autowired ScmFactoryService scannerFactoryService,
+			@Autowired ApiFactoryService scannerFactoryService,
 			@Autowired APIIntegrationService apiIntegrationService) {
 		this.scanService = scanService;
 		this.prScanResultService = prScanResultService;

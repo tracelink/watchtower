@@ -15,20 +15,21 @@ import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
+import com.tracelink.appsec.watchtower.core.module.scanner.AbstractScmScanner;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.report.ScanViolation;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 
 /**
  * {@link IScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the results
  *
  * @author csmith
  */
-public class CheckovScanner implements IScanner {
+public class CheckovScanner extends AbstractScmScanner {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CheckovScanner.class);
 	private final CheckovEngine engine;
 
@@ -37,7 +38,7 @@ public class CheckovScanner implements IScanner {
 	}
 
 	@Override
-	public ScanReport scan(ScanConfig config) {
+	public ScanReport scan(ScmScanConfig config) {
 		ScanReport report = new ScanReport();
 		Benchmarking<CheckovProvidedRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());

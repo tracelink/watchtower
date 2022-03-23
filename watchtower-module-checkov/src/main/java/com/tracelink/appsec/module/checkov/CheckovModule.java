@@ -12,7 +12,6 @@ import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
@@ -68,7 +67,7 @@ public class CheckovModule extends AbstractModule {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public IScanner getScanner() {
+	public CheckovScanner getScanner() {
 		return new CheckovScanner(engine);
 	}
 

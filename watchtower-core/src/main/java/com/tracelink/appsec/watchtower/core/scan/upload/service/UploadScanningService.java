@@ -27,6 +27,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.upload.UploadScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanContainerEntity;
@@ -116,7 +117,7 @@ public class UploadScanningService extends AbstractScanningService {
 	private void submitScan(UploadScanContainerEntity upload, RulesetEntity ruleset) {
 		// Create scan agent
 		UploadScanAgent scanAgent = new UploadScanAgent(upload)
-				.withScanners(scanRegistrationService.getScanners())
+				.withScanners(scanRegistrationService.getScanners(ScmScanConfig.class))
 				.withRuleset(ruleset.toDto())
 				.withScanResultService(uploadScanResultService)
 				.withBenchmarkEnabled(!logService.getLogsLevel().isGreaterOrEqual(Level.INFO));

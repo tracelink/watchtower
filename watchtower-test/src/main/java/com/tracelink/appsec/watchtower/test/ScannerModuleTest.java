@@ -1,13 +1,7 @@
 package com.tracelink.appsec.watchtower.test;
 
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.Consumer;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +12,7 @@ import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanConfig;
 
 /**
  * An encompassing test suite for Scanner Modules. This exercises all basic class contracts for all
@@ -100,7 +93,7 @@ public abstract class ScannerModuleTest {
 	public void testScan() throws Exception {
 		Assumptions.assumeFalse(
 				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.SCANNER));
-		TestScanConfiguration testScan = scannerTester.getTestScanConfiguration();
+		AbstractTestScanConfiguration testScan = scannerTester.getTestScanConfiguration();
 		Assumptions.assumeFalse(testScan == null);
 
 		String resource = testScan.getResourceFile();
@@ -110,22 +103,7 @@ public abstract class ScannerModuleTest {
 		Assertions.assertNotNull(ruleset, "Misconfigured TestConfig: Missing Ruleset");
 		Assertions.assertNotNull(assertClause, "Misconfigured TestConfig: Missing Asssertions");
 
-		Path testDir = Files.createTempDirectory(null);
-		Path testFile = testDir.resolve(Paths.get(resource).getFileName());
-
-		try (InputStream is =
-				getClass().getResourceAsStream(testScan.getResourceFile());
-				FileOutputStream fos = new FileOutputStream(testFile.toFile())) {
-			IOUtils.copy(is, fos);
-		}
-		Assertions.assertTrue(testFile.toFile().exists());
-		ScanConfig config = new ScanConfig();
-		config.setBenchmarkEnabled(false);
-		config.setDebugEnabled(false);
-		config.setRuleset(ruleset);
-		config.setThreads(0);
-		config.setWorkingDirectory(testDir);
-
+		AbstractScanConfig config = testScan.getScanConfig();
 		IScanner scanner = moduleUnderTest.getScanner();
 		ScanReport report = scanner.scan(config);
 		Assertions.assertNotNull(report);

@@ -14,8 +14,8 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestOption;
+import com.tracelink.appsec.watchtower.test.ScmTestScanConfiguration;
 
 public class CheckovModuleTest extends ScannerModuleTest {
 
@@ -43,7 +43,7 @@ public class CheckovModuleTest extends ScannerModuleTest {
 				.withSupportedRuleClass(CheckovProvidedRuleDto.class)
 				.andIgnoreTestOption(ScannerModuleTestOption.DESIGNER)
 				.withTestScanConfigurationBuilder(
-						new TestScanConfiguration()
+						new ScmTestScanConfiguration()
 								.withTargetResourceFile("/terraformtest/terraform_iam.tf")
 								.withRuleset(new RulesetDto() {
 									{

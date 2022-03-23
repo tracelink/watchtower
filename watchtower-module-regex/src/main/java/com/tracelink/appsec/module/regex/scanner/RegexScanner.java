@@ -3,15 +3,16 @@ package com.tracelink.appsec.module.regex.scanner;
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
+import com.tracelink.appsec.watchtower.core.module.scanner.AbstractScmScanner;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.processor.AbstractProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.CallableCreator;
 import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 
 /**
  * {@link IScanner} implementation of a regex scan. Regex will scan every file using regex rules
@@ -21,13 +22,13 @@ import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcess
  *
  * @author csmith, mcool
  */
-public class RegexScanner implements IScanner {
+public class RegexScanner extends AbstractScmScanner {
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ScanReport scan(ScanConfig config) {
+	public ScanReport scan(ScmScanConfig config) {
 		RegexBenchmarking benchmarking = new RegexBenchmarking();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
@@ -69,4 +70,5 @@ public class RegexScanner implements IScanner {
 	public Class<? extends RuleDto> getSupportedRuleClass() {
 		return RegexCustomRuleDto.class;
 	}
+
 }
