@@ -10,8 +10,7 @@ public class EcrIntegrationEntity extends APIIntegrationEntity {
 
 	@Override
 	public ApiType getApiType() {
-		// TODO Auto-generated method stub
-		return null;
+		return ApiType.ECR;
 	}
 
 	@Override

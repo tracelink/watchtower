@@ -101,7 +101,7 @@ public class SidebarService {
 						.setMaterialIcon("settings")
 						.setLinks(Arrays.asList(
 								new SidebarLink()
-										.setDisplayName("Repository Settings")
+										.setDisplayName("Code Repository Settings")
 										.setMaterialIcon("code")
 										.setUrl("/repository")
 										.setAuthorizationExpression("hasAuthority('"

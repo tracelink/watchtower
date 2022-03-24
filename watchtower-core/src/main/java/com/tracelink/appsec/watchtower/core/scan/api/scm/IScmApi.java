@@ -6,8 +6,8 @@ import java.util.List;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.api.IWatchtowerApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.data.DiffFile;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.data.DiffFile;
 
 /**
  * An interface for interacting with SCMs in order to work with pull requests, repositories, etc.

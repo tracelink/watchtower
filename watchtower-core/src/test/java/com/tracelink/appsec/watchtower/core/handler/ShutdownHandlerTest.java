@@ -9,8 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanningService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanningService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanningService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
 
 @ExtendWith(SpringExtension.class)
 public class ShutdownHandlerTest {

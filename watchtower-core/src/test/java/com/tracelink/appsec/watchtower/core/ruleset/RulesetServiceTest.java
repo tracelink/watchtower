@@ -26,8 +26,8 @@ import com.tracelink.appsec.watchtower.core.mock.MockRuleset;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 @ExtendWith(SpringExtension.class)
 public class RulesetServiceTest {
@@ -36,7 +36,7 @@ public class RulesetServiceTest {
 	@MockBean
 	private RuleService ruleService;
 	@MockBean
-	private ScmRepositoryRepository repositoryRepository;
+	private RepositoryRepository repositoryRepository;
 	@Mock
 	private HttpServletResponse mockResponse;
 
@@ -162,7 +162,7 @@ public class RulesetServiceTest {
 
 	@Test
 	public void testDeleteRulesetRemoveRepoReferences() throws Exception {
-		ScmRepositoryEntity repo = new ScmRepositoryEntity();
+		RepositoryEntity repo = new RepositoryEntity();
 		repo.setRuleset(compositeRuleset);
 		BDDMockito.when(repositoryRepository.findAll()).thenReturn(Collections.singletonList(repo));
 		BDDMockito.when(rulesetRepository.findById(BDDMockito.anyLong()))

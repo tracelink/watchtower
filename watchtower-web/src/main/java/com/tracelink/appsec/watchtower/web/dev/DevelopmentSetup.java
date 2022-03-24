@@ -27,23 +27,23 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBCloudIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmRepositoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.repository.PRContainerRepository;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.repository.PRScanRepository;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.UploadScan;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.repository.UploadContainerRepository;
-import com.tracelink.appsec.watchtower.core.scan.upload.repository.UploadScanRepository;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequestState;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.repository.PRContainerRepository;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.repository.PRScanRepository;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadContainerRepository;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadScanRepository;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -67,7 +67,7 @@ public class DevelopmentSetup {
 	private final APIIntegrationService apiService;
 	private final RulesetService rulesetService;
 	private final RulesetRepository rulesetRepository;
-	private final ScmRepositoryService repositoryService;
+	private final RepositoryService repositoryService;
 	private final PRScanResultService prScanResultService;
 	private final PRContainerRepository prRepo;
 	private final UploadScanResultService uploadScanResultService;
@@ -80,7 +80,7 @@ public class DevelopmentSetup {
 			@Autowired APIIntegrationService apiService,
 			@Autowired RulesetService rulesetService,
 			@Autowired RulesetRepository rulesetRepository,
-			@Autowired ScmRepositoryService repositoryService,
+			@Autowired RepositoryService repositoryService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired PRContainerRepository prRepo,
 			@Autowired UploadScanResultService uploadScanResultService,
@@ -174,11 +174,11 @@ public class DevelopmentSetup {
 	}
 
 	private void addPRScanHistory(Random random) {
-		List<ScmRepositoryEntity> repos =
+		List<RepositoryEntity> repos =
 				repositoryService.getAllRepos().values().stream().flatMap(List::stream)
 						.collect(Collectors.toList());
 		for (int i = 0; i < PR_NUM_SIZE; i++) {
-			ScmRepositoryEntity repo = repos.get(random.nextInt(repos.size()));
+			RepositoryEntity repo = repos.get(random.nextInt(repos.size()));
 			boolean activeState = random.nextBoolean();
 			savePr(activeState, repo, random);
 		}
@@ -216,7 +216,7 @@ public class DevelopmentSetup {
 		} while (!pageEntity.isLast());
 	}
 
-	private void savePr(boolean activeState, ScmRepositoryEntity repo, Random random) {
+	private void savePr(boolean activeState, RepositoryEntity repo, Random random) {
 		PullRequest pr = new PullRequest(repo.getApiLabel());
 		pr.setAuthor("testAuthor");
 		pr.setDestinationBranch("masterTest");

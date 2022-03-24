@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 
 public class ScmScanConfigTest {
 
@@ -15,7 +15,7 @@ public class ScmScanConfigTest {
 	public void testNullWorkingDirectory() {
 		Assertions.assertThrows(IllegalArgumentException.class,
 				() -> {
-					new ScmScanConfig().setWorkingDirectory(null);
+					new CodeScanConfig().setWorkingDirectory(null);
 				});
 	}
 
@@ -23,14 +23,14 @@ public class ScmScanConfigTest {
 	public void testNegativeThreads() {
 		Assertions.assertThrows(IllegalArgumentException.class,
 				() -> {
-					new ScmScanConfig().setThreads(-1);
+					new CodeScanConfig().setThreads(-1);
 				});
 	}
 
 	@Test
 	public void testDefaults() throws Exception {
 		Path workingDirectory = Files.createTempDirectory(null);
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setWorkingDirectory(workingDirectory);
 
 		Assertions.assertEquals(workingDirectory, config.getWorkingDirectory());
@@ -44,7 +44,7 @@ public class ScmScanConfigTest {
 		Path workingDirectory = Files.createTempDirectory(null);
 		int threads = 1;
 		RulesetDto ruleset = new RulesetDto();
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 		config.setWorkingDirectory(workingDirectory);
 		config.setBenchmarkEnabled(true);

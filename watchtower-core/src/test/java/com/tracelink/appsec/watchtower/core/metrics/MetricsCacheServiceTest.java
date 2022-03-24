@@ -19,12 +19,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.ScanType;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
 
 import net.minidev.json.JSONObject;
 

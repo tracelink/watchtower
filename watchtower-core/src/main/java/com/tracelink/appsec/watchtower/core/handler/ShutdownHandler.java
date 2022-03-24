@@ -11,8 +11,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanningService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanningService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanningService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
 
 /**
  * Handles a graceful shutdown

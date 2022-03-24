@@ -9,13 +9,13 @@ import java.nio.file.Paths;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 
 public class ScmTestScanConfiguration
-		extends AbstractTestScanConfiguration<ScmTestScanConfiguration, ScmScanConfig> {
+		extends AbstractTestScanConfiguration<ScmTestScanConfiguration, CodeScanConfig> {
 
 	@Override
-	public ScmScanConfig getScanConfig() {
+	public CodeScanConfig getScanConfig() {
 		try {
 			Path testDir = Files.createTempDirectory(null);
 			Path testFile = testDir.resolve(Paths.get(getResourceFile()).getFileName());
@@ -26,7 +26,7 @@ public class ScmTestScanConfiguration
 				IOUtils.copy(is, fos);
 			}
 			Assertions.assertTrue(testFile.toFile().exists());
-			ScmScanConfig config = new ScmScanConfig();
+			CodeScanConfig config = new CodeScanConfig();
 			config.setBenchmarkEnabled(false);
 			config.setDebugEnabled(false);
 			config.setRuleset(getRuleset());

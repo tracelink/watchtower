@@ -1,11 +1,12 @@
 package com.tracelink.appsec.watchtower.core.scan.api.image;
 
 import com.tracelink.appsec.watchtower.core.scan.api.IWatchtowerApi;
+import com.tracelink.appsec.watchtower.core.scan.image.ContainerImage;
 
-public interface IImageRepoApi<I> extends IWatchtowerApi {
+public interface IImageRepoApi extends IWatchtowerApi {
 
 	void register();
 
-	void rejectImage(I image);
+	void rejectImage(ContainerImage image);
 
 }

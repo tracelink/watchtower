@@ -13,6 +13,7 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrApi;
 import com.tracelink.appsec.watchtower.core.scan.image.AbstractImageScanAgent;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.image.ecr.entity.EcrViolationEntity;
 
 public class EcrScanAgent extends AbstractImageScanAgent<EcrScanAgent> {
@@ -25,17 +26,10 @@ public class EcrScanAgent extends AbstractImageScanAgent<EcrScanAgent> {
 		super(scanName);
 	}
 
-	/**
-	 * Set the {@linkplain EcrApi} for this Agent's configuration to interact with Pull Request SCMs
-	 * 
-	 * @param api the api to use
-	 * @return this agent
-	 */
 	public EcrScanAgent withApi(EcrApi api) {
 		this.api = api;
 		return this;
 	}
-
 
 	/**
 	 * Set the {@linkplain EcrScanResultService} for this Agent's configuration
@@ -61,6 +55,15 @@ public class EcrScanAgent extends AbstractImageScanAgent<EcrScanAgent> {
 		if (ecrScanResultService == null) {
 			throw new ScanInitializationException("Results Service must be configured.");
 		}
+	}
+
+	@Override
+	protected ImageScanConfig getScanConfig() {
+		ImageScanConfig config = new ImageScanConfig();
+		config.setRuleset(getRuleset());
+		config.setImageReport(api.getSecurityReportForImage(getImage()));
+		config.setBenchmarkEnabled(getBenchmarking().isEnabled());
+		return config;
 	}
 
 	@Override

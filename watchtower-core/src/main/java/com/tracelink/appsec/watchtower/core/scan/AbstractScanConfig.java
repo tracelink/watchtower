@@ -12,10 +12,7 @@ public abstract class AbstractScanConfig {
 	 * ruleset DTO object for this scan
 	 */
 	private RulesetDto ruleset;
-	/**
-	 * number of threads to be used by this scan
-	 */
-	private int threads = Runtime.getRuntime().availableProcessors();
+
 	/**
 	 * whether benchmarking is enabled for this scan
 	 */
@@ -34,17 +31,6 @@ public abstract class AbstractScanConfig {
 
 	public RulesetDto getRuleset() {
 		return ruleset;
-	}
-
-	public int getThreads() {
-		return threads;
-	}
-
-	public void setThreads(int threads) {
-		if (threads < 0) {
-			throw new IllegalArgumentException("Threads cannot be negative. Threads: " + threads);
-		}
-		this.threads = threads;
 	}
 
 	public boolean isBenchmarkEnabled() {

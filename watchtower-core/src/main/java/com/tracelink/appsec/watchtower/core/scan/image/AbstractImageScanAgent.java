@@ -11,14 +11,12 @@ import com.tracelink.appsec.watchtower.core.exception.ScanInitializationExceptio
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanAgent;
-import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrImage;
 
 @SuppressWarnings("unchecked")
 public abstract class AbstractImageScanAgent<T extends AbstractImageScanAgent<T>>
 		extends AbstractScanAgent<T> {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
-	private EcrImage image;
-	private int threads;
+	private ContainerImage image;
 	private Collection<IScanner<ImageScanConfig>> scanners;
 
 	public AbstractImageScanAgent(String scanName) {
@@ -42,26 +40,6 @@ public abstract class AbstractImageScanAgent<T extends AbstractImageScanAgent<T>
 			throw new ScanInitializationException(
 					"Scanner(s) must be configured.");
 		}
-
-		if (threads < 0) {
-			throw new ScanInitializationException(
-					"Threads must be 0 or greater");
-		}
-	}
-
-	/**
-	 * Set the number of sub-threads this Agent can use
-	 * <p>
-	 * 0 means this is a single-threaded agent
-	 * <p>
-	 * 1 means this agent may use 1 additional thread, etc
-	 * 
-	 * @param threads the number of additional threads to use
-	 * @return this agent
-	 */
-	public T withThreads(int threads) {
-		this.threads = threads;
-		return (T) this;
 	}
 
 	/**
@@ -75,22 +53,13 @@ public abstract class AbstractImageScanAgent<T extends AbstractImageScanAgent<T>
 		return (T) this;
 	}
 
-	public T withImage(EcrImage image) {
+	public T withImage(ContainerImage image) {
 		this.image = image;
 		return (T) this;
 	}
 
-	public EcrImage getImage() {
+	protected ContainerImage getImage() {
 		return image;
-	}
-
-	protected ImageScanConfig getScanConfig() {
-		ImageScanConfig config = new ImageScanConfig();
-		config.setRuleset(getRuleset());
-		config.setImage(image);
-		config.setThreads(threads);
-		config.setBenchmarkEnabled(getBenchmarking().isEnabled());
-		return config;
 	}
 
 	/**
@@ -121,4 +90,7 @@ public abstract class AbstractImageScanAgent<T extends AbstractImageScanAgent<T>
 		}
 		return reports;
 	}
+
+	protected abstract ImageScanConfig getScanConfig();
+
 }

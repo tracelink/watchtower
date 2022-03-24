@@ -19,7 +19,7 @@ import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 
 /**
  * Controller for all apisettings which stores and handles modifying setting to connect to external
- * SCMs
+ * Services
  *
  * @author csmith
  */
@@ -29,12 +29,12 @@ public class APIIntegrationController {
 
 	private APIIntegrationService apiService;
 
-	private ApiFactoryService scmFactoryService;
+	private ApiFactoryService apiFactoryService;
 
 	public APIIntegrationController(@Autowired APIIntegrationService apiService,
-			@Autowired ApiFactoryService scmFactoryService) {
+			@Autowired ApiFactoryService apiFactoryService) {
 		this.apiService = apiService;
-		this.scmFactoryService = scmFactoryService;
+		this.apiFactoryService = apiFactoryService;
 	}
 
 	@GetMapping("/apisettings")
@@ -114,7 +114,7 @@ public class APIIntegrationController {
 		}
 		try {
 			APIIntegrationEntity incomingEntity =
-					scmFactoryService.makeEntityForParams(api, parameters);
+					apiFactoryService.makeEntityForParams(api, parameters);
 			apiId.ifPresent(id -> incomingEntity.setIntegrationId(id));
 			apiService.upsertEntity(incomingEntity);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
@@ -136,7 +136,7 @@ public class APIIntegrationController {
 			return "redirect:/apisettings";
 		}
 		try {
-			IWatchtowerApi api = scmFactoryService.createApiForApiEntity(entity);
+			IWatchtowerApi api = apiFactoryService.createApiForApiEntity(entity);
 			api.testClientConnection();
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Success");

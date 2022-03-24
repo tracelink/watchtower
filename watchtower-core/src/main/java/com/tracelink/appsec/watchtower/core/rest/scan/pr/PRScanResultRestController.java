@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.result.PRResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.result.PRScanResult;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.result.PRResultFilter;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.result.PRScanResult;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanResultService;
 
 import net.minidev.json.JSONObject;
 

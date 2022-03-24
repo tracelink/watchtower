@@ -24,7 +24,7 @@ import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.AbstractScmScanAgent;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractCodeScanAgent;
 
 @ExtendWith(SpringExtension.class)
 public class AbstractScanAgentTest {
@@ -38,7 +38,7 @@ public class AbstractScanAgentTest {
 	public CoreLogWatchExtension logWatcher =
 			CoreLogWatchExtension.forClass(AbstractScanAgent.class);
 
-	class MockScanAgent extends AbstractScmScanAgent<MockScanAgent> {
+	class MockScanAgent extends AbstractCodeScanAgent<MockScanAgent> {
 		Path wd;
 		List<ScanReport> reports;
 

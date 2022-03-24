@@ -16,13 +16,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.api.scm.bb.BBPullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanningService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequestState;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanningService;
 
 /**
  * Controller for all REST API calls. Handles sending a scan via REST webhook.
@@ -39,17 +38,13 @@ public class PRScanRestController {
 
 	private PRScanResultService prResultService;
 
-	private ApiFactoryService scmFactory;
-
 	private APIIntegrationService apiService;
 
 	public PRScanRestController(@Autowired PRScanningService scanService,
 			@Autowired PRScanResultService prResultService,
-			@Autowired ApiFactoryService scmFactory,
 			@Autowired APIIntegrationService apiService) {
 		this.scanService = scanService;
 		this.prResultService = prResultService;
-		this.scmFactory = scmFactory;
 		this.apiService = apiService;
 	}
 

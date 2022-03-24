@@ -18,7 +18,7 @@ public enum WatchtowerTimers implements TimerType {
 	SCAN_ALL_SCANNERS("Scan: Execute scanners"),
 	// report back
 	/**
-	 * Send the results back to the SCM
+	 * Send the results
 	 */
 	SEND_REPORT("Results: Send Results");
 

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 
 public class JsonScannerTest {
 
@@ -18,7 +18,7 @@ public class JsonScannerTest {
 		RulesetDto ruleset = new RulesetDto();
 		JsonRuleDto rule = new JsonRuleDto();
 		ruleset.setRules(Collections.singleton(rule));
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 		config.setBenchmarkEnabled(true);
 		config.setWorkingDirectory(Files.createTempDirectory(null));

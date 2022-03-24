@@ -31,7 +31,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAnd
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 
 /**
  * Implementation of the {@link IRuleDesigner} for ESLint rules. Allows querying against custom
@@ -236,7 +236,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 		ruleset.setDescription("query-description");
 		ruleset.setRules(Collections.singleton(rule));
 
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 
 		try {

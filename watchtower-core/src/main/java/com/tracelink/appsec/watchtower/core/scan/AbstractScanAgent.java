@@ -13,12 +13,12 @@ import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
- * Handles orchestration of individual scanners for scans of an SCM pull request. This class is
- * executed by one of the {@link AbstractScanningService}s.
+ * Handles orchestration of individual scanners for scans. This class is executed by one of the
+ * {@link AbstractScanningService}s.
  * <p>
- * Ensures that all objects are initialized and executes scanners against a working directory.
- * Collects reports and sends to the report method for implementations to manage. Finally, reports
- * on benchmarks, if configured and then starts a cleanup procedure for implementations
+ * Ensures that all objects are initialized and executes scanners. Collects reports and sends to the
+ * report method for implementations to manage. Finally, reports on benchmarks, if configured and
+ * then starts a cleanup procedure for implementations
  *
  * @author csmith, mcool
  * @param <T> The type of {@link AbstractScanAgent} (for builder subclassing)
@@ -60,7 +60,7 @@ public abstract class AbstractScanAgent<T extends AbstractScanAgent<T>>
 		return (T) this;
 	}
 
-	public String getScanName() {
+	protected String getScanName() {
 		return this.scanName;
 	}
 

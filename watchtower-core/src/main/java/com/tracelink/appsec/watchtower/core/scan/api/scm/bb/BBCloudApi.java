@@ -24,8 +24,8 @@ import com.jayway.jsonpath.JsonPath;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.data.DiffFile;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.data.DiffFile;
 
 import kong.unirest.GetRequest;
 import kong.unirest.Headers;

@@ -24,18 +24,18 @@ import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
-import com.tracelink.appsec.watchtower.core.module.scanner.AbstractScmScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.AbstractCodeScanner;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.report.ScanViolation;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.processor.AbstractProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.CallableCreator;
 import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
 import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
 
 /**
  * {@link IScanner} for ESLint. Scans and reports with the ESLint Linter via the
@@ -43,7 +43,7 @@ import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
  *
  * @author mcool
  */
-public class EsLintScanner extends AbstractScmScanner {
+public class EsLintScanner extends AbstractCodeScanner {
 
 	private static final Gson GSON = new Gson();
 	private final LinterEngine engine;
@@ -56,7 +56,7 @@ public class EsLintScanner extends AbstractScmScanner {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ScanReport scan(ScmScanConfig config) {
+	public ScanReport scan(CodeScanConfig config) {
 		ScanReport report = new ScanReport();
 		Benchmarking<EsLintCustomRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
@@ -122,7 +122,7 @@ public class EsLintScanner extends AbstractScmScanner {
 		return rulesetPath;
 	}
 
-	private AbstractProcessor getProcessor(ScmScanConfig config, Path rulesetPath) {
+	private AbstractProcessor getProcessor(CodeScanConfig config, Path rulesetPath) {
 		int threads = config.getThreads();
 		if (threads > 0) {
 			return new MultiThreadedProcessor(getCreator(config.getWorkingDirectory(), rulesetPath),

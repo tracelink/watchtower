@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestScanEntity;
 
 import net.minidev.json.JSONObject;
 

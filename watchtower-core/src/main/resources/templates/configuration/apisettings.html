@@ -1,7 +1,7 @@
 <div class="page-header row no-gutters py-4">
     <div class="col-12 col-sm-6 text-center text-sm-left mb-0">
         <!-- <span class="text-uppercase page-subtitle">API Settings</span> -->
-        <h3 class="page-title">SCM API Settings</h3>
+        <h3 class="page-title">API Settings</h3>
     </div>
 </div>
 <!-- End Page Header -->
@@ -11,7 +11,7 @@
             <div class="card-header border-bottom">
             	<div class="d-flex align-items-center">
             		<div class="mr-auto">
-	                	<h6 class="card-title m-0 float-left">Current SCM API Settings</h6>
+	                	<h6 class="card-title m-0 float-left">Current API Settings</h6>
 	                </div>
 	                <div th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).API_SETTINGS_MODIFY_NAME+''')')}">
 		                <form class="float-right form-inline" method="GET" action="/apisettings/create">
@@ -19,7 +19,7 @@
 	                           	<select name="apiType" class="form-control">
                                     <option th:each="apiTypeName : ${apiTypeNames}" th:value="${apiTypeName}" th:text="${apiTypeName}"/>
                                 </select>
-			                    <button class="btn btn-success" type="Submit">Add SCM API Configuration</button>
+			                    <button class="btn btn-success" type="Submit">Add API Configuration</button>
 		                    </div>
 		                </form>
 	                </div>
@@ -28,7 +28,7 @@
             <div th:if="${apiSettings.empty}">
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item px-4">
-                        <strong class="text-muted d-block mb-2">No SCM APIs configured</strong>
+                        <strong class="text-muted d-block mb-2">No APIs configured</strong>
                     </li>
                 </ul>
             </div>

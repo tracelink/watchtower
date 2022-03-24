@@ -7,34 +7,44 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.tracelink.appsec.watchtower.core.logging.LogsService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
+import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiFactoryService;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrApi;
-import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrImage;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageRepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageRepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.image.ContainerImage;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
+
+import ch.qos.logback.classic.Level;
 
 @Service
 public class EcrScanningService extends AbstractScanningService {
 	private static Logger LOG = LoggerFactory.getLogger(EcrScanningService.class);
 
 	private ApiFactoryService apiFactory;
-	private ImageRepositoryRepository imageRepoRepository;
+	private RepositoryService repoService;
 	private APIIntegrationService apiIntegrationService;
-
+	private ScanRegistrationService scanRegistrationService;
 	private EcrScanResultService ecrScanResultService;
+	private LogsService logService;
 
 	public EcrScanningService(@Autowired ApiFactoryService apiFactory,
-			@Autowired ImageRepositoryRepository imageRepoRepository,
-			@Autowired EcrScanResultService ecrScanResultService) {
+			@Autowired LogsService logService,
+			@Autowired RepositoryService repoService,
+			@Autowired EcrScanResultService ecrScanResultService,
+			@Autowired ScanRegistrationService scanRegistrationService) {
 		super(1, false);
 		this.apiFactory = apiFactory;
-		this.imageRepoRepository = imageRepoRepository;
+		this.logService = logService;
+		this.repoService = repoService;
 		this.ecrScanResultService = ecrScanResultService;
+		this.scanRegistrationService = scanRegistrationService;
 	}
 
 	/**
@@ -43,9 +53,9 @@ public class EcrScanningService extends AbstractScanningService {
 	 * @param image the ECR Image to be scanned
 	 * @throws ApiIntegrationException
 	 */
-	public void doEcrScan(EcrImage image) throws ApiIntegrationException {
-		ImageRepositoryEntity repository = imageRepoRepository
-				.upsertRepository(image.getAccountId(), image.getRepository());
+	public void doEcrScan(ContainerImage image) throws ApiIntegrationException {
+		RepositoryEntity repository = repoService
+				.upsertRepo(image.getApiLabel(), image.getRepository());
 
 		RulesetEntity allowlist = repository.getRuleset();
 		if (allowlist == null) {
@@ -56,7 +66,7 @@ public class EcrScanningService extends AbstractScanningService {
 		}
 
 		APIIntegrationEntity apiIntegration =
-				apiIntegrationService.findByEndpoint(image.getAccountId());
+				apiIntegrationService.findByEndpoint(image.getApiLabel());
 		EcrApi api = (EcrApi) apiFactory
 				.createApiForApiEntity(apiIntegration);
 
@@ -64,7 +74,10 @@ public class EcrScanningService extends AbstractScanningService {
 		EcrScanAgent scanAgent = new EcrScanAgent(image.getImageName())
 				.withApi(api)
 				.withScanResultService(ecrScanResultService)
-				.withRuleset(allowlist.toDto());
+				.withRuleset(allowlist.toDto())
+				.withBenchmarkEnabled(!logService.getLogsLevel().isGreaterOrEqual(Level.INFO))
+				.withImage(image)
+				.withScanners(scanRegistrationService.getScanners(ImageScanConfig.class));
 
 		CompletableFuture.runAsync(scanAgent, getExecutor());
 	}

@@ -6,8 +6,8 @@ import java.time.format.DateTimeFormatter;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequestState;
 
 import kong.unirest.json.JSONObject;
 

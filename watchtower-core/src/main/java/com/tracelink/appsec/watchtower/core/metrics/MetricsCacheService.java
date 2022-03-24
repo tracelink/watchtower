@@ -12,8 +12,9 @@ import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByTypeChartG
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanType;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashMap;

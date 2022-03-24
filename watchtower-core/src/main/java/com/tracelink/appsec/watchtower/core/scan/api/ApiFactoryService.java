@@ -39,7 +39,7 @@ public class ApiFactoryService {
 			case ECR:
 				entity = new EcrIntegrationEntity();
 			default:
-				throw new ApiIntegrationException("No SCM API for this type.");
+				throw new ApiIntegrationException("No API for this type.");
 		}
 		entity.configureEntityFromParameters(parameters);
 		return entity;
@@ -63,7 +63,7 @@ public class ApiFactoryService {
 			case ECR:
 				return new EcrApi();
 			default:
-				throw new ApiIntegrationException("No SCM API for this label.");
+				throw new ApiIntegrationException("No API for this label.");
 		}
 	}
 

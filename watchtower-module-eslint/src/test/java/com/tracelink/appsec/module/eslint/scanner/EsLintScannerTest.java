@@ -18,7 +18,7 @@ import com.tracelink.appsec.module.eslint.model.EsLintRuleDtoTest;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 
 @ExtendWith(SpringExtension.class)
 public class EsLintScannerTest {
@@ -46,7 +46,7 @@ public class EsLintScannerTest {
 
 	@Test
 	public void testScan() throws Exception {
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setWorkingDirectory(
 				Paths.get(getClass().getClassLoader().getResource("scan/simple.js").toURI()));
 		config.setRuleset(rulesetDto);
@@ -63,7 +63,7 @@ public class EsLintScannerTest {
 
 	@Test
 	public void testScanSingleThread() throws Exception {
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setThreads(0);
 		config.setWorkingDirectory(
 				Paths.get(getClass().getClassLoader().getResource("scan/simple.js").toURI()));
@@ -82,7 +82,7 @@ public class EsLintScannerTest {
 	@Test
 	public void testScanCannotExportRuleset() {
 		rulesetDto.setName(null);
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(rulesetDto);
 		ScanReport report = scanner.scan(config);
 		Assertions.assertEquals(1, report.getErrors().size());
@@ -92,7 +92,7 @@ public class EsLintScannerTest {
 
 	@Test
 	public void testScanFatalError() throws Exception {
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setThreads(0);
 		config.setWorkingDirectory(
 				Paths.get(getClass().getClassLoader().getResource("scan/invalid.js").toURI()));
@@ -105,7 +105,7 @@ public class EsLintScannerTest {
 
 	@Test
 	public void testScanError() throws Exception {
-		ScmScanConfig config = new ScmScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setThreads(0);
 		config.setWorkingDirectory(
 				Paths.get(getClass().getClassLoader().getResource("scan/simple.js").toURI()));

@@ -18,12 +18,12 @@ import com.tracelink.appsec.module.pmd.model.PMDRuleDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
-import com.tracelink.appsec.watchtower.core.module.scanner.AbstractScmScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.AbstractCodeScanner;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 
 import net.sourceforge.pmd.PMD;
 import net.sourceforge.pmd.PMDConfiguration;
@@ -43,7 +43,7 @@ import net.sourceforge.pmd.renderers.Renderer;
  *
  * @author csmith, mcool
  */
-public class PMDScanner extends AbstractScmScanner {
+public class PMDScanner extends AbstractCodeScanner {
 	public static final Logger LOG = LoggerFactory.getLogger(PMDScanner.class);
 	public static final String DEFAULT_PMD_RULES =
 			"rules/security/sec-deserialization.xml,rules/security/sec-xxe.xml";
@@ -57,7 +57,7 @@ public class PMDScanner extends AbstractScmScanner {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PMDReport scan(ScmScanConfig config) {
+	public PMDReport scan(CodeScanConfig config) {
 		// Write PMD rules to an XML file
 		Path rulesetPath = null;
 		try {

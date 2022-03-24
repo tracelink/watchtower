@@ -9,7 +9,7 @@ public class CveScanner extends AbstractImageScanner {
 
 	@Override
 	public ScanReport scan(ImageScanConfig config) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 

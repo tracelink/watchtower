@@ -32,14 +32,14 @@ public enum CorePrivilege {
 
 	/* Core Config */
 	API_SETTINGS_VIEW(CorePrivilege.API_SETTINGS_VIEW_NAME, CorePrivilege.CONFIG_CATEGORY,
-			"User may view and test the current SCM API Settings (minus any credentials), as well as see the webhook endpoint for APIs."),
+			"User may view and test the current API Settings (minus any credentials), as well as see the webhook endpoint for APIs."),
 	API_SETTINGS_MODIFY(CorePrivilege.API_SETTINGS_MODIFY_NAME, CorePrivilege.CONFIG_CATEGORY,
 			"User may modify the current API Settings."),
 	REPOSITORY_SETTINGS_VIEW(CorePrivilege.REPO_SETTINGS_VIEW_NAME, CorePrivilege.CONFIG_CATEGORY,
-			"User may view the current assignment of rulesets to known repositories in each SCM."),
+			"User may view the current assignment of rulesets to known repositories in each Code Repository."),
 	REPOSITORY_SETTINGS_MODIFY(CorePrivilege.REPO_SETTINGS_MODIFY_NAME,
 			CorePrivilege.CONFIG_CATEGORY,
-			"User may modify the current assignment of rulesets to known repositories in each SCM."),
+			"User may modify the current assignment of rulesets to known repositories in each Code Repository."),
 
 	/* Core Rules */
 	RULE_MODIFY(CorePrivilege.RULE_MODIFY_NAME, CorePrivilege.RULES_CATEGORY,
