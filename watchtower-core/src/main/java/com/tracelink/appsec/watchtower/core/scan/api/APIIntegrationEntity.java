@@ -77,12 +77,4 @@ public abstract class APIIntegrationEntity {
 	public abstract void configureEntityFromParameters(Map<String, String> parameters)
 			throws ApiIntegrationException;
 
-	/**
-	 * Create an HTTP link to view the Pull Request for the given repository and pullRequestId
-	 * 
-	 * @param repository    the repository id
-	 * @param pullRequestId the PR id
-	 * @return an http link for this Pull Request, or null, if none could be made
-	 */
-	public abstract String makePRLink(String repository, String pullRequestId);
 }

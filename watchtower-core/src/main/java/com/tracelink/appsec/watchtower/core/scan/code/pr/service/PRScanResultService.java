@@ -17,8 +17,8 @@ import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestContainerEntity;
@@ -166,7 +166,9 @@ public class PRScanResultService
 		String repo = container.getRepoName();
 		String id = container.getPrId();
 
-		APIIntegrationEntity entity = apiIntegrationService.findByLabel(container.getApiLabel());
+		AbstractScmIntegrationEntity entity =
+				(AbstractScmIntegrationEntity) apiIntegrationService
+						.findByLabel(container.getApiLabel());
 
 		PRScanResult result = new PRScanResult();
 		result.setId(scanEntity.getId());

@@ -14,9 +14,9 @@ import javax.persistence.Table;
 import org.apache.commons.lang3.StringUtils;
 
 import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
-import com.tracelink.appsec.watchtower.core.scan.api.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.api.scm.AbstractScmIntegrationEntity;
 
 /**
  * Entity for the Bitbucket Cloud Integration API
@@ -26,7 +26,7 @@ import com.tracelink.appsec.watchtower.core.scan.api.ApiType;
  */
 @Entity
 @Table(name = "bb_cloud_integration_entity")
-public class BBCloudIntegrationEntity extends APIIntegrationEntity {
+public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 
 	@Column(name = "workspace")
 	private String workspace;
