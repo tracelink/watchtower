@@ -30,9 +30,6 @@ public abstract class APIIntegrationEntity {
 	@Column(name = "api_label")
 	private String apiLabel;
 
-	@Column(name = "api_endpoint")
-	private String apiEndpoint;
-
 	public long getIntegrationId() {
 		return integrationId;
 	}
@@ -47,18 +44,6 @@ public abstract class APIIntegrationEntity {
 
 	public void setApiLabel(String apiLabel) {
 		this.apiLabel = apiLabel;
-	}
-
-	public String getApiEndpoint() {
-		return apiEndpoint;
-	}
-
-	public void setApiEndpoint(String apiEndpoint) {
-		this.apiEndpoint = apiEndpoint.toLowerCase();
-	}
-
-	public String getEndpointLink() {
-		return String.format("/rest/scan/%s", getApiEndpoint());
 	}
 
 	/**

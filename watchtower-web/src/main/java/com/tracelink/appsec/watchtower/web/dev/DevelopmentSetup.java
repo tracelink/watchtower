@@ -141,14 +141,12 @@ public class DevelopmentSetup {
 	private void addApiSettings() throws ApiIntegrationException {
 		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
 		entity.setApiLabel(API_LABEL_1);
-		entity.setApiEndpoint(API_LABEL_1);
 		entity.setWorkspace("workspace1");
 		entity.setUser("myUser");
 		entity.setAuth("myAuth");
 		apiService.save(entity);
 		BBCloudIntegrationEntity entity2 = new BBCloudIntegrationEntity();
 		entity2.setApiLabel(API_LABEL_2);
-		entity2.setApiEndpoint(API_LABEL_2);
 		entity2.setWorkspace("workspace2");
 		entity2.setUser("myUser");
 		entity2.setAuth("myAuth");

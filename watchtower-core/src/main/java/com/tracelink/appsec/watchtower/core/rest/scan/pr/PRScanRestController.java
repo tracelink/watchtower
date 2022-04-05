@@ -54,7 +54,7 @@ public class PRScanRestController {
 			HttpServletRequest request) {
 		String responseMessage;
 		try {
-			APIIntegrationEntity apiEntity = apiService.findByEndpoint(source);
+			APIIntegrationEntity apiEntity = apiService.findByLabel(source);
 			if (apiEntity == null) {
 				LOG.error("Unsupported api label: " + source);
 				throw new ScanRejectedException("Unknown api label");

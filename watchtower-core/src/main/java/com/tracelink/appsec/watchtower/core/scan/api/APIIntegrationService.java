@@ -82,16 +82,6 @@ public class APIIntegrationService {
 	}
 
 	/**
-	 * Get the API Entity by its endpoint
-	 * 
-	 * @param apiEndpoint the api endpoint
-	 * @return an {@linkplain APIIntegrationEntity} for the endpoint or null
-	 */
-	public APIIntegrationEntity findByEndpoint(String apiEndpoint) {
-		return apiRepo.getByApiEndpoint(apiEndpoint);
-	}
-
-	/**
 	 * Get all integration entities from the backend
 	 *
 	 * @return a List of Entities

@@ -16,7 +16,7 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanAgent;
 public abstract class AbstractImageScanAgent<T extends AbstractImageScanAgent<T>>
 		extends AbstractScanAgent<T> {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
-	private ContainerImage image;
+	private ImageScan image;
 	private Collection<IScanner<ImageScanConfig>> scanners;
 
 	public AbstractImageScanAgent(String scanName) {
@@ -53,12 +53,12 @@ public abstract class AbstractImageScanAgent<T extends AbstractImageScanAgent<T>
 		return (T) this;
 	}
 
-	public T withImage(ContainerImage image) {
+	public T withImage(ImageScan image) {
 		this.image = image;
 		return (T) this;
 	}
 
-	protected ContainerImage getImage() {
+	protected ImageScan getImage() {
 		return image;
 	}
 

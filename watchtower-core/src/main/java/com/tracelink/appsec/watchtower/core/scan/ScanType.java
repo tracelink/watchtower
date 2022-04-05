@@ -11,7 +11,7 @@ public enum ScanType {
 	PULL_REQUEST("pull_request", "Pull Request"),
 	UPLOAD("upload", "Upload"),
 	// Container Scans
-	CONTAINER("container_scans", "Container"),
+	IMAGE("image_scans", "Image Scan"),
 	;
 
 	private final String typeName;

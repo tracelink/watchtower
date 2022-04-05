@@ -112,9 +112,10 @@ public abstract class AbstractModule {
 	/**
 	 * The implementation of the {@link IRuleDesigner}.
 	 * <p>
-	 * This designer will be used to show this module's Rule Designer User Experience
+	 * This designer will be used to show this module's Rule Designer User Experience, or null if
+	 * there is no Rule Designer
 	 *
-	 * @return rule designer implementation for this module
+	 * @return rule designer implementation for this module, or null if there is no rule designer
 	 */
 	public abstract IRuleDesigner getRuleDesigner();
 

@@ -111,7 +111,6 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 		}
 		String apiLabel = parameters.get("apiLabel");
 		setApiLabel(apiLabel);
-		setApiEndpoint(apiLabel);
 		setWorkspace(parameters.get("workspace"));
 		setUser(parameters.get("user"));
 		setAuth(parameters.get("auth"));

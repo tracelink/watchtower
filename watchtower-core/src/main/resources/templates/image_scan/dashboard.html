@@ -1,0 +1,136 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+        <!-- <span class="text-uppercase page-subtitle">Dashboard</span> -->
+        <h3 class="page-title">Image Scan Dashboard</h3>
+    </div>
+</div>
+<!-- End Page Header -->
+<!-- Small Stats Blocks -->
+<div class="row">
+    <div class="col-lg col-md-6 col-sm-6 mb-4">
+        <div class="stats-small stats-small--1 card card-small">
+            <div class="card-body p-0 d-flex">
+                <div class="d-flex flex-column m-auto">
+                    <div class="stats-small__data text-center">
+                        <span class="stats-small__label text-uppercase">Scans Completed</span>
+                        <h6 class="stats-small__value count my-3" th:text=${numScans}></h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6 mb-4">
+        <div class="stats-small stats-small--1 card card-small">
+            <div class="card-body p-0 d-flex">
+                <div class="d-flex flex-column m-auto">
+                    <div class="stats-small__data text-center">
+                        <span class="stats-small__label text-uppercase">Violations Found</span>
+                        <h6 class="stats-small__value count my-3" th:text=${numViolations}></h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6 mb-4">
+        <div class="stats-small stats-small--1 card card-small">
+            <div class="card-body p-0 d-flex">
+                <div class="d-flex flex-column m-auto">
+                    <div class="stats-small__data text-center">
+                        <span class="stats-small__label text-uppercase">Average Scan Time</span>
+                        <h6 class="stats-small__value count my-3" th:text=${avgScanTime}></h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Small Stats Blocks -->
+<div class="row">
+    <!-- Line Graph Scans and Violations Found -->
+    <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+        <div class="card card-small h-100">
+            <div class="card-header border-bottom">
+                <h6 class="m-0">Scans Completed and Violations Found</h6>
+            </div>
+            <div class="card-body d-flex py-0" style="min-height: 130px">
+                <canvas id="scans-vios-line"></canvas>
+                <div class="d-flex flex-column m-auto">
+                    <div class="stats-med__data text-center">
+                        <div id="line-no-data"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer border-top">
+                <div class="row">
+                    <div class="col">
+                        <select class="custom-select custom-select-sm" style="max-width: 150px;" id="line-period">
+                            <option value="last-week">Last Week</option>
+                            <option selected value="last-four-weeks">Last Four Weeks</option>
+                            <option value="last-six-months">Last Six Months</option>
+                            <option value="all-time">All Time</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Line Graph Scans and Violations Found -->
+    <!-- Pie Graph Violations By Type -->
+    <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+        <div class="card card-small h-100">
+            <div class="card-header border-bottom">
+                <h6 class="m-0">Violations by Type</h6>
+            </div>
+            <div class="card-body d-flex py-0" style="min-height: 130px">
+                <canvas id="violations-pie"></canvas>
+                <div class="d-flex flex-column m-auto">
+                    <div class="stats-med__data text-center">
+                        <div id="pie-no-data"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer border-top">
+                <div class="row">
+                    <div class="col">
+                        <select class="custom-select custom-select-sm" style="max-width: 150px;" id="pie-period">
+                            <option value="last-week">Last Week</option>
+                            <option selected value="last-four-weeks">Last Four Weeks</option>
+                            <option value="last-six-months">Last Six Months</option>
+                            <option value="all-time">All Time</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Pie Graph Violations By Type -->
+    <!-- Bar Graph Violations By Period and Type -->
+    <div class="col mb-4">
+        <div class="card card-small h-100">
+            <div class="card-header border-bottom">
+                <h6 class="m-0">Violations by Time Period and Type</h6>
+            </div>
+            <div class="card-body d-flex py-0" style="min-height: 130px">
+                <canvas id="violations-bar"></canvas>
+                <div class="d-flex flex-column m-auto">
+                    <div class="stats-med__data text-center">
+                        <div id="bar-no-data"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer border-top">
+                <div class="row">
+                    <div class="col">
+                        <select class="custom-select custom-select-sm" style="max-width: 150px;" id="bar-period">
+                            <option value="last-week">Last Week</option>
+                            <option selected value="last-four-weeks">Last Four Weeks</option>
+                            <option value="last-six-months">Last Six Months</option>
+                            <option value="all-time">All Time</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

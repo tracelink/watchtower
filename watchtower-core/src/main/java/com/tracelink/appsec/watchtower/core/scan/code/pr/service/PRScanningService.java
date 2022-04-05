@@ -104,7 +104,7 @@ public class PRScanningService extends AbstractScanningService {
 			LOG.info("PR: " + prName + " skipped as there are no scanners configured.");
 			return;
 		}
-		APIIntegrationEntity apiEntity = apiService.findByEndpoint(pr.getApiLabel());
+		APIIntegrationEntity apiEntity = apiService.findByLabel(pr.getApiLabel());
 		IScmApi api = (IScmApi) apiFactoryService.createApiForApiEntity(apiEntity);
 		pr = api.updatePRData(pr);
 

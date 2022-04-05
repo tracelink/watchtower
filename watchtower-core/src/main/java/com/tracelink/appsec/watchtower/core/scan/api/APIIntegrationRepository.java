@@ -13,6 +13,4 @@ public interface APIIntegrationRepository extends JpaRepository<APIIntegrationEn
 
 	APIIntegrationEntity getByApiLabel(String apiLabel);
 
-	APIIntegrationEntity getByApiEndpoint(String apiEndpoint);
-
 }

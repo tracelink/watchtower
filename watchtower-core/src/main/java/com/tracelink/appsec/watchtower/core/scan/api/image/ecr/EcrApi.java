@@ -1,8 +1,8 @@
 package com.tracelink.appsec.watchtower.core.scan.api.image.ecr;
 
 import com.tracelink.appsec.watchtower.core.scan.api.image.IImageRepoApi;
-import com.tracelink.appsec.watchtower.core.scan.image.ContainerImage;
-import com.tracelink.appsec.watchtower.core.scan.image.ecr.ImageSecurityReport;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
 
 public class EcrApi implements IImageRepoApi {
 
@@ -28,7 +28,7 @@ public class EcrApi implements IImageRepoApi {
 	 * ECR
 	 */
 	@Override
-	public void rejectImage(ContainerImage image) {
+	public void rejectImage(ImageScan image) {
 		// TODO Auto-generated method stub
 
 	}
@@ -39,7 +39,7 @@ public class EcrApi implements IImageRepoApi {
 	 * @param image the Image to investigate
 	 * @return the security report
 	 */
-	public ImageSecurityReport getSecurityReportForImage(ContainerImage image) {
+	public ImageSecurityReport getSecurityReportForImage(ImageScan image) {
 		// TODO Auto-generated method stub
 		return null;
 	}

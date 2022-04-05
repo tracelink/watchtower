@@ -35,8 +35,6 @@ import com.tracelink.appsec.watchtower.core.scan.api.scm.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.code.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.pr.entity.PullRequestContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.code.pr.service.PRScanningService;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
@@ -192,7 +190,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
-		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(mockApiEntity);
+		BDDMockito.when(mockApiService.findByLabel(apiLabel)).thenReturn(mockApiEntity);
 
 		String prSeenReviewedId = "123";
 		String prSeenNotReviewedId = "234";
@@ -276,7 +274,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
-		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(mockApiEntity);
+		BDDMockito.when(mockApiService.findByLabel(apiLabel)).thenReturn(mockApiEntity);
 
 		String prSeenReviewedId = "123";
 		String prSeenNotReviewedId = "234";
@@ -359,7 +357,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
-		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(mockApiEntity);
+		BDDMockito.when(mockApiService.findByLabel(apiLabel)).thenReturn(mockApiEntity);
 
 		String prSeenReviewedId = "123";
 		String prSeenNotReviewedId = "234";

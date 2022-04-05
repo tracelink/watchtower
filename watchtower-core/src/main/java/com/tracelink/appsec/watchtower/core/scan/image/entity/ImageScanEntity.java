@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.image.ecr.entity;
+package com.tracelink.appsec.watchtower.core.scan.image.entity;
 
 import java.util.List;
 
@@ -12,29 +12,31 @@ import javax.persistence.Table;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 
 @Entity
-@Table(name = "ecr_scans")
-public class EcrScanEntity extends AbstractScanEntity<EcrContainerEntity, EcrViolationEntity> {
+@Table(name = "image_scans")
+public class ImageScanEntity
+		extends AbstractScanEntity<ImageContainerEntity, ImageViolationEntity> {
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "container_id", nullable = false)
-	private EcrContainerEntity container;
+	private ImageContainerEntity container;
 
 	@OneToMany(fetch = FetchType.EAGER, mappedBy = "scan")
-	private List<EcrViolationEntity> violations;
+	private List<ImageViolationEntity> violations;
 
 	@Override
-	public EcrContainerEntity getContainer() {
+	public ImageContainerEntity getContainer() {
 		return container;
 	}
 
 	@Override
-	public void setContainer(EcrContainerEntity container) {
+	public void setContainer(ImageContainerEntity container) {
 		this.container = container;
 	}
 
 	@Override
-	public List<EcrViolationEntity> getViolations() {
+	public List<ImageViolationEntity> getViolations() {
 		return violations;
 	}
+
 
 }

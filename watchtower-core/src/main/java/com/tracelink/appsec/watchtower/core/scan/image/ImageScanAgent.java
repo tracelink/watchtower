@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.image.ecr;
+package com.tracelink.appsec.watchtower.core.scan.image;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,33 +11,32 @@ import com.tracelink.appsec.watchtower.core.report.ScanError;
 import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.api.image.ecr.EcrApi;
-import com.tracelink.appsec.watchtower.core.scan.image.AbstractImageScanAgent;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScanConfig;
-import com.tracelink.appsec.watchtower.core.scan.image.ecr.entity.EcrViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.api.image.IImageRepoApi;
+import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
-public class EcrScanAgent extends AbstractImageScanAgent<EcrScanAgent> {
-	private static Logger LOG = LoggerFactory.getLogger(EcrScanAgent.class);
-	private EcrApi api;
-	private EcrScanResultService ecrScanResultService;
+public class ImageScanAgent extends AbstractImageScanAgent<ImageScanAgent> {
+	private static Logger LOG = LoggerFactory.getLogger(ImageScanAgent.class);
+	private IImageRepoApi api;
+	private ImageScanResultService ecrScanResultService;
 	private long startTime;
 
-	public EcrScanAgent(String scanName) {
+	public ImageScanAgent(String scanName) {
 		super(scanName);
 	}
 
-	public EcrScanAgent withApi(EcrApi api) {
+	public ImageScanAgent withApi(IImageRepoApi api) {
 		this.api = api;
 		return this;
 	}
 
 	/**
-	 * Set the {@linkplain EcrScanResultService} for this Agent's configuration
+	 * Set the {@linkplain ImageScanResultService} for this Agent's configuration
 	 * 
 	 * @param ecrScanResultService the result Service to use
 	 * @return this agent
 	 */
-	public EcrScanAgent withScanResultService(EcrScanResultService ecrScanResultService) {
+	public ImageScanAgent withScanResultService(ImageScanResultService ecrScanResultService) {
 		this.ecrScanResultService = ecrScanResultService;
 		return this;
 	}
@@ -68,29 +67,31 @@ public class EcrScanAgent extends AbstractImageScanAgent<EcrScanAgent> {
 
 	@Override
 	protected void report(List<ScanReport> reports) {
-		List<EcrViolationEntity> violations = new ArrayList<>();
+		List<ImageViolationEntity> violations = new ArrayList<>();
 		List<ScanError> errors = new ArrayList<>();
 
 		for (ScanReport report : reports) {
 			report.getViolations().stream().forEach(sv -> {
-				EcrViolationEntity violation = new EcrViolationEntity();
+				ImageViolationEntity violation = new ImageViolationEntity();
 				RulesetDto ruleset = getRuleset();
 				if (ruleset.getBlockingLevel() != null) {
 					violation.setBlocking(RulePriority.valueOf(sv.getSeverityValue())
 							.compareTo(ruleset.getBlockingLevel()) <= 0);
 				}
+				violation.setMessage(sv.getMessage());
+				violation.setSeverity(RulePriority.valueOf(sv.getSeverityValue()));
 				violations.add(violation);
 			});
 			errors.addAll(report.getErrors());
 		}
 		violations.sort(null);
 
-		reportToEcr(violations, errors);
+		reportToOrigin(violations, errors);
 
 		ecrScanResultService.saveReport(getImage(), startTime, violations, errors);
 	}
 
-	private void reportToEcr(List<EcrViolationEntity> violations, List<ScanError> errors) {
+	private void reportToOrigin(List<ImageViolationEntity> violations, List<ScanError> errors) {
 		if (violations.stream().anyMatch(v -> v.isBlocking())) {
 			api.rejectImage(getImage());
 		}

@@ -1,16 +1,16 @@
-package com.tracelink.appsec.module.cve;
+package com.tracelink.appsec.module.advisory;
 
 import java.util.List;
 
-import com.tracelink.appsec.module.cve.scanner.CveScanner;
+import com.tracelink.appsec.module.advisory.scanner.AdvisoryScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
-public class CveModule extends AbstractModule {
-	public static final String MODULE_NAME = "CVE Checker";
+public class AdvisoryModule extends AbstractModule {
+	public static final String MODULE_NAME = "Image Advisory Checker";
 
 	@Override
 	public String getName() {
@@ -19,17 +19,17 @@ public class CveModule extends AbstractModule {
 
 	@Override
 	public String getSchemaHistoryTable() {
-		return "cve_schema_history";
+		return "advisory_schema_history";
 	}
 
 	@Override
 	public String getMigrationsLocation() {
-		return "db/cve";
+		return "db/advisory";
 	}
 
 	@Override
-	public CveScanner getScanner() {
-		return new CveScanner();
+	public AdvisoryScanner getScanner() {
+		return new AdvisoryScanner();
 	}
 
 	@Override

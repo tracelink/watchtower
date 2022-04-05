@@ -55,7 +55,7 @@ public class PRScanRestControllerTest {
 		JSONObject prJSON = BBPullRequestTest.buildJSON();
 		prJSON.getJSONObject("pullrequest").put("state", PullRequestState.ACTIVE);
 		String apiLabel = "apiLabel";
-		BDDMockito.when(mockApiService.findByEndpoint(BDDMockito.anyString()))
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
 				.thenReturn(apiEntity);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/scan/" + apiLabel)
@@ -73,7 +73,7 @@ public class PRScanRestControllerTest {
 		String type = ApiType.BITBUCKET_CLOUD.getTypeName();
 		BDDMockito.willThrow(RejectedExecutionException.class).given(mockScanService)
 				.doPullRequestScan(BDDMockito.any());
-		BDDMockito.when(mockApiService.findByEndpoint(type))
+		BDDMockito.when(mockApiService.findByLabel(type))
 				.thenReturn(BDDMockito.mock(APIIntegrationEntity.class));
 
 		String prJSON = BBPullRequestTest.buildStandardJSONString();
@@ -91,7 +91,7 @@ public class PRScanRestControllerTest {
 		JSONObject prJSON = BBPullRequestTest.buildJSON();
 		prJSON.getJSONObject("pullrequest").put("state", PullRequestState.DECLINED);
 		String apiLabel = "apiLabel";
-		BDDMockito.when(mockApiService.findByEndpoint(apiLabel)).thenReturn(apiEntity);
+		BDDMockito.when(mockApiService.findByLabel(apiLabel)).thenReturn(apiEntity);
 
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/scan/" + apiLabel)
