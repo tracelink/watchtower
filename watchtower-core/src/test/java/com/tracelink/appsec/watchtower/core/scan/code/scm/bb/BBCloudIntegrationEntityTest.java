@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 
 public class BBCloudIntegrationEntityTest {
 

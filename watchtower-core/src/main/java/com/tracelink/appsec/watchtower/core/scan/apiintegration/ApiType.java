@@ -5,7 +5,7 @@ import java.util.Map;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
-import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 
 /**
  * Enumeration of all API types configured and understood in watchtower.

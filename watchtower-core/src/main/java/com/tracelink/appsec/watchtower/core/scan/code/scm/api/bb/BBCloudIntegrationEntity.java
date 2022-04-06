@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm.bb;
+package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,7 +17,7 @@ import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncrypted
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 
 /**
  * Entity for the Bitbucket Cloud Integration API

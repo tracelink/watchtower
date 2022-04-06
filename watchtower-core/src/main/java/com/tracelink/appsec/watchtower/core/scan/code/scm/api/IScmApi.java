@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm;
+package com.tracelink.appsec.watchtower.core.scan.code.scm.api;
 
 import java.io.IOException;
 import java.nio.file.Path;

@@ -12,7 +12,6 @@ import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.IScmApi;
 
 /**
  * Entity description for the abstract API entity inherited object. Holds information about the api
@@ -68,7 +67,7 @@ public abstract class APIIntegrationEntity {
 	/**
 	 * Create the corresponding API client for this api entity
 	 * 
-	 * @return an appropriate {@linkplain IScmApi} for this label
+	 * @return an appropriate {@linkplain IWatchtowerApi} for this label
 	 * @throws ApiIntegrationException if the api entity is null or the api type is unknown
 	 */
 	public abstract IWatchtowerApi createApi() throws ApiIntegrationException;

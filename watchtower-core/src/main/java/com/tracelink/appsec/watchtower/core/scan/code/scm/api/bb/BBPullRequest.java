@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm.bb;
+package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

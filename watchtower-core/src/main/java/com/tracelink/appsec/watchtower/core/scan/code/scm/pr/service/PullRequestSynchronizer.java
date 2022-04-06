@@ -12,7 +12,7 @@ import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;

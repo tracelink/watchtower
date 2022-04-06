@@ -21,12 +21,10 @@ import com.tracelink.appsec.watchtower.core.exception.ScanInitializationExceptio
 import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PRScanAgent;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
 
