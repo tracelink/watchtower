@@ -22,17 +22,6 @@ CREATE TABLE image_scan(
 	CONSTRAINT fk_image_scan_container FOREIGN KEY (container_id) REFERENCES image_container (container_id)
 );
 
-CREATE TABLE image_violation(
-	vio_entity_id BIGINT NOT NULL AUTO_INCREMENT,
-	scan_entity_id BIGINT NOT NULL,
-	violation_name varchar(255) NOT NULL,
-	severity_name varchar(255) NOT NULL,
-	advisory_id BIGINT NOT NULL,
-	PRIMARY KEY (vio_entity_id),
-	CONSTRAINT fk_image_vio_advisory FOREIGN KEY (advisory_id) REFERENCES advisories (advisory_id),
-	CONSTRAINT fk_image_vio_scan FOREIGN KEY (scan_entity_id) REFERENCES image_scans (scan_entity_id)
-);
-
 CREATE TABLE advisories(
 	advisory_id BIGINT NOT NULL AUTO_INCREMENT,
 	finding_name varchar(255) NOT NULL,
@@ -43,4 +32,17 @@ CREATE TABLE advisories(
 	uri varchar(255) NOT NULL,
 	PRIMARY KEY (advisory_id)
 );
+
+CREATE TABLE image_violation(
+	vio_entity_id BIGINT NOT NULL AUTO_INCREMENT,
+	scan_entity_id BIGINT NOT NULL,
+	violation_name varchar(255) NOT NULL,
+	severity_name varchar(255) NOT NULL,
+	advisory_id BIGINT NOT NULL,
+	PRIMARY KEY (vio_entity_id),
+	CONSTRAINT fk_image_vio_advisory FOREIGN KEY (advisory_id) REFERENCES advisories (advisory_id),
+	CONSTRAINT fk_image_vio_scan FOREIGN KEY (scan_entity_id) REFERENCES image_scan (scan_entity_id)
+);
+
+
 
