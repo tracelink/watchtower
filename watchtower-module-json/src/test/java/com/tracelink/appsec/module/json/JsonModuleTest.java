@@ -2,7 +2,7 @@ package com.tracelink.appsec.module.json;
 
 import com.tracelink.appsec.module.json.designer.JsonRuleDesigner;
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
@@ -11,7 +11,7 @@ import com.tracelink.appsec.watchtower.test.ScannerModuleTestOption;
 public class JsonModuleTest extends ScannerModuleTest {
 
 	@Override
-	protected AbstractModule buildScannerModule() {
+	protected AbstractCodeScanModule buildScannerModule() {
 		return new JsonModule(new JsonRuleDesigner());
 	}
 

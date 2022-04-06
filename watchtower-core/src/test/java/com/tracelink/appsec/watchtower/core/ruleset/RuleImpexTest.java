@@ -23,7 +23,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleRepository;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryRepository;
 
 @ExtendWith(SpringExtension.class)
 public class RuleImpexTest {

@@ -4,15 +4,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
+
 public class ScanViolationTest {
-	private ScanViolation vio1;
-	private ScanViolation vio2;
+	private CodeScanViolation vio1;
+	private CodeScanViolation vio2;
 
 	@BeforeEach
 	public void setup() {
-		vio1 = new ScanViolation();
+		vio1 = new CodeScanViolation();
 		vio1.setViolationName("vio1");
-		vio2 = new ScanViolation();
+		vio2 = new CodeScanViolation();
 		vio2.setViolationName("vio2");
 	}
 
@@ -25,7 +27,7 @@ public class ScanViolationTest {
 		String severity = "TestSeverity";
 		int severityValue = 123;
 
-		ScanViolation sv = new ScanViolation();
+		CodeScanViolation sv = new CodeScanViolation();
 		sv.setViolationName(vioName);
 		Assertions.assertEquals(vioName, sv.getViolationName());
 

@@ -16,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.tracelink.appsec.module.pmd.controller.PMDRuleEditControllerTest;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 import com.tracelink.appsec.watchtower.test.logging.LogWatchExtension;
 
 import net.sourceforge.pmd.renderers.EmptyRenderer;
@@ -41,7 +41,7 @@ public class PMDScannerTest {
 		ruleset.setName("Default");
 		ruleset.setDescription("Set of default rules");
 		ruleset.setRules(Collections.singleton(PMDRuleEditControllerTest.getPMDRuleDto()));
-		ScanConfig config = new ScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 		config.setWorkingDirectory(workingDirectory);
 		config.setBenchmarkEnabled(true);

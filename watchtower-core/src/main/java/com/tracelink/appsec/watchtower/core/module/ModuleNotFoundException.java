@@ -1,7 +1,7 @@
 package com.tracelink.appsec.watchtower.core.module;
 
 /**
- * Exception thrown when a corresponding {@link AbstractModule} cannot be found
+ * Exception thrown when a corresponding {@link AbstractCodeScanModule} cannot be found
  * for a given name.
  *
  * @author mcool

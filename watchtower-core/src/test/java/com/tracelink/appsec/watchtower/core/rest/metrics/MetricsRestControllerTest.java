@@ -21,7 +21,7 @@ import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.BucketerTimePeriod;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
 import net.minidev.json.JSONObject;
 
@@ -130,7 +130,7 @@ public class MetricsRestControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
 	public void testGetScanTypes() throws Exception {
 		String jsonContent =
-				new JSONArray(Arrays.stream(ScanType.values()).map(ScanType::getTypeName)
+				new JSONArray(Arrays.stream(CodeScanType.values()).map(CodeScanType::getTypeName)
 						.collect(Collectors.toList())).toString();
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/metrics/scantypes"))
@@ -143,12 +143,12 @@ public class MetricsRestControllerTest {
 	public void testGetScansCompleted() throws Exception {
 		long upload = 20;
 		long pr = 10;
-		BDDMockito.when(mockMetricsCacheService.getScanCount(ScanType.UPLOAD)).thenReturn(upload);
-		BDDMockito.when(mockMetricsCacheService.getScanCount(ScanType.PULL_REQUEST)).thenReturn(pr);
+		BDDMockito.when(mockMetricsCacheService.getScanCount(CodeScanType.UPLOAD)).thenReturn(upload);
+		BDDMockito.when(mockMetricsCacheService.getScanCount(CodeScanType.PULL_REQUEST)).thenReturn(pr);
 
 		JSONObject jsonContent = new JSONObject();
-		jsonContent.put(ScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
-		jsonContent.put(ScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/metrics/scans-completed"))
@@ -160,13 +160,13 @@ public class MetricsRestControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
 	public void testGetScansCompletedSpecific() throws Exception {
 		long upload = 20;
-		BDDMockito.when(mockMetricsCacheService.getScanCount(ScanType.UPLOAD)).thenReturn(upload);
+		BDDMockito.when(mockMetricsCacheService.getScanCount(CodeScanType.UPLOAD)).thenReturn(upload);
 
 		JSONObject jsonContent = new JSONObject();
-		jsonContent.put(ScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
 
 		mockMvc.perform(MockMvcRequestBuilders
-				.get("/rest/metrics/scans-completed/" + ScanType.UPLOAD.getTypeName()))
+				.get("/rest/metrics/scans-completed/" + CodeScanType.UPLOAD.getTypeName()))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.content().json(jsonContent.toString()));
 	}
@@ -176,14 +176,14 @@ public class MetricsRestControllerTest {
 	public void testGetViolationsFound() throws Exception {
 		long upload = 20;
 		long pr = 10;
-		BDDMockito.when(mockMetricsCacheService.getViolationCount(ScanType.UPLOAD))
+		BDDMockito.when(mockMetricsCacheService.getViolationCount(CodeScanType.UPLOAD))
 				.thenReturn(upload);
-		BDDMockito.when(mockMetricsCacheService.getViolationCount(ScanType.PULL_REQUEST))
+		BDDMockito.when(mockMetricsCacheService.getViolationCount(CodeScanType.PULL_REQUEST))
 				.thenReturn(pr);
 
 		JSONObject jsonContent = new JSONObject();
-		jsonContent.put(ScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
-		jsonContent.put(ScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/metrics/violations-found"))
@@ -195,14 +195,14 @@ public class MetricsRestControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
 	public void testGetViolationsFoundSpecific() throws Exception {
 		long upload = 20;
-		BDDMockito.when(mockMetricsCacheService.getViolationCount(ScanType.UPLOAD))
+		BDDMockito.when(mockMetricsCacheService.getViolationCount(CodeScanType.UPLOAD))
 				.thenReturn(upload);
 
 		JSONObject jsonContent = new JSONObject();
-		jsonContent.put(ScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
 
 		mockMvc.perform(MockMvcRequestBuilders
-				.get("/rest/metrics/violations-found/" + ScanType.UPLOAD.getTypeName()))
+				.get("/rest/metrics/violations-found/" + CodeScanType.UPLOAD.getTypeName()))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.content().json(jsonContent.toString()));
 	}
@@ -212,14 +212,14 @@ public class MetricsRestControllerTest {
 	public void testGetAverageScanTime() throws Exception {
 		String upload = "2";
 		String pr = "1";
-		BDDMockito.when(mockMetricsCacheService.getAverageScanTimeString(ScanType.UPLOAD))
+		BDDMockito.when(mockMetricsCacheService.getAverageScanTimeString(CodeScanType.UPLOAD))
 				.thenReturn(upload);
-		BDDMockito.when(mockMetricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST))
+		BDDMockito.when(mockMetricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST))
 				.thenReturn(pr);
 
 		JSONObject jsonContent = new JSONObject();
-		jsonContent.put(ScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
-		jsonContent.put(ScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/metrics/average-scan-time"))
@@ -231,14 +231,14 @@ public class MetricsRestControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
 	public void testGetAverageScanTimeSpecific() throws Exception {
 		String upload = "2";
-		BDDMockito.when(mockMetricsCacheService.getAverageScanTimeString(ScanType.UPLOAD))
+		BDDMockito.when(mockMetricsCacheService.getAverageScanTimeString(CodeScanType.UPLOAD))
 				.thenReturn(upload);
 
 		JSONObject jsonContent = new JSONObject();
-		jsonContent.put(ScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
 
 		mockMvc.perform(MockMvcRequestBuilders
-				.get("/rest/metrics/average-scan-time/" + ScanType.UPLOAD.getTypeName()))
+				.get("/rest/metrics/average-scan-time/" + CodeScanType.UPLOAD.getTypeName()))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.content().json(jsonContent.toString()));
 	}

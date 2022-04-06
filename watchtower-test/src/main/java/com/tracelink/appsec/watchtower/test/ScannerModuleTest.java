@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
 
 /**
@@ -30,14 +30,14 @@ import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanCon
 public abstract class ScannerModuleTest {
 
 	private ScannerModuleTestBuilder scannerTester;
-	private AbstractModule moduleUnderTest;
+	private AbstractCodeScanModule moduleUnderTest;
 
 	/**
 	 * Construct a Scanner Module for this test
 	 * 
-	 * @return an implementation of {@linkplain AbstractModule} to test
+	 * @return an implementation of {@linkplain AbstractCodeScanModule} to test
 	 */
-	protected abstract AbstractModule buildScannerModule();
+	protected abstract AbstractCodeScanModule buildScannerModule();
 
 	/**
 	 * Configuration method to make the {@linkplain ScannerModuleTestBuilder} work for the Scanner
@@ -105,7 +105,7 @@ public abstract class ScannerModuleTest {
 
 		String resource = testScan.getResourceFile();
 		RulesetDto ruleset = testScan.getRuleset();
-		Consumer<ScanReport> assertClause = testScan.getAssertClause();
+		Consumer<CodeScanReport> assertClause = testScan.getAssertClause();
 		Assertions.assertNotNull(resource, "Misconfigured TestConfig: Missing Resource File");
 		Assertions.assertNotNull(ruleset, "Misconfigured TestConfig: Missing Ruleset");
 		Assertions.assertNotNull(assertClause, "Misconfigured TestConfig: Missing Asssertions");
@@ -119,15 +119,15 @@ public abstract class ScannerModuleTest {
 			IOUtils.copy(is, fos);
 		}
 		Assertions.assertTrue(testFile.toFile().exists());
-		ScanConfig config = new ScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setBenchmarkEnabled(false);
 		config.setDebugEnabled(false);
 		config.setRuleset(ruleset);
 		config.setThreads(0);
 		config.setWorkingDirectory(testDir);
 
-		IScanner scanner = moduleUnderTest.getScanner();
-		ScanReport report = scanner.scan(config);
+		ICodeScanner scanner = moduleUnderTest.getScanner();
+		CodeScanReport report = scanner.scan(config);
 		Assertions.assertNotNull(report);
 		assertClause.accept(report);
 	}

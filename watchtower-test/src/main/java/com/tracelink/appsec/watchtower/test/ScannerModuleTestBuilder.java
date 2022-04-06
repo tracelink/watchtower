@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
  * The TestBuilder allows Scanner Module authors to supply a few expected values for their module so
@@ -148,7 +148,7 @@ public class ScannerModuleTestBuilder {
 	public static class TestScanConfiguration {
 		private String resourceFile;
 		private RulesetDto ruleset;
-		private Consumer<ScanReport> clause;
+		private Consumer<CodeScanReport> clause;
 
 		public String getResourceFile() {
 			return this.resourceFile;
@@ -184,18 +184,18 @@ public class ScannerModuleTestBuilder {
 			return this;
 		}
 
-		public Consumer<ScanReport> getAssertClause() {
+		public Consumer<CodeScanReport> getAssertClause() {
 			return this.clause;
 		}
 
 		/**
-		 * Provide a Consumer that will Assert the accuracy of the resulting {@linkplain ScanReport}
+		 * Provide a Consumer that will Assert the accuracy of the resulting {@linkplain CodeScanReport}
 		 * from the scanner.
 		 * 
 		 * @param clause the consumer clause that Asserts the correctness of the report
 		 * @return this builder
 		 */
-		public TestScanConfiguration withAssertClause(Consumer<ScanReport> clause) {
+		public TestScanConfiguration withAssertClause(Consumer<CodeScanReport> clause) {
 			this.clause = clause;
 			return this;
 		}

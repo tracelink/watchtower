@@ -21,9 +21,9 @@ import com.tracelink.appsec.module.regex.scanner.RegexBenchmarking;
 import com.tracelink.appsec.module.regex.scanner.RegexCallable;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
  * The Designer implementation for Regex
@@ -68,7 +68,7 @@ public class RegexRuleDesigner implements IRuleDesigner {
 		if (StringUtils.isBlank(query)) {
 			return Arrays.asList("");
 		}
-		ScanReport report;
+		CodeScanReport report;
 		try {
 			report = getRegexReport(query, code);
 		} catch (IOException e) {
@@ -82,7 +82,7 @@ public class RegexRuleDesigner implements IRuleDesigner {
 	}
 
 
-	private ScanReport getRegexReport(String query, String code) throws IOException {
+	private CodeScanReport getRegexReport(String query, String code) throws IOException {
 		Path temp = Files.createTempFile(null, null);
 		try (FileWriter fw = new FileWriter(temp.toFile())) {
 			fw.write(code);
@@ -98,7 +98,7 @@ public class RegexRuleDesigner implements IRuleDesigner {
 		RegexCallable regex =
 				new RegexCallable(temp, ruleset,
 						new RegexBenchmarking());
-		ScanReport report = regex.call();
+		CodeScanReport report = regex.call();
 
 		FileUtils.deleteQuietly(temp.toFile());
 		return report;

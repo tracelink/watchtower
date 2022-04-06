@@ -14,13 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.scm.ScmFactoryService;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.PullRequestState;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanningService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningService;
 
 /**
  * Controller for all REST API calls. Handles sending a scan via REST webhook.
@@ -37,17 +38,13 @@ public class PRScanRestController {
 
 	private PRScanResultService prResultService;
 
-	private ScmFactoryService scmFactory;
-
 	private APIIntegrationService apiService;
 
 	public PRScanRestController(@Autowired PRScanningService scanService,
 			@Autowired PRScanResultService prResultService,
-			@Autowired ScmFactoryService scmFactory,
 			@Autowired APIIntegrationService apiService) {
 		this.scanService = scanService;
 		this.prResultService = prResultService;
-		this.scmFactory = scmFactory;
 		this.apiService = apiService;
 	}
 
@@ -57,13 +54,13 @@ public class PRScanRestController {
 			HttpServletRequest request) {
 		String responseMessage;
 		try {
-			APIIntegrationEntity apiEntity = apiService.findByEndpoint(source);
+			APIIntegrationEntity apiEntity = apiService.findByLabel(source);
 			if (apiEntity == null) {
 				LOG.error("Unsupported api label: " + source);
 				throw new ScanRejectedException("Unknown api label");
 			}
 
-			PullRequest pr = scmFactory.createPrFromAutomation(apiEntity, pullRequest);
+			PullRequest pr = createPrFromAutomation(apiEntity, pullRequest);
 			if (pr.getState().equals(PullRequestState.DECLINED)) {
 				prResultService.markPrResolved(pr);
 				responseMessage = "Scan Complete. PR already declined";
@@ -79,5 +76,30 @@ public class PRScanRestController {
 		}
 
 		return ResponseEntity.ok(responseMessage);
+	}
+
+
+	/**
+	 * Given an ApiType and string representation of a pull request (usually from some automation),
+	 * generate a pull request for the API type
+	 *
+	 * @param apiEntity   the Api entity descriptor for this PR
+	 * @param pullRequest the string representation of a pull request used to generate the PR
+	 * @return a PullRequest from the string data for this API
+	 * @throws ApiIntegrationException if the api entity is null or the api type is unknown
+	 */
+	private PullRequest createPrFromAutomation(APIIntegrationEntity apiEntity, String pullRequest)
+			throws ApiIntegrationException {
+		if (apiEntity == null) {
+			throw new ApiIntegrationException("Entity is null");
+		}
+		switch (apiEntity.getApiType()) {
+			case BITBUCKET_CLOUD:
+				BBPullRequest bbpr = new BBPullRequest(apiEntity.getApiLabel());
+				bbpr.parseJsonFromWebhook(pullRequest);
+				return bbpr;
+			default:
+				throw new ApiIntegrationException("No SCM API for this label.");
+		}
 	}
 }

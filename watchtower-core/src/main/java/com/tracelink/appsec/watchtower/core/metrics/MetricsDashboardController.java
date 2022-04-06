@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
 /**
  * Controller for the dashboard and home page of Watchtower
@@ -45,7 +45,7 @@ public class MetricsDashboardController {
 
 	private Map<String, Object> makeTopLevelMetrics() {
 		Map<String, Object> topLevelMetrics = new LinkedHashMap<>();
-		for (ScanType type : ScanType.values()) {
+		for (CodeScanType type : CodeScanType.values()) {
 			topLevelMetrics.put(type.getDisplayName(),
 					Arrays.asList(
 							Pair.of("Scans Completed",

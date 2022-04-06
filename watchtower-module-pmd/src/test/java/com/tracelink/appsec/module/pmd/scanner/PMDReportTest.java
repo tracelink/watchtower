@@ -12,7 +12,7 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 import com.tracelink.appsec.watchtower.test.logging.LogWatchExtension;
 
 import net.sourceforge.pmd.Report;
@@ -104,7 +104,7 @@ public class PMDReportTest {
 		PMDReport report = new PMDReport(pmdReport, null);
 
 		Assertions.assertEquals(2, report.getViolations().size());
-		ScanViolation sv = report.getViolations().get(0);
+		CodeScanViolation sv = report.getViolations().get(0);
 
 		Assertions.assertEquals(ruleName, sv.getViolationName());
 		Assertions.assertEquals(filename, sv.getFileName());

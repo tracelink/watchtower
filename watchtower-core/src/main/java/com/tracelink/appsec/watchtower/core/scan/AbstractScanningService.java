@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 
-import com.tracelink.appsec.watchtower.core.scan.threadpool.PauseableThreadPoolTaskExecutor;
+import com.tracelink.appsec.watchtower.core.scan.code.threadpool.PauseableThreadPoolTaskExecutor;
 
 /**
  * Handles creating executor services and scheduling scans in a

@@ -9,11 +9,12 @@ import com.tracelink.appsec.watchtower.core.metrics.chart.ScansByPeriodChartGene
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodAndTypeChartGenerator;
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodChartGenerator;
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByTypeChartGenerator;
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,7 +54,7 @@ public class MetricsCacheService {
 	public static final String METRICS_NOT_READY =
 			"Metrics are being generated and will be available soon";
 
-	private final Map<ScanType, AbstractScanResultService<?, ?>> serviceMap;
+	private final Map<CodeScanType, AbstractScanResultService<?, ?>> serviceMap;
 
 	// Initialized empty so that if the first update takes longer than a user can
 	// log in, they don't see anything, but nothing breaks
@@ -68,8 +69,8 @@ public class MetricsCacheService {
 	public MetricsCacheService(@Autowired PRScanResultService prScanResultService,
 			@Autowired UploadScanResultService uploadScanResultService) {
 		this.serviceMap = new HashMap<>();
-		this.serviceMap.put(ScanType.PULL_REQUEST, prScanResultService);
-		this.serviceMap.put(ScanType.UPLOAD, uploadScanResultService);
+		this.serviceMap.put(CodeScanType.PULL_REQUEST, prScanResultService);
+		this.serviceMap.put(CodeScanType.UPLOAD, uploadScanResultService);
 	}
 
 	/**
@@ -126,7 +127,7 @@ public class MetricsCacheService {
 			LOG.info("Beginning periodic update of metrics");
 			Map<CacheKey, JSONObject> chartsMap = new HashMap<>();
 			Map<CacheKey, Number> statsMap = new HashMap<>();
-			for (ScanType type : this.serviceMap.keySet()) {
+			for (CodeScanType type : this.serviceMap.keySet()) {
 				LOG.debug("Starting scanType: " + type.getDisplayName());
 
 				// Charts cache updates
@@ -178,7 +179,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each violation type and a dataset for number of violations
 	 * of each type
 	 */
-	public JSONObject getViolationsByType(ScanType type, String period) {
+	public JSONObject getViolationsByType(CodeScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_TYPE, period);
 	}
 
@@ -191,7 +192,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each subdivided time period and a dataset for number of
 	 * violations found during each period
 	 */
-	public JSONObject getViolationsByPeriod(ScanType type, String period) {
+	public JSONObject getViolationsByPeriod(CodeScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_PERIOD, period);
 	}
 
@@ -204,7 +205,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each subdivided time period and datasets for number of
 	 * violations found during each period for each violation type
 	 */
-	public JSONObject getViolationsByPeriodAndType(ScanType type, String period) {
+	public JSONObject getViolationsByPeriodAndType(CodeScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_PERIOD_AND_TYPE, period);
 	}
 
@@ -217,7 +218,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each subdivided time period and a dataset for number of
 	 * scans completed during each period
 	 */
-	public JSONObject getScansByPeriod(ScanType type, String period) {
+	public JSONObject getScansByPeriod(CodeScanType type, String period) {
 		return getMetric(type, KEY_SCANS_BY_PERIOD, period);
 	}
 
@@ -232,7 +233,7 @@ public class MetricsCacheService {
 	 * @return map from string to JSON object, where the string is a cache key (e.g.
 	 * KEY_VIO_BY_TYPE) and the JSON object contains labels and datasets for a metrics chart
 	 */
-	private Map<String, JSONObject> generateCharts(ScanType type, BucketerTimePeriod period,
+	private Map<String, JSONObject> generateCharts(CodeScanType type, BucketerTimePeriod period,
 			Map<String, AbstractChartGenerator<AbstractScanEntity<?, ?>, ?>> chartGenerators) {
 		// Create bucketer
 		AbstractBucketer<AbstractScanEntity<?, ?>> bucketer = new SimpleBucketer<>(
@@ -265,7 +266,7 @@ public class MetricsCacheService {
 				Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getResults(labels)));
 	}
 
-	private JSONObject getMetric(ScanType type, String key, String period) {
+	private JSONObject getMetric(CodeScanType type, String key, String period) {
 		JSONObject json;
 		try {
 			// Ensure period is valid
@@ -289,7 +290,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the scan count for this type
 	 */
-	public long getScanCount(ScanType type) {
+	public long getScanCount(CodeScanType type) {
 		CacheKey key = new CacheKey(type, SCAN_COUNT);
 		return (long) this.statsCache.getOrDefault(key, 0L);
 	}
@@ -300,7 +301,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the violation count for this type
 	 */
-	public long getViolationCount(ScanType type) {
+	public long getViolationCount(CodeScanType type) {
 		CacheKey key = new CacheKey(type, VIO_COUNT);
 		return (long) this.statsCache.getOrDefault(key, 0L);
 	}
@@ -311,7 +312,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the average scan duration for this type
 	 */
-	public double getAverageScanTime(ScanType type) {
+	public double getAverageScanTime(CodeScanType type) {
 		CacheKey key = new CacheKey(type, AVG_TIME);
 		return (double) this.statsCache.getOrDefault(key, 0.0);
 	}
@@ -323,7 +324,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the average scan duration in the best resolution
 	 */
-	public String getAverageScanTimeString(ScanType type) {
+	public String getAverageScanTimeString(CodeScanType type) {
 		double slicer = getAverageScanTime(type);
 		if (slicer < 1000) {
 			return String.format("%.0f ms", slicer);
@@ -340,11 +341,11 @@ public class MetricsCacheService {
 
 		private final String generatedKey;
 
-		CacheKey(ScanType type, String key) {
+		CacheKey(CodeScanType type, String key) {
 			this.generatedKey = type.getTypeName() + "-" + key;
 		}
 
-		CacheKey(ScanType type, String key, String period) {
+		CacheKey(CodeScanType type, String key, String period) {
 			this.generatedKey = type.getTypeName() + "-" + key + "-" + period;
 		}
 

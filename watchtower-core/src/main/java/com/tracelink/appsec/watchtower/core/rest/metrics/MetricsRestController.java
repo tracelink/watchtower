@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.BucketerTimePeriod;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
 import net.minidev.json.JSONObject;
 
@@ -48,7 +48,7 @@ public class MetricsRestController {
 
 	@GetMapping("/scantypes")
 	ResponseEntity<List<String>> getScanTypes() {
-		return ResponseEntity.ok(Arrays.stream(ScanType.values()).map(ScanType::getTypeName)
+		return ResponseEntity.ok(Arrays.stream(CodeScanType.values()).map(CodeScanType::getTypeName)
 				.collect(Collectors.toList()));
 	}
 
@@ -64,7 +64,7 @@ public class MetricsRestController {
 	ResponseEntity<JSONObject> getViolationsByType(@RequestParam String type,
 			@RequestParam String period) {
 		return ResponseEntity
-				.ok(metricsCacheService.getViolationsByType(ScanType.ofType(type), period));
+				.ok(metricsCacheService.getViolationsByType(CodeScanType.ofType(type), period));
 	}
 
 
@@ -80,7 +80,7 @@ public class MetricsRestController {
 	ResponseEntity<JSONObject> getViolationsByPeriod(@RequestParam String type,
 			@RequestParam String period) {
 		return ResponseEntity
-				.ok(metricsCacheService.getViolationsByPeriod(ScanType.ofType(type), period));
+				.ok(metricsCacheService.getViolationsByPeriod(CodeScanType.ofType(type), period));
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class MetricsRestController {
 	ResponseEntity<JSONObject> getViolationsByPeriodAndType(@RequestParam String type,
 			@RequestParam String period) {
 		return ResponseEntity.ok(
-				metricsCacheService.getViolationsByPeriodAndType(ScanType.ofType(type), period));
+				metricsCacheService.getViolationsByPeriodAndType(CodeScanType.ofType(type), period));
 	}
 
 	/**
@@ -110,13 +110,13 @@ public class MetricsRestController {
 	ResponseEntity<JSONObject> getScansByPeriod(@RequestParam String type,
 			@RequestParam String period) {
 		return ResponseEntity
-				.ok(metricsCacheService.getScansByPeriod(ScanType.ofType(type), period));
+				.ok(metricsCacheService.getScansByPeriod(CodeScanType.ofType(type), period));
 	}
 
 	@GetMapping(value = {"/scans-completed", "/scans-completed/{scanType}"})
 	public ResponseEntity<JSONObject> getScansCompleted(@PathVariable Optional<String> scanType) {
-		ScanType[] types = scanType.isPresent() ? new ScanType[]{ScanType.ofType(scanType.get())}
-				: ScanType.values();
+		CodeScanType[] types = scanType.isPresent() ? new CodeScanType[]{CodeScanType.ofType(scanType.get())}
+				: CodeScanType.values();
 
 		return ResponseEntity
 				.ok(getTopLevelMetric((metricsCacheService::getScanCount), types));
@@ -124,8 +124,8 @@ public class MetricsRestController {
 
 	@GetMapping(value = {"/violations-found", "/violations-found/{scanType}"})
 	public ResponseEntity<JSONObject> getViolationsFound(@PathVariable Optional<String> scanType) {
-		ScanType[] types = scanType.isPresent() ? new ScanType[]{ScanType.ofType(scanType.get())}
-				: ScanType.values();
+		CodeScanType[] types = scanType.isPresent() ? new CodeScanType[]{CodeScanType.ofType(scanType.get())}
+				: CodeScanType.values();
 
 		return ResponseEntity
 				.ok(getTopLevelMetric((metricsCacheService::getViolationCount), types));
@@ -133,17 +133,17 @@ public class MetricsRestController {
 
 	@GetMapping(value = {"/average-scan-time", "/average-scan-time/{scanType}"})
 	public ResponseEntity<JSONObject> getAverageScanTime(@PathVariable Optional<String> scanType) {
-		ScanType[] types = scanType.isPresent() ? new ScanType[]{ScanType.ofType(scanType.get())}
-				: ScanType.values();
+		CodeScanType[] types = scanType.isPresent() ? new CodeScanType[]{CodeScanType.ofType(scanType.get())}
+				: CodeScanType.values();
 
 		return ResponseEntity
 				.ok(getTopLevelMetric((metricsCacheService::getAverageScanTimeString), types));
 	}
 
-	private JSONObject getTopLevelMetric(Function<ScanType, Object> metricsCall,
-			ScanType... scanTypes) {
+	private JSONObject getTopLevelMetric(Function<CodeScanType, Object> metricsCall,
+			CodeScanType... scanTypes) {
 		JSONObject scanComplete = new JSONObject();
-		for (ScanType type : scanTypes) {
+		for (CodeScanType type : scanTypes) {
 			scanComplete.put(type.getDisplayName(), String.valueOf(metricsCall.apply(type)));
 		}
 		return scanComplete;

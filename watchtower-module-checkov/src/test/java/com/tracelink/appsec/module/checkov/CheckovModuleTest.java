@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
 import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
@@ -27,7 +27,7 @@ public class CheckovModuleTest extends ScannerModuleTest {
 	}
 
 	@Override
-	protected AbstractModule buildScannerModule() {
+	protected AbstractCodeScanModule buildScannerModule() {
 		return new CheckovModule(engine);
 	}
 

@@ -13,9 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 @ExtendWith(MockitoExtension.class)
 public class RegexCallableTest {
@@ -38,7 +38,7 @@ public class RegexCallableTest {
 
 		// do the test
 		RegexCallable callable = new RegexCallable(target, ruleset, new RegexBenchmarking());
-		ScanReport report = callable.call();
+		CodeScanReport report = callable.call();
 		Assertions.assertEquals(1, report.getViolations().size());
 		Assertions.assertEquals(1, report.getViolations().get(0).getLineNum());
 	}
@@ -58,7 +58,7 @@ public class RegexCallableTest {
 
 		// do the test
 		RegexCallable callable = new RegexCallable(target, ruleset, new RegexBenchmarking());
-		ScanReport report = callable.call();
+		CodeScanReport report = callable.call();
 		Assertions.assertEquals(0, report.getViolations().size());
 	}
 
@@ -76,7 +76,7 @@ public class RegexCallableTest {
 
 		// do the test
 		RegexCallable callable = new RegexCallable(target, ruleset, new RegexBenchmarking());
-		ScanReport report = callable.call();
+		CodeScanReport report = callable.call();
 		Assertions.assertEquals(0, report.getViolations().size());
 	}
 
@@ -86,7 +86,7 @@ public class RegexCallableTest {
 		Path target = Files.createTempDirectory(null).resolve("foo.txt");
 		// do the test
 		RegexCallable callable = new RegexCallable(target, ruleset, new RegexBenchmarking());
-		ScanReport report = callable.call();
+		CodeScanReport report = callable.call();
 		Assertions.assertEquals(0, report.getViolations().size());
 		Assertions.assertEquals(1, report.getErrors().size());
 	}

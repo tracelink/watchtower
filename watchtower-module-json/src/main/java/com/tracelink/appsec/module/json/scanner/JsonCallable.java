@@ -19,11 +19,11 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.module.json.scanner.provider.CustomJsonNodeFactory;
 import com.tracelink.appsec.module.json.scanner.provider.CustomParserFactory;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
  * A single Callable that scans a single file for all applicable json rules
@@ -31,7 +31,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
  * @author csmith
  *
  */
-public class JsonCallable implements Callable<ScanReport> {
+public class JsonCallable implements Callable<CodeScanReport> {
 	private static Logger LOG = LoggerFactory.getLogger(JsonCallable.class);
 
 	private final Path currentFile;
@@ -61,8 +61,8 @@ public class JsonCallable implements Callable<ScanReport> {
 	}
 
 	@Override
-	public ScanReport call() {
-		ScanReport report = new ScanReport();
+	public CodeScanReport call() {
+		CodeScanReport report = new CodeScanReport();
 
 		DocumentContext parsedDocument = null;
 
@@ -83,7 +83,7 @@ public class JsonCallable implements Callable<ScanReport> {
 						} catch (Exception e) {
 							String errorMsg = "Could not parse the file "
 									+ this.currentFile.getFileName() + " as JSON";
-							report.addError(new ScanError(errorMsg));
+							report.addError(new CodeScanError(errorMsg));
 							LOG.error(errorMsg, e);
 							return report;
 						}
@@ -97,7 +97,7 @@ public class JsonCallable implements Callable<ScanReport> {
 						} else {
 							LOG.error("Could not find location for line");
 						}
-						ScanViolation sv = new ScanViolation();
+						CodeScanViolation sv = new CodeScanViolation();
 						sv.setViolationName(rule.getName());
 						sv.setFileName(currentFile.toString());
 						sv.setLineNum(lineNum);

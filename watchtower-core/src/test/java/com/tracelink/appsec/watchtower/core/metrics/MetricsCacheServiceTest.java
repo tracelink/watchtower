@@ -17,14 +17,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
 
 import net.minidev.json.JSONObject;
 
@@ -132,7 +132,7 @@ public class MetricsCacheServiceTest {
 	public void testUpdateViolationsByType() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json =
-				this.metricsCacheService.getViolationsByType(ScanType.PULL_REQUEST, "all-time");
+				this.metricsCacheService.getViolationsByType(CodeScanType.PULL_REQUEST, "all-time");
 		MatcherAssert.assertThat(json.getAsString("labels"),
 				Matchers.allOf(Matchers.containsString(SER_NAME),
 						Matchers.allOf(Matchers.containsString(XXE_NAME))));
@@ -145,7 +145,7 @@ public class MetricsCacheServiceTest {
 	@Test
 	public void testUpdateViolationsByPeriod() {
 		this.metricsCacheService.updateAllMetrics();
-		JSONObject json = this.metricsCacheService.getViolationsByPeriod(ScanType.UPLOAD,
+		JSONObject json = this.metricsCacheService.getViolationsByPeriod(CodeScanType.UPLOAD,
 				"last-six-months");
 		MatcherAssert.assertThat(json.getAsString("counts"),
 				Matchers.allOf(Matchers.containsString("2"),
@@ -156,7 +156,7 @@ public class MetricsCacheServiceTest {
 	public void testUpdateViolationsByPeriodAndType() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json = this.metricsCacheService
-				.getViolationsByPeriodAndType(ScanType.PULL_REQUEST, "last-four-weeks");
+				.getViolationsByPeriodAndType(CodeScanType.PULL_REQUEST, "last-four-weeks");
 		MatcherAssert.assertThat(json.getAsString(XXE_NAME), Matchers.containsString("2"));
 		MatcherAssert.assertThat(json.getAsString(SER_NAME), Matchers.containsString("1"));
 	}
@@ -165,7 +165,7 @@ public class MetricsCacheServiceTest {
 	public void testUpdateScansByPeriod() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json =
-				this.metricsCacheService.getScansByPeriod(ScanType.PULL_REQUEST, "last-week");
+				this.metricsCacheService.getScansByPeriod(CodeScanType.PULL_REQUEST, "last-week");
 		System.out.println(json);
 		MatcherAssert.assertThat(json.getAsString("counts"),
 				Matchers.containsString("1, 1"));
@@ -175,7 +175,7 @@ public class MetricsCacheServiceTest {
 	public void testGetBadInterval() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json =
-				this.metricsCacheService.getScansByPeriod(ScanType.PULL_REQUEST, "foobar");
+				this.metricsCacheService.getScansByPeriod(CodeScanType.PULL_REQUEST, "foobar");
 		MatcherAssert.assertThat(json.getAsString("error"),
 				Matchers.containsString("Unknown time period"));
 	}
@@ -183,7 +183,7 @@ public class MetricsCacheServiceTest {
 	@Test
 	public void testGetEmptyMetrics() {
 		JSONObject json =
-				this.metricsCacheService.getScansByPeriod(ScanType.PULL_REQUEST, "last-week");
+				this.metricsCacheService.getScansByPeriod(CodeScanType.PULL_REQUEST, "last-week");
 		MatcherAssert.assertThat(json.getAsString("error"),
 				Matchers.containsString("Null metric for that period"));
 	}
@@ -205,16 +205,16 @@ public class MetricsCacheServiceTest {
 	public void testGetScanCount() {
 		BDDMockito.when(mockPrScanResultService.countScans()).thenReturn(2L);
 		this.metricsCacheService.updateAllMetrics();
-		Assertions.assertEquals(2, this.metricsCacheService.getScanCount(ScanType.PULL_REQUEST));
-		Assertions.assertEquals(0, this.metricsCacheService.getScanCount(ScanType.UPLOAD));
+		Assertions.assertEquals(2, this.metricsCacheService.getScanCount(CodeScanType.PULL_REQUEST));
+		Assertions.assertEquals(0, this.metricsCacheService.getScanCount(CodeScanType.UPLOAD));
 	}
 
 	@Test
 	public void testGetViolationCount() {
 		BDDMockito.when(mockPrScanResultService.countViolations()).thenReturn(2L);
 		this.metricsCacheService.updateAllMetrics();
-		Assertions.assertEquals(2, this.metricsCacheService.getViolationCount(ScanType.PULL_REQUEST));
-		Assertions.assertEquals(0, this.metricsCacheService.getViolationCount(ScanType.UPLOAD));
+		Assertions.assertEquals(2, this.metricsCacheService.getViolationCount(CodeScanType.PULL_REQUEST));
+		Assertions.assertEquals(0, this.metricsCacheService.getViolationCount(CodeScanType.UPLOAD));
 	}
 
 	@Test
@@ -222,9 +222,9 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals(2.0,
-				this.metricsCacheService.getAverageScanTime(ScanType.PULL_REQUEST), 0.0);
+				this.metricsCacheService.getAverageScanTime(CodeScanType.PULL_REQUEST), 0.0);
 		Assertions.assertEquals(0.0,
-				this.metricsCacheService.getAverageScanTime(ScanType.UPLOAD), 0.0);
+				this.metricsCacheService.getAverageScanTime(CodeScanType.UPLOAD), 0.0);
 	}
 
 	@Test
@@ -232,7 +232,7 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals("2 ms",
-				this.metricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST));
+				this.metricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
 	}
 
 	@Test
@@ -240,7 +240,7 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0 * 1000);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals("2.00 s",
-				this.metricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST));
+				this.metricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
 	}
 
 	@Test
@@ -248,6 +248,6 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0 * 1000 * 60);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals("2.00 mins",
-				this.metricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST));
+				this.metricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
 	}
 }

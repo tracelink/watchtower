@@ -11,11 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tracelink.appsec.module.regex.controller.RegexRuleEditControllerTest;
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
-import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
-import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.MultiThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 @ExtendWith(MockitoExtension.class)
 public class RegexScannerTest {
@@ -34,11 +34,11 @@ public class RegexScannerTest {
 		RulesetDto ruleset = new RulesetDto();
 		RegexCustomRuleDto rule = RegexRuleEditControllerTest.getRegexRuleDto();
 		ruleset.setRules(Collections.singleton(rule));
-		ScanConfig config = new ScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 		config.setBenchmarkEnabled(true);
 		config.setWorkingDirectory(Files.createTempDirectory(null));
-		ScanReport report = new RegexScanner().scan(config);
+		CodeScanReport report = new RegexScanner().scan(config);
 		Assertions.assertNotNull(report);
 		Assertions.assertEquals(0, report.getErrors().size());
 		Assertions.assertEquals(0, report.getViolations().size());
@@ -46,7 +46,7 @@ public class RegexScannerTest {
 
 	@Test
 	public void testGetCreator() throws Exception {
-		Callable<ScanReport> c = new RegexScanner().getCreator(null)
+		Callable<CodeScanReport> c = new RegexScanner().getCreator(null)
 				.createCallable(Files.createTempFile(null, null), null);
 		Assertions.assertEquals(RegexCallable.class.getName(), c.getClass().getName());
 	}

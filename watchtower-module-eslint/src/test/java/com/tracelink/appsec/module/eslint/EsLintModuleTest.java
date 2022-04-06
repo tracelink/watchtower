@@ -15,11 +15,11 @@ import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
@@ -36,7 +36,7 @@ public class EsLintModuleTest extends ScannerModuleTest {
 	}
 
 	@Override
-	protected AbstractModule buildScannerModule() {
+	protected AbstractCodeScanModule buildScannerModule() {
 		return new EsLintModule(engine, designer);
 	}
 
@@ -86,7 +86,7 @@ public class EsLintModuleTest extends ScannerModuleTest {
 								.withAssertClause(report -> {
 									MatcherAssert.assertThat(
 											report.getErrors().stream()
-													.map(ScanError::getErrorMessage)
+													.map(CodeScanError::getErrorMessage)
 													.collect(Collectors.joining()),
 											report.getErrors(),
 											Matchers.hasSize(0));

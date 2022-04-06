@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -55,7 +55,7 @@ public class MetricsDashboardControllerTest {
 						// Matchers.hasKey(ScanType.PULL_REQUEST.getDisplayName()),
 						// Matchers.hasKey(ScanType.UPLOAD.getDisplayName()),
 						// and the scan type metrics are the correct pairs
-						Matchers.hasEntry(Matchers.is(ScanType.PULL_REQUEST.getDisplayName()),
+						Matchers.hasEntry(Matchers.is(CodeScanType.PULL_REQUEST.getDisplayName()),
 								Matchers.allOf(
 										Matchers.hasItem(Pair.of("Scans Completed",
 												String.valueOf(scanCount))),

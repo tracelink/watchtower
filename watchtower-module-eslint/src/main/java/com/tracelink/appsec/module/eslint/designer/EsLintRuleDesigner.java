@@ -28,10 +28,10 @@ import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
  * Implementation of the {@link IRuleDesigner} for ESLint rules. Allows querying against custom
@@ -236,7 +236,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 		ruleset.setDescription("query-description");
 		ruleset.setRules(Collections.singleton(rule));
 
-		ScanConfig config = new ScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 
 		try {
@@ -250,7 +250,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 		}
 
 		// Get violations and any errors from scanner
-		ScanReport report = scanner.scan(config);
+		CodeScanReport report = scanner.scan(config);
 		List<String> matches = report.getViolations().stream()
 				.map(violation -> "Line " + violation.getLineNum() + ": " + violation.getMessage())
 				.collect(Collectors.toList());

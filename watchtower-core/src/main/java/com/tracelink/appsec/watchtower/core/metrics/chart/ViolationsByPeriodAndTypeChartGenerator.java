@@ -1,13 +1,15 @@
 package com.tracelink.appsec.watchtower.core.metrics.chart;
 
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.AbstractViolationEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractViolationEntity;
+
 import net.minidev.json.JSONObject;
 
 /**

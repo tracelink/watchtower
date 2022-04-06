@@ -15,20 +15,20 @@ import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
- * {@link IScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the results
+ * {@link ICodeScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the results
  *
  * @author csmith
  */
-public class CheckovScanner implements IScanner {
+public class CheckovScanner implements ICodeScanner {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CheckovScanner.class);
 	private final CheckovEngine engine;
 
@@ -37,8 +37,8 @@ public class CheckovScanner implements IScanner {
 	}
 
 	@Override
-	public ScanReport scan(ScanConfig config) {
-		ScanReport report = new ScanReport();
+	public CodeScanReport scan(CodeScanConfig config) {
+		CodeScanReport report = new CodeScanReport();
 		Benchmarking<CheckovProvidedRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
@@ -60,7 +60,7 @@ public class CheckovScanner implements IScanner {
 			}
 		} catch (Exception e) {
 			LOGGER.error("Exception while scanning", e);
-			report.addError(new ScanError("Error while scanning: " + e.getMessage()));
+			report.addError(new CodeScanError("Error while scanning: " + e.getMessage()));
 		}
 
 		report.setRuleBenchmarking(benchmarking);
@@ -77,10 +77,10 @@ public class CheckovScanner implements IScanner {
 	}
 
 	private void addResultsToReport(JsonObject result, List<CheckovProvidedRuleDto> rules,
-			ScanReport report, Path workingDirectory) {
+			CodeScanReport report, Path workingDirectory) {
 		if (result.has("errors")) {
 			report.addError(
-					new ScanError("Runtime error(s) found: " + result.get("errors").getAsString()));
+					new CodeScanError("Runtime error(s) found: " + result.get("errors").getAsString()));
 		}
 		if (result.has("results")) {
 			JsonObject results = result.getAsJsonObject("results");
@@ -94,7 +94,7 @@ public class CheckovScanner implements IScanner {
 								.filter(r -> r.getName().equals(failName)).findFirst();
 						if (foundRule.isPresent()) {
 							RuleDto rule = foundRule.get();
-							ScanViolation violation = new ScanViolation();
+							CodeScanViolation violation = new CodeScanViolation();
 							violation.setFileName(workingDirectory
 									.resolve(fail.get("file_path").getAsString().substring(1))
 									.toString());
@@ -109,7 +109,7 @@ public class CheckovScanner implements IScanner {
 						} else {
 							String error = "Could not find rule for check " + failName;
 							LOGGER.error(error);
-							report.addError(new ScanError(error));
+							report.addError(new CodeScanError(error));
 						}
 					} else {
 						LOGGER.error("Checkov failed check is not JSON: " + f.toString());

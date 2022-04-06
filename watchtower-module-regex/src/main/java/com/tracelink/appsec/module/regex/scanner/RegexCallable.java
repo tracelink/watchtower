@@ -10,18 +10,18 @@ import java.util.regex.Pattern;
 
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
  * handles scanning a single file for regex matches based on rules
  *
  * @author csmith
  */
-public class RegexCallable implements Callable<ScanReport> {
+public class RegexCallable implements Callable<CodeScanReport> {
 
 	private final Path currentFile;
 	private final RulesetDto ruleset;
@@ -42,8 +42,8 @@ public class RegexCallable implements Callable<ScanReport> {
 	}
 
 	@Override
-	public ScanReport call() {
-		ScanReport report = new ScanReport();
+	public CodeScanReport call() {
+		CodeScanReport report = new CodeScanReport();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(currentFile.toFile()))) {
 			String lineData;
@@ -55,7 +55,7 @@ public class RegexCallable implements Callable<ScanReport> {
 						RegexCustomRuleDto regexRule = (RegexCustomRuleDto) rule;
 						if (regexRule.isValidExtension(currentFile.toString())) {
 							if (findViolations(lineData, regexRule)) {
-								ScanViolation sv = new ScanViolation();
+								CodeScanViolation sv = new CodeScanViolation();
 								sv.setViolationName(regexRule.getName());
 								sv.setFileName(currentFile.toString());
 								sv.setLineNum(lineNum);
@@ -69,7 +69,7 @@ public class RegexCallable implements Callable<ScanReport> {
 				}
 			}
 		} catch (IOException e) {
-			report.addError(new ScanError("Could not read: " + currentFile.getFileName()));
+			report.addError(new CodeScanError("Could not read: " + currentFile.getFileName()));
 		}
 
 		return report;
