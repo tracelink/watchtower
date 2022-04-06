@@ -20,7 +20,7 @@ public interface UserPasswordRequirementsChecker {
 	/**
 	 * Get a user-friendly string describing the requirements of the password
 	 * 
-	 * @return
+	 * @return The user-friendly requirements string
 	 */
 	public String getRequirementsStatement();
 }

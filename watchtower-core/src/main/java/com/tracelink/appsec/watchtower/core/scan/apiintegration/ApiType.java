@@ -9,10 +9,6 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBCloudIntegrationE
 
 /**
  * Enumeration of all API types configured and understood in watchtower.
- * <p>
- * Note to developers, to add a new api type, put a label here, add logic to
- * {@linkplain ScmFactoryService}, and implement anything needed from those methods (Pull Request,
- * API, etc)
  *
  * @author csmith
  */

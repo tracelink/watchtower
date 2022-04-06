@@ -147,30 +147,17 @@ public class APIIntegrationControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
-	public void testUpdateSettingsNewSetting() throws Exception {
+	public void testUpdateSettings() throws Exception {
 		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
-		APIIntegrationEntity entity = BDDMockito.mock(APIIntegrationEntity.class);
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiLabel)
-						.with(SecurityMockMvcRequestPostProcessors.csrf()));
+						.param("apiLabel", "a").param("workspace", "a").param("user", "a")
+						.param("auth", "a").with(SecurityMockMvcRequestPostProcessors.csrf()));
 
-		BDDMockito.verify(mockApiService).upsertEntity(BDDMockito.any(APIIntegrationEntity.class));
+		BDDMockito.verify(mockApiService)
+				.upsertEntity(BDDMockito.any(BBCloudIntegrationEntity.class));
 	}
 
-	@Test
-	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
-	public void testUpdateSettingsExistingSetting() throws Exception {
-		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
-		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
-		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
-				.thenReturn(BDDMockito.mock(APIIntegrationEntity.class));
-
-		mockMvc.perform(
-				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiLabel)
-						.with(SecurityMockMvcRequestPostProcessors.csrf()));
-
-		BDDMockito.verify(mockApiService).upsertEntity(mockEntity);
-	}
 
 	///
 	// Test Connection

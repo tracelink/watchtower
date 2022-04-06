@@ -74,7 +74,7 @@ public class UploadScanningServiceTest {
 		BDDMockito.when(ruleset.getName()).thenReturn(rulesetName);
 
 		BDDMockito.when(mockRulesetService.getRuleset(BDDMockito.anyString())).thenReturn(ruleset);
-		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(false);
+		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
 		BDDMockito.when(mockLogService.getLogsLevel()).thenReturn(Level.INFO);
 		BDDMockito.when(
 				mockUploadScanResultService.makeNewScanEntity(BDDMockito.any(UploadScan.class)))

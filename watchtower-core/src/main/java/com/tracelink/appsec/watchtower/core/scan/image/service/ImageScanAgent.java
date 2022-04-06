@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IImageScanner;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanConfig;
@@ -19,7 +18,6 @@ public class ImageScanAgent extends
 	private Logger LOG = LoggerFactory.getLogger(getClass());
 
 	private ImageScan scan;
-	private RulesetDto ruleset;
 
 	private IImageApi api;
 
@@ -43,7 +41,7 @@ public class ImageScanAgent extends
 	protected ImageScanConfig createScanConfig() {
 		// Create scan config
 		ImageScanConfig config = new ImageScanConfig();
-		config.setRuleset(ruleset);
+		config.setRuleset(getRuleset());
 		config.setScan(scan);
 		config.setSecurityReport(api.getSecurityReportForImage(scan));
 		config.setBenchmarkEnabled(isBenchmarkingEnabled());

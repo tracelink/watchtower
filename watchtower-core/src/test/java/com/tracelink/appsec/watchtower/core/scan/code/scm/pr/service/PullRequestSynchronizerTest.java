@@ -57,13 +57,21 @@ public class PullRequestSynchronizerTest {
 		PullRequestContainerEntity mockEntity = BDDMockito.mock(PullRequestContainerEntity.class);
 		BDDMockito.when(mockEntity.toPullRequest()).thenReturn(pr);
 
+		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
 		BDDMockito.when(mockApiIntegrationService.getAllSettings())
-				.thenReturn(Arrays.asList(BDDMockito.mock(APIIntegrationEntity.class)));
+				.thenReturn(Arrays.asList(mockApiEntity));
+
+		BDDMockito.when(mockApiIntegrationService.findByLabel(BDDMockito.any()))
+				.thenReturn(mockApiEntity);
+
 		BDDMockito.when(mockPrRepo.findByResolvedFalse(BDDMockito.any()))
 				.thenReturn(new PageImpl<PullRequestContainerEntity>(Arrays.asList(mockEntity)));
 
 		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
 		BDDMockito.when(mockApi.updatePRData(BDDMockito.any())).thenReturn(pr);
+		BDDMockito.when(mockApiEntity.createApi()).thenReturn(mockApi);
+
+
 
 		prSync.syncData();
 		BDDMockito.verify(mockResultService).markPrResolved(BDDMockito.any());
@@ -79,14 +87,18 @@ public class PullRequestSynchronizerTest {
 		PullRequestContainerEntity mockEntity = BDDMockito.mock(PullRequestContainerEntity.class);
 		BDDMockito.when(mockEntity.toPullRequest()).thenReturn(mockPr);
 
+		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
 		BDDMockito.when(mockApiIntegrationService.getAllSettings())
-				.thenReturn(Arrays.asList(BDDMockito.mock(APIIntegrationEntity.class)));
+				.thenReturn(Arrays.asList(mockApiEntity));
+		BDDMockito.when(mockApiIntegrationService.findByLabel(BDDMockito.any()))
+				.thenReturn(mockApiEntity);
 		BDDMockito.when(mockPrRepo.findByResolvedFalse(BDDMockito.any()))
 				.thenReturn(new PageImpl<PullRequestContainerEntity>(Arrays.asList(mockEntity)));
 
 		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
 		BDDMockito.when(mockApi.updatePRData(BDDMockito.any()))
 				.thenThrow(ScanRejectedException.class);
+		BDDMockito.when(mockApiEntity.createApi()).thenReturn(mockApi);
 
 		prSync.syncData();
 

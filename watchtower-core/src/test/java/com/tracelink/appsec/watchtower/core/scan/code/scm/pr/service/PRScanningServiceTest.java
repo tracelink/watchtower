@@ -85,6 +85,9 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
 		BDDMockito.when(mockScanRegistrationService.getCodeScanners())
 				.thenReturn(Collections.singleton(new MockScanner()));
+		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		BDDMockito.when(mockEntity.createApi()).thenReturn(mockApi);
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.any())).thenReturn(mockEntity);
 		scanningService.doPullRequestScan(mockPR);
 		// ran without exceptions is expected
 	}
@@ -146,9 +149,14 @@ public class PRScanningServiceTest {
 	@Test
 	public void testShutdown() throws Exception {
 		setupDefaultMocks();
+
 		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
 		BDDMockito.when(mockApi.updatePRData(BDDMockito.any())).thenAnswer(e -> e.getArgument(0));
+		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		BDDMockito.when(mockEntity.createApi()).thenReturn(mockApi);
 
+		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.any())).thenReturn(mockEntity);
 		scanningService.shutdown();
 		try {
 			scanningService.doPullRequestScan(mockPR);
@@ -230,6 +238,8 @@ public class PRScanningServiceTest {
 
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
 
+		BDDMockito.when(mockApiEntity.createApi()).thenReturn(mockApi);
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.any())).thenReturn(mockApiEntity);
 		ArgumentCaptor<PullRequest> prCaptor = ArgumentCaptor.forClass(PullRequest.class);
 
 		scanningService.recoverFromDowntime();
@@ -308,7 +318,10 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockRepoService.upsertRepo(apiLabel, repoName)).thenReturn(mockRepoEntity);
 		BDDMockito.when(mockRepoEntity.getRuleset()).thenReturn(new RulesetEntity());
 
+		BDDMockito.when(mockApiEntity.createApi()).thenReturn(mockApi);
+
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.any())).thenReturn(mockApiEntity);
 
 		ArgumentCaptor<PullRequest> prCaptor = ArgumentCaptor.forClass(PullRequest.class);
 

@@ -60,7 +60,7 @@ public class ScanRegistrationService {
 	}
 
 	public boolean hasCodeScanners() {
-		return this.codeScanners.isEmpty();
+		return !this.codeScanners.isEmpty();
 	}
 
 	public Collection<IImageScanner> getImageScanners() {
@@ -68,6 +68,6 @@ public class ScanRegistrationService {
 	}
 
 	public boolean hasImageScanners() {
-		return this.imageScanners.isEmpty();
+		return !this.imageScanners.isEmpty();
 	}
 }

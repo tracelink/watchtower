@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
@@ -31,7 +30,6 @@ public abstract class AbstractCodeScanAgent<T extends AbstractCodeScanAgent<T>>
 		AbstractScanAgent<T, ICodeScanner, CodeScanConfig, CodeScanReport> {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
 
-	private RulesetDto ruleset;
 	private int threads;
 	private Path workingDirectory;
 
@@ -76,7 +74,7 @@ public abstract class AbstractCodeScanAgent<T extends AbstractCodeScanAgent<T>>
 	protected CodeScanConfig createScanConfig() {
 		// Create scan config
 		CodeScanConfig config = new CodeScanConfig();
-		config.setRuleset(ruleset);
+		config.setRuleset(getRuleset());
 		config.setWorkingDirectory(getWorkingDirectory());
 		config.setThreads(threads);
 		config.setBenchmarkEnabled(isBenchmarkingEnabled());

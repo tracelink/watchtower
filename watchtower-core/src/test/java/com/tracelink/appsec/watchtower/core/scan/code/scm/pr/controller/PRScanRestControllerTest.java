@@ -3,6 +3,7 @@ package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.controller;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.hamcrest.Matchers;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -21,6 +22,7 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEn
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBPullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.bb.BBPullRequestTest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
@@ -60,7 +62,7 @@ public class PRScanRestControllerTest {
 				.andExpect(MockMvcResultMatchers.content()
 						.string(Matchers.is("Added scan successfully")));
 
-		BDDMockito.verify(mockScanService).doPullRequestScan(pr);
+		BDDMockito.verify(mockScanService).doPullRequestScan(BDDMockito.any(BBPullRequest.class));
 	}
 
 	@Test
@@ -83,7 +85,8 @@ public class PRScanRestControllerTest {
 	@Test
 	public void testResolveOnDeclinedPr() throws Exception {
 		APIIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
-		String prJSON = BBPullRequestTest.buildJSON().toString();
+		JSONObject prJSON = BBPullRequestTest.buildJSON();
+		prJSON.getJSONObject("pullrequest").put("state", "declined");
 		String apiLabel = "apiLabel";
 		PullRequest pr = new PullRequest(apiLabel);
 		pr.setState(PullRequestState.DECLINED);
@@ -97,7 +100,7 @@ public class PRScanRestControllerTest {
 						.string(Matchers.containsString("PR already declined")));
 
 		BDDMockito.verify(mockScanService, BDDMockito.never()).doPullRequestScan(BDDMockito.any());
-		BDDMockito.verify(mockResultService).markPrResolved(pr);
+		BDDMockito.verify(mockResultService).markPrResolved(BDDMockito.any(BBPullRequest.class));
 	}
 
 }

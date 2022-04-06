@@ -34,7 +34,7 @@ public class ImageScanningService extends AbstractScanningService {
 
 	private LogsService logService;
 
-	protected ImageScanningService(int executorThreads, boolean shouldRecoverFromDowntime) {
+	protected ImageScanningService() {
 		super(2, false);
 	}
 
