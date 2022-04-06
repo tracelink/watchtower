@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code;
+package com.tracelink.appsec.watchtower.core.scan;
 
 import java.util.List;
 
@@ -6,8 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
-
-import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 
 /**
  * High-level Repostiory for all Scans

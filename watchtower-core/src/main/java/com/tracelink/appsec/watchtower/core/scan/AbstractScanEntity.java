@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code;
+package com.tracelink.appsec.watchtower.core.scan;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -12,7 +12,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
-import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus.ScanStatusConverter;
 
 /**
@@ -23,7 +22,7 @@ import com.tracelink.appsec.watchtower.core.scan.ScanStatus.ScanStatusConverter;
  * @author csmith
  */
 @MappedSuperclass
-public abstract class AbstractScanEntity<C extends AbstractScanContainer<?>, V extends AbstractViolationEntity<?>> {
+public abstract class AbstractScanEntity<C extends AbstractScanContainerEntity<?>, V extends AbstractScanViolationEntity<?>> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

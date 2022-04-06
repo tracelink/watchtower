@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;

@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code;
+package com.tracelink.appsec.watchtower.core.scan;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
@@ -10,6 +10,6 @@ import org.springframework.data.repository.NoRepositoryBean;
  * @author csmith
  */
 @NoRepositoryBean
-public interface IViolationRepository<V extends AbstractViolationEntity<?>>
+public interface IViolationRepository<V extends AbstractScanViolationEntity<?>>
 		extends JpaRepository<V, Long> {
 }

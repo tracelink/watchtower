@@ -9,8 +9,8 @@ import com.tracelink.appsec.watchtower.core.metrics.chart.ScansByPeriodChartGene
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodAndTypeChartGenerator;
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodChartGenerator;
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByTypeChartGenerator;
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;

@@ -12,7 +12,7 @@ import javax.persistence.FetchType;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanContainer;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanContainerEntity;
 
 /**
  * Container Entity class for Uploads with reverse join to {@linkplain UploadScanEntity}
@@ -22,7 +22,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanContainer;
  */
 @Entity
 @Table(name = "upload_container")
-public class UploadScanContainerEntity extends AbstractScanContainer<UploadScanEntity> {
+public class UploadScanContainerEntity extends AbstractScanContainerEntity<UploadScanEntity> {
 
 	@Column(name = "name")
 	private String name;

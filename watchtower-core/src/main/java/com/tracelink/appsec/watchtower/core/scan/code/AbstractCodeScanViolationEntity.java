@@ -10,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
@@ -19,8 +21,9 @@ import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
  * @author csmith
  */
 @MappedSuperclass
-public abstract class AbstractViolationEntity<S extends AbstractScanEntity<?, ?>>
-		implements Comparable<AbstractViolationEntity<?>> {
+public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEntity<?, ?>>
+		extends AbstractScanViolationEntity<S>
+		implements Comparable<AbstractCodeScanViolationEntity<S>> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,7 +66,7 @@ public abstract class AbstractViolationEntity<S extends AbstractScanEntity<?, ?>
 	 * @param sv         the scan violation
 	 * @param workingDir the path to the working directory for the violation
 	 */
-	public AbstractViolationEntity(CodeScanViolation sv, Path workingDir) {
+	public AbstractCodeScanViolationEntity(CodeScanViolation sv, Path workingDir) {
 		setFileName(relativizeFileName(workingDir, sv.getFileName()));
 		setLineNum(sv.getLineNum());
 		setSeverity(sv.getSeverity());
@@ -72,7 +75,7 @@ public abstract class AbstractViolationEntity<S extends AbstractScanEntity<?, ?>
 		setMessage(sv.getMessage());
 	}
 
-	public AbstractViolationEntity() {
+	public AbstractCodeScanViolationEntity() {
 		// Default constructor
 	}
 
@@ -144,18 +147,18 @@ public abstract class AbstractViolationEntity<S extends AbstractScanEntity<?, ?>
 		this.blocking = blocking;
 	}
 
+	private String relativizeFileName(Path workingDir, String oldFileName) {
+		Path rel = workingDir.toAbsolutePath().relativize(Paths.get(oldFileName));
+		return rel.normalize().toString();
+	}
+
 	@Override
-	public int compareTo(AbstractViolationEntity<?> o) {
+	public int compareTo(AbstractCodeScanViolationEntity<S> o) {
 		int compare = Integer.compare(o.getSeverityValue(), this.getSeverityValue());
 		if (compare == 0) {
 			compare = this.getFileName().compareTo(o.getFileName());
 		}
 		return compare;
-	}
-
-	private String relativizeFileName(Path workingDir, String oldFileName) {
-		Path rel = workingDir.toAbsolutePath().relativize(Paths.get(oldFileName));
-		return rel.normalize().toString();
 	}
 
 }

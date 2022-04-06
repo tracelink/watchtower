@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.scan.code.upload.repository;
 
 import org.springframework.stereotype.Repository;
 
-import com.tracelink.appsec.watchtower.core.scan.code.IContainerRepository;
+import com.tracelink.appsec.watchtower.core.scan.IContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 
 /**

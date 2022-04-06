@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import com.tracelink.appsec.watchtower.core.scan.code.IViolationRepository;
+import com.tracelink.appsec.watchtower.core.scan.IViolationRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 

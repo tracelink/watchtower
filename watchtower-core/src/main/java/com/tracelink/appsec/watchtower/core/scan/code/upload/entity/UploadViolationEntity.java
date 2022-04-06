@@ -8,7 +8,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractCodeScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
@@ -20,7 +20,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 @Entity
 @Table(name = "upload_violations")
 public class UploadViolationEntity extends
-		AbstractViolationEntity<UploadScanEntity> {
+		AbstractCodeScanViolationEntity<UploadScanEntity> {
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "scan_entity_id", nullable = false)

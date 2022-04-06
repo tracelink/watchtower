@@ -9,7 +9,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 
 /**
  * Scan Entity class for Pull Requests with join to {@linkplain PullRequestContainerEntity} and

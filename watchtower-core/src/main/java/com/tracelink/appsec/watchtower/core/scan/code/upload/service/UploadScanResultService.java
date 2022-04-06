@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
@@ -136,7 +136,7 @@ public class UploadScanResultService
 	 * violations to the scan
 	 * 
 	 * @param ticket     the ticket for the scan
-	 * @param violations the list of {@linkplain AbstractViolationEntity} to save against this scan
+	 * @param violations the list of {@linkplain AbstractScanViolationEntity} to save against this scan
 	 */
 	public void saveFinalUploadScan(String ticket,
 			List<UploadViolationEntity> violations) {

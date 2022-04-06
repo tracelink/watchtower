@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code;
+package com.tracelink.appsec.watchtower.core.scan;
 
 import java.util.Collection;
 
@@ -17,7 +17,7 @@ import javax.persistence.MappedSuperclass;
  *
  */
 @MappedSuperclass
-public abstract class AbstractScanContainer<S extends AbstractScanEntity<?, ?>> {
+public abstract class AbstractScanContainerEntity<S extends AbstractScanEntity<?, ?>> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "container_id")

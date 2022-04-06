@@ -10,7 +10,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanContainer;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 
 /**
@@ -21,7 +21,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
  */
 @Entity
 @Table(name = "pull_request_container")
-public class PullRequestContainerEntity extends AbstractScanContainer<PullRequestScanEntity> {
+public class PullRequestContainerEntity extends AbstractScanContainerEntity<PullRequestScanEntity> {
 
 	@Column(name = "resolved")
 	private boolean resolved;

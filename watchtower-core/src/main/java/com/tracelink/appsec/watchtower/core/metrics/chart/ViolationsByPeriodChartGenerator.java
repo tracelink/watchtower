@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.metrics.chart;
 
 import java.util.List;
 
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 
 import net.minidev.json.JSONObject;
 
