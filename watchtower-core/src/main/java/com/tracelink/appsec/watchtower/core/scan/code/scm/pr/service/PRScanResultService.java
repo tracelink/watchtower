@@ -187,8 +187,8 @@ public class PRScanResultService
 		PRScanResultViolation result = new PRScanResultViolation();
 		result.setFileName(violation.getFileName());
 		result.setLineNumber(violation.getLineNum());
-		result.setSeverity(violation.getSeverity());
-		result.setSeverityValue(violation.getSeverityValue());
+		result.setSeverity(violation.getSeverity().getName());
+		result.setSeverityValue(violation.getSeverity().getPriority());
 		result.setViolationName(violation.getViolationName());
 
 		String message = "Rule guidance not found";

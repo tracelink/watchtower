@@ -1,10 +1,14 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
+
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority.RulePriorityConverter;
 
 /**
  * Entity description for a violation entity.
@@ -23,8 +27,9 @@ public abstract class AbstractScanViolationEntity<S extends AbstractScanEntity<?
 	@Column(name = "violation_name")
 	private String violationName;
 
-	@Column(name = "severity_name")
-	private String severity;
+	@Column(name = "severity")
+	@Convert(converter = RulePriorityConverter.class)
+	private RulePriority severity;
 
 	public abstract S getScan();
 
@@ -38,11 +43,11 @@ public abstract class AbstractScanViolationEntity<S extends AbstractScanEntity<?
 		this.violationName = violationName;
 	}
 
-	public String getSeverity() {
+	public RulePriority getSeverity() {
 		return severity;
 	}
 
-	public void setSeverity(String severity) {
+	public void setSeverity(RulePriority severity) {
 		this.severity = severity;
 	}
 

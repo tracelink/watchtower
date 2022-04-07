@@ -32,8 +32,8 @@ import com.tracelink.appsec.watchtower.core.scan.code.processor.AbstractProcesso
 import com.tracelink.appsec.watchtower.core.scan.code.processor.CallableCreator;
 import com.tracelink.appsec.watchtower.core.scan.code.processor.MultiThreadedProcessor;
 import com.tracelink.appsec.watchtower.core.scan.code.processor.SingleThreadedProcessor;
-import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
@@ -196,8 +196,7 @@ public class EsLintScanner implements ICodeScanner {
 				violation.setViolationName(message.getRuleId());
 				violation.setFileName(fileName.toString());
 				violation.setLineNum(message.getLine());
-				violation.setSeverity(rule.getPriority().getName());
-				violation.setSeverityValue(rule.getPriority().getPriority());
+				violation.setSeverity(rule.getPriority());
 				violation.setMessage(message.getMessage());
 				// Add violation to report
 				report.addViolation(violation);

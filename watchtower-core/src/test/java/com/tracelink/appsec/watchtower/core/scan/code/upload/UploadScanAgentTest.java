@@ -23,10 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
@@ -154,15 +154,13 @@ public class UploadScanAgentTest {
 		Path filePath = agent.getWorkingDirectory().resolve(file);
 
 		int lineNum = 1;
-		String sev = "severity";
-		int sevNum = 5;
+		RulePriority sev = RulePriority.HIGH;
 		String message = "message";
 
 		CodeScanViolation sv = new CodeScanViolation();
 		sv.setFileName(filePath.toString());
 		sv.setLineNum(lineNum);
 		sv.setSeverity(sev);
-		sv.setSeverityValue(sevNum);
 		sv.setMessage(message);
 
 		CodeScanReport report = BDDMockito.mock(CodeScanReport.class);

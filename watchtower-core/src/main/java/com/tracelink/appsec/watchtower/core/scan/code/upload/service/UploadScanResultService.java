@@ -136,7 +136,8 @@ public class UploadScanResultService
 	 * violations to the scan
 	 * 
 	 * @param ticket     the ticket for the scan
-	 * @param violations the list of {@linkplain AbstractScanViolationEntity} to save against this scan
+	 * @param violations the list of {@linkplain AbstractScanViolationEntity} to save against this
+	 *                   scan
 	 */
 	public void saveFinalUploadScan(String ticket,
 			List<UploadViolationEntity> violations) {
@@ -252,8 +253,8 @@ public class UploadScanResultService
 		UploadScanResultViolation urv = new UploadScanResultViolation();
 		urv.setViolationName(violation.getViolationName());
 		urv.setLineNumber(violation.getLineNum());
-		urv.setSeverity(violation.getSeverity());
-		urv.setSeverityValue(violation.getSeverityValue());
+		urv.setSeverity(violation.getSeverity().getName());
+		urv.setSeverityValue(violation.getSeverity().getPriority());
 		urv.setFileName(violation.getFileName());
 
 		String message = "Rule guidance not found";

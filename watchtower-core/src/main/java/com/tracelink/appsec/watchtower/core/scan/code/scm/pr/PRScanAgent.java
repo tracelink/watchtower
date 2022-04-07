@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.AbstractCodeScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
@@ -123,8 +122,7 @@ public class PRScanAgent extends
 						new PullRequestViolationEntity(sv, getWorkingDirectory());
 				RulesetDto ruleset = getRuleset();
 				if (ruleset.getBlockingLevel() != null) {
-					ve.setBlocking(RulePriority.valueOf(sv.getSeverityValue())
-							.compareTo(ruleset.getBlockingLevel()) <= 0);
+					ve.setBlocking(sv.getSeverity().compareTo(ruleset.getBlockingLevel()) <= 0);
 				}
 				violations.add(ve);
 			});

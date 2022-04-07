@@ -24,7 +24,7 @@ CREATE TABLE image_scan(
 
 CREATE TABLE advisories(
 	advisory_id BIGINT NOT NULL AUTO_INCREMENT,
-	finding_name varchar(255) NOT NULL,
+	advisory_name varchar(255) NOT NULL,
 	package_name varchar(255),
 	score varchar(255) NOT NULL,
 	vector varchar(255) NOT NULL,
@@ -45,4 +45,25 @@ CREATE TABLE image_violation(
 );
 
 
+CREATE TABLE registry_image(
+	registry_image_entity_id BIGINT NOT NULL AUTO_INCREMENT,
+	image_name varchar(255) NOT NULL,
+	api_label varchar(255) NOT NULL,
+	last_review_date BIGINT NOT NULL,
+	enabled BOOLEAN NOT NULL,
+	ruleset_id BIGINT NOT NULL,
+	CONSTRAINT fk_registryimage_rulesetid FOREIGN KEY (ruleset_id) REFERENCES rulesets (ruleset_id)
+);
+
+ALTER TABLE pull_request_violations ADD COLUMN severity varchar(255);
+UPDATE pull_request_violations SET severity = severity_name;
+ALTER TABLE pull_request_violations DROP COLUMN severity_name;
+ALTER TABLE pull_request_violations DROP COLUMN severity_value;
+ALTER TABLE pull_request_violations MODIFY COLUMN severity varchar(255) NOT NULL; 
+
+ALTER TABLE upload_violations ADD COLUMN severity varchar(255);
+UPDATE upload_violations SET severity = severity_name;
+ALTER TABLE upload_violations DROP COLUMN severity_name;
+ALTER TABLE upload_violations DROP COLUMN severity_value;
+ALTER TABLE upload_violations MODIFY COLUMN severity varchar(255) NOT NULL; 
 

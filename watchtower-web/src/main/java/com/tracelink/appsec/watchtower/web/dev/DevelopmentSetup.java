@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetRepository;
@@ -242,8 +243,7 @@ public class DevelopmentSetup {
 		vio.setLineNum(1);
 		vio.setMessage("Test Violation");
 		vio.setNewViolation(random.nextDouble() < .3);
-		vio.setSeverity("High");
-		vio.setSeverityValue(1);
+		vio.setSeverity(RulePriority.HIGH);
 		vio.setViolationName("TestViolation" + random.nextInt(3));
 		return vio;
 	}
@@ -286,8 +286,7 @@ public class DevelopmentSetup {
 		vio.setLineNum(1);
 		vio.setMessage("Test Violation");
 		vio.setNewViolation(random.nextDouble() < .3);
-		vio.setSeverity("High");
-		vio.setSeverityValue(1);
+		vio.setSeverity(RulePriority.HIGH);
 		vio.setViolationName("TestViolation" + random.nextInt(3));
 		return vio;
 	}

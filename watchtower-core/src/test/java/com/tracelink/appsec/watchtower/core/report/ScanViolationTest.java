@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 public class ScanViolationTest {
@@ -24,7 +25,7 @@ public class ScanViolationTest {
 		String fileName = "TestFileName";
 		int lineNum = 111;
 		String message = "TestMessage";
-		String severity = "TestSeverity";
+		RulePriority severity = RulePriority.HIGH;
 		int severityValue = 123;
 
 		CodeScanViolation sv = new CodeScanViolation();
@@ -43,8 +44,6 @@ public class ScanViolationTest {
 		sv.setSeverity(severity);
 		Assertions.assertEquals(severity, sv.getSeverity());
 
-		sv.setSeverityValue(severityValue);
-		Assertions.assertEquals(severityValue, sv.getSeverityValue());
 	}
 
 }

@@ -17,8 +17,8 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationSe
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.api.IImageApi;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryService;
+import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageService;
 
 import ch.qos.logback.classic.Level;
 
@@ -26,13 +26,15 @@ import ch.qos.logback.classic.Level;
 public class ImageScanningService extends AbstractScanningService {
 	private static Logger LOG = LoggerFactory.getLogger(ImageScanningService.class);
 
-	private RegistryService registryService;
+	private RegistryImageService registryService;
 
 	private ScanRegistrationService scanRegistrationService;
 
 	private APIIntegrationService apiService;
 
 	private LogsService logService;
+
+	private ImageScanResultService scanResultService;
 
 	protected ImageScanningService() {
 		super(2, false);
@@ -45,8 +47,8 @@ public class ImageScanningService extends AbstractScanningService {
 			LOG.error("Quiesced. Did not schedule image scan: " + imageName);
 			throw new ScanRejectedException("Quiesced. Did not schedule image: " + imageName);
 		}
-		RegistryEntity registry =
-				registryService.upsertRegistry(scan.getApiLabel(), scan.getRegistryName());
+		RegistryImageEntity registry =
+				registryService.upsertRegistryImage(scan.getApiLabel(), scan.getRegistryName());
 		RulesetEntity ruleset = registry.getRuleset();
 
 		// Skip scan if registry is not configured with a ruleset
@@ -66,6 +68,7 @@ public class ImageScanningService extends AbstractScanningService {
 
 		ImageScanAgent scanAgent = new ImageScanAgent(scan)
 				.withApi(api)
+				.withScanResultService(this.scanResultService)
 				.withScanners(scanRegistrationService.getImageScanners())
 				.withRuleset(ruleset.toDto())
 				.withBenchmarkEnabled(!logService.getLogsLevel().isGreaterOrEqual(Level.INFO));

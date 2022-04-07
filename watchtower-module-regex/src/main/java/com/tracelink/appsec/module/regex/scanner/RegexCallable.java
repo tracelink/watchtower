@@ -12,8 +12,8 @@ import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
@@ -59,8 +59,7 @@ public class RegexCallable implements Callable<CodeScanReport> {
 								sv.setViolationName(regexRule.getName());
 								sv.setFileName(currentFile.toString());
 								sv.setLineNum(lineNum);
-								sv.setSeverity(regexRule.getPriority().getName());
-								sv.setSeverityValue(regexRule.getPriority().getPriority());
+								sv.setSeverity(regexRule.getPriority());
 								sv.setMessage(regexRule.getMessage());
 								report.addViolation(sv);
 							}

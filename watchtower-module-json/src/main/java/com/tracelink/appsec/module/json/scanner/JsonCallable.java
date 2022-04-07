@@ -21,8 +21,8 @@ import com.tracelink.appsec.module.json.scanner.provider.CustomJsonNodeFactory;
 import com.tracelink.appsec.module.json.scanner.provider.CustomParserFactory;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
@@ -101,8 +101,7 @@ public class JsonCallable implements Callable<CodeScanReport> {
 						sv.setViolationName(rule.getName());
 						sv.setFileName(currentFile.toString());
 						sv.setLineNum(lineNum);
-						sv.setSeverity(rule.getPriority().getName());
-						sv.setSeverityValue(rule.getPriority().getPriority());
+						sv.setSeverity(rule.getPriority());
 						sv.setMessage(rule.getMessage());
 						report.addViolation(sv);
 					}

@@ -1,5 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.code.report;
 
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+
 /**
  * DAO of a scan violation
  *
@@ -8,8 +10,7 @@ package com.tracelink.appsec.watchtower.core.scan.code.report;
 public class CodeScanViolation {
 	private String violationName;
 	private int lineNum;
-	private String severity;
-	private int severityValue;
+	private RulePriority severity;
 	private String fileName;
 	private String message;
 
@@ -29,20 +30,12 @@ public class CodeScanViolation {
 		this.lineNum = lineNum;
 	}
 
-	public String getSeverity() {
+	public RulePriority getSeverity() {
 		return severity;
 	}
 
-	public void setSeverity(String severity) {
+	public void setSeverity(RulePriority severity) {
 		this.severity = severity;
-	}
-
-	public int getSeverityValue() {
-		return severityValue;
-	}
-
-	public void setSeverityValue(int severityValue) {
-		this.severityValue = severityValue;
 	}
 
 	public String getFileName() {

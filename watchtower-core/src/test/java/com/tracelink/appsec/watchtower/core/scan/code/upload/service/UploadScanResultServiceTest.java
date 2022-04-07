@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
@@ -31,7 +32,6 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadVi
 import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanResultViolation;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
 
 
 @ExtendWith(SpringExtension.class)
@@ -188,8 +188,7 @@ public class UploadScanResultServiceTest {
 
 		String vioName = "vioName";
 		int lineNum = 1;
-		String severity = "severity";
-		int severityNum = 5;
+		RulePriority severity = RulePriority.HIGH;
 		String fileName = "fileName";
 
 		String ruleMessage = "ruleMessage";
@@ -201,7 +200,7 @@ public class UploadScanResultServiceTest {
 				.thenReturn(rule);
 
 		UploadViolationEntity vio =
-				makeViolationEntity(vioName, lineNum, severity, severityNum, fileName);
+				makeViolationEntity(vioName, lineNum, severity, fileName);
 
 		UploadScanEntity scan = makeScanEntity(submitDate, endDate, status, error, vio, vio);
 
@@ -225,16 +224,14 @@ public class UploadScanResultServiceTest {
 		UploadScanResultViolation vio1 = result.getViolations().get(0);
 		Assertions.assertEquals(vioName, vio1.getViolationName());
 		Assertions.assertEquals(lineNum, vio1.getLineNumber());
-		Assertions.assertEquals(severity, vio1.getSeverity());
-		Assertions.assertEquals(severityNum, vio1.getSeverityValue());
+		Assertions.assertEquals(severity.getName(), vio1.getSeverity());
 		Assertions.assertEquals(fileName, vio1.getFileName());
 		Assertions.assertEquals("Rule guidance not found", vio1.getMessage());
 
 		UploadScanResultViolation vio2 = result.getViolations().get(1);
 		Assertions.assertEquals(vioName, vio2.getViolationName());
 		Assertions.assertEquals(lineNum, vio2.getLineNumber());
-		Assertions.assertEquals(severity, vio2.getSeverity());
-		Assertions.assertEquals(severityNum, vio2.getSeverityValue());
+		Assertions.assertEquals(severity.getName(), vio2.getSeverity());
 		Assertions.assertEquals(fileName, vio2.getFileName());
 		Assertions.assertEquals(ruleMessage, vio2.getMessage());
 	}
@@ -335,12 +332,11 @@ public class UploadScanResultServiceTest {
 
 		String vioName = "vioName";
 		int lineNum = 1;
-		String severity = "severity";
-		int severityNum = 5;
+		RulePriority severity = RulePriority.HIGH;
 		String fileName = "fileName";
 
 		UploadViolationEntity vio =
-				makeViolationEntity(vioName, lineNum, severity, severityNum, fileName);
+				makeViolationEntity(vioName, lineNum, severity, fileName);
 		UploadScanEntity scan = makeScanEntity(submitDate, endDate, status, error, vio, vio);
 		UploadScanContainerEntity container = makeScanContainer(name, user, ticket, ruleset, scan);
 
@@ -374,20 +370,18 @@ public class UploadScanResultServiceTest {
 			UploadScanResultViolation violation = result.getViolations().get(0);
 			Assertions.assertEquals(vioName, violation.getViolationName());
 			Assertions.assertEquals(lineNum, violation.getLineNumber());
-			Assertions.assertEquals(severity, violation.getSeverity());
-			Assertions.assertEquals(severityNum, violation.getSeverityValue());
+			Assertions.assertEquals(severity.getName(), violation.getSeverity());
 			Assertions.assertEquals(fileName, violation.getFileName());
 			Assertions.assertEquals("Rule guidance not found", violation.getMessage());
 		}
 	}
 
-	private UploadViolationEntity makeViolationEntity(String vioName, int lineNum, String severity,
-			int severityNum, String fileName) {
+	private UploadViolationEntity makeViolationEntity(String vioName, int lineNum,
+			RulePriority severity, String fileName) {
 		UploadViolationEntity vio = BDDMockito.mock(UploadViolationEntity.class);
 		BDDMockito.when(vio.getViolationName()).thenReturn(vioName);
 		BDDMockito.when(vio.getLineNum()).thenReturn(lineNum);
 		BDDMockito.when(vio.getSeverity()).thenReturn(severity);
-		BDDMockito.when(vio.getSeverityValue()).thenReturn(severityNum);
 		BDDMockito.when(vio.getFileName()).thenReturn(fileName);
 		return vio;
 	}

@@ -36,12 +36,6 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 	@Column(name = "line_number")
 	private int lineNum;
 
-	@Column(name = "severity_name")
-	private String severity;
-
-	@Column(name = "severity_value")
-	private int severityValue;
-
 	@Column(name = "file_path")
 	private String fileName;
 
@@ -70,7 +64,6 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 		setFileName(relativizeFileName(workingDir, sv.getFileName()));
 		setLineNum(sv.getLineNum());
 		setSeverity(sv.getSeverity());
-		setSeverityValue(sv.getSeverityValue());
 		setViolationName(sv.getViolationName());
 		setMessage(sv.getMessage());
 	}
@@ -97,22 +90,6 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 
 	public void setLineNum(int lineNum) {
 		this.lineNum = lineNum;
-	}
-
-	public String getSeverity() {
-		return severity;
-	}
-
-	public void setSeverity(String severity) {
-		this.severity = severity;
-	}
-
-	public int getSeverityValue() {
-		return severityValue;
-	}
-
-	public void setSeverityValue(int severityValue) {
-		this.severityValue = severityValue;
 	}
 
 	public String getFileName() {
@@ -154,7 +131,8 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 
 	@Override
 	public int compareTo(AbstractCodeScanViolationEntity<S> o) {
-		int compare = Integer.compare(o.getSeverityValue(), this.getSeverityValue());
+		int compare =
+				Integer.compare(o.getSeverity().getPriority(), this.getSeverity().getPriority());
 		if (compare == 0) {
 			compare = this.getFileName().compareTo(o.getFileName());
 		}

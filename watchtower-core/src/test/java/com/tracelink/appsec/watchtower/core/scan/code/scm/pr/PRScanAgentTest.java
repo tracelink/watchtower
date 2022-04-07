@@ -172,8 +172,7 @@ public class PRScanAgentTest {
 		violation.setFileName(filePath.toString());
 		violation.setLineNum(lineNum);
 		violation.setMessage(message);
-		violation.setSeverity(severity.getName());
-		violation.setSeverityValue(severity.getPriority());
+		violation.setSeverity(severity);
 		violation.setViolationName(violationName);
 
 		String errorMessage = "errorMessage";
@@ -223,8 +222,7 @@ public class PRScanAgentTest {
 		violation.setFileName(filePath.toString());
 		violation.setLineNum(lineNum);
 		violation.setMessage(message);
-		violation.setSeverity(severity.getName());
-		violation.setSeverityValue(severity.getPriority());
+		violation.setSeverity(severity);
 		violation.setViolationName(violationName);
 
 		CodeScanReport report = BDDMockito.mock(CodeScanReport.class);

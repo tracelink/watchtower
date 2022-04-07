@@ -1,5 +1,22 @@
 package com.tracelink.appsec.watchtower.core.metrics;
 
+import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.AbstractBucketer;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.BucketIntervals;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.BucketerTimePeriod;
@@ -11,26 +28,14 @@ import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodChar
 import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByTypeChartGenerator;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.ScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
-import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import net.minidev.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 /**
  * This service handles asynchronously generating any needed metrics for our dashboards that might
@@ -54,7 +59,7 @@ public class MetricsCacheService {
 	public static final String METRICS_NOT_READY =
 			"Metrics are being generated and will be available soon";
 
-	private final Map<CodeScanType, AbstractScanResultService<?, ?>> serviceMap;
+	private final Map<ScanType, AbstractScanResultService<?, ?>> serviceMap;
 
 	// Initialized empty so that if the first update takes longer than a user can
 	// log in, they don't see anything, but nothing breaks
@@ -67,10 +72,12 @@ public class MetricsCacheService {
 	private volatile boolean isPaused = false;
 
 	public MetricsCacheService(@Autowired PRScanResultService prScanResultService,
-			@Autowired UploadScanResultService uploadScanResultService) {
+			@Autowired UploadScanResultService uploadScanResultService,
+			@Autowired ImageScanResultService imageScanResultService) {
 		this.serviceMap = new HashMap<>();
 		this.serviceMap.put(CodeScanType.PULL_REQUEST, prScanResultService);
 		this.serviceMap.put(CodeScanType.UPLOAD, uploadScanResultService);
+		this.serviceMap.put(ImageScanType.ADVISORY, imageScanResultService);
 	}
 
 	/**
@@ -127,13 +134,14 @@ public class MetricsCacheService {
 			LOG.info("Beginning periodic update of metrics");
 			Map<CacheKey, JSONObject> chartsMap = new HashMap<>();
 			Map<CacheKey, Number> statsMap = new HashMap<>();
-			for (CodeScanType type : this.serviceMap.keySet()) {
+			for (ScanType type : this.serviceMap.keySet()) {
 				LOG.debug("Starting scanType: " + type.getDisplayName());
 
 				// Charts cache updates
 				for (BucketerTimePeriod period : BucketerTimePeriod.values()) {
 					LOG.debug("Starting time period: " + period);
-					Map<String, AbstractChartGenerator<AbstractScanEntity<?, ?>, ?>> chartGenerators = new HashMap<>();
+					Map<String, AbstractChartGenerator<AbstractScanEntity<?, ?>, ?>> chartGenerators =
+							new HashMap<>();
 					chartGenerators.put(KEY_VIO_BY_PERIOD, new ViolationsByPeriodChartGenerator());
 					chartGenerators.put(KEY_VIO_BY_TYPE, new ViolationsByTypeChartGenerator());
 					chartGenerators.put(KEY_VIO_BY_PERIOD_AND_TYPE,
@@ -177,7 +185,7 @@ public class MetricsCacheService {
 	 * @param type   the ScanType to retrieve
 	 * @param period a string representing a certain length of time over which to gather metrics
 	 * @return map containing labels for each violation type and a dataset for number of violations
-	 * of each type
+	 *         of each type
 	 */
 	public JSONObject getViolationsByType(CodeScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_TYPE, period);
@@ -190,7 +198,7 @@ public class MetricsCacheService {
 	 * @param type   the ScanType to retrieve
 	 * @param period a string representing a certain length of time over which to gather metrics
 	 * @return map containing labels for each subdivided time period and a dataset for number of
-	 * violations found during each period
+	 *         violations found during each period
 	 */
 	public JSONObject getViolationsByPeriod(CodeScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_PERIOD, period);
@@ -203,7 +211,7 @@ public class MetricsCacheService {
 	 * @param type   the ScanType to retrieve
 	 * @param period a string representing a certain length of time over which to gather metrics
 	 * @return map containing labels for each subdivided time period and datasets for number of
-	 * violations found during each period for each violation type
+	 *         violations found during each period for each violation type
 	 */
 	public JSONObject getViolationsByPeriodAndType(CodeScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_PERIOD_AND_TYPE, period);
@@ -216,7 +224,7 @@ public class MetricsCacheService {
 	 * @param type   the ScanType to retrieve
 	 * @param period a string representing a certain length of time over which to gather metrics
 	 * @return map containing labels for each subdivided time period and a dataset for number of
-	 * scans completed during each period
+	 *         scans completed during each period
 	 */
 	public JSONObject getScansByPeriod(CodeScanType type, String period) {
 		return getMetric(type, KEY_SCANS_BY_PERIOD, period);
@@ -231,9 +239,9 @@ public class MetricsCacheService {
 	 *                        which to gather metrics
 	 * @param chartGenerators map of chart generators to format scan and violation metrics
 	 * @return map from string to JSON object, where the string is a cache key (e.g.
-	 * KEY_VIO_BY_TYPE) and the JSON object contains labels and datasets for a metrics chart
+	 *         KEY_VIO_BY_TYPE) and the JSON object contains labels and datasets for a metrics chart
 	 */
-	private Map<String, JSONObject> generateCharts(CodeScanType type, BucketerTimePeriod period,
+	private Map<String, JSONObject> generateCharts(ScanType type, BucketerTimePeriod period,
 			Map<String, AbstractChartGenerator<AbstractScanEntity<?, ?>, ?>> chartGenerators) {
 		// Create bucketer
 		AbstractBucketer<AbstractScanEntity<?, ?>> bucketer = new SimpleBucketer<>(
@@ -341,11 +349,11 @@ public class MetricsCacheService {
 
 		private final String generatedKey;
 
-		CacheKey(CodeScanType type, String key) {
+		CacheKey(ScanType type, String key) {
 			this.generatedKey = type.getTypeName() + "-" + key;
 		}
 
-		CacheKey(CodeScanType type, String key, String period) {
+		CacheKey(ScanType type, String key, String period) {
 			this.generatedKey = type.getTypeName() + "-" + key + "-" + period;
 		}
 

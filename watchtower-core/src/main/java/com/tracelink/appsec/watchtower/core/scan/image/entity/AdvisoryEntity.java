@@ -15,8 +15,8 @@ public class AdvisoryEntity {
 	@Column(name = "advisory_id")
 	private long id;
 
-	@Column(name = "finding_name")
-	private String findingName;
+	@Column(name = "advisory_name")
+	private String advisoryName;
 
 	@Column(name = "package_name")
 	private String packageName;
@@ -33,12 +33,12 @@ public class AdvisoryEntity {
 	@Column(name = "uri")
 	private String uri;
 
-	public String getFindingName() {
-		return findingName;
+	public String getAdvisoryName() {
+		return advisoryName;
 	}
 
-	public void setFindingName(String findingName) {
-		this.findingName = findingName;
+	public void setAdvisoryName(String advisoryName) {
+		this.advisoryName = advisoryName;
 	}
 
 	public String getPackageName() {

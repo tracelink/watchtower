@@ -109,7 +109,8 @@ public class PMDReportTest {
 		Assertions.assertEquals(ruleName, sv.getViolationName());
 		Assertions.assertEquals(filename, sv.getFileName());
 		Assertions.assertEquals(beginLine, sv.getLineNum());
-		Assertions.assertEquals(RulePriority.HIGH.getName(), sv.getSeverity());
+		Assertions.assertEquals(com.tracelink.appsec.watchtower.core.rule.RulePriority.HIGH,
+				sv.getSeverity());
 		Assertions.assertEquals(description, sv.getMessage());
 	}
 

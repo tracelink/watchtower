@@ -1,16 +1,14 @@
-package com.tracelink.appsec.watchtower.core.scan.image.report;
+package com.tracelink.appsec.watchtower.core.scan.image;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
-/**
- * DAO of a scan violation
- *
- * @author csmith
- */
-public class ImageScanViolation {
+public class ImageSecurityFinding {
+
 	private RulePriority severity;
 
 	private String packageName;
+
+	private String packageVersion;
 
 	private String score;
 
@@ -36,6 +34,14 @@ public class ImageScanViolation {
 
 	public void setPackageName(String packageName) {
 		this.packageName = packageName;
+	}
+
+	public String getPackageVersion() {
+		return packageVersion;
+	}
+
+	public void setPackageVersion(String packageVersion) {
+		this.packageVersion = packageVersion;
 	}
 
 	public String getScore() {
@@ -77,4 +83,6 @@ public class ImageScanViolation {
 	public void setUri(String uri) {
 		this.uri = uri;
 	}
+
+
 }

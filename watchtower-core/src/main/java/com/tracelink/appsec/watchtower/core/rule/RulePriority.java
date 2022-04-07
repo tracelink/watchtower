@@ -1,9 +1,13 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
+
 /**
- * Represents the priority of a rule, regardless of rule type. Each rule is assigned a priority from 1 to 5, with 1
- * being the highest priority and 5 being the lowest priority. High priority rules indicate that violations should be
- * addressed immediately, whereas low priority rules might be best practices or suggestions.
+ * Represents the priority of a rule, regardless of rule type. Each rule is assigned a priority from
+ * 1 to 5, with 1 being the highest priority and 5 being the lowest priority. High priority rules
+ * indicate that violations should be addressed immediately, whereas low priority rules might be
+ * best practices or suggestions.
  *
  * @author mcool
  */
@@ -32,8 +36,8 @@ public enum RulePriority {
 
 	/**
 	 * Get the priority which corresponds to the given number as returned by
-	 * {@link RulePriority#getPriority()}. If the number is an invalid value,
-	 * then {@link RulePriority#LOW} will be returned.
+	 * {@link RulePriority#getPriority()}. If the number is an invalid value, then
+	 * {@link RulePriority#LOW} will be returned.
 	 *
 	 * @param priority the numeric priority value
 	 * @return the RulePriority associated with the given priority value
@@ -44,5 +48,37 @@ public enum RulePriority {
 		} catch (ArrayIndexOutOfBoundsException e) {
 			return LOW;
 		}
+	}
+
+	/**
+	 * Get the priority which corresponds to the given name as returned by
+	 * {@link RulePriority#getName()}.
+	 *
+	 * @param name the numeric priority value
+	 * @return the RulePriority associated with the given priority name, or null
+	 */
+	public static RulePriority priorityForName(String name) {
+		for (RulePriority priority : RulePriority.values()) {
+			if (priority.getName().equals(name)) {
+				return priority;
+			}
+		}
+		return null;
+	}
+
+
+	@Converter
+	public static class RulePriorityConverter implements AttributeConverter<RulePriority, String> {
+
+		@Override
+		public String convertToDatabaseColumn(RulePriority attribute) {
+			return attribute.getName();
+		}
+
+		@Override
+		public RulePriority convertToEntityAttribute(String dbData) {
+			return RulePriority.priorityForName(dbData);
+		}
+
 	}
 }

@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
@@ -39,7 +40,6 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRViolat
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
 
 @ExtendWith(SpringExtension.class)
 public class PRScanResultServiceTest {
@@ -65,7 +65,8 @@ public class PRScanResultServiceTest {
 	private APIIntegrationService mockApiService;
 
 	@RegisterExtension
-	public CoreLogWatchExtension logWatcher = CoreLogWatchExtension.forClass(PRScanResultService.class);
+	public CoreLogWatchExtension logWatcher =
+			CoreLogWatchExtension.forClass(PRScanResultService.class);
 
 	@BeforeEach
 	public void setup() {
@@ -80,12 +81,11 @@ public class PRScanResultServiceTest {
 		boolean blocking = false;
 		String fileName = "foo/bar.java";
 		int lineNum = 1;
-		String severityName = "HIGH";
-		int severityValue = 1;
+		RulePriority severity = RulePriority.HIGH;
 		boolean isNewViolation = true;
 
 		PullRequestViolationEntity ve = makeMockVioEntity(vioName, blocking, fileName, lineNum,
-				severityName, severityValue, isNewViolation);
+				severity, isNewViolation);
 
 		List<PullRequestViolationEntity> violations = new ArrayList<>();
 		violations.add(ve);
@@ -187,12 +187,12 @@ public class PRScanResultServiceTest {
 		boolean blocking = false;
 		String fileName = "foo/bar.java";
 		int lineNum = 1;
-		String severityName = "HIGH";
+		RulePriority severity = RulePriority.HIGH;
 		int severityValue = 1;
 		boolean isNewViolation = true;
 
 		PullRequestViolationEntity ve = makeMockVioEntity(vioName, blocking, fileName, lineNum,
-				severityName, severityValue, isNewViolation);
+				severity, isNewViolation);
 
 		long id = 1L;
 		String prId = "123";
@@ -219,7 +219,7 @@ public class PRScanResultServiceTest {
 		PRScanResultViolation violation = result.getViolations().get(0);
 		Assertions.assertEquals(vioName, violation.getViolationName());
 		Assertions.assertEquals(lineNum, violation.getLineNumber());
-		Assertions.assertEquals(severityName, violation.getSeverity());
+		Assertions.assertEquals(severity.getName(), violation.getSeverity());
 		Assertions.assertEquals(severityValue, violation.getSeverityValue());
 		Assertions.assertEquals(fileName, violation.getFileName());
 		Assertions.assertEquals("Rule guidance not found", violation.getMessage());
@@ -231,12 +231,11 @@ public class PRScanResultServiceTest {
 		boolean blocking = false;
 		String fileName = "foo/bar.java";
 		int lineNum = 1;
-		String severityName = "HIGH";
-		int severityValue = 1;
+		RulePriority severity = RulePriority.HIGH;
 		boolean isNewViolation = true;
 
 		PullRequestViolationEntity ve = makeMockVioEntity(vioName, blocking, fileName, lineNum,
-				severityName, severityValue, isNewViolation);
+				severity, isNewViolation);
 
 		long id = 1L;
 		String prId = "123";
@@ -281,8 +280,7 @@ public class PRScanResultServiceTest {
 			PRScanResultViolation violation = result.getViolations().get(0);
 			Assertions.assertEquals(vioName, violation.getViolationName());
 			Assertions.assertEquals(lineNum, violation.getLineNumber());
-			Assertions.assertEquals(severityName, violation.getSeverity());
-			Assertions.assertEquals(severityValue, violation.getSeverityValue());
+			Assertions.assertEquals(severity.getName(), violation.getSeverity());
 			Assertions.assertEquals(fileName, violation.getFileName());
 			Assertions.assertEquals("Rule guidance not found", violation.getMessage());
 		}
@@ -330,13 +328,12 @@ public class PRScanResultServiceTest {
 
 	private PullRequestViolationEntity makeMockVioEntity(String vioName, boolean blocking,
 			String fileName,
-			int lineNum, String severityName, int severityValue, boolean isNewViolation) {
+			int lineNum, RulePriority severity, boolean isNewViolation) {
 		PullRequestViolationEntity ve = BDDMockito.mock(PullRequestViolationEntity.class);
 		BDDMockito.when(ve.getViolationName()).thenReturn(vioName);
 		BDDMockito.when(ve.getFileName()).thenReturn(fileName);
 		BDDMockito.when(ve.getLineNum()).thenReturn(lineNum);
-		BDDMockito.when(ve.getSeverity()).thenReturn(severityName);
-		BDDMockito.when(ve.getSeverityValue()).thenReturn(severityValue);
+		BDDMockito.when(ve.getSeverity()).thenReturn(severity);
 		BDDMockito.when(ve.isBlocking()).thenReturn(blocking);
 		BDDMockito.when(ve.isNewViolation()).thenReturn(isNewViolation);
 		return ve;

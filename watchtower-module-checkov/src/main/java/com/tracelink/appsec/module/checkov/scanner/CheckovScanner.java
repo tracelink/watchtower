@@ -19,12 +19,13 @@ import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
-import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
- * {@link ICodeScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the results
+ * {@link ICodeScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the
+ * results
  *
  * @author csmith
  */
@@ -80,7 +81,8 @@ public class CheckovScanner implements ICodeScanner {
 			CodeScanReport report, Path workingDirectory) {
 		if (result.has("errors")) {
 			report.addError(
-					new CodeScanError("Runtime error(s) found: " + result.get("errors").getAsString()));
+					new CodeScanError(
+							"Runtime error(s) found: " + result.get("errors").getAsString()));
 		}
 		if (result.has("results")) {
 			JsonObject results = result.getAsJsonObject("results");
@@ -102,8 +104,7 @@ public class CheckovScanner implements ICodeScanner {
 							violation.setLineNum(Integer.parseInt(lines.get(0).toString()));
 							violation.setMessage(
 									rule.getMessage() + " More Info: " + rule.getExternalUrl());
-							violation.setSeverity(rule.getPriority().getName());
-							violation.setSeverityValue(rule.getPriority().getPriority());
+							violation.setSeverity(rule.getPriority());
 							violation.setViolationName(failName);
 							report.addViolation(violation);
 						} else {
