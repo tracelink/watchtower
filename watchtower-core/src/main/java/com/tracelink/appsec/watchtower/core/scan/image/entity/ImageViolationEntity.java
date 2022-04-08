@@ -17,7 +17,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation
  *
  */
 @Entity
-@Table(name = "upload_violations")
+@Table(name = "image_violation")
 public class ImageViolationEntity
 		extends AbstractScanViolationEntity<ImageScanEntity>
 		implements Comparable<ImageViolationEntity> {
@@ -71,7 +71,13 @@ public class ImageViolationEntity
 
 	@Override
 	public int compareTo(ImageViolationEntity other) {
-		return 0;
+		int compare =
+				Integer.compare(other.getSeverity().getPriority(),
+						this.getSeverity().getPriority());
+		if (compare == 0) {
+			compare = this.getViolationName().compareTo(other.getViolationName());
+		}
+		return compare;
 	}
 
 }

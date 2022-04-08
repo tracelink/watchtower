@@ -25,6 +25,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResul
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
 import net.minidev.json.JSONObject;
 
@@ -35,6 +36,8 @@ public class MetricsCacheServiceTest {
 	PRScanResultService mockPrScanResultService;
 	@MockBean
 	UploadScanResultService mockUploadScanResultService;
+	@MockBean
+	ImageScanResultService mockImageScanResultService;
 
 	MetricsCacheService metricsCacheService;
 
@@ -44,7 +47,8 @@ public class MetricsCacheServiceTest {
 	@BeforeEach
 	public void setup() {
 		metricsCacheService =
-				new MetricsCacheService(mockPrScanResultService, mockUploadScanResultService);
+				new MetricsCacheService(mockPrScanResultService, mockUploadScanResultService,
+						mockImageScanResultService);
 		configureDefaults();
 	}
 
@@ -191,11 +195,13 @@ public class MetricsCacheServiceTest {
 	@Test
 	public void testPauseUnpause() throws InterruptedException {
 		this.metricsCacheService.pause();
-		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(), Matchers.is(false));
+		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(),
+				Matchers.is(false));
 		new Thread(() -> {
 			this.metricsCacheService.updateAllMetrics();
 		}).start();
-		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(), Matchers.is(false));
+		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(),
+				Matchers.is(false));
 		this.metricsCacheService.resume();
 		Thread.sleep(1000);
 		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(), Matchers.is(true));
@@ -205,7 +211,8 @@ public class MetricsCacheServiceTest {
 	public void testGetScanCount() {
 		BDDMockito.when(mockPrScanResultService.countScans()).thenReturn(2L);
 		this.metricsCacheService.updateAllMetrics();
-		Assertions.assertEquals(2, this.metricsCacheService.getScanCount(CodeScanType.PULL_REQUEST));
+		Assertions.assertEquals(2,
+				this.metricsCacheService.getScanCount(CodeScanType.PULL_REQUEST));
 		Assertions.assertEquals(0, this.metricsCacheService.getScanCount(CodeScanType.UPLOAD));
 	}
 
@@ -213,7 +220,8 @@ public class MetricsCacheServiceTest {
 	public void testGetViolationCount() {
 		BDDMockito.when(mockPrScanResultService.countViolations()).thenReturn(2L);
 		this.metricsCacheService.updateAllMetrics();
-		Assertions.assertEquals(2, this.metricsCacheService.getViolationCount(CodeScanType.PULL_REQUEST));
+		Assertions.assertEquals(2,
+				this.metricsCacheService.getViolationCount(CodeScanType.PULL_REQUEST));
 		Assertions.assertEquals(0, this.metricsCacheService.getViolationCount(CodeScanType.UPLOAD));
 	}
 

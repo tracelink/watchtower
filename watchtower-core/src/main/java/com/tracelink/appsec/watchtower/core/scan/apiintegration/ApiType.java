@@ -25,7 +25,14 @@ public enum ApiType {
 			return entity;
 		}
 	},
-	// CODECOMMIT("CodeCommit")
+	ECR("Amazon ECR", "configuration/ecrconfiguration") {
+		@Override
+		public APIIntegrationEntity makeEntityForParams(Map<String, String> parameters)
+				throws ApiIntegrationException {
+			// TODO
+			return null;
+		}
+	},
 	;
 
 	private final String typeName;

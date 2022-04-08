@@ -1,5 +1,13 @@
 ALTER TABLE integration_entity DROP COLUMN api_endpoint;
 
+CREATE TABLE ecr_integration_entity(
+	integration_id BIGINT NOT NULL,
+	api_key varchar(255) NOT NULL,
+	secret_key varchar(255) NOT NULL,
+	PRIMARY KEY (integration_id),
+   	CONSTRAINT fk_ecr_api FOREIGN KEY (integration_id) REFERENCES integration_entity (integration_id)
+);
+
 CREATE TABLE image_container(
 	container_id BIGINT NOT NULL AUTO_INCREMENT,
 	api_label varchar(255) NOT NULL,

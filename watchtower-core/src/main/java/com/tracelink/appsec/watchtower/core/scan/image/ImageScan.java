@@ -9,6 +9,8 @@ public class ImageScan {
 
 	private String tagName;
 
+	private long submitTime;
+
 	public String getScanName() {
 		return getImageName() + ":" + getTagName();
 	}
@@ -43,6 +45,14 @@ public class ImageScan {
 
 	public void setTagName(String tagName) {
 		this.tagName = tagName;
+	}
+
+	public long getSubmitTime() {
+		return submitTime;
+	}
+
+	public void setSubmitTime(long submitTime) {
+		this.submitTime = submitTime;
 	}
 
 

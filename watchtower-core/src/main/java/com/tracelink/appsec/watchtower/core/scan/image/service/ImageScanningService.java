@@ -42,6 +42,7 @@ public class ImageScanningService extends AbstractScanningService {
 
 	public void doImageScan(ImageScan scan)
 			throws RejectedExecutionException, ScanRejectedException, ApiIntegrationException {
+		scan.setSubmitTime(System.currentTimeMillis());
 		String imageName = scan.getScanName();
 		if (isQuiesced()) {
 			LOG.error("Quiesced. Did not schedule image scan: " + imageName);

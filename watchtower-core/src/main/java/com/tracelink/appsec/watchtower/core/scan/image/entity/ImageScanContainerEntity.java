@@ -11,6 +11,7 @@ import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 
 /**
  * Container Entity class for Uploads with reverse join to {@linkplain ImageScanEntity}
@@ -34,13 +35,17 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 	@Column(name = "tag_name")
 	private String tagName;
 
-	@Column(name = "ruleset")
-	private String ruleSetName;
-
 	@OneToMany(fetch = FetchType.EAGER, mappedBy = "container", cascade = CascadeType.MERGE)
 	@OrderBy(value = "end_date DESC")
 	private List<ImageScanEntity> scans;
 
+
+	public ImageScanContainerEntity(ImageScan scan) {
+		setApiLabel(scan.getApiLabel());
+		setRegistryName(scan.getRegistryName());
+		setImageName(scan.getImageName());
+		setTagName(scan.getTagName());
+	}
 
 	public String getApiLabel() {
 		return apiLabel;
@@ -72,14 +77,6 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 
 	public void setTagName(String tagName) {
 		this.tagName = tagName;
-	}
-
-	public void setRuleSet(String ruleSetName) {
-		this.ruleSetName = ruleSetName;
-	}
-
-	public String getRuleSet() {
-		return this.ruleSetName;
 	}
 
 	@Override

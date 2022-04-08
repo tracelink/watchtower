@@ -14,9 +14,9 @@ import javax.persistence.Table;
 import org.apache.commons.lang3.StringUtils;
 
 import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 
 /**
@@ -27,7 +27,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
  */
 @Entity
 @Table(name = "bb_cloud_integration_entity")
-public class BBCloudIntegrationEntity extends APIIntegrationEntity {
+public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 
 	@Column(name = "workspace")
 	private String workspace;
@@ -117,7 +117,6 @@ public class BBCloudIntegrationEntity extends APIIntegrationEntity {
 		setAuth(parameters.get("auth"));
 	}
 
-	@Override
 	public String makePRLink(String repository, String pullRequestId) {
 		return String.format("https://bitbucket.org/%s/%s/pull-requests/%s", getWorkspace(),
 				repository, pullRequestId);

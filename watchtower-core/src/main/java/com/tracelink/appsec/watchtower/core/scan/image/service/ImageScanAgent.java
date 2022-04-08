@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -28,6 +29,8 @@ public class ImageScanAgent extends
 
 	private ImageScanResultService scanResultService;
 
+	private long startTime;
+
 	public ImageScanAgent(ImageScan scan) {
 		super(scan.getScanName());
 		this.scan = scan;
@@ -44,6 +47,7 @@ public class ImageScanAgent extends
 	}
 
 	protected void initialize() throws ScanInitializationException {
+		this.startTime = System.currentTimeMillis();
 		super.initialize();
 		if (api == null) {
 			throw new ScanInitializationException("API must be configured");
@@ -81,13 +85,33 @@ public class ImageScanAgent extends
 			errors.addAll(report.getErrors());
 		}
 
+		Collections.sort(violations);
 
+		reportViaApi(violations, errors);
+
+		scanResultService.saveImageReport(scan, startTime, violations, errors);
+	}
+
+	private void reportViaApi(List<ImageViolationEntity> violations, List<ImageScanError> errors) {
+		if (violations.stream().anyMatch(v -> v.isBlocking())) {
+			api.rejectImage(scan, violations);
+		}
+		if (!errors.isEmpty()) {
+			logErrors(errors);
+		}
+	}
+
+	private void logErrors(List<ImageScanError> errors) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Errors found during scan: " + this.getScanName() + '\n');
+		for (ImageScanError err : errors) {
+			sb.append("--" + err.getErrorMessage() + '\n');
+		}
+		LOG.debug(sb.toString());
 	}
 
 	@Override
 	protected void clean() {
-
+		// Unused
 	}
-
-
 }

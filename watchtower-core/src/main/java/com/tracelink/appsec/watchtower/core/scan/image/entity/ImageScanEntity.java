@@ -19,7 +19,7 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
  *
  */
 @Entity
-@Table(name = "image_scans")
+@Table(name = "image_scan")
 public class ImageScanEntity
 		extends AbstractScanEntity<ImageScanContainerEntity, ImageViolationEntity> {
 

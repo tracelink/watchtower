@@ -90,9 +90,6 @@ public class PRScanRestController {
 	 */
 	private PullRequest createPrFromAutomation(APIIntegrationEntity apiEntity, String pullRequest)
 			throws ApiIntegrationException {
-		if (apiEntity == null) {
-			throw new ApiIntegrationException("Entity is null");
-		}
 		switch (apiEntity.getApiType()) {
 			case BITBUCKET_CLOUD:
 				BBPullRequest bbpr = new BBPullRequest(apiEntity.getApiLabel());
