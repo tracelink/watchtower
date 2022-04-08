@@ -49,7 +49,7 @@ public class ImageScanningService extends AbstractScanningService {
 			throw new ScanRejectedException("Quiesced. Did not schedule image: " + imageName);
 		}
 		RegistryImageEntity registry =
-				registryService.upsertRegistryImage(scan.getApiLabel(), scan.getRegistryName());
+				registryService.upsertRegistryImage(scan.getApiLabel(), scan.getImageName());
 		RulesetEntity ruleset = registry.getRuleset();
 
 		// Skip scan if registry is not configured with a ruleset

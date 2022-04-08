@@ -74,6 +74,22 @@ public class SidebarService {
 										.setUrl("/uploadscan/results")
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.SCAN_RESULTS_NAME + "')"))),
+				// Image Menu
+				new SidebarMenuGroup().setGroupName("Image Scans")
+						.setMaterialIcon("developer_board")
+						.setLinks(Arrays.asList(
+								new SidebarLink()
+										.setDisplayName("Image Scan Dashboard")
+										.setMaterialIcon("dashboard")
+										.setUrl("/imagescan/dashboard")
+										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.SCAN_DASHBOARDS_NAME + "')"),
+								new SidebarLink()
+										.setDisplayName("Image Scan Results")
+										.setMaterialIcon("report_problem")
+										.setUrl("/imagescan/results")
+										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.SCAN_RESULTS_NAME + "')"))),
 				// Rules Menu
 				new SidebarMenuGroup().setGroupName("Rules")
 						.setMaterialIcon("menu")

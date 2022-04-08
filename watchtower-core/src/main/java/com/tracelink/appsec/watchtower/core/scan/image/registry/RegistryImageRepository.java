@@ -6,5 +6,7 @@ import org.springframework.stereotype.Repository;
 @Repository("registryImageRepository")
 public interface RegistryImageRepository extends JpaRepository<RegistryImageEntity, Long> {
 
+	RegistryImageEntity findByApiLabelAndImageName(String apiLabel, String imageName);
+
 
 }

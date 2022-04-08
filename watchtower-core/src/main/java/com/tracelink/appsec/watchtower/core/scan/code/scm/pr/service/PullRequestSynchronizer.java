@@ -3,6 +3,8 @@ package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,15 +31,22 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContai
 public class PullRequestSynchronizer {
 	private static Logger LOG = LoggerFactory.getLogger(PullRequestSynchronizer.class);
 
+	private static final String SKIP_DEV_PROFILE = "dev";
+
+	private final Environment environment;
+
 	private PRContainerRepository prRepo;
 
 	private PRScanResultService prResultService;
 
 	private APIIntegrationService apiIntegrationService;
 
-	public PullRequestSynchronizer(@Autowired PRContainerRepository prRepo,
+	public PullRequestSynchronizer(
+			@Autowired Environment environment,
+			@Autowired PRContainerRepository prRepo,
 			@Autowired PRScanResultService prResultService,
 			@Autowired APIIntegrationService apiIntegrationService) {
+		this.environment = environment;
 		this.prRepo = prRepo;
 		this.prResultService = prResultService;
 		this.apiIntegrationService = apiIntegrationService;
@@ -48,6 +57,10 @@ public class PullRequestSynchronizer {
 	 */
 	@Scheduled(initialDelay = 1000L * 60, fixedRate = 1000L * 60 * 60 * 3)
 	public void syncData() {
+		if (environment.acceptsProfiles(Profiles.of(SKIP_DEV_PROFILE))) {
+			LOG.info("Skipping Data Sync. Server started in Dev Mode.");
+			return;
+		}
 		LOG.info("Beginning Data Sync to resolve Pull Requests");
 		if (apiIntegrationService.getAllSettings().isEmpty()) {
 			LOG.info("Skipping Data Sync. No API Settings Found");

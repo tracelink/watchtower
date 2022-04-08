@@ -26,9 +26,6 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 	@Column(name = "api_label")
 	private String apiLabel;
 
-	@Column(name = "registry_name")
-	private String registryName;
-
 	@Column(name = "image_name")
 	private String imageName;
 
@@ -39,10 +36,12 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 	@OrderBy(value = "end_date DESC")
 	private List<ImageScanEntity> scans;
 
+	public ImageScanContainerEntity() {
+
+	}
 
 	public ImageScanContainerEntity(ImageScan scan) {
 		setApiLabel(scan.getApiLabel());
-		setRegistryName(scan.getRegistryName());
 		setImageName(scan.getImageName());
 		setTagName(scan.getTagName());
 	}
@@ -53,14 +52,6 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 
 	public void setApiLabel(String apiLabel) {
 		this.apiLabel = apiLabel;
-	}
-
-	public String getRegistryName() {
-		return registryName;
-	}
-
-	public void setRegistryName(String registryName) {
-		this.registryName = registryName;
 	}
 
 	public String getImageName() {

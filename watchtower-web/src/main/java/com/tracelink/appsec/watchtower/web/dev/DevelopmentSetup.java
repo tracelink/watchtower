@@ -1,8 +1,5 @@
 package com.tracelink.appsec.watchtower.web.dev;
 
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -13,38 +10,28 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
-import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetRepository;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageService;
+import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
+import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -57,25 +44,24 @@ public class DevelopmentSetup {
 
 	private static final String ALLOWED_PROFILE = "dev";
 	private static final Logger LOG = LoggerFactory.getLogger(DevelopmentSetup.class);
-	private static final int PR_NUM_SIZE = 1000;
-	private static final int UP_NUM_SIZE = 1000;
-	private static final boolean USE_MULTI_SCANS = true;
 	private static final long RANDOM_SEED = 1L;
 	private static final String API_LABEL_1 = "API1";
 	private static final String API_LABEL_2 = "api2";
+
+	private static final String IMAGE_API_LABEL_1 = "AccountApi";
+	private static final String IMAGE_API_LABEL_2 = "DockerApi";
 
 	private final Environment environment;
 	private final APIIntegrationService apiService;
 	private final RulesetService rulesetService;
 	private final RulesetRepository rulesetRepository;
 	private final RepositoryService repositoryService;
-	private final PRScanResultService prScanResultService;
-	private final PRContainerRepository prRepo;
-	private final UploadScanResultService uploadScanResultService;
-	private final UploadContainerRepository uploadRepo;
-	private final PRScanRepository prScanRepo;
-	private final UploadScanRepository uploadScanRepo;
+	private final RegistryImageService registryService;
 	private final MetricsCacheService metricsService;
+
+	private final PRDevelopmentSetup prDevelopmentSetup;
+	private final UploadDevelopmentSetup uploadDevelopmentSetup;
+	private final ImageDevelopmentSetup imageDevelopmentSetup;
 
 	public DevelopmentSetup(@Autowired Environment environment,
 			@Autowired APIIntegrationService apiService,
@@ -84,23 +70,28 @@ public class DevelopmentSetup {
 			@Autowired RepositoryService repositoryService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired PRContainerRepository prRepo,
+			@Autowired PRScanRepository prScanRepo,
 			@Autowired UploadScanResultService uploadScanResultService,
 			@Autowired UploadContainerRepository uploadRepo,
-			@Autowired PRScanRepository prScanRepo,
 			@Autowired UploadScanRepository uploadScanRepo,
+			@Autowired RegistryImageService registryService,
+			@Autowired ImageScanResultService imageScanResultService,
+			@Autowired ImageContainerRepository imageRepo,
+			@Autowired ImageScanRepository imageScanRepo,
 			@Autowired MetricsCacheService metricsService) {
 		this.environment = environment;
 		this.apiService = apiService;
 		this.rulesetService = rulesetService;
 		this.rulesetRepository = rulesetRepository;
 		this.repositoryService = repositoryService;
-		this.prScanResultService = prScanResultService;
-		this.prRepo = prRepo;
-		this.uploadScanResultService = uploadScanResultService;
-		this.uploadRepo = uploadRepo;
-		this.prScanRepo = prScanRepo;
-		this.uploadScanRepo = uploadScanRepo;
+		this.registryService = registryService;
 		this.metricsService = metricsService;
+		prDevelopmentSetup =
+				new PRDevelopmentSetup(repositoryService, prScanResultService, prRepo, prScanRepo);
+		uploadDevelopmentSetup =
+				new UploadDevelopmentSetup(uploadScanResultService, uploadRepo, uploadScanRepo);
+		imageDevelopmentSetup = new ImageDevelopmentSetup(registryService, imageScanResultService,
+				imageRepo, imageScanRepo);
 	}
 
 	/**
@@ -126,10 +117,14 @@ public class DevelopmentSetup {
 				LOG.info("Rules Imported");
 				addRepos();
 				LOG.info("Repositories Added");
-				addPRScanHistory(random);
+				addImages();
+				LOG.info("Images Added");
+				prDevelopmentSetup.addPRScanHistory(random);
 				LOG.info("PR Scan History Added");
-				addUploadScanHistory(random);
+				uploadDevelopmentSetup.addUploadScanHistory(random);
 				LOG.info("Upload Scan History Added");
+				imageDevelopmentSetup.addImageScanHistory(random);
+				LOG.info("Image Scan History Added");
 				setSomeReposDisabled(random);
 			} catch (Exception e) {
 				LOG.info("Dev Setup Failed", e);
@@ -152,12 +147,29 @@ public class DevelopmentSetup {
 		entity2.setUser("myUser");
 		entity2.setAuth("myAuth");
 		apiService.save(entity2);
+
+		EcrIntegrationEntity entity3 = new EcrIntegrationEntity();
+		entity3.setApiLabel(IMAGE_API_LABEL_1);
+		entity3.setApiKey("apiKey1");
+		entity3.setSecretKey("secretKey1");
+		apiService.save(entity3);
+		EcrIntegrationEntity entity4 = new EcrIntegrationEntity();
+		entity4.setApiLabel(IMAGE_API_LABEL_2);
+		entity4.setApiKey("apiKey2");
+		entity4.setSecretKey("secretKey2");
+		apiService.save(entity4);
 	}
 
 	private void addRepos() {
 		repositoryService.upsertRepo(API_LABEL_1, "Main Product");
 		repositoryService.upsertRepo(API_LABEL_1, "Another Product");
 		repositoryService.upsertRepo(API_LABEL_2, "Supporting Library");
+	}
+
+	private void addImages() {
+		registryService.upsertRegistryImage(IMAGE_API_LABEL_1, "First Image");
+		registryService.upsertRegistryImage(IMAGE_API_LABEL_1, "Custom Image");
+		registryService.upsertRegistryImage(IMAGE_API_LABEL_2, "External Image");
 	}
 
 	private void importRules() throws Exception {
@@ -170,156 +182,6 @@ public class DevelopmentSetup {
 
 		RulesetEntity saved = rulesetRepository.saveAndFlush(defaultRuleset);
 		rulesetService.setDefaultRuleset(saved.getId());
-	}
-
-	private void addPRScanHistory(Random random) {
-		List<RepositoryEntity> repos =
-				repositoryService.getAllRepos().values().stream().flatMap(List::stream)
-						.collect(Collectors.toList());
-		for (int i = 0; i < PR_NUM_SIZE; i++) {
-			RepositoryEntity repo = repos.get(random.nextInt(repos.size()));
-			boolean activeState = random.nextBoolean();
-			savePr(activeState, repo, random);
-		}
-		backdatePrs(random);
-	}
-
-	private void backdatePrs(Random random) {
-		long now = System.currentTimeMillis();
-		long fiveMin = 5 * 60 * 1000;
-		int sixHoursInSeconds = 6 * 60 * 60;
-		int oneMinInSeconds = 1 * 60;
-
-		int page = 0;
-		Page<PullRequestContainerEntity> pageEntity;
-		do {
-			pageEntity =
-					prRepo.findAll(PageRequest.of(page, 1000, Sort.by(Direction.DESC, "id")));
-			for (PullRequestContainerEntity pr : pageEntity) {
-				long latestNow = now;
-				for (PullRequestScanEntity scanEntity : pr.getScans()) {
-					// at least 5 mins apart and at most 6 hours, five minutes apart
-					long diff = random.nextInt(sixHoursInSeconds) * 1000L;
-					long timeTaken = random.nextInt(oneMinInSeconds) * 1000L;
-					now = now - diff - fiveMin;
-					scanEntity.setSubmitDate(now - timeTaken);
-					scanEntity.setStartDate(now - timeTaken);
-					scanEntity.setEndDate(now);
-					latestNow = Math.max(latestNow, now);
-				}
-				pr.setLastReviewedDate(latestNow);
-				prScanRepo.saveAll(pr.getScans());
-			}
-			prRepo.saveAll(pageEntity);
-			page++;
-		} while (!pageEntity.isLast());
-	}
-
-	private void savePr(boolean activeState, RepositoryEntity repo, Random random) {
-		PullRequest pr = new PullRequest(repo.getApiLabel());
-		pr.setAuthor("testAuthor");
-		pr.setDestinationBranch("masterTest");
-		pr.setPrId(String.valueOf(Math.abs(random.nextInt())));
-		pr.setRepoName(repo.getRepoName());
-		pr.setSourceBranch("test");
-		pr.setState(activeState ? PullRequestState.ACTIVE : PullRequestState.DECLINED);
-		// between 1 and 4 scans for this PR
-		int numScans = USE_MULTI_SCANS ? random.nextInt(4) + 1 : 1;
-		for (int i = 0; i < numScans; i++) {
-			// 50% chance of 0 vios, then 25% chance of 1,2,3,4 vios
-			int numVios = random.nextBoolean() ? 0 : 1 + random.nextInt(4);
-			List<PullRequestViolationEntity> vios = new ArrayList<>();
-			for (int j = 0; j < numVios; j++) {
-				vios.add(makePRVio(activeState, random));
-			}
-			prScanResultService.savePullRequestScan(pr, 0, vios, new ArrayList<>());
-		}
-	}
-
-	private PullRequestViolationEntity makePRVio(boolean hasNoBlocking, Random random) {
-		PullRequestViolationEntity vio = new PullRequestViolationEntity();
-		vio.setBlocking(hasNoBlocking ? false : random.nextBoolean());
-		vio.setFileName("foobar");
-		vio.setLineNum(1);
-		vio.setMessage("Test Violation");
-		vio.setNewViolation(random.nextDouble() < .3);
-		vio.setSeverity(RulePriority.HIGH);
-		vio.setViolationName("TestViolation" + random.nextInt(3));
-		return vio;
-	}
-
-	private void addUploadScanHistory(Random random) {
-		for (int i = 0; i < UP_NUM_SIZE; i++) {
-			int failedScanChance = random.nextInt(1000);
-			saveUpload(failedScanChance == 0, random);
-		}
-		backdateUploads(random);
-	}
-
-	private void saveUpload(boolean state, Random random) {
-		UploadScan upload = new UploadScan();
-		String name = "foo" + random.nextInt();
-		upload.setFilePath(Paths.get(name + ".zip"));
-		upload.setName(name);
-		upload.setRuleSetName("Fake Ruleset");
-		upload.setUser("fake user");
-		UploadScanContainerEntity entity = uploadScanResultService.makeNewScanEntity(upload);
-		if (state) {
-			uploadScanResultService.markScanFailed(entity.getTicket(), "Failed due to failure");
-			return;
-		}
-
-		// 50% chance of 0 vios, then 25% chance of 1,2,3,4 vios
-		int numVios = random.nextBoolean() ? 0 : 1 + random.nextInt(4);
-		List<UploadViolationEntity> vios = new ArrayList<>();
-		for (int i = 0; i < numVios; i++) {
-			vios.add(makeUploadVio(state, random));
-		}
-
-		uploadScanResultService.saveFinalUploadScan(entity.getTicket(), vios);
-	}
-
-	private UploadViolationEntity makeUploadVio(boolean hasNoBlocking, Random random) {
-		UploadViolationEntity vio = new UploadViolationEntity();
-		vio.setBlocking(hasNoBlocking ? false : random.nextBoolean());
-		vio.setFileName("foobar");
-		vio.setLineNum(1);
-		vio.setMessage("Test Violation");
-		vio.setNewViolation(random.nextDouble() < .3);
-		vio.setSeverity(RulePriority.HIGH);
-		vio.setViolationName("TestViolation" + random.nextInt(3));
-		return vio;
-	}
-
-	private void backdateUploads(Random random) {
-		long now = System.currentTimeMillis();
-		long fiveMin = 5 * 60 * 1000;
-		int sixHoursInSeconds = 6 * 60 * 60;
-		int tenSeconds = 1 * 60;
-
-		int page = 0;
-		Page<UploadScanContainerEntity> pageEntity;
-		do {
-			pageEntity =
-					uploadRepo.findAll(PageRequest.of(page, 1000, Sort.by(Direction.DESC, "id")));
-			for (UploadScanContainerEntity upload : pageEntity) {
-				long latestNow = now;
-				for (UploadScanEntity scanEntity : upload.getScans()) {
-					// at least 5 mins apart and at most 6 hours, five minutes apart
-					long diff = random.nextInt(sixHoursInSeconds) * 1000L;
-					long timeTaken = random.nextInt(tenSeconds) * 1000L;
-					now = now - diff - fiveMin;
-					scanEntity.setSubmitDate(now - timeTaken);
-					scanEntity.setStartDate(now - timeTaken);
-					scanEntity.setEndDate(now);
-					latestNow = Math.max(latestNow, now);
-				}
-				upload.setLastReviewedDate(latestNow);
-				uploadScanRepo.saveAll(upload.getScans());
-			}
-			uploadRepo.saveAll(pageEntity);
-			page++;
-		} while (!pageEntity.isLast());
 	}
 
 	private void setSomeReposDisabled(Random random) {

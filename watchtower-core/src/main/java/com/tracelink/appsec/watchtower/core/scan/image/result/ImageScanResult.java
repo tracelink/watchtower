@@ -1,11 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.image.result;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ImageScanResult {
-	private String registryName;
+	private long id;
+	private String apiLabel;
 	private String imageName;
 	private String tagName;
 	private LocalDateTime submitDate;
@@ -14,12 +16,20 @@ public class ImageScanResult {
 	private LocalDateTime endDate;
 	private List<ImageScanResultViolation> violations = new ArrayList<>();
 
-	public String getRegistryName() {
-		return registryName;
+	public void setId(long id) {
+		this.id = id;
 	}
 
-	public void setRegistryName(String registryName) {
-		this.registryName = registryName;
+	public long getId() {
+		return id;
+	}
+
+	public String getApiLabel() {
+		return apiLabel;
+	}
+
+	public void setApiLabel(String apiLabel) {
+		this.apiLabel = apiLabel;
 	}
 
 	public String getImageName() {
@@ -40,6 +50,10 @@ public class ImageScanResult {
 
 	public LocalDateTime getSubmitDate() {
 		return submitDate;
+	}
+
+	public long getSubmitDateMillis() {
+		return submitDate.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public void setSubmitDate(LocalDateTime submitDate) {
@@ -64,6 +78,10 @@ public class ImageScanResult {
 
 	public LocalDateTime getEndDate() {
 		return endDate;
+	}
+
+	public long getEndDateMillis() {
+		return endDate.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
 
 	public void setEndDate(LocalDateTime endDate) {

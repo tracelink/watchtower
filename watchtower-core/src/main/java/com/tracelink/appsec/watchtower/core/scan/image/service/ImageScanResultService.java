@@ -106,6 +106,10 @@ public class ImageScanResultService
 		return advisory;
 	}
 
+	public List<AdvisoryEntity> getAllAdvisories() {
+		return advisoryRepo.findAll();
+	}
+
 	public void saveImageReport(ImageScan scan, long startTime,
 			List<ImageViolationEntity> violations,
 			List<ImageScanError> errors) {
@@ -170,10 +174,11 @@ public class ImageScanResultService
 		return results;
 	}
 
-	private ImageScanResult generateResultForScan(ImageScanEntity scanEntity) {
+	public ImageScanResult generateResultForScan(ImageScanEntity scanEntity) {
 		ImageScanResult result = new ImageScanResult();
 		ImageScanContainerEntity container = scanEntity.getContainer();
-		result.setRegistryName(container.getRegistryName());
+		result.setId(scanEntity.getId());
+		result.setApiLabel(container.getApiLabel());
 		result.setImageName(container.getImageName());
 		result.setTagName(container.getTagName());
 		result.setSubmitDate(scanEntity.getSubmitDate());
@@ -201,6 +206,10 @@ public class ImageScanResultService
 		irv.setUri(advisory.getUri());
 
 		return irv;
+	}
+
+	public ImageScanEntity findById(long id) {
+		return scanRepo.findById(id);
 	}
 
 }

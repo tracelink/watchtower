@@ -11,7 +11,6 @@ CREATE TABLE ecr_integration_entity(
 CREATE TABLE image_container(
 	container_id BIGINT NOT NULL AUTO_INCREMENT,
 	api_label varchar(255) NOT NULL,
-	registry_name varchar(255) NOT NULL,
 	image_name varchar(255) NOT NULL,
 	tag_name varchar(255) NOT NULL,
 	last_review_date BIGINT DEFAULT NULL,
@@ -45,7 +44,7 @@ CREATE TABLE image_violation(
 	vio_entity_id BIGINT NOT NULL AUTO_INCREMENT,
 	scan_entity_id BIGINT NOT NULL,
 	violation_name varchar(255) NOT NULL,
-	severity_name varchar(255) NOT NULL,
+	severity varchar(255) NOT NULL,
 	advisory_id BIGINT NOT NULL,
 	PRIMARY KEY (vio_entity_id),
 	CONSTRAINT fk_image_vio_advisory FOREIGN KEY (advisory_id) REFERENCES advisories (advisory_id),

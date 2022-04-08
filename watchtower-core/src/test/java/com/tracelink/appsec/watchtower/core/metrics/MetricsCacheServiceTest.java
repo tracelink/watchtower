@@ -25,6 +25,8 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResul
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
 import net.minidev.json.JSONObject;
@@ -44,6 +46,9 @@ public class MetricsCacheServiceTest {
 	private static String XXE_NAME = "XXE";
 	private static String SER_NAME = "SERIALIZATION";
 
+	private static String CVE_1 = "CVE-123";
+	private static String CVE_2 = "CVE-234";
+
 	@BeforeEach
 	public void setup() {
 		metricsCacheService =
@@ -53,6 +58,7 @@ public class MetricsCacheServiceTest {
 	}
 
 	private void configureDefaults() {
+		// Pull Request Setup for scanIteratorBetweenDates
 		PullRequestViolationEntity prXxe = BDDMockito.mock(PullRequestViolationEntity.class);
 		BDDMockito.when(prXxe.getViolationName()).thenReturn(XXE_NAME);
 
@@ -75,6 +81,7 @@ public class MetricsCacheServiceTest {
 				.scanIteratorBetweenDates(BDDMockito.anyLong(), BDDMockito.anyLong()))
 				.thenReturn(mockIterator(prScan1, prScan2));
 
+		// Upload Setup for scanIteratorBetweenDates
 		UploadViolationEntity uploadXxe = BDDMockito.mock(UploadViolationEntity.class);
 		BDDMockito.when(uploadXxe.getViolationName()).thenReturn(XXE_NAME);
 
@@ -99,9 +106,37 @@ public class MetricsCacheServiceTest {
 				.scanIteratorBetweenDates(BDDMockito.anyLong(), BDDMockito.anyLong()))
 				.thenReturn(mockIterator(uploadScan1, uploadScan2));
 
+		// Image Setup for scanIteratorBetweenDates
+		ImageViolationEntity imageVio = BDDMockito.mock(ImageViolationEntity.class);
+		BDDMockito.when(imageVio.getViolationName()).thenReturn(CVE_1);
+
+		ImageViolationEntity imageVio2 = BDDMockito.mock(ImageViolationEntity.class);
+		BDDMockito.when(imageVio2.getViolationName()).thenReturn(CVE_1);
+
+		ImageViolationEntity imageVio3 = BDDMockito.mock(ImageViolationEntity.class);
+		BDDMockito.when(imageVio3.getViolationName()).thenReturn(CVE_2);
+
+		ImageScanEntity imageScan1 = BDDMockito.mock(ImageScanEntity.class);
+		BDDMockito.when(imageScan1.getViolations())
+				.thenReturn(Arrays.asList(imageVio, imageVio3));
+		BDDMockito.when(imageScan1.getEndDate()).thenReturn(LocalDate.now().atStartOfDay());
+		BDDMockito.when(imageScan1.getNumViolations()).thenReturn(2L);
+		ImageScanEntity imageScan2 = BDDMockito.mock(ImageScanEntity.class);
+		BDDMockito.when(imageScan2.getViolations())
+				.thenReturn(Collections.singletonList(imageVio2));
+		BDDMockito.when(imageScan2.getEndDate())
+				.thenReturn(LocalDate.now().minusMonths(2).atStartOfDay());
+		BDDMockito.when(imageScan2.getNumViolations()).thenReturn(1L);
+		BDDMockito.when(mockImageScanResultService
+				.scanIteratorBetweenDates(BDDMockito.anyLong(), BDDMockito.anyLong()))
+				.thenReturn(mockIterator(imageScan1, imageScan2));
+
+		// Oldest Scans
 		BDDMockito.when(mockPrScanResultService.getOldestScanDate())
 				.thenReturn(LocalDate.now().withDayOfMonth(1).minusMonths(1));
 		BDDMockito.when(mockUploadScanResultService.getOldestScanDate())
+				.thenReturn(LocalDate.now().withDayOfMonth(1).minusMonths(1));
+		BDDMockito.when(mockImageScanResultService.getOldestScanDate())
 				.thenReturn(LocalDate.now().withDayOfMonth(1).minusMonths(1));
 	}
 

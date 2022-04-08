@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -36,6 +37,9 @@ public class PullRequestSynchronizerTest {
 	private PRContainerRepository mockPrRepo;
 
 	@MockBean
+	private Environment mockEnvironment;
+
+	@MockBean
 	private PRScanResultService mockResultService;
 
 	@MockBean
@@ -45,7 +49,7 @@ public class PullRequestSynchronizerTest {
 
 	@BeforeEach
 	public void setup() {
-		prSync = new PullRequestSynchronizer(mockPrRepo, mockResultService,
+		prSync = new PullRequestSynchronizer(mockEnvironment, mockPrRepo, mockResultService,
 				mockApiIntegrationService);
 	}
 

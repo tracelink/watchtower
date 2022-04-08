@@ -21,7 +21,7 @@ public class RegistryImageEntity {
 	private long registryImageId;
 
 	@Column(name = "image_name")
-	private String registryImageName;
+	private String imageName;
 
 	@Column(name = "api_label")
 	private String apiLabel;
@@ -45,11 +45,11 @@ public class RegistryImageEntity {
 	}
 
 	public String getRegistryImageName() {
-		return registryImageName;
+		return imageName;
 	}
 
 	public void setRegistryImageName(String registryImageName) {
-		this.registryImageName = registryImageName;
+		this.imageName = registryImageName;
 	}
 
 	public String getApiLabel() {

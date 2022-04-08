@@ -1,0 +1,68 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+        <h3 class="page-title">Scan Results Viewer</h3>
+    </div>
+</div>
+<!-- End Page Header -->
+<div class="row border-bottom pb-1 mb-2">
+    <div class="col">
+        <div class="card card-small mb-2">
+            <div class="card-header border-bottom py-1">
+                <h6 class="d-inline m-0">Select a Filter</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item px-3">
+                    <!-- Button Groups -->
+                    <div class="btn-group btn-group-toggle">
+                        <a th:each="filter, oStat : ${filters}"
+                           th:href="'/imagescan/results/' + ${filter.getName()}"
+                           th:class="${filter.getName().equals(activeFilter) } ? 'btn btn-white active' : 'btn btn-white'"
+                           th:text="${filter.getDisplay()}"></a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row" th:if="${results}">
+	<div class="col">
+        <div class="card card-small mb-2">
+        	<div>
+        	   <div class="card-header border-bottom">
+             	   	<h6 class="d-inline " th:text="${'Page: ' + activePageNum}"/>
+             	   	<div class="d-block float-right">
+             	   		<a th:class="${'btn btn-primary ' + (activePageNum == 0 ? 'disabled' : '')}" th:href="${'/imagescan/results/' + activeFilter + '?page=' + (activePageNum-1)}">Previous</a>
+             	   		<a class="btn btn-primary" th:href="${'/imagescan/results/' + activeFilter + '?page=' + (activePageNum+1)}">Next</a>
+          	   		</div>
+               </div>
+               <div class="card-body pb-3 text-center">
+                   <table class="table mb-0 datatable-clean">
+                       <thead class="bg-light">
+                       <tr>
+                           <th scope="col" class="border-0">Scan End</th>
+                           <th scope="col" class="border-0">Api Label</th>
+                           <th scope="col" class="border-0">Image Name</th>
+                           <th scope="col" class="border-0">Tag Name</th>
+                           <th scope="col" class="border-0">Violations</th>
+                           <th scope="col" class="border-0">View Report</th>
+                       </tr>
+                       </thead>
+                       <tbody>
+                           <tr th:each="result : ${results}">
+                               <td class="py-1 localizetime" th:text="${result.getEndDateMillis()}" th:data-order="${result.getEndDateMillis()}">Scan End</td>
+                               <td class="py-1" th:text="${result.getApiLabel()}">Api Label</td>
+                               <td class="py-1" th:text="${result.getImageName()}">Image Name</td>
+                               <td class="py-1" th:text="${result.getTagName()}">Tag Name</td>
+                               <td class="py-1" th:text="${result.getViolations() == null ? 0 : result.getViolations().size()}">Violations</td>
+                               <td class="py-1">
+                               		<a class="btn btn-success btn-sm py-1" th:href="${'/imagescan/report/' + result.getId()}">Report</a>
+                               </td>
+                           </tr>
+                       </tbody>
+                   </table>
+               </div>
+           </div>
+        </div>
+    </div>
+</div>

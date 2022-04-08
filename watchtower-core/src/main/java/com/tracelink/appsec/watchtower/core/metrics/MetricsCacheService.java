@@ -187,7 +187,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each violation type and a dataset for number of violations
 	 *         of each type
 	 */
-	public JSONObject getViolationsByType(CodeScanType type, String period) {
+	public JSONObject getViolationsByType(ScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_TYPE, period);
 	}
 
@@ -200,7 +200,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each subdivided time period and a dataset for number of
 	 *         violations found during each period
 	 */
-	public JSONObject getViolationsByPeriod(CodeScanType type, String period) {
+	public JSONObject getViolationsByPeriod(ScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_PERIOD, period);
 	}
 
@@ -213,7 +213,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each subdivided time period and datasets for number of
 	 *         violations found during each period for each violation type
 	 */
-	public JSONObject getViolationsByPeriodAndType(CodeScanType type, String period) {
+	public JSONObject getViolationsByPeriodAndType(ScanType type, String period) {
 		return getMetric(type, KEY_VIO_BY_PERIOD_AND_TYPE, period);
 	}
 
@@ -226,7 +226,7 @@ public class MetricsCacheService {
 	 * @return map containing labels for each subdivided time period and a dataset for number of
 	 *         scans completed during each period
 	 */
-	public JSONObject getScansByPeriod(CodeScanType type, String period) {
+	public JSONObject getScansByPeriod(ScanType type, String period) {
 		return getMetric(type, KEY_SCANS_BY_PERIOD, period);
 	}
 
@@ -274,7 +274,7 @@ public class MetricsCacheService {
 				Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getResults(labels)));
 	}
 
-	private JSONObject getMetric(CodeScanType type, String key, String period) {
+	private JSONObject getMetric(ScanType type, String key, String period) {
 		JSONObject json;
 		try {
 			// Ensure period is valid
@@ -298,7 +298,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the scan count for this type
 	 */
-	public long getScanCount(CodeScanType type) {
+	public long getScanCount(ScanType type) {
 		CacheKey key = new CacheKey(type, SCAN_COUNT);
 		return (long) this.statsCache.getOrDefault(key, 0L);
 	}
@@ -309,7 +309,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the violation count for this type
 	 */
-	public long getViolationCount(CodeScanType type) {
+	public long getViolationCount(ScanType type) {
 		CacheKey key = new CacheKey(type, VIO_COUNT);
 		return (long) this.statsCache.getOrDefault(key, 0L);
 	}
@@ -320,7 +320,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the average scan duration for this type
 	 */
-	public double getAverageScanTime(CodeScanType type) {
+	public double getAverageScanTime(ScanType type) {
 		CacheKey key = new CacheKey(type, AVG_TIME);
 		return (double) this.statsCache.getOrDefault(key, 0.0);
 	}
@@ -332,7 +332,7 @@ public class MetricsCacheService {
 	 * @param type the ScanType to retrieve
 	 * @return the average scan duration in the best resolution
 	 */
-	public String getAverageScanTimeString(CodeScanType type) {
+	public String getAverageScanTimeString(ScanType type) {
 		double slicer = getAverageScanTime(type);
 		if (slicer < 1000) {
 			return String.format("%.0f ms", slicer);

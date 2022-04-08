@@ -27,7 +27,7 @@ public class PullRequestReportController {
 	}
 
 	@GetMapping("/scan/report/{id}")
-	public WatchtowerModelAndView getUploadReport(@PathVariable String id,
+	public WatchtowerModelAndView getPRReport(@PathVariable String id,
 			RedirectAttributes redirectAttributes) {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("pull_requests/scanreport");
 		PRScanResult scanResult = scanResultService.getScanResultForScanId(id);

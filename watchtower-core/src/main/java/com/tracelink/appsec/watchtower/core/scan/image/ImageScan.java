@@ -3,8 +3,6 @@ package com.tracelink.appsec.watchtower.core.scan.image;
 public class ImageScan {
 	private String apiLabel;
 
-	private String registryName;
-
 	private String imageName;
 
 	private String tagName;
@@ -21,14 +19,6 @@ public class ImageScan {
 
 	public void setApiLabel(String apiLabel) {
 		this.apiLabel = apiLabel;
-	}
-
-	public String getRegistryName() {
-		return registryName;
-	}
-
-	public void setRegistryName(String registryName) {
-		this.registryName = registryName;
 	}
 
 	public String getImageName() {
