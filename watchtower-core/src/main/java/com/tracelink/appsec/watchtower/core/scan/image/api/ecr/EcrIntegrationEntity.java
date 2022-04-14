@@ -73,4 +73,7 @@ public class EcrIntegrationEntity extends APIIntegrationEntity {
 		return new EcrApi(this);
 	}
 
+	public String getEndpointLink() {
+		return "/rest/imagescan/" + getApiLabel();
+	}
 }

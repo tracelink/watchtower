@@ -38,11 +38,11 @@ public class ImageScanDashboardController {
 		}
 
 		mv.addObject("numScans",
-				metricsService.getScanCount(ImageScanType.ADVISORY));
+				metricsService.getScanCount(ImageScanType.CONTAINER));
 		mv.addObject("numViolations",
-				metricsService.getViolationCount(ImageScanType.ADVISORY));
+				metricsService.getViolationCount(ImageScanType.CONTAINER));
 		mv.addObject("avgScanTime",
-				metricsService.getAverageScanTimeString(ImageScanType.ADVISORY));
+				metricsService.getAverageScanTimeString(ImageScanType.CONTAINER));
 
 		mv.addScriptReference("/scripts/dashboard/utils.js");
 		mv.addScriptReference("/scripts/dashboard/scans-vios-line.js");

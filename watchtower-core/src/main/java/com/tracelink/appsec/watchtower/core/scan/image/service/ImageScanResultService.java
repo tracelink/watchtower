@@ -20,7 +20,6 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanError;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.AdvisoryRepository;
@@ -30,6 +29,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageViolation
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultViolation;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 /**
  * Handles logic around storing a retrieving scan results
@@ -43,7 +43,7 @@ public class ImageScanResultService
 
 	private ImageContainerRepository containerRepo;
 
-	private RegistryImageRepository imageRepo;
+	private RepositoryRepository imageRepo;
 
 	private ImageScanRepository scanRepo;
 
@@ -57,7 +57,7 @@ public class ImageScanResultService
 
 	public ImageScanResultService(
 			@Autowired ImageContainerRepository prRepo,
-			@Autowired RegistryImageRepository imageRepo,
+			@Autowired RepositoryRepository imageRepo,
 			@Autowired ImageScanRepository scanRepo,
 			@Autowired ImageViolationRepository vioRepo,
 			@Autowired AdvisoryRepository advisoryRepo,

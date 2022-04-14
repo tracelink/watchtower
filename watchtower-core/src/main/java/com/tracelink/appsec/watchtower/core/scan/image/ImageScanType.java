@@ -9,7 +9,7 @@ import com.tracelink.appsec.watchtower.core.scan.ScanType;
  *
  */
 public enum ImageScanType implements ScanType {
-	ADVISORY("advisory", "Advisory");
+	CONTAINER("container", "Container");
 
 	private final String typeName;
 	private final String displayName;

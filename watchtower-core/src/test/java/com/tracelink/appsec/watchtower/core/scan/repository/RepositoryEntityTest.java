@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm;
+package com.tracelink.appsec.watchtower.core.scan.repository;
 
 import java.util.Date;
 
@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 
 public class RepositoryEntityTest {
 

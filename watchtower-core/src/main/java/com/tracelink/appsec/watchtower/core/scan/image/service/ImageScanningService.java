@@ -16,9 +16,10 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEn
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.api.IImageApi;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageService;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 import ch.qos.logback.classic.Level;
 
@@ -26,7 +27,7 @@ import ch.qos.logback.classic.Level;
 public class ImageScanningService extends AbstractScanningService {
 	private static Logger LOG = LoggerFactory.getLogger(ImageScanningService.class);
 
-	private RegistryImageService registryService;
+	private RepositoryService repoService;
 
 	private ScanRegistrationService scanRegistrationService;
 
@@ -48,8 +49,9 @@ public class ImageScanningService extends AbstractScanningService {
 			LOG.error("Quiesced. Did not schedule image scan: " + imageName);
 			throw new ScanRejectedException("Quiesced. Did not schedule image: " + imageName);
 		}
-		RegistryImageEntity registry =
-				registryService.upsertRegistryImage(scan.getApiLabel(), scan.getImageName());
+		RepositoryEntity registry =
+				repoService.upsertRepo(ImageScanType.CONTAINER, scan.getApiLabel(),
+						scan.getImageName());
 		RulesetEntity ruleset = registry.getRuleset();
 
 		// Skip scan if registry is not configured with a ruleset

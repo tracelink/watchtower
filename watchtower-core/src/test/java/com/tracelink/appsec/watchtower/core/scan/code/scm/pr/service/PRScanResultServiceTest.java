@@ -27,7 +27,6 @@ import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestTest;
@@ -40,6 +39,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRViolat
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 @ExtendWith(SpringExtension.class)
 public class PRScanResultServiceTest {

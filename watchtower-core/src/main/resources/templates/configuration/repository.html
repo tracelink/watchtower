@@ -39,7 +39,6 @@
                         <table class="table mb-0 datatable">
                           <thead class="bg-light">
                           <tr>
-                            <th scope="col" class="border-0">Count</th>
                             <th scope="col" class="border-0">Repository Name</th>
                             <th scope="col" class="border-0">Last Scanned</th>
                             <th scope="col" class="border-0">Ruleset</th>
@@ -50,7 +49,6 @@
                           </thead>
                           <tbody>
                           <tr th:each="repoDetails, dStat : ${repos.get(repoKey)}" th:class="${repoDetails.enabled ? '' : 'text-muted'}">
-                            <td th:text="${dStat.count}">
                             <td th:text="${repoDetails.repoName}">
                             <td class="localizetime" th:text="${repoDetails.getLastReviewedDate()}">
                             <td th:text="${repoDetails.ruleset == null ? 'None' : repoDetails.ruleset.name}">

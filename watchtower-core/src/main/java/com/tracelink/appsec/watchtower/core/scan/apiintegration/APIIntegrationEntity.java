@@ -72,4 +72,6 @@ public abstract class APIIntegrationEntity {
 	 */
 	public abstract IWatchtowerApi createApi() throws ApiIntegrationException;
 
+	public abstract String getEndpointLink();
+
 }

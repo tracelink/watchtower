@@ -1,8 +1,9 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm;
+package com.tracelink.appsec.watchtower.core.scan.repository;
 
 import java.util.Date;
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -13,6 +14,8 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
+import com.tracelink.appsec.watchtower.core.scan.ScanType;
+import com.tracelink.appsec.watchtower.core.scan.ScanType.ScanTypeConverter;
 
 /**
  * Entity description for a repository. Holds information about a repository in a given SCM
@@ -26,6 +29,10 @@ public class RepositoryEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "repo_entity_id")
 	private long id;
+
+	@Column(name = "scan_type")
+	@Convert(converter = ScanTypeConverter.class)
+	private ScanType scanType;
 
 	@Column(name = "last_review_date")
 	private long lastReviewedDate;
@@ -45,6 +52,14 @@ public class RepositoryEntity {
 
 	public long getId() {
 		return id;
+	}
+
+	public ScanType getScanType() {
+		return scanType;
+	}
+
+	public void setScanType(ScanType scanType) {
+		this.scanType = scanType;
 	}
 
 	public long getLastReviewedDate() {

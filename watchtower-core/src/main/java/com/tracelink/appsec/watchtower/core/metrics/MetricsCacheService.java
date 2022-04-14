@@ -77,7 +77,7 @@ public class MetricsCacheService {
 		this.serviceMap = new HashMap<>();
 		this.serviceMap.put(CodeScanType.PULL_REQUEST, prScanResultService);
 		this.serviceMap.put(CodeScanType.UPLOAD, uploadScanResultService);
-		this.serviceMap.put(ImageScanType.ADVISORY, imageScanResultService);
+		this.serviceMap.put(ImageScanType.CONTAINER, imageScanResultService);
 	}
 
 	/**

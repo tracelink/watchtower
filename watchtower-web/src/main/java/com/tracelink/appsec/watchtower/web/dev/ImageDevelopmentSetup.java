@@ -13,16 +13,17 @@ import org.springframework.data.domain.Sort.Direction;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageService;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -38,14 +39,14 @@ class ImageDevelopmentSetup {
 	private final ImageScanResultService imageScanResultService;
 	private final ImageContainerRepository imageRepo;
 	private final ImageScanRepository imageScanRepo;
-	private final RegistryImageService registryService;
+	private final RepositoryService repoService;
 
 	public ImageDevelopmentSetup(
-			@Autowired RegistryImageService registryService,
+			@Autowired RepositoryService repoService,
 			@Autowired ImageScanResultService imageScanResultService,
 			@Autowired ImageContainerRepository imageRepo,
 			@Autowired ImageScanRepository imageScanRepo) {
-		this.registryService = registryService;
+		this.repoService = repoService;
 		this.imageScanResultService = imageScanResultService;
 		this.imageRepo = imageRepo;
 		this.imageScanRepo = imageScanRepo;
@@ -53,15 +54,15 @@ class ImageDevelopmentSetup {
 
 
 	public void addImageScanHistory(Random random) {
-		List<RegistryImageEntity> images =
-				registryService.getAllRegistryImages().values().stream().flatMap(List::stream)
-						.collect(Collectors.toList());
+		List<RepositoryEntity> images =
+				repoService.getAllRepos(ImageScanType.CONTAINER).values().stream()
+						.flatMap(List::stream).collect(Collectors.toList());
 		for (int i = 0; i < ADV_NUM_SIZE; i++) {
 			makeAdvisory(random);
 		}
 		List<AdvisoryEntity> advisories = imageScanResultService.getAllAdvisories();
 		for (int i = 0; i < IMG_NUM_SIZE; i++) {
-			RegistryImageEntity image = images.get(random.nextInt(images.size()));
+			RepositoryEntity image = images.get(random.nextInt(images.size()));
 			boolean activeState = random.nextBoolean();
 			saveImage(activeState, image, advisories, random);
 		}
@@ -82,11 +83,11 @@ class ImageDevelopmentSetup {
 	}
 
 
-	private void saveImage(boolean activeState, RegistryImageEntity image,
+	private void saveImage(boolean activeState, RepositoryEntity image,
 			List<AdvisoryEntity> advisories, Random random) {
 		ImageScan imageScan = new ImageScan();
 		imageScan.setApiLabel(image.getApiLabel());
-		imageScan.setImageName(image.getRegistryImageName());
+		imageScan.setImageName(image.getRepoName());
 		imageScan.setTagName("v1.0");
 		// 50% chance of 0 vios, then 25% chance of 1,2,3,4 vios
 		int numVios = random.nextBoolean() ? 0 : 1 + random.nextInt(4);

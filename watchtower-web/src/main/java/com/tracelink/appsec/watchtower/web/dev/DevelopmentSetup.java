@@ -19,7 +19,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetRepository;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRScanRepository;
@@ -27,11 +27,12 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResul
 import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.registry.RegistryImageService;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -56,7 +57,6 @@ public class DevelopmentSetup {
 	private final RulesetService rulesetService;
 	private final RulesetRepository rulesetRepository;
 	private final RepositoryService repositoryService;
-	private final RegistryImageService registryService;
 	private final MetricsCacheService metricsService;
 
 	private final PRDevelopmentSetup prDevelopmentSetup;
@@ -74,7 +74,6 @@ public class DevelopmentSetup {
 			@Autowired UploadScanResultService uploadScanResultService,
 			@Autowired UploadContainerRepository uploadRepo,
 			@Autowired UploadScanRepository uploadScanRepo,
-			@Autowired RegistryImageService registryService,
 			@Autowired ImageScanResultService imageScanResultService,
 			@Autowired ImageContainerRepository imageRepo,
 			@Autowired ImageScanRepository imageScanRepo,
@@ -84,13 +83,12 @@ public class DevelopmentSetup {
 		this.rulesetService = rulesetService;
 		this.rulesetRepository = rulesetRepository;
 		this.repositoryService = repositoryService;
-		this.registryService = registryService;
 		this.metricsService = metricsService;
 		prDevelopmentSetup =
 				new PRDevelopmentSetup(repositoryService, prScanResultService, prRepo, prScanRepo);
 		uploadDevelopmentSetup =
 				new UploadDevelopmentSetup(uploadScanResultService, uploadRepo, uploadScanRepo);
-		imageDevelopmentSetup = new ImageDevelopmentSetup(registryService, imageScanResultService,
+		imageDevelopmentSetup = new ImageDevelopmentSetup(repositoryService, imageScanResultService,
 				imageRepo, imageScanRepo);
 	}
 
@@ -161,15 +159,15 @@ public class DevelopmentSetup {
 	}
 
 	private void addRepos() {
-		repositoryService.upsertRepo(API_LABEL_1, "Main Product");
-		repositoryService.upsertRepo(API_LABEL_1, "Another Product");
-		repositoryService.upsertRepo(API_LABEL_2, "Supporting Library");
+		repositoryService.upsertRepo(CodeScanType.PULL_REQUEST, API_LABEL_1, "Main Product");
+		repositoryService.upsertRepo(CodeScanType.PULL_REQUEST, API_LABEL_1, "Another Product");
+		repositoryService.upsertRepo(CodeScanType.PULL_REQUEST, API_LABEL_2, "Supporting Library");
 	}
 
 	private void addImages() {
-		registryService.upsertRegistryImage(IMAGE_API_LABEL_1, "First Image");
-		registryService.upsertRegistryImage(IMAGE_API_LABEL_1, "Custom Image");
-		registryService.upsertRegistryImage(IMAGE_API_LABEL_2, "External Image");
+		repositoryService.upsertRepo(ImageScanType.CONTAINER, IMAGE_API_LABEL_1, "First Image");
+		repositoryService.upsertRepo(ImageScanType.CONTAINER, IMAGE_API_LABEL_1, "Custom Image");
+		repositoryService.upsertRepo(ImageScanType.CONTAINER, IMAGE_API_LABEL_2, "External Image");
 	}
 
 	private void importRules() throws Exception {
@@ -185,7 +183,14 @@ public class DevelopmentSetup {
 	}
 
 	private void setSomeReposDisabled(Random random) {
-		repositoryService.disableRepo(repositoryService.upsertRepo(API_LABEL_1, "Disabled repo1"));
-		repositoryService.disableRepo(repositoryService.upsertRepo(API_LABEL_2, "Disabled repo2"));
+		repositoryService.disableRepo(repositoryService.upsertRepo(CodeScanType.PULL_REQUEST,
+				API_LABEL_1, "Disabled repo1"));
+		repositoryService.disableRepo(repositoryService.upsertRepo(CodeScanType.PULL_REQUEST,
+				API_LABEL_2, "Disabled repo2"));
+
+		repositoryService.disableRepo(repositoryService.upsertRepo(ImageScanType.CONTAINER,
+				IMAGE_API_LABEL_1, "Disabled repo1"));
+		repositoryService.disableRepo(repositoryService.upsertRepo(ImageScanType.CONTAINER,
+				IMAGE_API_LABEL_2, "Disabled repo2"));
 	}
 }

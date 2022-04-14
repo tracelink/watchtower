@@ -11,8 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
@@ -21,6 +20,8 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestV
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -51,8 +52,8 @@ public class PRDevelopmentSetup {
 
 	public void addPRScanHistory(Random random) {
 		List<RepositoryEntity> repos =
-				repositoryService.getAllRepos().values().stream().flatMap(List::stream)
-						.collect(Collectors.toList());
+				repositoryService.getAllRepos(CodeScanType.PULL_REQUEST).values().stream()
+						.flatMap(List::stream).collect(Collectors.toList());
 		for (int i = 0; i < PR_NUM_SIZE; i++) {
 			RepositoryEntity repo = repos.get(random.nextInt(repos.size()));
 			boolean activeState = random.nextBoolean();

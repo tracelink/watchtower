@@ -11,4 +11,8 @@ public abstract class AbstractScmIntegrationEntity extends APIIntegrationEntity 
 	 * @return an http link for this Pull Request, or null, if none could be made
 	 */
 	public abstract String makePRLink(String repository, String pullRequestId);
+
+	public String getEndpointLink() {
+		return "/rest/scan/" + getApiLabel();
+	}
 }

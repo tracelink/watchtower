@@ -1,6 +1,5 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm;
+package com.tracelink.appsec.watchtower.core.scan.repository;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -14,6 +13,7 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundExcept
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
+import com.tracelink.appsec.watchtower.core.scan.ScanType;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 
 /**
@@ -35,16 +35,15 @@ public class RepositoryService {
 	}
 
 	/**
-	 * get all repos for all Api Labels
+	 * get all repos for all Api Labels using the given scan type
 	 *
+	 * @param type the scan type to get repos for
 	 * @return a Map of each Api Label to a list of their known repos
 	 */
-	public Map<String, List<RepositoryEntity>> getAllRepos() {
+	public Map<String, List<RepositoryEntity>> getAllRepos(ScanType type) {
 		Map<String, List<RepositoryEntity>> allRepos =
-				repoRepo.findAll().stream().collect(Collectors.groupingBy(
+				repoRepo.findByScanType(type).stream().collect(Collectors.groupingBy(
 						RepositoryEntity::getApiLabel, TreeMap::new, Collectors.toList()));
-		allRepos.values()
-				.forEach(list -> list.sort(Comparator.comparing(RepositoryEntity::getRepoName)));
 		return allRepos;
 	}
 
@@ -79,17 +78,19 @@ public class RepositoryService {
 	 * Update/Insert a repository using the api label and default ruleset. Ensures the repository is
 	 * in the enabled state
 	 *
+	 * @param type     the repository type
 	 * @param apiLabel the api label to add this repo name to
 	 * @param repoName the new repository name
 	 * @return the upserted Respository information
 	 */
-	public RepositoryEntity upsertRepo(String apiLabel, String repoName) {
+	public RepositoryEntity upsertRepo(ScanType type, String apiLabel, String repoName) {
 		RepositoryEntity repo = repoRepo.findByApiLabelAndRepoName(apiLabel, repoName);
 		if (repo == null) {
 			repo = new RepositoryEntity();
 			repo.setApiLabel(apiLabel);
 			repo.setRepoName(repoName);
 			repo.setRuleset(rulesetService.getDefaultRuleset());
+			repo.setScanType(type);
 		}
 		repo.setLastReviewedDate(System.currentTimeMillis());
 		repo.setEnabled(true);

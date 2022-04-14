@@ -37,7 +37,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 /**
  * Handles logic to retrieve and edit rulesets.

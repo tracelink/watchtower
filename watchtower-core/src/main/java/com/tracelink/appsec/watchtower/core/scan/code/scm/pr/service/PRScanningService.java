@@ -17,16 +17,18 @@ import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.logging.LogsService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
+import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PRScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 import ch.qos.logback.classic.Level;
 
@@ -84,7 +86,8 @@ public class PRScanningService extends AbstractScanningService {
 			throw new ScanRejectedException("Quiesced. Did not schedule PR: " + prName);
 		}
 
-		RepositoryEntity repo = repoService.upsertRepo(pr.getApiLabel(), pr.getRepoName());
+		RepositoryEntity repo = repoService.upsertRepo(CodeScanType.PULL_REQUEST, pr.getApiLabel(),
+				pr.getRepoName());
 		RulesetEntity ruleset = repo.getRuleset();
 
 		// Skip scan if repository is not configured with a ruleset
@@ -124,7 +127,8 @@ public class PRScanningService extends AbstractScanningService {
 	@Override
 	protected void recoverFromDowntime() {
 		List<PullRequest> prs = new ArrayList<>();
-		Map<String, List<RepositoryEntity>> repoMap = repoService.getAllRepos();
+		Map<String, List<RepositoryEntity>> repoMap =
+				repoService.getAllRepos(CodeScanType.PULL_REQUEST);
 		for (APIIntegrationEntity entity : apiService.getAllSettings()) {
 			LOG.debug("Recovering using API " + entity.getApiLabel());
 			List<PullRequest> recovered = recoverByApi(repoMap, entity);
@@ -148,6 +152,11 @@ public class PRScanningService extends AbstractScanningService {
 			APIIntegrationEntity entity) {
 		List<PullRequest> prs = new ArrayList<>();
 		try {
+			IWatchtowerApi wApi = entity.createApi();
+			if (!(wApi instanceof IScmApi)) {
+				LOG.debug("Skipping API " + entity.getApiLabel() + " wrong api implementation");
+				return prs;
+			}
 			IScmApi api = (IScmApi) entity.createApi();
 			List<RepositoryEntity> repos =
 					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());

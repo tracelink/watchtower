@@ -51,17 +51,9 @@ CREATE TABLE image_violation(
 	CONSTRAINT fk_image_vio_scan FOREIGN KEY (scan_entity_id) REFERENCES image_scan (scan_entity_id)
 );
 
-
-CREATE TABLE registry_image(
-	registry_image_entity_id BIGINT NOT NULL AUTO_INCREMENT,
-	image_name varchar(255) NOT NULL,
-	api_label varchar(255) NOT NULL,
-	last_review_date BIGINT NOT NULL,
-	enabled BOOLEAN NOT NULL,
-	ruleset_id BIGINT NOT NULL,
-	CONSTRAINT fk_registryimage_rulesetid FOREIGN KEY (ruleset_id) REFERENCES rulesets (ruleset_id)
-);
-
+/*
+ * pr and upload violations have a singular severity, modified from severity name and severity value
+ */
 ALTER TABLE pull_request_violations ADD COLUMN severity varchar(255);
 UPDATE pull_request_violations SET severity = severity_name;
 ALTER TABLE pull_request_violations DROP COLUMN severity_name;
@@ -74,3 +66,9 @@ ALTER TABLE upload_violations DROP COLUMN severity_name;
 ALTER TABLE upload_violations DROP COLUMN severity_value;
 ALTER TABLE upload_violations MODIFY COLUMN severity varchar(255) NOT NULL; 
 
+/*
+ * repositories can have scan types to filter down
+ */
+ALTER TABLE repositories ADD COLUMN scan_type varchar(255);
+UPDATE repositories SET scan_type = 'pull_request';
+ALTER TABLE repositories MODIFY COLUMN scan_type varchar(255) NOT NULL; 

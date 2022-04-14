@@ -8,6 +8,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 
 /**
  * Service manages owning the Sidebar objects so that the UI can display them properly with correct
@@ -117,9 +119,17 @@ public class SidebarService {
 						.setMaterialIcon("settings")
 						.setLinks(Arrays.asList(
 								new SidebarLink()
-										.setDisplayName("Repository Settings")
+										.setDisplayName("Code Repo Settings")
 										.setMaterialIcon("code")
-										.setUrl("/repository")
+										.setUrl("/repository/"
+												+ CodeScanType.PULL_REQUEST.getTypeName())
+										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.REPO_SETTINGS_VIEW_NAME + "')"),
+								new SidebarLink()
+										.setDisplayName("Image Repo Settings")
+										.setMaterialIcon("equalizer")
+										.setUrl("/repository/"
+												+ ImageScanType.CONTAINER.getTypeName())
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.REPO_SETTINGS_VIEW_NAME + "')"),
 								new SidebarLink()

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -30,12 +31,13 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEn
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 import ch.qos.logback.classic.Level;
 
@@ -98,7 +100,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockPR.getApiLabel()).thenReturn("label");
 		RepositoryEntity repo = new RepositoryEntity();
 		BDDMockito
-				.when(mockRepoService.upsertRepo(BDDMockito.any(),
+				.when(mockRepoService.upsertRepo(BDDMockito.any(), BDDMockito.any(),
 						BDDMockito.any()))
 				.thenReturn(repo);
 		scanningService.doPullRequestScan(mockPR);
@@ -174,7 +176,7 @@ public class PRScanningServiceTest {
 		RepositoryEntity mockRepoEntity = BDDMockito.mock(RepositoryEntity.class);
 		BDDMockito.when(mockRepoEntity.getRepoName()).thenReturn(repoName);
 		BDDMockito.when(mockRepoEntity.isEnabled()).thenReturn(true);
-		BDDMockito.when(mockRepoService.getAllRepos())
+		BDDMockito.when(mockRepoService.getAllRepos(CodeScanType.PULL_REQUEST))
 				.thenReturn(
 						Collections.singletonMap(apiLabel,
 								Collections.singletonList(mockRepoEntity)));
@@ -205,7 +207,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(prUnknown.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(prUnknown.getRepoName()).thenReturn(repoName);
 
-		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
+		IScmApi mockApi = Mockito.mock(IScmApi.class);
 		BDDMockito.when(mockApi.getOpenPullRequestsForRepository(repoName))
 				.thenReturn(Arrays.asList(prSeenReviewed, prSeenNotReviewed, prUnknown));
 		BDDMockito.when(mockApi.isRepositoryActive(BDDMockito.anyString())).thenReturn(true);
@@ -233,7 +235,8 @@ public class PRScanningServiceTest {
 						prUnknownId))
 				.thenReturn(null);
 
-		BDDMockito.when(mockRepoService.upsertRepo(apiLabel, repoName)).thenReturn(mockRepoEntity);
+		BDDMockito.when(mockRepoService.upsertRepo(CodeScanType.PULL_REQUEST, apiLabel, repoName))
+				.thenReturn(mockRepoEntity);
 		BDDMockito.when(mockRepoEntity.getRuleset()).thenReturn(new RulesetEntity());
 
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
@@ -256,7 +259,7 @@ public class PRScanningServiceTest {
 		RepositoryEntity mockRepoEntity = BDDMockito.mock(RepositoryEntity.class);
 		BDDMockito.when(mockRepoEntity.getRepoName()).thenReturn(repoName);
 		BDDMockito.when(mockRepoEntity.isEnabled()).thenReturn(true);
-		BDDMockito.when(mockRepoService.getAllRepos())
+		BDDMockito.when(mockRepoService.getAllRepos(CodeScanType.PULL_REQUEST))
 				.thenReturn(
 						Collections.singletonMap(apiLabel,
 								Collections.singletonList(mockRepoEntity)));
@@ -315,7 +318,8 @@ public class PRScanningServiceTest {
 						prUnknownId))
 				.thenReturn(null);
 
-		BDDMockito.when(mockRepoService.upsertRepo(apiLabel, repoName)).thenReturn(mockRepoEntity);
+		BDDMockito.when(mockRepoService.upsertRepo(CodeScanType.PULL_REQUEST, apiLabel, repoName))
+				.thenReturn(mockRepoEntity);
 		BDDMockito.when(mockRepoEntity.getRuleset()).thenReturn(new RulesetEntity());
 
 		BDDMockito.when(mockApiEntity.createApi()).thenReturn(mockApi);
@@ -338,7 +342,7 @@ public class PRScanningServiceTest {
 		RepositoryEntity mockRepoEntity = BDDMockito.mock(RepositoryEntity.class);
 		BDDMockito.when(mockRepoEntity.getRepoName()).thenReturn(repoName);
 		BDDMockito.when(mockRepoEntity.isEnabled()).thenReturn(false);
-		BDDMockito.when(mockRepoService.getAllRepos())
+		BDDMockito.when(mockRepoService.getAllRepos(CodeScanType.PULL_REQUEST))
 				.thenReturn(
 						Collections.singletonMap(apiLabel,
 								Collections.singletonList(mockRepoEntity)));
@@ -397,7 +401,8 @@ public class PRScanningServiceTest {
 						prUnknownId))
 				.thenReturn(null);
 
-		BDDMockito.when(mockRepoService.upsertRepo(apiLabel, repoName)).thenReturn(mockRepoEntity);
+		BDDMockito.when(mockRepoService.upsertRepo(CodeScanType.PULL_REQUEST, apiLabel, repoName))
+				.thenReturn(mockRepoEntity);
 		BDDMockito.when(mockRepoEntity.getRuleset()).thenReturn(new RulesetEntity());
 
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
@@ -414,7 +419,8 @@ public class PRScanningServiceTest {
 		ruleset.setRules(Collections.singleton(new MockRuleEntity()));
 		RepositoryEntity repo = new RepositoryEntity();
 		repo.setRuleset(ruleset);
-		BDDMockito.when(mockRepoService.upsertRepo(BDDMockito.any(), BDDMockito.any()))
+		BDDMockito.when(
+				mockRepoService.upsertRepo(BDDMockito.any(), BDDMockito.any(), BDDMockito.any()))
 				.thenReturn(repo);
 	}
 

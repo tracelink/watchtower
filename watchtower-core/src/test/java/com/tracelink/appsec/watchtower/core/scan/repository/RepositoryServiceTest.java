@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm;
+package com.tracelink.appsec.watchtower.core.scan.repository;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,9 +15,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryRepository;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
 @ExtendWith(SpringExtension.class)
 public class RepositoryServiceTest {
@@ -77,7 +75,8 @@ public class RepositoryServiceTest {
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
 						BDDMockito.anyString()))
 				.thenReturn(entity);
-		repoService.upsertRepo(ApiType.BITBUCKET_CLOUD.getTypeName(), "");
+		repoService.upsertRepo(CodeScanType.PULL_REQUEST, ApiType.BITBUCKET_CLOUD.getTypeName(),
+				"");
 		Assertions.assertTrue(entity.getLastReviewedDate() > originalRevDate);
 	}
 
@@ -89,7 +88,7 @@ public class RepositoryServiceTest {
 				.when(mockRepoRepo.findByApiLabelAndRepoName(BDDMockito.anyString(),
 						BDDMockito.anyString()))
 				.thenReturn(null);
-		repoService.upsertRepo(type, repoName);
+		repoService.upsertRepo(CodeScanType.PULL_REQUEST, type, repoName);
 
 		ArgumentCaptor<RepositoryEntity> entityCaptor =
 				ArgumentCaptor.forClass(RepositoryEntity.class);

@@ -18,7 +18,6 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
@@ -31,6 +30,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRViolat
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 /**
  * Handles logic around storing a retrieving scan results

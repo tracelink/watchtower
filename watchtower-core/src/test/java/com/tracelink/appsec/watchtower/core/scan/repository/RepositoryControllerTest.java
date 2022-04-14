@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.scan.code.scm;
+package com.tracelink.appsec.watchtower.core.scan.repository;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,8 +27,7 @@ import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.RepositoryService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -55,8 +54,9 @@ public class RepositoryControllerTest {
 		entities.add(BDDMockito.mock(RepositoryEntity.class));
 		repos.put("ApiLabel", entities);
 
-		BDDMockito.when(mockRepoService.getAllRepos()).thenReturn(repos);
-		mockMvc.perform(MockMvcRequestBuilders.get("/repository"))
+		BDDMockito.when(mockRepoService.getAllRepos(CodeScanType.PULL_REQUEST)).thenReturn(repos);
+		mockMvc.perform(MockMvcRequestBuilders
+				.get("/repository/" + CodeScanType.PULL_REQUEST.getTypeName()))
 				.andExpect(MockMvcResultMatchers.model().attribute("repos", Matchers.is(repos)));
 	}
 
@@ -72,7 +72,9 @@ public class RepositoryControllerTest {
 		rulesetEntity.setName("Default");
 		BDDMockito.when(mockRulesetService.getRuleset(1L)).thenReturn(rulesetEntity);
 		mockMvc.perform(
-				MockMvcRequestBuilders.post("/repository").param("apiLabel", apiLabel)
+				MockMvcRequestBuilders
+						.post("/repository/" + CodeScanType.PULL_REQUEST.getTypeName())
+						.param("apiLabel", apiLabel)
 						.param("repo", repo)
 						.param("rulesetId", "1").with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.status().is3xxRedirection());
@@ -88,7 +90,9 @@ public class RepositoryControllerTest {
 				.given(mockRepoService).setRulesetForRepo(BDDMockito.anyLong(),
 						BDDMockito.anyString(), BDDMockito.anyString());
 		mockMvc.perform(
-				MockMvcRequestBuilders.post("/repository").param("apiLabel", apiLabel)
+				MockMvcRequestBuilders
+						.post("/repository/" + CodeScanType.PULL_REQUEST.getTypeName())
+						.param("apiLabel", apiLabel)
 						.param("repo", repo)
 						.param("rulesetId", "1").with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.status().is3xxRedirection())
@@ -106,7 +110,9 @@ public class RepositoryControllerTest {
 				.setRulesetForRepo(BDDMockito.anyLong(), BDDMockito.anyString(),
 						BDDMockito.anyString());
 		mockMvc.perform(
-				MockMvcRequestBuilders.post("/repository").param("apiLabel", apiLabel)
+				MockMvcRequestBuilders
+						.post("/repository/" + CodeScanType.PULL_REQUEST.getTypeName())
+						.param("apiLabel", apiLabel)
 						.param("repo", repo)
 						.param("rulesetId", "1").with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.status().is3xxRedirection())

@@ -25,7 +25,7 @@ public enum ApiType {
 			return entity;
 		}
 	},
-	ECR("Amazon ECR", "configuration/ecrconfiguration") {
+	ECR("Amazon ECR", "configuration/ecrconfigure") {
 		@Override
 		public APIIntegrationEntity makeEntityForParams(Map<String, String> parameters)
 				throws ApiIntegrationException {
