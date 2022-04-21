@@ -83,7 +83,7 @@ public class EsLintRuleDesignerControllerTest {
 	public void testSaveCustomMissingRequiredFields() throws Exception {
 		String sourceCode = "function foo() {\n\tconsole.log('foo');\n}";
 		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
-		BDDMockito.when(ruleDesigner.getRuleDesignerModelAndView()).thenReturn(mav);
+		BDDMockito.when(ruleDesigner.getDefaultRuleDesignerModelAndView()).thenReturn(mav);
 		BDDMockito.when(ruleDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(Arrays.asList("ESLint"));
 

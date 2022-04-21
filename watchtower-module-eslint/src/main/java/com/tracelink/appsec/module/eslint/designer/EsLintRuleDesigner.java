@@ -90,7 +90,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
+	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setCreateFunction(DEFAULT_CREATE_FUNCTION);
 		rule.setMessages(DEFAULT_MESSAGES);

@@ -82,12 +82,12 @@ public class RuleDesignerService {
 	 * @return the default Designer Model for the Designer
 	 * @throws ModuleNotFoundException if no designer matches the given type
 	 */
-	public RuleDesignerModelAndView getDesignerModelAndView(String designer)
+	public RuleDesignerModelAndView getDefaultDesignerModelAndView(String designer)
 			throws ModuleNotFoundException {
 		if (!designerMap.containsKey(designer.toLowerCase())) {
 			throw new ModuleNotFoundException("No designer exists for the given type: " + designer);
 		}
-		return designerMap.get(designer.toLowerCase()).getRuleDesignerModelAndView();
+		return designerMap.get(designer.toLowerCase()).getDefaultRuleDesignerModelAndView();
 	}
 
 }

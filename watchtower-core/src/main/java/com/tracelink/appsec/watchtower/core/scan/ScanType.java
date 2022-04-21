@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,7 +11,7 @@ import javax.persistence.Converter;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 
-public interface ScanType {
+public interface ScanType extends Serializable {
 	public String getTypeName();
 
 	public String getDisplayName();

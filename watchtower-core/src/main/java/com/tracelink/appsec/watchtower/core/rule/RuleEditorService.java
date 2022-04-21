@@ -104,7 +104,7 @@ public class RuleEditorService {
 					.findAny()
 					.orElseThrow(() -> new RuleNotFoundException("Unknown Rule and module pair"));
 			IRuleEditor ruleEditor = this.moduleMapping.get(module);
-			mv = ruleEditor.getRuleEditModelAndView(rule);
+			mv = ruleEditor.getDefaultRuleEditModelAndView(rule);
 		}
 
 		mv.addObject("modules", getKnownModules());

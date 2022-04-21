@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.module.ruleeditor;
 
-import org.apache.commons.codec.binary.StringUtils;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
@@ -18,11 +19,21 @@ public interface IRuleEditor {
 	 * @param rule the rule to edit
 	 * @return a {@link RuleEditModelAndView} used to edit this rule.
 	 */
-	RuleEditModelAndView getRuleEditModelAndView(RuleDto rule);
+	RuleEditModelAndView getDefaultRuleEditModelAndView(RuleDto rule);
 
+	/**
+	 * Return the named Privilege used to check if a user has the authority to access this rule
+	 * editor. Null or empty string privilege means all users have access.
+	 * 
+	 * @return a privilege name denoting authority needed to access this editor, or null/empty
+	 *         string for all users have access
+	 */
 	String getPrivilegeNameForAccess();
 
 	default boolean hasAuthority(String authority) {
+		if (StringUtils.isBlank(getPrivilegeNameForAccess())) {
+			return true;
+		}
 		return StringUtils.equals(authority, getPrivilegeNameForAccess());
 	}
 }

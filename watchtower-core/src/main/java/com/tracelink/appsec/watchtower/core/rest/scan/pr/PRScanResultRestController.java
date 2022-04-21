@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +38,8 @@ public class PRScanResultRestController {
 		this.resultService = resultService;
 	}
 
-	@GetMapping(value = {"", "/{filter}", "/{filter}/{page}"})
+	@GetMapping(value = {"", "/{filter}", "/{filter}/{page}"},
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	ResponseEntity<JSONObject> getResults(@PathVariable Optional<String> filter,
 			@PathVariable Optional<Integer> page, UriComponentsBuilder uriBuilder) {
 		PRResultFilter resultFilter =

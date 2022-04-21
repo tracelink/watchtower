@@ -47,90 +47,94 @@
 </div>
 <!-- End Small Stats Blocks -->
 <div class="row">
-    <!-- Line Graph Scans and Violations Found -->
-    <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Scans Completed and Violations Found</h6>
+	<div class="col-12">
+		<div class="card card-small h-100">
+			<div class="card-header border-bottom">
+				<ul class="list-group list-group-flush">
+					<li class="list-group-item px-3 py-0">
+						<div class="btn-group btn-group-toggle" id="statsbtn" data-toggle="buttons">
+							<label class="btn btn-white active">
+								<input type="radio" id="line">Scans vs Violations
+							</label>
+							<label class="btn btn-white">
+								<input type="radio" id="pie">Violations by Type
+							</label>
+							<label class="btn btn-white">
+								<input type="radio" id="bar">Violations by Time/Type
+							</label>
+						</div>
+					</li>
+				</ul>
+			</div>
+			<div id="line" class="statscards">
+				<h6 class="px-4">Scans Completed and Violations Found</h6>
+				<div class="card-body d-flex py-0">
+	                <canvas id="scans-vios-line"></canvas>
+	                <div class="d-flex flex-column m-auto">
+	                    <div class="stats-med__data text-center">
+	                        <div id="line-no-data"></div>
+	                    </div>
+	                </div>
+	            </div>
+	            <div class="card-footer border-top">
+	                <div class="row">
+	                    <div class="col-auto">
+	                        <select class="custom-select custom-select-sm" id="line-period">
+	                            <option value="last-week">Last Week</option>
+	                            <option selected value="last-four-weeks">Last Four Weeks</option>
+	                            <option value="last-six-months">Last Six Months</option>
+	                            <option value="all-time">All Time</option>
+	                        </select>
+	                    </div>
+	                </div>
+	            </div>
             </div>
-            <div class="card-body d-flex py-0" style="min-height: 130px">
-                <canvas id="scans-vios-line"></canvas>
-                <div class="d-flex flex-column m-auto">
-                    <div class="stats-med__data text-center">
-                        <div id="line-no-data"></div>
-                    </div>
-                </div>
+  			<div id="pie" class="statscards d-none">
+  				<h6 class="px-4">Violations by Type</h6>
+	  			<div class="card-body d-flex py-0" >
+	                <canvas id="violations-pie"></canvas>
+	                <div class="d-flex flex-column m-auto">
+	                    <div class="stats-med__data text-center">
+	                        <div id="pie-no-data"></div>
+	                    </div>
+	                </div>
+	            </div>
+	            <div class="card-footer border-top">
+	                <div class="row">
+	                    <div class="col-auto">
+	                        <select class="custom-select custom-select-sm" id="pie-period">
+	                            <option value="last-week">Last Week</option>
+	                            <option selected value="last-four-weeks">Last Four Weeks</option>
+	                            <option value="last-six-months">Last Six Months</option>
+	                            <option value="all-time">All Time</option>
+	                        </select>
+	                    </div>
+	                </div>
+	            </div>
             </div>
-            <div class="card-footer border-top">
-                <div class="row">
-                    <div class="col">
-                        <select class="custom-select custom-select-sm" style="max-width: 150px;" id="line-period">
-                            <option value="last-week">Last Week</option>
-                            <option selected value="last-four-weeks">Last Four Weeks</option>
-                            <option value="last-six-months">Last Six Months</option>
-                            <option value="all-time">All Time</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- End Line Graph Scans and Violations Found -->
-    <!-- Pie Graph Violations By Type -->
-    <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Violations by Type</h6>
-            </div>
-            <div class="card-body d-flex py-0" style="min-height: 130px">
-                <canvas id="violations-pie"></canvas>
-                <div class="d-flex flex-column m-auto">
-                    <div class="stats-med__data text-center">
-                        <div id="pie-no-data"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer border-top">
-                <div class="row">
-                    <div class="col">
-                        <select class="custom-select custom-select-sm" style="max-width: 150px;" id="pie-period">
-                            <option value="last-week">Last Week</option>
-                            <option selected value="last-four-weeks">Last Four Weeks</option>
-                            <option value="last-six-months">Last Six Months</option>
-                            <option value="all-time">All Time</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- End Pie Graph Violations By Type -->
-    <!-- Bar Graph Violations By Period and Type -->
-    <div class="col mb-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Violations by Time Period and Type</h6>
-            </div>
-            <div class="card-body d-flex py-0" style="min-height: 130px">
-                <canvas id="violations-bar"></canvas>
-                <div class="d-flex flex-column m-auto">
-                    <div class="stats-med__data text-center">
-                        <div id="bar-no-data"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer border-top">
-                <div class="row">
-                    <div class="col">
-                        <select class="custom-select custom-select-sm" style="max-width: 150px;" id="bar-period">
-                            <option value="last-week">Last Week</option>
-                            <option selected value="last-four-weeks">Last Four Weeks</option>
-                            <option value="last-six-months">Last Six Months</option>
-                            <option value="all-time">All Time</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+            <div id="bar" class="statscards d-none">
+         		<h6 class="px-4">Scans Completed and Violations Found</h6>
+				<div class="card-body d-flex py-0">
+	                <canvas id="violations-bar"></canvas>
+	                <div class="d-flex flex-column m-auto">
+	                    <div class="stats-med__data text-center">
+	                        <div id="bar-no-data"></div>
+	                    </div>
+	                </div>
+	            </div>
+	            <div class="card-footer border-top">
+	                <div class="row">
+	                    <div class="col-auto">
+	                        <select class="custom-select custom-select-sm" id="bar-period">
+	                            <option value="last-week">Last Week</option>
+	                            <option selected value="last-four-weeks">Last Four Weeks</option>
+	                            <option value="last-six-months">Last Six Months</option>
+	                            <option value="all-time">All Time</option>
+	                        </select>
+	                    </div>
+	                </div>
+	            </div>
+			</div>
+		</div>
+	</div>
 </div>

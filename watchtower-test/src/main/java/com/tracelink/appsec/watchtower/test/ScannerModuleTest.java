@@ -144,7 +144,7 @@ public abstract class ScannerModuleTest {
 		Assumptions.assumeFalse(
 				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.DESIGNER));
 		Assertions.assertNotNull(
-				this.moduleUnderTest.getRuleDesigner().getRuleDesignerModelAndView());
+				this.moduleUnderTest.getRuleDesigner().getDefaultRuleDesignerModelAndView());
 	}
 
 	@Test
@@ -158,7 +158,7 @@ public abstract class ScannerModuleTest {
 	public void testEditorMAVExists() {
 		Assumptions.assumeFalse(
 				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.EDITOR));
-		Assertions.assertNotNull(this.moduleUnderTest.getRuleEditor().getRuleEditModelAndView(
+		Assertions.assertNotNull(this.moduleUnderTest.getRuleEditor().getDefaultRuleEditModelAndView(
 				this.scannerTester.getRuleSupplier().get()));
 	}
 

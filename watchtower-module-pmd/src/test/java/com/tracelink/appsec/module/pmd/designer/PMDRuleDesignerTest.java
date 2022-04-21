@@ -28,7 +28,7 @@ public class PMDRuleDesignerTest {
 
 	@Test
 	public void testGetRuleDesignerModelAndView() {
-		RuleDesignerModelAndView mav = pmdDesigner.getRuleDesignerModelAndView();
+		RuleDesignerModelAndView mav = pmdDesigner.getDefaultRuleDesignerModelAndView();
 		assertMav(mav);
 	}
 

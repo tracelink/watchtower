@@ -162,7 +162,7 @@ public class PMDRuleDesigner implements IRuleDesigner {
 	}
 
 	@Override
-	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
+	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		RuleDesignerModelAndView mav = getBaseMAV();
 		queryInternal(mav, defaultLanguage, defaultQuery, defaultSrc);
 		return mav;

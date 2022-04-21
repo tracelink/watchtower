@@ -53,7 +53,7 @@ public class JsonRuleDesigner implements IRuleDesigner {
 	private final String defaultQuery = "$.people.*.[?(@.age>45)]";
 
 	@Override
-	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
+	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		return query(defaultQuery, defaultJson);
 	}
 

@@ -16,7 +16,7 @@ public class CheckovRuleEditorTest {
 	@Test
 	public void testGetRuleEditModelAndView() {
 		CheckovRuleEditor editor = new CheckovRuleEditor();
-		RuleEditModelAndView mav = editor.getRuleEditModelAndView(ruleDto);
+		RuleEditModelAndView mav = editor.getDefaultRuleEditModelAndView(ruleDto);
 		MatcherAssert.assertThat(mav.getModel().get(RuleEditModelAndView.RULE_VIEW),
 				Matchers.is("rule-edit/checkov-core"));
 		MatcherAssert.assertThat(mav.getModel().get("rule"), Matchers.is(ruleDto));

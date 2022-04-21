@@ -34,8 +34,8 @@
             <div class="row p-3">
                 <div class="col">
                     <div th:each="repoKey, oStat : ${repos.keySet()}"
-                               th:style="${oStat.first} ? '' : 'display:none'" th:id="${repoKey}"
-                               class="table-responsive reposTable">
+                               th:id="${repoKey}"
+                               th:class="${(oStat.first ? '' : 'd-none ')} + 'table-responsive reposTable'">
                         <table class="table mb-0 datatable">
                           <thead class="bg-light">
                           <tr>
@@ -55,7 +55,7 @@
                             <td th:text="${repoDetails.ruleset == null ? 'N/A' : (repoDetails.ruleset.blockingLevel == null ? 'None' : repoDetails.ruleset.blockingLevel.name)}">
                             <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).REPO_SETTINGS_MODIFY_NAME+''')')}">
                               <th:block th:if="${repoDetails.enabled}">
-                                <form method="POST" action="/repository" onchange="this.submit()">
+                                <form method="POST" action="" onchange="this.submit()">
                                   <input type="hidden" th:name="apiLabel" th:value="${repoDetails.apiLabel}"/>
                                   <input type="hidden" th:name="repo" th:value="${repoDetails.repoName}"/>
                                   <input type="hidden" th:name="${_csrf.parameterName}"

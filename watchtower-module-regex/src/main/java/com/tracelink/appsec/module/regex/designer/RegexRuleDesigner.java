@@ -114,7 +114,7 @@ public class RegexRuleDesigner implements IRuleDesigner {
 	}
 
 	@Override
-	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
+	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		return query(defaultQuery, defaultSrc);
 	}
 

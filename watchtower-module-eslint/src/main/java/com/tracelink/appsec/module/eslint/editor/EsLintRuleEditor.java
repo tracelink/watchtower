@@ -18,7 +18,7 @@ public class EsLintRuleEditor implements IRuleEditor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RuleEditModelAndView getRuleEditModelAndView(RuleDto rule) {
+	public RuleEditModelAndView getDefaultRuleEditModelAndView(RuleDto rule) {
 		boolean core = rule.isProvided();
 		String ruleEditView = core ? "rule-edit/eslint-core" : "rule-edit/eslint";
 		RuleEditModelAndView mav = new RuleEditModelAndView(ruleEditView);

@@ -11,10 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
-import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainerEntity;
@@ -22,7 +20,6 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanError;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
-import com.tracelink.appsec.watchtower.core.scan.image.repository.AdvisoryRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageViolationRepository;
@@ -49,28 +46,20 @@ public class ImageScanResultService
 
 	private ImageViolationRepository vioRepo;
 
-	private AdvisoryRepository advisoryRepo;
-
-	private RuleService ruleService;
-
-	private APIIntegrationService apiIntegrationService;
+	private final ImageAdvisoryService imageAdvisoryService;
 
 	public ImageScanResultService(
 			@Autowired ImageContainerRepository prRepo,
 			@Autowired RepositoryRepository imageRepo,
 			@Autowired ImageScanRepository scanRepo,
 			@Autowired ImageViolationRepository vioRepo,
-			@Autowired AdvisoryRepository advisoryRepo,
-			@Autowired RuleService ruleService,
-			@Autowired APIIntegrationService apiIntegrationService) {
+			@Autowired ImageAdvisoryService imageAdvisoryService) {
 		super(scanRepo, vioRepo);
 		this.containerRepo = prRepo;
 		this.imageRepo = imageRepo;
 		this.scanRepo = scanRepo;
 		this.vioRepo = vioRepo;
-		this.advisoryRepo = advisoryRepo;
-		this.ruleService = ruleService;
-		this.apiIntegrationService = apiIntegrationService;
+		this.imageAdvisoryService = imageAdvisoryService;
 	}
 
 	/**
@@ -91,24 +80,7 @@ public class ImageScanResultService
 		return this.containerRepo.count();
 	}
 
-	public AdvisoryEntity getOrCreateAdvisory(ImageScanViolation sv) {
-		AdvisoryEntity advisory = advisoryRepo.findByAdvisoryName(sv.getFindingName());
-		if (advisory == null) {
-			advisory = new AdvisoryEntity();
-			advisory.setAdvisoryName(sv.getFindingName());
-			advisory.setDescription(sv.getDescription());
-			advisory.setPackageName(sv.getPackageName());
-			advisory.setScore(sv.getScore());
-			advisory.setUri(sv.getUri());
-			advisory.setVector(sv.getVector());
-			advisoryRepo.save(advisory);
-		}
-		return advisory;
-	}
 
-	public List<AdvisoryEntity> getAllAdvisories() {
-		return advisoryRepo.findAll();
-	}
 
 	public void saveImageReport(ImageScan scan, long startTime,
 			List<ImageViolationEntity> violations,
@@ -210,6 +182,10 @@ public class ImageScanResultService
 
 	public ImageScanEntity findById(long id) {
 		return scanRepo.findById(id);
+	}
+
+	public AdvisoryEntity getOrCreateAdvisory(ImageScanViolation sv) {
+		return this.imageAdvisoryService.getOrCreateAdvisory(sv);
 	}
 
 }

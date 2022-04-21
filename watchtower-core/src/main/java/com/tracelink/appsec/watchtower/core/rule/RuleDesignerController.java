@@ -46,7 +46,7 @@ public class RuleDesignerController {
 		RuleDesignerModelAndView rmav;
 
 		try {
-			rmav = ruleDesignerService.getDesignerModelAndView(designer);
+			rmav = ruleDesignerService.getDefaultDesignerModelAndView(designer);
 			rmav.addObject("knownModules",
 					ruleDesignerService.getKnownModulesForUser(authentication));
 		} catch (ModuleNotFoundException e) {

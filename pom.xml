@@ -24,6 +24,7 @@
 		<module>watchtower-module-checkov</module>
 		<module>watchtower-maven-plugin</module>
 		<module>watchtower-cli</module>
+		<module>watchtower-module-advisory</module>
 	</modules>
 
 	<properties>

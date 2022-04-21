@@ -2,18 +2,18 @@ $(document).ready(function() {
 	var pieChart = new WatchtowerViolationsPieChart(
 			'pie-period', 
 			'violations-pie',
-			'advisory');
+			'container');
 	pieChart.pieContentLoad();
 	
 	var barChart = new WatchtowerViolationsBarChart(
 			'bar-period',
 			'violations-bar',
-			'advisory');
+			'container');
 	barChart.barContentLoad();
 	
 	var lineChart = new WatchtowerScanViolationsLineChart(
 			'line-period',
 			'scans-vios-line',
-			'advisory');
+			'container');
 	lineChart.lineContentLoad();
 });

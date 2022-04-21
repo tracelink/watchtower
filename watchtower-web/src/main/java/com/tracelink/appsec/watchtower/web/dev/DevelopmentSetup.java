@@ -31,6 +31,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryService;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
@@ -74,6 +75,7 @@ public class DevelopmentSetup {
 			@Autowired UploadScanResultService uploadScanResultService,
 			@Autowired UploadContainerRepository uploadRepo,
 			@Autowired UploadScanRepository uploadScanRepo,
+			@Autowired ImageAdvisoryService imageAdvisoryService,
 			@Autowired ImageScanResultService imageScanResultService,
 			@Autowired ImageContainerRepository imageRepo,
 			@Autowired ImageScanRepository imageScanRepo,
@@ -88,8 +90,10 @@ public class DevelopmentSetup {
 				new PRDevelopmentSetup(repositoryService, prScanResultService, prRepo, prScanRepo);
 		uploadDevelopmentSetup =
 				new UploadDevelopmentSetup(uploadScanResultService, uploadRepo, uploadScanRepo);
-		imageDevelopmentSetup = new ImageDevelopmentSetup(repositoryService, imageScanResultService,
-				imageRepo, imageScanRepo);
+		imageDevelopmentSetup =
+				new ImageDevelopmentSetup(repositoryService, imageAdvisoryService,
+						imageScanResultService,
+						imageRepo, imageScanRepo);
 	}
 
 	/**

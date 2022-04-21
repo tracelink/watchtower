@@ -45,6 +45,7 @@ public class ImageScanDashboardController {
 				metricsService.getAverageScanTimeString(ImageScanType.CONTAINER));
 
 		mv.addScriptReference("/scripts/dashboard/utils.js");
+		mv.addScriptReference("/scripts/dashboard/dashboard-stats-switcher.js");
 		mv.addScriptReference("/scripts/dashboard/scans-vios-line.js");
 		mv.addScriptReference("/scripts/dashboard/violations-pie.js");
 		mv.addScriptReference("/scripts/dashboard/violations-bar.js");

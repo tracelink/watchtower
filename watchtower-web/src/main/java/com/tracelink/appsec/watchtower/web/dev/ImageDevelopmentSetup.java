@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,6 +20,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEnti
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryService;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
@@ -34,19 +34,22 @@ import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 class ImageDevelopmentSetup {
 
 	private static final int IMG_NUM_SIZE = 1000;
-	private static final int ADV_NUM_SIZE = 20;
+	private static final int ADV_NUM_SIZE = 200;
 
 	private final ImageScanResultService imageScanResultService;
+	private final ImageAdvisoryService imageAdvisoryService;
 	private final ImageContainerRepository imageRepo;
 	private final ImageScanRepository imageScanRepo;
 	private final RepositoryService repoService;
 
-	public ImageDevelopmentSetup(
-			@Autowired RepositoryService repoService,
-			@Autowired ImageScanResultService imageScanResultService,
-			@Autowired ImageContainerRepository imageRepo,
-			@Autowired ImageScanRepository imageScanRepo) {
+	ImageDevelopmentSetup(
+			RepositoryService repoService,
+			ImageAdvisoryService imageAdvisoryService,
+			ImageScanResultService imageScanResultService,
+			ImageContainerRepository imageRepo,
+			ImageScanRepository imageScanRepo) {
 		this.repoService = repoService;
+		this.imageAdvisoryService = imageAdvisoryService;
 		this.imageScanResultService = imageScanResultService;
 		this.imageRepo = imageRepo;
 		this.imageScanRepo = imageScanRepo;
@@ -60,7 +63,7 @@ class ImageDevelopmentSetup {
 		for (int i = 0; i < ADV_NUM_SIZE; i++) {
 			makeAdvisory(random);
 		}
-		List<AdvisoryEntity> advisories = imageScanResultService.getAllAdvisories();
+		List<AdvisoryEntity> advisories = imageAdvisoryService.getAllAdvisories(0, ADV_NUM_SIZE);
 		for (int i = 0; i < IMG_NUM_SIZE; i++) {
 			RepositoryEntity image = images.get(random.nextInt(images.size()));
 			boolean activeState = random.nextBoolean();
@@ -71,12 +74,13 @@ class ImageDevelopmentSetup {
 
 	private void makeAdvisory(Random random) {
 		ImageScanViolation sv = new ImageScanViolation();
-		sv.setFindingName("CVE-2022-" + random.nextInt(2000));
+		sv.setFindingName("CVE-" + (2022 - random.nextInt(4)) +
+				"-" + (random.nextInt(1000) + 1000));
 		sv.setDescription("CVE Description Test");
 		sv.setPackageName("CVE Package Name");
 		double score = random.nextDouble() * 10.0;
 		sv.setScore(String.format("%.2f", score));
-		sv.setSeverity(RulePriority.valueOf((int) (score / (10 / 4)) + 1));
+		sv.setSeverity(RulePriority.valueOf(5 - (int) (score / (10 / 4))));
 		sv.setUri("https://nvd.nist.gov/view/vuln/detail?vulnId=" + sv.getFindingName());
 		sv.setVector("CVSS:3.1/AV:N/AC:L/PR:H/UI:R/S:U/C:H/I:H/A:H");
 		this.imageScanResultService.getOrCreateAdvisory(sv);
