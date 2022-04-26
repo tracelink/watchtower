@@ -28,19 +28,4 @@ public enum ImageScanType implements ScanType {
 	public String getDisplayName() {
 		return this.displayName;
 	}
-
-	/**
-	 * Convert a string typeName to a {@linkplain ImageScanType}
-	 * 
-	 * @param typeName the string representation of a {@linkplain ImageScanType}
-	 * @return The {@linkplain ImageScanType} for the input, or null if not found
-	 */
-	public static ImageScanType ofType(String typeName) {
-		for (ImageScanType type : ImageScanType.values()) {
-			if (type.getTypeName().equals(typeName)) {
-				return type;
-			}
-		}
-		return null;
-	}
 }

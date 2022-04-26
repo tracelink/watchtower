@@ -61,7 +61,6 @@ public class ImageScanAgent extends
 		// Create scan config
 		ImageScanConfig config = new ImageScanConfig();
 		config.setRuleset(getRuleset());
-		config.setScan(scan);
 		config.setSecurityReport(api.getSecurityReportForImage(scan));
 		config.setBenchmarkEnabled(isBenchmarkingEnabled());
 		return config;

@@ -29,18 +29,4 @@ public enum CodeScanType implements ScanType {
 		return this.displayName;
 	}
 
-	/**
-	 * Convert a string typeName to a {@linkplain CodeScanType}
-	 * 
-	 * @param typeName the string representation of a {@linkplain CodeScanType}
-	 * @return The {@linkplain CodeScanType} for the input, or null if not found
-	 */
-	public static CodeScanType ofType(String typeName) {
-		for (CodeScanType type : CodeScanType.values()) {
-			if (type.getTypeName().equals(typeName)) {
-				return type;
-			}
-		}
-		return null;
-	}
 }

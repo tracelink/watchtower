@@ -20,11 +20,12 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.test.CodeScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
+import com.tracelink.appsec.watchtower.test.TestScanConfiguration;
 
-public class EsLintModuleTest extends ScannerModuleTest {
+public class EsLintModuleTest extends CodeScannerModuleTest {
 
 	private static LinterEngine engine;
 	private static EsLintRuleDesigner designer;
@@ -41,7 +42,8 @@ public class EsLintModuleTest extends ScannerModuleTest {
 	}
 
 	@Override
-	protected void configurePluginTester(ScannerModuleTestBuilder testPlan) {
+	protected void configurePluginTester(
+			ScannerModuleTestBuilder<CodeScanReport, String> testPlan) {
 		Supplier<RuleDto> ruleSupplier = () -> {
 			EsLintCustomRuleDto customRule = new EsLintCustomRuleDto();
 			customRule.setAuthor("author");
@@ -73,8 +75,8 @@ public class EsLintModuleTest extends ScannerModuleTest {
 				.withRuleSupplier(ruleSupplier).withSchemaName("eslint_schema_history")
 				.withSupportedRuleClass(EsLintCustomRuleDto.class)
 				.withTestScanConfigurationBuilder(
-						new TestScanConfiguration()
-								.withTargetResourceFile("/scan/simple.js")
+						new TestScanConfiguration<CodeScanReport, String>()
+								.withScannerTarget("/scan/simple.js")
 								.withRuleset(new RulesetDto() {
 									{
 										setName("testRuleset");

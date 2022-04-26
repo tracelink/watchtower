@@ -113,7 +113,7 @@ public class AbstractModuleTest {
 	}
 
 	@Test
-	public void testBuildModuleRegisterWithScanninService() throws Exception {
+	public void testBuildModuleRegisterWithScanningService() throws Exception {
 		AbstractCodeScanModule module = injectMocks(new MockModule());
 		module.buildModule();
 		BDDMockito.verify(mockScanRegistrationService, Mockito.times(1)).registerScanner(moduleName,

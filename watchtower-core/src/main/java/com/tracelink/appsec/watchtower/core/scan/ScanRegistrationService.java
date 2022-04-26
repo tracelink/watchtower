@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.module.scanner.IImageScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 
 /**
  * Handles all logic around managing the scanners in the system
@@ -33,26 +34,24 @@ public class ScanRegistrationService {
 	 * @throws ModuleException          if there is already a scanner associated with the given
 	 *                                  module
 	 */
-	public void registerScanner(String module, ICodeScanner scanner)
+	public void registerScanner(String module, IScanner<?, ?> scanner)
 			throws IllegalArgumentException, ModuleException {
 		if (StringUtils.isBlank(module) || scanner == null) {
 			throw new IllegalArgumentException("Module and scanner cannot be null.");
 		}
-		if (codeScanners.containsKey(module)) {
-			throw new ModuleException("A scanner for the given module already exists: " + module);
+		if (scanner instanceof ICodeScanner) {
+			if (codeScanners.containsKey(module)) {
+				throw new ModuleException(
+						"A scanner for the given module already exists: " + module);
+			}
+			codeScanners.put(module, (ICodeScanner) scanner);
+		} else if (scanner instanceof IImageScanner) {
+			if (imageScanners.containsKey(module)) {
+				throw new ModuleException(
+						"A scanner for the given module already exists: " + module);
+			}
+			imageScanners.put(module, (IImageScanner) scanner);
 		}
-		codeScanners.put(module, scanner);
-	}
-
-	public void registerScanner(String module, IImageScanner scanner)
-			throws IllegalArgumentException, ModuleException {
-		if (StringUtils.isBlank(module) || scanner == null) {
-			throw new IllegalArgumentException("Module and scanner cannot be null.");
-		}
-		if (imageScanners.containsKey(module)) {
-			throw new ModuleException("A scanner for the given module already exists: " + module);
-		}
-		imageScanners.put(module, scanner);
 	}
 
 	public Collection<ICodeScanner> getCodeScanners() {

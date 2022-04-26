@@ -4,11 +4,12 @@ import com.tracelink.appsec.module.json.designer.JsonRuleDesigner;
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.test.CodeScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestOption;
 
-public class JsonModuleTest extends ScannerModuleTest {
+public class JsonModuleTest extends CodeScannerModuleTest {
 
 	@Override
 	protected AbstractCodeScanModule buildScannerModule() {
@@ -16,7 +17,8 @@ public class JsonModuleTest extends ScannerModuleTest {
 	}
 
 	@Override
-	protected void configurePluginTester(ScannerModuleTestBuilder testPlan) {
+	protected void configurePluginTester(
+			ScannerModuleTestBuilder<CodeScanReport, String> testPlan) {
 		testPlan.withMigration("db/json").withName("JSON")
 				.withRuleSupplier(() -> {
 					JsonRuleDto rule = new JsonRuleDto();

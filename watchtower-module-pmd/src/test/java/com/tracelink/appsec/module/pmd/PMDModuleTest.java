@@ -10,10 +10,11 @@ import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTest;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.test.CodeScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
 
-public class PMDModuleTest extends ScannerModuleTest {
+public class PMDModuleTest extends CodeScannerModuleTest {
 
 	private static PMDRuleService ruleService;
 
@@ -28,7 +29,8 @@ public class PMDModuleTest extends ScannerModuleTest {
 	}
 
 	@Override
-	protected void configurePluginTester(ScannerModuleTestBuilder testPlan) {
+	protected void configurePluginTester(
+			ScannerModuleTestBuilder<CodeScanReport, String> testPlan) {
 		testPlan.withMigration("db/pmd").withName("PMD").withRuleSupplier(() -> {
 			PMDCustomRuleDto rule = new PMDCustomRuleDto();
 			rule.setAuthor("author");

@@ -3,19 +3,8 @@ package com.tracelink.appsec.module.advisory.model;
 import com.tracelink.appsec.module.advisory.AdvisoryModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
-import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 
 public class AdvisoryRuleDto extends CustomRuleDto {
-
-	public AdvisoryRuleDto() {
-
-	}
-
-	public AdvisoryRuleDto(AdvisoryEntity advisory) {
-		setExternalUrl(advisory.getUri());
-		setMessage(advisory.getDescription());
-		setName(advisory.getAdvisoryName());
-	}
 
 	@Override
 	public String getModule() {
@@ -36,6 +25,4 @@ public class AdvisoryRuleDto extends CustomRuleDto {
 	public boolean matches(ImageSecurityFinding finding) {
 		return finding.getFindingName().equalsIgnoreCase(getName());
 	}
-
-
 }
