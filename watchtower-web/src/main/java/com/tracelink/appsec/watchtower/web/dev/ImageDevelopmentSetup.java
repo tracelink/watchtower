@@ -1,18 +1,9 @@
 package com.tracelink.appsec.watchtower.web.dev;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
@@ -24,6 +15,14 @@ import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryServ
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -89,10 +88,9 @@ class ImageDevelopmentSetup {
 
 	private void saveImage(boolean activeState, RepositoryEntity image,
 			List<AdvisoryEntity> advisories, Random random) {
-		ImageScan imageScan = new ImageScan();
-		imageScan.setApiLabel(image.getApiLabel());
-		imageScan.setImageName(image.getRepoName());
-		imageScan.setTagName("v1.0");
+		ImageScan imageScan = new EcrImageScan(image.getApiLabel());
+		imageScan.setRepository(image.getRepoName());
+		imageScan.setTag("v1.0");
 		// 50% chance of 0 vios, then 25% chance of 1,2,3,4 vios
 		int numVios = random.nextBoolean() ? 0 : 1 + random.nextInt(4);
 		List<ImageViolationEntity> vios = new ArrayList<>();

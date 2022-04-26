@@ -1,24 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.service;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.RejectedExecutionException;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
+import ch.qos.logback.classic.Level;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
 import com.tracelink.appsec.watchtower.core.logging.LogsService;
@@ -30,28 +12,39 @@ import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScanAgent;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
-
-import ch.qos.logback.classic.Level;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Manages creating scans for Uploads
- * 
- * @author csmith
  *
+ * @author csmith
  */
 @Service
 public class UploadScanningService extends AbstractScanningService {
-	private static Logger LOG = LoggerFactory.getLogger(UploadScanningService.class);
 
-	private LogsService logService;
+	private static final Logger LOG = LoggerFactory.getLogger(UploadScanningService.class);
 
-	private RulesetService rulesetService;
-
-	private ScanRegistrationService scanRegistrationService;
-
-	private UploadScanResultService uploadScanResultService;
-
-	private Path workDir;
+	private final LogsService logService;
+	private final RulesetService rulesetService;
+	private final ScanRegistrationService scanRegistrationService;
+	private final UploadScanResultService uploadScanResultService;
+	private final Path workDir;
 
 	public UploadScanningService(@Autowired LogsService logService,
 			@Autowired RulesetService rulesetService,
@@ -126,7 +119,7 @@ public class UploadScanningService extends AbstractScanningService {
 
 	/**
 	 * Copy the contents of a {@linkplain MultipartFile} to the working directory
-	 * 
+	 *
 	 * @param uploadFile the uploaded file
 	 * @return the path to the copied file in the working directory
 	 * @throws IOException if the copy fails

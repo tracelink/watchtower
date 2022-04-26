@@ -1,29 +1,25 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Entity for the Bitbucket Cloud Integration API
  *
  * @author csmith
- *
  */
 @Entity
 @Table(name = "bb_cloud_integration_entity")
@@ -110,8 +106,7 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 			throw new ApiIntegrationException("Missing value for "
 					+ neededParams.stream().collect(Collectors.joining(", ")));
 		}
-		String apiLabel = parameters.get("apiLabel");
-		setApiLabel(apiLabel);
+		setApiLabel(parameters.get("apiLabel"));
 		setWorkspace(parameters.get("workspace"));
 		setUser(parameters.get("user"));
 		setAuth(parameters.get("auth"));
@@ -124,7 +119,7 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 
 	/**
 	 * Create a link to download the zip source of a repo at a commit
-	 * 
+	 *
 	 * @param repository the repository of the code
 	 * @param commitId   the commit hash to download at
 	 * @return a download link
@@ -140,7 +135,7 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 	}
 
 	@Override
-	public IScmApi createApi() throws ApiIntegrationException {
+	public IScmApi createApi() {
 		return new BBCloudApi(this);
 	}
 }

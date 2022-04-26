@@ -1,12 +1,21 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.service;
 
+import ch.qos.logback.classic.Level;
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
+import com.tracelink.appsec.watchtower.core.logging.LogsService;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
+import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
+import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Random;
-
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -18,18 +27,6 @@ import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
-import com.tracelink.appsec.watchtower.core.logging.LogsService;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
-import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
-
-import ch.qos.logback.classic.Level;
 
 @ExtendWith(SpringExtension.class)
 public class UploadScanningServiceTest {
@@ -145,7 +142,6 @@ public class UploadScanningServiceTest {
 		UploadScanContainerEntity container = new UploadScanContainerEntity();
 		container.setTicket(ticket);
 		container.setZipPath(filePath);
-
 
 		BDDMockito.when(mockRulesetService.getRuleset(BDDMockito.anyString()))
 				.thenThrow(RulesetNotFoundException.class);

@@ -1,5 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
+import com.jayway.jsonpath.JsonPath;
+import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,21 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-
-import com.jayway.jsonpath.JsonPath;
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
-
+import java.util.function.Consumer;
+import java.util.function.Function;
 import kong.unirest.GetRequest;
 import kong.unirest.Headers;
 import kong.unirest.HttpRequestWithBody;
@@ -37,17 +32,23 @@ import kong.unirest.UnirestException;
 import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 import net.lingala.zip4j.ZipFile;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 /**
  * An implementation of the {@linkplain IScmApi} for Bitbucket Cloud
- * 
- * @author csmith
  *
+ * @author csmith
  */
 public class BBCloudApi implements IScmApi {
-	private static Logger LOG = LoggerFactory.getLogger(BBCloudApi.class);
 
-	private BBCloudIntegrationEntity apiEntity;
+	private static final Logger LOG = LoggerFactory.getLogger(BBCloudApi.class);
+
+	private final BBCloudIntegrationEntity apiEntity;
 
 	public BBCloudApi(BBCloudIntegrationEntity apiEntity) {
 		this.apiEntity = apiEntity;
@@ -69,6 +70,24 @@ public class BBCloudApi implements IScmApi {
 			throw new ApiIntegrationException(
 					"Client has access to 0 respositories in workspace");
 		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void register(Function<String, ApiKeyEntity> apiKeyFunction,
+			Consumer<ApiIntegrationEntity> registerStateConsumer) {
+		// Not currently supported
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void unregister(Consumer<String> apiKeyConsumer,
+			Consumer<ApiIntegrationEntity> registerStateConsumer) {
+		// Not currently supported
 	}
 
 	/**
@@ -206,7 +225,6 @@ public class BBCloudApi implements IScmApi {
 		BBPullRequest bbpr = new BBPullRequest(pullRequest.getApiLabel());
 		bbpr.setRepoName(pullRequest.getRepoName());
 		bbpr.setPrId(pullRequest.getPrId());
-		bbpr.setSubmitTime(pullRequest.getSubmitTime());
 		try {
 			HttpResponse<String> response = makeGetRequest(prUrl, null).asString();
 			int retries = 5;
@@ -325,7 +343,6 @@ public class BBCloudApi implements IScmApi {
 					JSONObject value = values.getJSONObject(i);
 					BBPullRequest bbpr = new BBPullRequest(apiEntity.getApiLabel());
 					bbpr.setRepoName(repoName);
-					bbpr.setSubmitTime(System.currentTimeMillis());
 					bbpr.parsePullRequestJson(value.toString());
 
 					openPrs.add(bbpr);
@@ -361,7 +378,7 @@ public class BBCloudApi implements IScmApi {
 
 	/**
 	 * create a simple URL path from a base and path elements
-	 * 
+	 *
 	 * @param base         the base URL (hostname, port, and/or path elements)
 	 * @param pathElements additional path elements to add
 	 * @return the concatenated string of base + path elements
@@ -401,7 +418,7 @@ public class BBCloudApi implements IScmApi {
 	/**
 	 * Bitbucket has a rate limiter that will reject certain requests over a limit. This handles
 	 * waiting the timeout period given in a retry header.
-	 * 
+	 *
 	 * @param headers the response headers
 	 * @param retries the number of retries left to make
 	 * @throws UnirestException if the retries have expired

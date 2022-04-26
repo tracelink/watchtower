@@ -18,8 +18,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBPullRequest;
@@ -45,11 +45,11 @@ public class PRScanRestControllerTest {
 
 
 	@MockBean
-	private APIIntegrationService mockApiService;
+	private ApiIntegrationService mockApiService;
 
 	@Test
 	public void testScanPRSuccess() throws Exception {
-		APIIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
+		ApiIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
 		String prJSON = BBPullRequestTest.buildStandardJSONString();
 		String apiLabel = "apiLabel";
 		PullRequest pr = new PullRequest(apiLabel);
@@ -71,7 +71,7 @@ public class PRScanRestControllerTest {
 		BDDMockito.willThrow(RejectedExecutionException.class).given(mockScanService)
 				.doPullRequestScan(BDDMockito.any());
 		BDDMockito.when(mockApiService.findByLabel(type))
-				.thenReturn(BDDMockito.mock(APIIntegrationEntity.class));
+				.thenReturn(BDDMockito.mock(ApiIntegrationEntity.class));
 
 		String prJSON = BBPullRequestTest.buildStandardJSONString();
 
@@ -84,7 +84,7 @@ public class PRScanRestControllerTest {
 
 	@Test
 	public void testResolveOnDeclinedPr() throws Exception {
-		APIIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
+		ApiIntegrationEntity apiEntity = new BBCloudIntegrationEntity();
 		JSONObject prJSON = BBPullRequestTest.buildJSON();
 		prJSON.getJSONObject("pullrequest").put("state", "declined");
 		String apiLabel = "apiLabel";

@@ -1,7 +1,14 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.pr;
 
-import javax.servlet.http.HttpServletRequest;
-
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,16 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBPullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningService;
-
 /**
  * Controller for all REST API calls. Handles sending a scan via REST webhook.
  *
@@ -32,17 +29,18 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningS
 @RequestMapping("/rest/scan")
 @PreAuthorize("permitAll()")
 public class PRScanRestController {
+
 	private static final Logger LOG = LoggerFactory.getLogger(PRScanRestController.class);
 
 	private PRScanningService scanService;
 
 	private PRScanResultService prResultService;
 
-	private APIIntegrationService apiService;
+	private ApiIntegrationService apiService;
 
 	public PRScanRestController(@Autowired PRScanningService scanService,
 			@Autowired PRScanResultService prResultService,
-			@Autowired APIIntegrationService apiService) {
+			@Autowired ApiIntegrationService apiService) {
 		this.scanService = scanService;
 		this.prResultService = prResultService;
 		this.apiService = apiService;
@@ -50,11 +48,10 @@ public class PRScanRestController {
 
 	@PostMapping("/{source}")
 	ResponseEntity<String> scanPullRequest(@PathVariable String source,
-			@RequestBody String pullRequest,
-			HttpServletRequest request) {
+			@RequestBody String pullRequest) {
 		String responseMessage;
 		try {
-			APIIntegrationEntity apiEntity = apiService.findByLabel(source);
+			ApiIntegrationEntity apiEntity = apiService.findByLabel(source);
 			if (apiEntity == null) {
 				LOG.error("Unsupported api label: " + source);
 				throw new ScanRejectedException("Unknown api label");
@@ -88,12 +85,12 @@ public class PRScanRestController {
 	 * @return a PullRequest from the string data for this API
 	 * @throws ApiIntegrationException if the api entity is null or the api type is unknown
 	 */
-	private PullRequest createPrFromAutomation(APIIntegrationEntity apiEntity, String pullRequest)
+	private PullRequest createPrFromAutomation(ApiIntegrationEntity apiEntity, String pullRequest)
 			throws ApiIntegrationException {
 		switch (apiEntity.getApiType()) {
 			case BITBUCKET_CLOUD:
 				BBPullRequest bbpr = new BBPullRequest(apiEntity.getApiLabel());
-				bbpr.parseJsonFromWebhook(pullRequest);
+				bbpr.populateFromRequest(pullRequest);
 				return bbpr;
 			default:
 				throw new ApiIntegrationException("No SCM API for this label.");

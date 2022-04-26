@@ -1,8 +1,12 @@
 package com.tracelink.appsec.watchtower.core.auth.controller;
 
+import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
+import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
+import com.tracelink.appsec.watchtower.core.auth.service.UserService;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import java.security.KeyException;
 import java.security.Principal;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.AuthenticationException;
@@ -11,12 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
-import com.tracelink.appsec.watchtower.core.auth.service.UserService;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 
 /**
  * Controller for the profile editor. Allows changing passwords and managing API Keys
@@ -79,7 +77,7 @@ public class ProfileController {
 			RedirectAttributes redirectAttributes,
 			Principal authenticatedUser) {
 		UserEntity user = userService.findByUsername(authenticatedUser.getName());
-		ApiKeyEntity apiKeyEntity = apiUserService.createNewApiKey(apiKeyLabel, user);
+		ApiKeyEntity apiKeyEntity = apiUserService.createUserApiKey(apiKeyLabel, user);
 		redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 				"Created Key ID: " + apiKeyEntity.getApiKeyId() + " and Secret: "
 						+ apiKeyEntity.getFirstTimeSecret());
@@ -91,7 +89,7 @@ public class ProfileController {
 			Principal authenticatedUser) {
 		UserEntity user = userService.findByUsername(authenticatedUser.getName());
 		try {
-			apiUserService.deleteApiKey(apiKeyId, user);
+			apiUserService.deleteUserApiKey(apiKeyId, user);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully deleted key " + apiKeyId);
 		} catch (KeyException e) {

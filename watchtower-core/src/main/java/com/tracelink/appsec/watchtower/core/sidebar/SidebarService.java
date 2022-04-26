@@ -1,15 +1,13 @@
 package com.tracelink.appsec.watchtower.core.sidebar;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.springframework.stereotype.Service;
-
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 
 /**
  * Service manages owning the Sidebar objects so that the UI can display them properly with correct
@@ -17,6 +15,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
  */
 @Service
 public class SidebarService {
+
 	private final List<SidebarMenuGroup> menuGroups = new ArrayList<>();
 
 	public SidebarService() {
@@ -133,7 +132,7 @@ public class SidebarService {
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.REPO_SETTINGS_VIEW_NAME + "')"),
 								new SidebarLink()
-										.setDisplayName("SCM API Settings")
+										.setDisplayName("API Integrations")
 										.setMaterialIcon("list")
 										.setUrl("/apisettings")
 										.setAuthorizationExpression("hasAuthority('"
@@ -173,7 +172,7 @@ public class SidebarService {
 										.setExternalLink(true)
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.DB_ACCESS_NAME + "')")))
-		// End of Groups
+				// End of Groups
 		));
 	}
 

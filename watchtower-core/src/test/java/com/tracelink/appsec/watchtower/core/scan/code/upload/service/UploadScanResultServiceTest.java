@@ -1,23 +1,5 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.service;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
@@ -32,6 +14,22 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadVi
 import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanResultViolation;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.BDDMockito;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 
 @ExtendWith(SpringExtension.class)
@@ -75,7 +73,6 @@ public class UploadScanResultServiceTest {
 		scan.setRuleSetName(ruleSet);
 		scan.setFilePath(filePath);
 		scan.setUser(user);
-		scan.setSubmitDate(submitDate);
 
 		BDDMockito.when(mockUploadRepo.saveAndFlush(BDDMockito.any()))
 				.thenAnswer(invoke -> invoke.getArgument(0));
@@ -164,7 +161,6 @@ public class UploadScanResultServiceTest {
 
 		UploadScan scan = new UploadScan();
 		scan.setName(name);
-		scan.setSubmitDate(submitted);
 		scan.setUser(user);
 
 		UploadScanResult result = this.scanResultService.generateFailedUploadResult(scan, reason);
@@ -237,7 +233,6 @@ public class UploadScanResultServiceTest {
 	}
 
 
-
 	@Test
 	public void testGenerateResultForTicketInProgress() {
 		String name = "name";
@@ -270,7 +265,6 @@ public class UploadScanResultServiceTest {
 		Assertions.assertEquals(null, result.getEndDate());
 		Assertions.assertEquals(0, result.getViolationsFound());
 	}
-
 
 
 	@Test

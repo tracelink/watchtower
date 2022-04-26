@@ -1,24 +1,13 @@
 package com.tracelink.appsec.watchtower.web.dev;
 
-import java.util.Random;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
-import org.springframework.stereotype.Component;
-
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetRepository;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.RegisterState;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
@@ -34,6 +23,16 @@ import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepos
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryService;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
+import java.util.Random;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.stereotype.Component;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -54,7 +53,7 @@ public class DevelopmentSetup {
 	private static final String IMAGE_API_LABEL_2 = "DockerApi";
 
 	private final Environment environment;
-	private final APIIntegrationService apiService;
+	private final ApiIntegrationService apiService;
 	private final RulesetService rulesetService;
 	private final RulesetRepository rulesetRepository;
 	private final RepositoryService repositoryService;
@@ -65,7 +64,7 @@ public class DevelopmentSetup {
 	private final ImageDevelopmentSetup imageDevelopmentSetup;
 
 	public DevelopmentSetup(@Autowired Environment environment,
-			@Autowired APIIntegrationService apiService,
+			@Autowired ApiIntegrationService apiService,
 			@Autowired RulesetService rulesetService,
 			@Autowired RulesetRepository rulesetRepository,
 			@Autowired RepositoryService repositoryService,
@@ -152,13 +151,20 @@ public class DevelopmentSetup {
 
 		EcrIntegrationEntity entity3 = new EcrIntegrationEntity();
 		entity3.setApiLabel(IMAGE_API_LABEL_1);
-		entity3.setApiKey("apiKey1");
-		entity3.setSecretKey("secretKey1");
+		entity3.setRegion("us-east-1");
+		entity3.setRegistryId("registry1");
+		entity3.setAwsAccessKey("apiKey1");
+		entity3.setAwsSecretKey("secretKey1");
+		entity3.setRegisterState(RegisterState.NOT_REGISTERED);
 		apiService.save(entity3);
 		EcrIntegrationEntity entity4 = new EcrIntegrationEntity();
 		entity4.setApiLabel(IMAGE_API_LABEL_2);
-		entity4.setApiKey("apiKey2");
-		entity4.setSecretKey("secretKey2");
+		entity4.setRegion("us-east-1");
+		entity4.setRegistryId("registry2");
+		entity4.setAwsAccessKey("apiKey2");
+		entity4.setAwsSecretKey("secretKey2");
+		entity4.setRegisterState(RegisterState.FAILED);
+		entity4.setRegisterError("An error has occurred!");
 		apiService.save(entity4);
 	}
 

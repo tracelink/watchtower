@@ -1,10 +1,16 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.controller;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
-
 /**
  * Controller for handling the scanner. Handles displaying scan status, sending a new scan manually,
  * and pause/quiesce/resume functions
@@ -34,13 +32,12 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScann
 @Controller
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_SUBMIT_NAME + "')")
 public class UploadScanController {
+
 	private static final Logger LOG = LoggerFactory.getLogger(UploadScanController.class);
 
-	private UploadScanningService scanService;
-
-	private UploadScanResultService scanResultService;
-
-	private RulesetService rulesetService;
+	private final UploadScanningService scanService;
+	private final UploadScanResultService scanResultService;
+	private final RulesetService rulesetService;
 
 	public UploadScanController(@Autowired UploadScanningService scanService,
 			@Autowired UploadScanResultService scanResultService,
@@ -66,10 +63,8 @@ public class UploadScanController {
 
 	@PostMapping("/uploadscan")
 	public String submitScan(@RequestParam Optional<String> name,
-			@RequestParam Optional<String> ruleset,
-			@RequestBody MultipartFile uploadFile,
-			Principal userPrincipal,
-			RedirectAttributes redirectAttributes) {
+			@RequestParam Optional<String> ruleset, @RequestBody MultipartFile uploadFile,
+			Principal userPrincipal, RedirectAttributes redirectAttributes) {
 		String uploadName = name.orElse(uploadFile.getOriginalFilename());
 		String rulesetName = ruleset.orElse(null);
 
@@ -81,7 +76,6 @@ public class UploadScanController {
 			upload.setRuleSetName(rulesetName);
 			upload.setFilePath(zipLocation);
 			upload.setUser(userPrincipal.getName());
-			upload.setSubmitDate(System.currentTimeMillis());
 			String ticket = scanService.doUploadScan(upload);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 					"Successfully added scan. Ticket ID: " + ticket);

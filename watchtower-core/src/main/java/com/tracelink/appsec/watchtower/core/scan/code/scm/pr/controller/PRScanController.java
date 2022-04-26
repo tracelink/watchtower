@@ -1,11 +1,15 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.controller;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.ManualPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningService;
 import java.util.List;
-
 import javax.validation.Valid;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -14,15 +18,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.ManualPullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningService;
 
 /**
  * Controller for handling the scanner. Handles displaying scan status, sending a new scan manually,
@@ -33,17 +28,14 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanningS
 @Controller
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_SUBMIT_NAME + "')")
 public class PRScanController {
-	private static final Logger LOG = LoggerFactory.getLogger(PRScanController.class);
 
-	private PRScanningService scanService;
-
-	private PRScanResultService prScanResultService;
-
-	private APIIntegrationService apiIntegrationService;
+	private final PRScanningService scanService;
+	private final PRScanResultService prScanResultService;
+	private final ApiIntegrationService apiIntegrationService;
 
 	public PRScanController(@Autowired PRScanningService scanService,
 			@Autowired PRScanResultService prScanResultService,
-			@Autowired APIIntegrationService apiIntegrationService) {
+			@Autowired ApiIntegrationService apiIntegrationService) {
 		this.scanService = scanService;
 		this.prScanResultService = prScanResultService;
 		this.apiIntegrationService = apiIntegrationService;
@@ -53,7 +45,7 @@ public class PRScanController {
 	public WatchtowerModelAndView scan() {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("pull_requests/submitscan");
 
-		List<APIIntegrationEntity> types = apiIntegrationService.getAllSettings();
+		List<ApiIntegrationEntity> types = apiIntegrationService.getAllSettings();
 
 		mav.addObject("numScansQueued", scanService.getTaskNumInQueue());
 		mav.addObject("numScansInProgress", scanService.getTaskNumActive());

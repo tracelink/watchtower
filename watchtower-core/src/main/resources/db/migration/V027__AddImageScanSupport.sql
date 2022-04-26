@@ -1,14 +1,16 @@
 ALTER TABLE integration_entity DROP COLUMN api_endpoint;
 
-CREATE TABLE ecr_integration_entity(
+CREATE TABLE ecr_integration_entity (
 	integration_id BIGINT NOT NULL,
-	api_key varchar(255) NOT NULL,
-	secret_key varchar(255) NOT NULL,
+	region varchar(255) NOT NULL,
+	registry_id varchar(255) NOT NULL,
+	aws_access_key varchar(255) NOT NULL,
+	aws_secret_key varchar(255) NOT NULL,
 	PRIMARY KEY (integration_id),
    	CONSTRAINT fk_ecr_api FOREIGN KEY (integration_id) REFERENCES integration_entity (integration_id)
 );
 
-CREATE TABLE image_container(
+CREATE TABLE image_container (
 	container_id BIGINT NOT NULL AUTO_INCREMENT,
 	api_label varchar(255) NOT NULL,
 	image_name varchar(255) NOT NULL,
@@ -17,7 +19,7 @@ CREATE TABLE image_container(
 	PRIMARY KEY (container_id)
 );
 
-CREATE TABLE image_scan(
+CREATE TABLE image_scan (
 	scan_entity_id BIGINT NOT NULL AUTO_INCREMENT,
 	container_id BIGINT NOT NULL,
 	submit_date BIGINT NOT NULL,
@@ -29,7 +31,7 @@ CREATE TABLE image_scan(
 	CONSTRAINT fk_image_scan_container FOREIGN KEY (container_id) REFERENCES image_container (container_id)
 );
 
-CREATE TABLE advisories(
+CREATE TABLE advisories (
 	advisory_id BIGINT NOT NULL AUTO_INCREMENT,
 	advisory_name varchar(255) NOT NULL,
 	package_name varchar(255),
@@ -40,7 +42,7 @@ CREATE TABLE advisories(
 	PRIMARY KEY (advisory_id)
 );
 
-CREATE TABLE image_violation(
+CREATE TABLE image_violation (
 	vio_entity_id BIGINT NOT NULL AUTO_INCREMENT,
 	scan_entity_id BIGINT NOT NULL,
 	violation_name varchar(255) NOT NULL,

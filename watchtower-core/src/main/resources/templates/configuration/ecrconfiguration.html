@@ -1,0 +1,24 @@
+<div class="form-row">
+  <div class="form-group col">
+    <label for="region" class="col-form-label">AWS Region</label>
+    <input type="text" class="form-control" placeholder="AWS Region" id="region" name="region"
+           th:value="${entity?.region}"/>
+  </div>
+  <div class="form-group col">
+    <label for="registryId" class="col-form-label">Registry ID</label>
+    <input type="text" class="form-control" placeholder="Registry ID" id="registryId"
+           name="registryId" th:value="${entity?.registryId}"/>
+  </div>
+</div>
+<div class="form-row">
+  <div class="form-group col">
+    <label for="awsAccessKey" class="col-form-label">AWS Access Key ID</label>
+    <input type="text" class="form-control" id="awsAccessKey" name="awsAccessKey"
+           placeholder="Access Key ID" th:value="${entity?.awsAccessKey}"/>
+  </div>
+  <div class="form-group col">
+    <label for="awsSecretKey" class="col-form-label">AWS Secret Key</label>
+    <input type="password" class="form-control" id="awsSecretKey" name="awsSecretKey"
+           th:placeholder="${entity == null ? 'Secret Key' : 'Hidden For Security'}"/>
+  </div>
+</div>

@@ -1,22 +1,10 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.stereotype.Service;
-
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
@@ -31,6 +19,16 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilt
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.stereotype.Service;
 
 /**
  * Handles logic around storing a retrieving scan results
@@ -40,25 +38,21 @@ import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository
 @Service
 public class PRScanResultService
 		extends AbstractScanResultService<PullRequestScanEntity, PullRequestViolationEntity> {
-	private static Logger LOG = LoggerFactory.getLogger(PRScanResultService.class);
 
-	private PRContainerRepository prRepo;
+	private static final Logger LOG = LoggerFactory.getLogger(PRScanResultService.class);
 
-	private RepositoryRepository repoRepo;
-
-	private PRScanRepository scanRepo;
-
-	private PRViolationRepository vioRepo;
-
-	private RuleService ruleService;
-
-	private APIIntegrationService apiIntegrationService;
+	private final PRContainerRepository prRepo;
+	private final RepositoryRepository repoRepo;
+	private final PRScanRepository scanRepo;
+	private final PRViolationRepository vioRepo;
+	private final RuleService ruleService;
+	private final ApiIntegrationService apiIntegrationService;
 
 	public PRScanResultService(
 			@Autowired PRContainerRepository prRepo, @Autowired RepositoryRepository repoRepo,
 			@Autowired PRScanRepository scanRepo, @Autowired PRViolationRepository vioRepo,
 			@Autowired RuleService ruleService,
-			@Autowired APIIntegrationService apiIntegrationService) {
+			@Autowired ApiIntegrationService apiIntegrationService) {
 		super(scanRepo, vioRepo);
 		this.prRepo = prRepo;
 		this.repoRepo = repoRepo;
@@ -120,7 +114,7 @@ public class PRScanResultService
 
 	/**
 	 * Given a {@linkplain PullRequest}, mark it as having been newly reviewed and now resolved.
-	 * 
+	 *
 	 * @param pr the {@linkplain PullRequest} to resolve
 	 */
 	public void markPrResolved(PullRequest pr) {
@@ -206,12 +200,12 @@ public class PRScanResultService
 	/**
 	 * Get a list of {@linkplain PRScanResult} based on the given filter and return the given page
 	 * number's worth of data
-	 * 
+	 *
 	 * @param filter   the filter to divy-up the results
 	 * @param pageSize the number of results to return
 	 * @param pageNum  the pagenumber of results to return
 	 * @return a list of size {@code pageSize} containing results using the {@code filter} on page
-	 *         {@code pageNum}
+	 * {@code pageNum}
 	 */
 	public List<PRScanResult> getScanResultsWithFilters(PRResultFilter filter, int pageSize,
 			int pageNum) {
@@ -252,7 +246,7 @@ public class PRScanResultService
 
 	/**
 	 * Get an individual result for a scan id
-	 * 
+	 *
 	 * @param scanId the id of the scan to get results for
 	 * @return the result of the scan, or null if not found
 	 */
@@ -263,7 +257,7 @@ public class PRScanResultService
 
 	/**
 	 * Get a pull request by label, repo, and id
-	 * 
+	 *
 	 * @param apiLabel the label of the api
 	 * @param repo     the repository
 	 * @param prid     the pull request id

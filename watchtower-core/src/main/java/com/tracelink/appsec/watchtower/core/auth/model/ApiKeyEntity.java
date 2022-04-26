@@ -13,13 +13,13 @@ import javax.persistence.Transient;
 
 /**
  * Entity definition for API keys. Maps back to a single user
- * 
- * @author csmith
  *
+ * @author csmith
  */
 @Entity
 @Table(name = "api_keys")
 public class ApiKeyEntity {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "api_key_id")
@@ -38,7 +38,7 @@ public class ApiKeyEntity {
 	private String firstTimeSecret;
 
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "user_id", nullable = false)
+	@JoinColumn(name = "user_id")
 	private UserEntity user;
 
 	public String getKeyLabel() {
@@ -67,7 +67,7 @@ public class ApiKeyEntity {
 
 	/**
 	 * First Time Secret is only set during key creation. After save, this secret value is not set.
-	 * 
+	 *
 	 * @return the plaintext secret (only accessible during create)
 	 */
 	public String getFirstTimeSecret() {

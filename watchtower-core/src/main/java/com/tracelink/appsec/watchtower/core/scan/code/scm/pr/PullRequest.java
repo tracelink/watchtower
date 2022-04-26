@@ -1,5 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr;
 
+import com.tracelink.appsec.watchtower.core.rest.scan.AbstractScan;
+import kong.unirest.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -7,8 +9,8 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author csmith
  */
-public class PullRequest {
-	private String apiLabel;
+public class PullRequest extends AbstractScan {
+
 	private PullRequestState prState;
 	private String author;
 	private String sourceBranch;
@@ -17,14 +19,9 @@ public class PullRequest {
 	private String repoName;
 	private String commitHash;
 	private long updateTime;
-	private long submitTime;
 
 	public PullRequest(String apiLabel) {
-		this.apiLabel = apiLabel;
-	}
-
-	public String getApiLabel() {
-		return this.apiLabel;
+		super(apiLabel);
 	}
 
 	public void setState(PullRequestState state) {
@@ -95,14 +92,6 @@ public class PullRequest {
 		this.updateTime = updateTime;
 	}
 
-	public long getSubmitTime() {
-		return submitTime;
-	}
-
-	public void setSubmitTime(long submitTime) {
-		this.submitTime = submitTime;
-	}
-
 	/**
 	 * Checks that all data members have some data (does not check whether that data is valid)
 	 *
@@ -115,5 +104,25 @@ public class PullRequest {
 				&& StringUtils.isNotBlank(getPrId())
 				&& StringUtils.isNotBlank(getCommitHash())
 				&& getUpdateTime() > 0L;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void populateFromRequest(String requestBody) {
+		JSONObject json = new JSONObject(requestBody);
+		String repoName = json.getString("repo");
+		String prId = json.getString("prid");
+		setRepoName(repoName);
+		setPrId(prId);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getScanName() {
+		return getPRString();
 	}
 }

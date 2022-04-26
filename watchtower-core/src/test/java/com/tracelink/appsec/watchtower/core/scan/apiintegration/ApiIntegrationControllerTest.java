@@ -1,8 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,20 +21,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
-
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
 @AutoConfigureMockMvc
-public class APIIntegrationControllerTest {
+public class ApiIntegrationControllerTest {
+
 	@Autowired
 	private MockMvc mockMvc;
 
 	@MockBean
-	APIIntegrationService mockApiService;
+	ApiIntegrationService mockApiService;
 
 	///////////////////
 	// Get apisettings
@@ -39,7 +38,7 @@ public class APIIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
 	public void testGetSettings() throws Exception {
-		List<APIIntegrationEntity> integrations = new ArrayList<APIIntegrationEntity>();
+		List<ApiIntegrationEntity> integrations = new ArrayList<ApiIntegrationEntity>();
 		BDDMockito.when(mockApiService.getAllSettings()).thenReturn(integrations);
 		mockMvc.perform(MockMvcRequestBuilders.get("/apisettings"))
 				.andExpect(MockMvcResultMatchers.model().attribute("apiTypeNames",
@@ -79,7 +78,7 @@ public class APIIntegrationControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testEditApi() throws Exception {
 		String label = "foo";
-		APIIntegrationEntity entity = new BBCloudIntegrationEntity();
+		ApiIntegrationEntity entity = new BBCloudIntegrationEntity();
 		BDDMockito.when(mockApiService.findByLabel(label)).thenReturn(entity);
 		mockMvc.perform(
 				MockMvcRequestBuilders.get("/apisettings/configure").param("apiLabel", label))
@@ -121,12 +120,12 @@ public class APIIntegrationControllerTest {
 	public void testDeleteSettingsSuccess() throws Exception {
 		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
 		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
-				.thenReturn(BDDMockito.mock(APIIntegrationEntity.class));
+				.thenReturn(BDDMockito.mock(ApiIntegrationEntity.class));
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/apisettings/delete").param("apiLabel", apiLabel)
 						.with(SecurityMockMvcRequestPostProcessors.csrf()));
 
-		BDDMockito.verify(mockApiService).delete(BDDMockito.any(APIIntegrationEntity.class));
+		BDDMockito.verify(mockApiService).delete(BDDMockito.anyString());
 	}
 
 	///////////////////

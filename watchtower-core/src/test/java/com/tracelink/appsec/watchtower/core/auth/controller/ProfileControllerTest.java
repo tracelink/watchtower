@@ -1,8 +1,13 @@
 package com.tracelink.appsec.watchtower.core.auth.controller;
 
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
+import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
+import com.tracelink.appsec.watchtower.core.auth.service.UserService;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import java.security.KeyException;
 import java.util.Date;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,13 +24,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
-import com.tracelink.appsec.watchtower.core.auth.service.UserService;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -148,7 +146,7 @@ public class ProfileControllerTest {
 
 		ApiKeyEntity apiKey = BDDMockito.mock(ApiKeyEntity.class);
 		BDDMockito
-				.when(mockApiService.createNewApiKey(apiKeyLabel, user)).thenReturn(apiKey);
+				.when(mockApiService.createUserApiKey(apiKeyLabel, user)).thenReturn(apiKey);
 
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/profile/apikey/create")
@@ -183,7 +181,8 @@ public class ProfileControllerTest {
 
 		UserEntity user = BDDMockito.mock(UserEntity.class);
 		BDDMockito.when(mockUserService.findByUsername(BDDMockito.anyString())).thenReturn(user);
-		BDDMockito.willThrow(KeyException.class).given(mockApiService).deleteApiKey(apiKeyId, user);
+		BDDMockito.willThrow(KeyException.class).given(mockApiService)
+				.deleteUserApiKey(apiKeyId, user);
 
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/profile/apikey/delete")

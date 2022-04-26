@@ -1,25 +1,23 @@
 package com.tracelink.appsec.module.advisory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeAll;
-
 import com.tracelink.appsec.module.advisory.designer.AdvisoryRuleDesigner;
 import com.tracelink.appsec.module.advisory.model.AdvisoryRuleDto;
 import com.tracelink.appsec.watchtower.core.module.AbstractImageScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
 import com.tracelink.appsec.watchtower.test.ImageScannerModuleTest;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder;
 import com.tracelink.appsec.watchtower.test.ScannerModuleTestOption;
 import com.tracelink.appsec.watchtower.test.TestScanConfiguration;
+import java.util.Arrays;
+import java.util.HashSet;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeAll;
 
 public class AdvisoryModuleTest extends ImageScannerModuleTest {
 
@@ -66,25 +64,25 @@ public class AdvisoryModuleTest extends ImageScannerModuleTest {
 		finding2.setUri("url");
 		finding2.setVector("A:B:C");
 
-		ImageSecurityReport scannerTarget = new ImageSecurityReport(new ImageScan());
+		ImageSecurityReport scannerTarget = new ImageSecurityReport(new EcrImageScan("foo"));
 		scannerTarget.setFindings(Arrays.asList(finding, finding2));
 
 		testPlan.withName("Advisory").withSchemaName("advisory_schema_history")
 				.withMigration("db/advisory").withSupportedRuleClass(AdvisoryRuleDto.class)
 				.withRuleSupplier(() -> makeRule()).withTestScanConfigurationBuilder(
-						new TestScanConfiguration<ImageScanReport, ImageSecurityReport>()
-								.withRuleset(new RulesetDto() {
-									{
-										setName("testRuleset");
-										setDescription("description");
-										setRules(new HashSet<>(Arrays.asList(makeRule())));
-									}
-								})
-								.withScannerTarget(scannerTarget)
-								.withAssertClause((report) -> {
-									MatcherAssert.assertThat(report.getViolations(),
-											Matchers.hasSize(1));
-								}))
+				new TestScanConfiguration<ImageScanReport, ImageSecurityReport>()
+						.withRuleset(new RulesetDto() {
+							{
+								setName("testRuleset");
+								setDescription("description");
+								setRules(new HashSet<>(Arrays.asList(makeRule())));
+							}
+						})
+						.withScannerTarget(scannerTarget)
+						.withAssertClause((report) -> {
+							MatcherAssert.assertThat(report.getViolations(),
+									Matchers.hasSize(1));
+						}))
 				.andIgnoreTestOption(ScannerModuleTestOption.PROVIDED_RULES);
 	}
 

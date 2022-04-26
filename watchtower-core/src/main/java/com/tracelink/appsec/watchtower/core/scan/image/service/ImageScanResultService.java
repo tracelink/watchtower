@@ -1,16 +1,5 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.stereotype.Service;
-
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
@@ -27,6 +16,15 @@ import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultViolation;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.stereotype.Service;
 
 /**
  * Handles logic around storing a retrieving scan results
@@ -36,22 +34,17 @@ import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository
 @Service
 public class ImageScanResultService
 		extends AbstractScanResultService<ImageScanEntity, ImageViolationEntity> {
-	private static Logger LOG = LoggerFactory.getLogger(ImageScanResultService.class);
 
-	private ImageContainerRepository containerRepo;
+	private static final Logger LOG = LoggerFactory.getLogger(ImageScanResultService.class);
 
-	private RepositoryRepository imageRepo;
-
-	private ImageScanRepository scanRepo;
-
-	private ImageViolationRepository vioRepo;
-
+	private final ImageContainerRepository containerRepo;
+	private final RepositoryRepository imageRepo;
+	private final ImageScanRepository scanRepo;
+	private final ImageViolationRepository vioRepo;
 	private final ImageAdvisoryService imageAdvisoryService;
 
-	public ImageScanResultService(
-			@Autowired ImageContainerRepository prRepo,
-			@Autowired RepositoryRepository imageRepo,
-			@Autowired ImageScanRepository scanRepo,
+	public ImageScanResultService(@Autowired ImageContainerRepository prRepo,
+			@Autowired RepositoryRepository imageRepo, @Autowired ImageScanRepository scanRepo,
 			@Autowired ImageViolationRepository vioRepo,
 			@Autowired ImageAdvisoryService imageAdvisoryService) {
 		super(scanRepo, vioRepo);
@@ -80,8 +73,6 @@ public class ImageScanResultService
 		return this.containerRepo.count();
 	}
 
-
-
 	public void saveImageReport(ImageScan scan, long startTime,
 			List<ImageViolationEntity> violations,
 			List<ImageScanError> errors) {
@@ -91,7 +82,7 @@ public class ImageScanResultService
 		long now = System.currentTimeMillis();
 		ImageScanContainerEntity imageEntity =
 				containerRepo.findOneByApiLabelAndImageNameAndTagName(scan.getApiLabel(),
-						scan.getImageName(), scan.getTagName());
+						scan.getRepository(), scan.getTag());
 		if (imageEntity == null) {
 			imageEntity = new ImageScanContainerEntity(scan);
 			imageEntity = containerRepo.saveAndFlush(imageEntity);

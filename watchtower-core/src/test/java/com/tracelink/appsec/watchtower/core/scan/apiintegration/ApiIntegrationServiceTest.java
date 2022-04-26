@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
+import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,27 +9,24 @@ import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationRepository;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-
 @ExtendWith(SpringExtension.class)
-public class APIIntegrationServiceTest {
+public class ApiIntegrationServiceTest {
 
-	private APIIntegrationService apiService;
+	private ApiIntegrationService apiService;
 
 	@MockBean
-	private APIIntegrationRepository apiRepo;
+	private ApiIntegrationRepository apiRepo;
+	@MockBean
+	private ApiUserService apiUserService;
 
 	@BeforeEach
 	public void setup() {
-		this.apiService = new APIIntegrationService(apiRepo);
+		this.apiService = new ApiIntegrationService(apiRepo, apiUserService);
 	}
 
 	@Test
 	public void testUpdate() throws ApiIntegrationException {
-		APIIntegrationEntity apiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity apiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(apiEntity.getApiLabel()).thenReturn("test");
 		apiService.save(apiEntity);
 		BDDMockito.verify(apiRepo).saveAndFlush(BDDMockito.any());
@@ -37,7 +35,7 @@ public class APIIntegrationServiceTest {
 	@Test
 	public void testUpdateBadLabel() {
 		Assertions.assertThrows(ApiIntegrationException.class, () -> {
-			APIIntegrationEntity apiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+			ApiIntegrationEntity apiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 			BDDMockito.when(apiEntity.getApiLabel()).thenReturn("test with spaces");
 			apiService.save(apiEntity);
 			BDDMockito.verify(apiRepo).saveAndFlush(BDDMockito.any());
@@ -45,22 +43,22 @@ public class APIIntegrationServiceTest {
 	}
 
 	@Test
-	public void testDeleteExists() {
-		APIIntegrationEntity entity = BDDMockito.mock(APIIntegrationEntity.class);
+	public void testDeleteExists() throws Exception {
+		ApiIntegrationEntity entity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(entity.getApiLabel()).thenReturn("foo");
-		BDDMockito.when(apiRepo.getByApiLabel(BDDMockito.anyString())).thenReturn(entity);
-		apiService.delete(entity);
+		BDDMockito.when(apiRepo.findByApiLabel(BDDMockito.anyString())).thenReturn(entity);
+		apiService.delete("foo");
 		BDDMockito.verify(apiRepo).delete(entity);
 		BDDMockito.verify(apiRepo).flush();
 	}
 
 	@Test
-	public void testDeleteNotExists() {
-		APIIntegrationEntity entity = BDDMockito.mock(APIIntegrationEntity.class);
+	public void testDeleteNotExists() throws Exception {
+		ApiIntegrationEntity entity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(entity.getApiLabel()).thenReturn("foo");
-		BDDMockito.when(apiRepo.getByApiLabel(BDDMockito.anyString())).thenReturn(null);
+		BDDMockito.when(apiRepo.findByApiLabel(BDDMockito.anyString())).thenReturn(null);
 
-		apiService.delete(entity);
+		apiService.delete("foo");
 
 		BDDMockito.verify(apiRepo, BDDMockito.times(0)).delete(BDDMockito.any());
 		BDDMockito.verify(apiRepo, BDDMockito.times(0)).flush();

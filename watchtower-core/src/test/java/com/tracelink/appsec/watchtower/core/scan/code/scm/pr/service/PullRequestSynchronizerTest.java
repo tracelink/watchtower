@@ -16,8 +16,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
@@ -43,7 +43,7 @@ public class PullRequestSynchronizerTest {
 	private PRScanResultService mockResultService;
 
 	@MockBean
-	private APIIntegrationService mockApiIntegrationService;
+	private ApiIntegrationService mockApiIntegrationService;
 
 	private PullRequestSynchronizer prSync;
 
@@ -61,7 +61,7 @@ public class PullRequestSynchronizerTest {
 		PullRequestContainerEntity mockEntity = BDDMockito.mock(PullRequestContainerEntity.class);
 		BDDMockito.when(mockEntity.toPullRequest()).thenReturn(pr);
 
-		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiIntegrationService.getAllSettings())
 				.thenReturn(Arrays.asList(mockApiEntity));
 
@@ -91,7 +91,7 @@ public class PullRequestSynchronizerTest {
 		PullRequestContainerEntity mockEntity = BDDMockito.mock(PullRequestContainerEntity.class);
 		BDDMockito.when(mockEntity.toPullRequest()).thenReturn(mockPr);
 
-		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiIntegrationService.getAllSettings())
 				.thenReturn(Arrays.asList(mockApiEntity));
 		BDDMockito.when(mockApiIntegrationService.findByLabel(BDDMockito.any()))
