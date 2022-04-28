@@ -100,6 +100,9 @@ public enum CorePrivilege {
 	public static final String SCAN_ADMIN_NAME = "Scan Admin";
 	public static final String SCAN_RESULTS_NAME = "Scan Results View";
 
+	/* API Integration Scan */
+	public static final String INTEGRATION_SCAN_SUBMIT = "Integration Scan Submit";
+
 	private final String name;
 	private final String category;
 	private final String desc;

@@ -3,8 +3,7 @@ package com.tracelink.appsec.watchtower.core.auth.service;
 import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.repository.ApiKeyRepository;
-import com.tracelink.appsec.watchtower.core.auth.repository.RoleRepository;
-import com.tracelink.appsec.watchtower.core.auth.repository.UserRepository;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationRepository;
 import java.security.KeyException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -32,17 +31,15 @@ public class ApiUserServiceTest {
 	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 	@MockBean
-	private UserRepository mockUserRepository;
-
-	@MockBean
-	private RoleRepository mockRoleRepository;
+	private ApiIntegrationRepository mockIntegrationRepository;
 
 	private ApiUserService apiUserService;
 
 	@BeforeEach
 	public void setup() {
 		this.apiUserService =
-				new ApiUserService(mockApiKeyRepository, mockUserService, passwordEncoder);
+				new ApiUserService(mockApiKeyRepository, mockUserService, mockIntegrationRepository,
+						passwordEncoder);
 	}
 
 	@Test

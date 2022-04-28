@@ -38,7 +38,7 @@ public class ApiKeyEntity {
 	private String firstTimeSecret;
 
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "user_id")
+	@JoinColumn(name = "user_id", nullable = false)
 	private UserEntity user;
 
 	public String getKeyLabel() {

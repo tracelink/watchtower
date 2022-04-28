@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
@@ -34,8 +35,9 @@ public class ImageScanRestController {
 	}
 
 	@PostMapping("/{source}")
-	@PreAuthorize("@apiUserService.authorizeApiIntegrationRequest(authentication,#source)")
-	ResponseEntity<String> scanPullRequest(@PathVariable String source,
+	@PreAuthorize("authentication.getName().equals(#source) && hasAuthority('"
+			+ CorePrivilege.INTEGRATION_SCAN_SUBMIT + "')")
+	ResponseEntity<String> scanImageRequest(@PathVariable String source,
 			@RequestBody String imageScan) {
 		try {
 			ApiIntegrationEntity apiEntity = apiService.findByLabel(source);

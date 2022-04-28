@@ -1,13 +1,14 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
 import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.repository.ApiKeyRepository;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationRepository;
 import java.security.KeyException;
-import java.util.Collections;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,13 +26,16 @@ public class ApiUserService implements UserDetailsService {
 
 	private final ApiKeyRepository apiKeyRepository;
 	private final UserService userService;
+	private final ApiIntegrationRepository apiIntegrationRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	public ApiUserService(@Autowired ApiKeyRepository apiKeyRepository,
 			@Autowired UserService userService,
+			@Autowired ApiIntegrationRepository apiIntegrationRepository,
 			@Autowired PasswordEncoder passwordEncoder) {
 		this.apiKeyRepository = apiKeyRepository;
 		this.userService = userService;
+		this.apiIntegrationRepository = apiIntegrationRepository;
 		this.passwordEncoder = passwordEncoder;
 	}
 
@@ -42,22 +46,23 @@ public class ApiUserService implements UserDetailsService {
 	 * <p>
 	 * {@inheritDoc}
 	 *
-	 * @param apiKeyId an api key id
+	 * @param username the username of the API principal
 	 * @throws UsernameNotFoundException if the api key is unknown
 	 */
 	@Override
-	public UserDetails loadUserByUsername(String apiKeyId) throws UsernameNotFoundException {
-		ApiKeyEntity apiKeyEntity = findByApiKeyId(apiKeyId);
-		if (apiKeyEntity == null) {
-			throw new UsernameNotFoundException("Unknown Api Key");
-		}
-		UserEntity user = apiKeyEntity.getUser();
-		if (user != null) {
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		ApiKeyEntity apiKeyEntity = findByApiKeyId(username);
+		if (apiKeyEntity != null) {
+			UserEntity user = apiKeyEntity.getUser();
 			return userService.buildUser(user.getUsername(), apiKeyEntity.getSecret(), user);
-		} else {
-			return User.builder().username(apiKeyId).password(apiKeyEntity.getSecret())
-					.authorities(Collections.emptyList()).disabled(false).build();
 		}
+		ApiIntegrationEntity integrationEntity = apiIntegrationRepository.findByApiLabel(username);
+		if (integrationEntity != null) {
+			return User.builder().username(username)
+					.password(integrationEntity.getWatchtowerSecret())
+					.authorities(CorePrivilege.INTEGRATION_SCAN_SUBMIT).disabled(false).build();
+		}
+		throw new UsernameNotFoundException("Unknown Api Key");
 	}
 
 	private ApiKeyEntity findByApiKeyId(String apiKeyId) {
@@ -91,28 +96,6 @@ public class ApiUserService implements UserDetailsService {
 	}
 
 	/**
-	 * Creates a programmatic API key that is not associated with a particular user and has the
-	 * given apiKeyLabel.
-	 *
-	 * @param apiKeyLabel the label for the new API key
-	 * @return new programmatic API key
-	 */
-	public ApiKeyEntity createProgrammaticApiKey(String apiKeyLabel) {
-		ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
-		String apiKeyId;
-		do {
-			apiKeyId = UUID.randomUUID().toString();
-		} while (findByApiKeyId(apiKeyId) != null);
-
-		String secretKey = UUID.randomUUID().toString();
-		apiKeyEntity.setKeyLabel(apiKeyLabel);
-		apiKeyEntity.setApiKeyId(apiKeyId);
-		apiKeyEntity.setFirstTimeSecret(secretKey);
-		apiKeyEntity.setSecret(passwordEncoder.encode(secretKey));
-		return apiKeyRepository.saveAndFlush(apiKeyEntity);
-	}
-
-	/**
 	 * Given an api key id and user, delete the key if the key is for the user
 	 *
 	 * @param apiKeyId the key id for an api key
@@ -127,32 +110,5 @@ public class ApiUserService implements UserDetailsService {
 		userService.updateUser(user);
 		apiKeyRepository.delete(apiKey);
 		apiKeyRepository.flush();
-	}
-
-	/**
-	 * Deletes the programmatic API key with the given key label.
-	 *
-	 * @param keyLabel the label of the API key to delete
-	 */
-	public void deleteProgrammaticApiKey(String keyLabel) {
-		ApiKeyEntity apiKey = apiKeyRepository.findByKeyLabelAndUserIsNull(keyLabel);
-		apiKeyRepository.delete(apiKey);
-		apiKeyRepository.flush();
-	}
-
-	/**
-	 * Authorizes requests made with an API integration key. Checks that the given key label matches
-	 * the key label of the API key for the authenticated principal.
-	 *
-	 * @param authentication the authentication of the current principal
-	 * @param keyLabel       the key label to check
-	 * @return true if the key labels are equal, false otherwise
-	 */
-	public boolean authorizeApiIntegrationRequest(Authentication authentication, String keyLabel) {
-		ApiKeyEntity apiKey = apiKeyRepository.findByApiKeyId(authentication.getName());
-		if (apiKey == null) {
-			return false;
-		}
-		return apiKey.getKeyLabel().equals(keyLabel);
 	}
 }
