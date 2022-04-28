@@ -37,7 +37,7 @@ public class PRScanRestResultControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME}, username = "user")
-	public void testScan() throws Exception {
+	public void testResult() throws Exception {
 		PRScanResult result = new PRScanResult();
 		result.setPrId("foo");
 
@@ -56,7 +56,7 @@ public class PRScanRestResultControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME}, username = "user")
-	public void testScanSpecific() throws Exception {
+	public void testResultSpecific() throws Exception {
 		PRScanResult result = new PRScanResult();
 		result.setPrId("foo");
 
@@ -76,7 +76,7 @@ public class PRScanRestResultControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME}, username = "user")
-	public void testScanEnd() throws Exception {
+	public void testResultEnd() throws Exception {
 		BDDMockito
 				.when(mockScanResultService
 						.getScanResultsWithFilters(PRResultFilter.UNRESOLVED, 10, 1))

@@ -62,7 +62,7 @@ class ImageDevelopmentSetup {
 		for (int i = 0; i < ADV_NUM_SIZE; i++) {
 			makeAdvisory(random);
 		}
-		List<AdvisoryEntity> advisories = imageAdvisoryService.getAllAdvisories(0, ADV_NUM_SIZE);
+		List<AdvisoryEntity> advisories = imageAdvisoryService.getAllAdvisories();
 		for (int i = 0; i < IMG_NUM_SIZE; i++) {
 			RepositoryEntity image = images.get(random.nextInt(images.size()));
 			boolean activeState = random.nextBoolean();

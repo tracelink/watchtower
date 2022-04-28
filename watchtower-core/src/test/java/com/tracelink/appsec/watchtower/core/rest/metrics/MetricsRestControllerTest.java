@@ -2,6 +2,7 @@ package com.tracelink.appsec.watchtower.core.rest.metrics;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.json.JSONArray;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.google.common.collect.Streams;
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
@@ -136,13 +136,12 @@ public class MetricsRestControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
 	public void testGetScanTypes() throws Exception {
+		Stream<ScanType> sts = Stream
+				.concat(Arrays.stream(CodeScanType.values()),
+						Arrays.stream(ImageScanType.values()));
 		String jsonContent =
-				new JSONArray(Streams
-						.concat(Arrays.stream(CodeScanType.values()),
-								Arrays.stream(ImageScanType.values()))
-						.map(ScanType::getTypeName)
-						.collect(Collectors.toList()))
-								.toString();
+				new JSONArray(sts.map(ScanType::getTypeName).collect(Collectors.toList()))
+						.toString();
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/metrics/scantypes"))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
