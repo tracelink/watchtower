@@ -1,10 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
-import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Interface for common API integration functions to test connections to remote services and rgister
@@ -23,24 +20,15 @@ public interface IWatchtowerApi {
 	void testClientConnection() throws ApiIntegrationException;
 
 	/**
-	 * Registers a Watchtower scan webhook for the remote service, and updates the status of the API
-	 * integration entity associated with this API. May create a programmatic API key for the remote
-	 * service to authenticate to Watchtower.
+	 * Registers a Watchtower scan webhook for the remote service. May create credentials for the
+	 * remote service to authenticate to Watchtower.
 	 *
-	 * @param apiKeyFunction        function to create a new programmatic API key from an apiLabel
-	 * @param registerStateConsumer consumer to save register state on the API integration entity
+	 * @param passwordEncoder password encoder to hash any credentials
 	 */
-	void register(Function<String, ApiKeyEntity> apiKeyFunction,
-			Consumer<ApiIntegrationEntity> registerStateConsumer);
+	void register(PasswordEncoder passwordEncoder);
 
 	/**
-	 * Unregisters the Watchtower scan webhook for the remote service, and updates the status of
-	 * the API integration entity associated with this API. Responsible for deleting the
-	 * programmatic API key that the remote service used to authenticate to Watchtower.
-	 *
-	 * @param apiKeyConsumer        consumer to delete a programmatic API key from an apiLabel
-	 * @param registerStateConsumer consumer to save register state on the API integration entity
+	 * Unregisters the Watchtower scan webhook for the remote service.
 	 */
-	void unregister(Consumer<String> apiKeyConsumer,
-			Consumer<ApiIntegrationEntity> registerStateConsumer);
+	void unregister();
 }

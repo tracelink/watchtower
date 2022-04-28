@@ -40,6 +40,9 @@ public abstract class ApiIntegrationEntity {
 	@Column(name = "register_error")
 	private String registerError;
 
+	@Column(name = "watchtower_secret")
+	private String watchtowerSecret;
+
 	public long getIntegrationId() {
 		return integrationId;
 	}
@@ -70,6 +73,14 @@ public abstract class ApiIntegrationEntity {
 
 	public void setRegisterError(String registerError) {
 		this.registerError = registerError;
+	}
+
+	public String getWatchtowerSecret() {
+		return watchtowerSecret;
+	}
+
+	public void setWatchtowerSecret(String watchtowerSecret) {
+		this.watchtowerSecret = watchtowerSecret;
 	}
 
 	/**

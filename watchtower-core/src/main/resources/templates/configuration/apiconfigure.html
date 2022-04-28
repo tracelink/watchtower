@@ -28,7 +28,7 @@
               <button type="submit" class="btn btn-warning mr-2">Unregister</button>
             </form>
             <form
-                th:if="${#lists.contains({'Not Supported', 'Not Registered'}, entity?.registerState?.displayName)}"
+                th:if="${#lists.contains({'Not Supported', 'Not Registered', 'Failed'}, entity?.registerState?.displayName)}"
                 class="form-inline" method="POST" action="/apisettings/delete">
               <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
               <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>

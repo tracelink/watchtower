@@ -1,10 +1,12 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
 import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,12 +18,12 @@ import org.springframework.stereotype.Service;
 public class ApiIntegrationService {
 
 	private final ApiIntegrationRepository apiRepo;
-	private final ApiUserService apiUserService;
+	private final PasswordEncoder passwordEncoder;
 
 	public ApiIntegrationService(@Autowired ApiIntegrationRepository apiRepo,
-			@Autowired ApiUserService apiUserService) {
+			@Autowired PasswordEncoder passwordEncoder) {
 		this.apiRepo = apiRepo;
-		this.apiUserService = apiUserService;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	/**
@@ -68,8 +70,8 @@ public class ApiIntegrationService {
 			return;
 		}
 		// Ensure that integration entity is in a valid state
-		if (!Arrays.asList(RegisterState.NOT_SUPPORTED, RegisterState.NOT_REGISTERED)
-				.contains(integrationEntity.getRegisterState())) {
+		if (!Arrays.asList(RegisterState.NOT_SUPPORTED, RegisterState.NOT_REGISTERED,
+				RegisterState.FAILED).contains(integrationEntity.getRegisterState())) {
 			throw new ApiIntegrationException("API integration cannot be deleted in state "
 					+ integrationEntity.getRegisterState().getDisplayName());
 		}
@@ -126,9 +128,26 @@ public class ApiIntegrationService {
 			throw new ApiIntegrationException("API integration cannot be registered in state "
 					+ integrationEntity.getRegisterState().getDisplayName());
 		}
+		// Set register state to in progress
+		integrationEntity.setRegisterState(RegisterState.IN_PROGRESS);
+		apiRepo.saveAndFlush(integrationEntity);
+
 		// Create API and register
 		IWatchtowerApi api = integrationEntity.createApi();
-		api.register(apiUserService::createProgrammaticApiKey, apiRepo::saveAndFlush);
+		registerAsync(api).whenCompleteAsync((v, e) -> {
+			if (e == null) {
+				integrationEntity.setRegisterState(RegisterState.REGISTERED);
+			} else {
+				integrationEntity.setRegisterState(RegisterState.FAILED);
+				integrationEntity.setRegisterError(e.getMessage());
+			}
+			upsertEntity(integrationEntity);
+		});
+	}
+
+	@Async
+	private CompletableFuture<Void> registerAsync(IWatchtowerApi api) {
+		return CompletableFuture.runAsync(() -> api.register(passwordEncoder));
 	}
 
 	/**
@@ -152,9 +171,27 @@ public class ApiIntegrationService {
 			throw new ApiIntegrationException("API integration cannot be unregistered in state "
 					+ integrationEntity.getRegisterState().getDisplayName());
 		}
-		// Create API and register
+		// Set register status to unregistered and delete error if it is set
+		integrationEntity.setRegisterState(RegisterState.IN_PROGRESS);
+		integrationEntity.setRegisterError(null);
+		apiRepo.saveAndFlush(integrationEntity);
+
+		// Create API and unregister
 		IWatchtowerApi api = integrationEntity.createApi();
-		api.unregister(apiUserService::deleteProgrammaticApiKey, this::upsertEntity);
+		unregisterAsync(api).whenCompleteAsync((v, e) -> {
+			if (e == null) {
+				integrationEntity.setRegisterState(RegisterState.NOT_REGISTERED);
+			} else {
+				integrationEntity.setRegisterState(RegisterState.FAILED);
+				integrationEntity.setRegisterError(e.getMessage());
+			}
+			upsertEntity(integrationEntity);
+		});
+	}
+
+	@Async
+	private CompletableFuture<Void> unregisterAsync(IWatchtowerApi api) {
+		return CompletableFuture.runAsync(api::unregister);
 	}
 
 }
