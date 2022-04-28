@@ -1,11 +1,8 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +17,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -106,7 +108,8 @@ public class ApiIntegrationControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testDeleteSettingsBadApi() throws Exception {
 		String apiLabel = "foobar";
-
+		BDDMockito.willThrow(new ApiIntegrationException("Unknown API Label")).given(mockApiService)
+				.delete(apiLabel);
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/apisettings/delete").param("apiLabel", apiLabel)
 						.with(SecurityMockMvcRequestPostProcessors.csrf()))

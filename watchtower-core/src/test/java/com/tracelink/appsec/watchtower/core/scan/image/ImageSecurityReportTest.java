@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrImageScanTest;
 
 public class ImageSecurityReportTest {
 
@@ -39,7 +41,7 @@ public class ImageSecurityReportTest {
 
 	@Test
 	public void testDAO() {
-		ImageScan image = ImageScanTest.buildStandardImageScan();
+		EcrImageScan image = EcrImageScanTest.buildStandardEcrImageScan();
 		ImageSecurityReport report = buildStandardReport(image);
 		Assertions.assertEquals(1, report.getFindings().size());
 		ImageSecurityFinding finding = report.getFindings().get(0);

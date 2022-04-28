@@ -1,5 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,11 +36,10 @@ public class ApiIntegrationServiceTest {
 
 	@Test
 	public void testUpdateBadLabel() {
-		Assertions.assertThrows(ApiIntegrationException.class, () -> {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			ApiIntegrationEntity apiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 			BDDMockito.when(apiEntity.getApiLabel()).thenReturn("test with spaces");
 			apiService.save(apiEntity);
-			BDDMockito.verify(apiRepo).saveAndFlush(BDDMockito.any());
 		});
 	}
 
@@ -46,6 +47,7 @@ public class ApiIntegrationServiceTest {
 	public void testDeleteExists() throws Exception {
 		ApiIntegrationEntity entity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(entity.getApiLabel()).thenReturn("foo");
+		BDDMockito.when(entity.getRegisterState()).thenReturn(RegisterState.NOT_REGISTERED);
 		BDDMockito.when(apiRepo.findByApiLabel(BDDMockito.anyString())).thenReturn(entity);
 		apiService.delete("foo");
 		BDDMockito.verify(apiRepo).delete(entity);
@@ -54,14 +56,26 @@ public class ApiIntegrationServiceTest {
 
 	@Test
 	public void testDeleteNotExists() throws Exception {
+		BDDMockito.when(apiRepo.findByApiLabel(BDDMockito.anyString())).thenReturn(null);
+		try {
+			apiService.delete("foo");
+		} catch (ApiIntegrationException e) {
+			MatcherAssert.assertThat(e.getMessage(), Matchers.containsString("Unknown API"));
+		}
+	}
+
+	@Test
+	public void testDeleteBadState() throws Exception {
 		ApiIntegrationEntity entity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(entity.getApiLabel()).thenReturn("foo");
-		BDDMockito.when(apiRepo.findByApiLabel(BDDMockito.anyString())).thenReturn(null);
-
-		apiService.delete("foo");
-
-		BDDMockito.verify(apiRepo, BDDMockito.times(0)).delete(BDDMockito.any());
-		BDDMockito.verify(apiRepo, BDDMockito.times(0)).flush();
+		BDDMockito.when(entity.getRegisterState()).thenReturn(RegisterState.REGISTERED);
+		BDDMockito.when(apiRepo.findByApiLabel(BDDMockito.anyString())).thenReturn(entity);
+		try {
+			apiService.delete("foo");
+		} catch (ApiIntegrationException e) {
+			MatcherAssert.assertThat(e.getMessage(),
+					Matchers.containsString("API integration cannot be deleted in state"));
+		}
 	}
 
 	@Test

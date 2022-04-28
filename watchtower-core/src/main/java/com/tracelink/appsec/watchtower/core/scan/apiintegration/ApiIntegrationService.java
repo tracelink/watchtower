@@ -1,13 +1,15 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 
 /**
  * Handles all logic related to the API Integration Entities
@@ -61,13 +63,14 @@ public class ApiIntegrationService {
 	 * delete it from the backend
 	 *
 	 * @param apiLabel the api label of the integration entity to delete from the backend
-	 * @throws ApiIntegrationException if the entity is not in a state where it can be deleted
+	 * @throws ApiIntegrationException if the entity is unknown or not in a state where it can be
+	 *                                 deleted
 	 */
 	public void delete(String apiLabel) throws ApiIntegrationException {
 		// Get integration entity for given label
 		ApiIntegrationEntity integrationEntity = apiRepo.findByApiLabel(apiLabel);
 		if (integrationEntity == null) {
-			return;
+			throw new ApiIntegrationException("Unknown API Label");
 		}
 		// Ensure that integration entity is in a valid state
 		if (!Arrays.asList(RegisterState.NOT_SUPPORTED, RegisterState.NOT_REGISTERED,

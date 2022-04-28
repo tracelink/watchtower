@@ -28,8 +28,8 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
@@ -183,6 +183,7 @@ public class PRScanningServiceTest {
 
 		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(mockApiEntity.getScanType()).thenReturn(CodeScanType.PULL_REQUEST);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
 
@@ -266,6 +267,7 @@ public class PRScanningServiceTest {
 
 		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(mockApiEntity.getScanType()).thenReturn(CodeScanType.PULL_REQUEST);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
 
@@ -349,6 +351,7 @@ public class PRScanningServiceTest {
 
 		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
+		BDDMockito.when(mockApiEntity.getScanType()).thenReturn(CodeScanType.PULL_REQUEST);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
 

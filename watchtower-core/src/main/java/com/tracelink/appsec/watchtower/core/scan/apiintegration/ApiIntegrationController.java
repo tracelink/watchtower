@@ -1,13 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -16,6 +14,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 
 /**
  * Controller for all apisettings which stores and handles modifying setting to connect to external
@@ -91,8 +93,7 @@ public class ApiIntegrationController {
 			apiService.delete(apiLabel);
 		} catch (ApiIntegrationException e) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
-					"Unknown API Label");
-			return "redirect:/apisettings";
+					e.getMessage());
 		}
 		return "redirect:/apisettings";
 	}
