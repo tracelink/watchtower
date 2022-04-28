@@ -1,1 +1,0 @@
-ALTER TABLE api_keys MODIFY user_id BIGINT NULL;
