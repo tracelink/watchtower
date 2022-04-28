@@ -1,41 +1,294 @@
 package com.tracelink.appsec.watchtower.core.scan.image.api.ecr;
 
-import java.util.List;
 
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
 import com.tracelink.appsec.watchtower.core.scan.image.api.IImageApi;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.waiters.WaiterResponse;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
+import software.amazon.awssdk.services.cloudformation.model.Capability;
+import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
+import software.amazon.awssdk.services.cloudformation.model.CreateStackRequest;
+import software.amazon.awssdk.services.cloudformation.model.CreateStackResponse;
+import software.amazon.awssdk.services.cloudformation.model.DeleteStackRequest;
+import software.amazon.awssdk.services.cloudformation.model.DeleteStackResponse;
+import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
+import software.amazon.awssdk.services.cloudformation.model.DescribeStacksResponse;
+import software.amazon.awssdk.services.cloudformation.model.OnFailure;
+import software.amazon.awssdk.services.cloudformation.model.Parameter;
+import software.amazon.awssdk.services.cloudformation.waiters.CloudFormationWaiter;
+import software.amazon.awssdk.services.ecr.EcrClient;
+import software.amazon.awssdk.services.ecr.model.Attribute;
+import software.amazon.awssdk.services.ecr.model.BatchDeleteImageRequest;
+import software.amazon.awssdk.services.ecr.model.BatchDeleteImageResponse;
+import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsRequest;
+import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsResponse;
+import software.amazon.awssdk.services.ecr.model.FindingSeverity;
+import software.amazon.awssdk.services.ecr.model.ImageIdentifier;
+import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
+import software.amazon.awssdk.services.ecr.paginators.DescribeImageScanFindingsIterable;
 
+/**
+ * API to communicate with AWS ECR for image scans. Holds a reference to an {@link
+ * EcrIntegrationEntity} to authenticate to ECR and CloudFormation in AWS.
+ *
+ * @author mcool
+ */
 public class EcrApi implements IImageApi {
 
+	private static final Logger LOG = LoggerFactory.getLogger(EcrApi.class);
+	private static final String STACK_TEMPLATE = "static/ecr-watchtower-webhook-template.json";
+	private static final String STACK_NAME = "ecr-watchtower-webhook";
+	private static final String TEST_CONNECTION_MSG = "Cannot %s via %s";
+
+	private final EcrIntegrationEntity ecrIntegrationEntity;
+	private final CloudFormationClient cfClient;
+	private final EcrClient ecrClient;
+	private final String watchtowerEndpoint;
+
 	public EcrApi(EcrIntegrationEntity ecrIntegrationEntity) {
-		// TODO Auto-generated constructor stub
+		this.ecrIntegrationEntity = ecrIntegrationEntity;
+		Region region = Region.of(ecrIntegrationEntity.getRegion());
+		StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(
+				AwsBasicCredentials.create(ecrIntegrationEntity.getAwsAccessKey(),
+						ecrIntegrationEntity.getAwsSecretKey()));
+		this.cfClient = CloudFormationClient.builder().region(region)
+				.credentialsProvider(credentialsProvider).build();
+		this.ecrClient = EcrClient.builder().region(region)
+				.credentialsProvider(credentialsProvider).build();
+		this.watchtowerEndpoint = ServletUriComponentsBuilder.fromCurrentContextPath()
+				.pathSegment("rest", "imagescan", ecrIntegrationEntity.getApiLabel()).build()
+				.toString();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void testClientConnection() throws ApiIntegrationException {
-		// TODO Auto-generated method stub
+		// Check CloudFormation API access
+		String createStackMessage = String
+				.format(TEST_CONNECTION_MSG, "create stack", "CloudFormation");
+		CreateStackResponse createStackResponse = sendAwsRequest(() -> cfClient
+				.createStack(CreateStackRequest.builder().build()), createStackMessage);
+		if (createStackResponse.sdkHttpResponse().statusCode() != 400) {
+			throw new ApiIntegrationException(createStackMessage);
+		}
+		String describeStacksMessage = String
+				.format(TEST_CONNECTION_MSG, "describe stacks", "CloudFormation");
+		DescribeStacksResponse describeStacksResponse = sendAwsRequest(() -> cfClient
+				.describeStacks(DescribeStacksRequest.builder().build()), describeStacksMessage);
+		if (describeStacksResponse.sdkHttpResponse().statusCode() != 400) {
+			throw new ApiIntegrationException(describeStacksMessage);
+		}
+		String deleteStackMessage = String
+				.format(TEST_CONNECTION_MSG, "delete stack", "CloudFormation");
+		DeleteStackResponse deleteStackResponse = sendAwsRequest(() -> cfClient
+				.deleteStack(DeleteStackRequest.builder().build()), deleteStackMessage);
+		if (deleteStackResponse.sdkHttpResponse().statusCode() != 400) {
+			throw new ApiIntegrationException(deleteStackMessage);
+		}
 
+		// Check ECR API access
+		String findingsMessage = String.format(TEST_CONNECTION_MSG, "get scan findings", "ECR");
+		DescribeImageScanFindingsResponse findingsResponse = sendAwsRequest(() -> ecrClient
+						.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
+				findingsMessage);
+		if (findingsResponse.sdkHttpResponse().statusCode() != 400) {
+			throw new ApiIntegrationException(findingsMessage);
+		}
+		String deleteImageMessage = String.format(TEST_CONNECTION_MSG, "delete image", "ECR");
+		BatchDeleteImageResponse deleteResponse = sendAwsRequest(() -> ecrClient
+				.batchDeleteImage(BatchDeleteImageRequest.builder().build()), deleteImageMessage);
+		if (deleteResponse.sdkHttpResponse().statusCode() != 400) {
+			throw new ApiIntegrationException(deleteImageMessage);
+		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public void register() {
-		// TODO Auto-generated method stub
+	public void register(PasswordEncoder passwordEncoder) {
+		// Generate secret for access to Watchtower
+		String secretKey = UUID.randomUUID().toString();
+		ecrIntegrationEntity.setWatchtowerSecret(passwordEncoder.encode(secretKey));
 
+		// Configure CloudFormation template parameters for request
+		List<Parameter> templateParameters = new ArrayList<>();
+		templateParameters.add(Parameter.builder().parameterKey("WatchtowerEndpoint")
+				.parameterValue(watchtowerEndpoint).build());
+		templateParameters.add(Parameter.builder().parameterKey("WatchtowerApiKeyId")
+				.parameterValue(ecrIntegrationEntity.getApiLabel()).build());
+		templateParameters.add(Parameter.builder().parameterKey("WatchtowerSecret")
+				.parameterValue(secretKey).build());
+
+		// Create CloudFormation stack
+		CreateStackRequest request;
+		try (InputStream is = getClass().getClassLoader().getResourceAsStream(STACK_TEMPLATE)) {
+			String template = IOUtils.toString(is, StandardCharsets.UTF_8);
+			request = CreateStackRequest.builder()
+					.stackName(STACK_NAME)
+					.templateBody(template)
+					.parameters(templateParameters)
+					.capabilities(Capability.CAPABILITY_NAMED_IAM)
+					.onFailure(OnFailure.DELETE).build();
+		} catch (NullPointerException | IOException e) {
+			LOG.warn("Cannot load CloudFormation template");
+			return;
+		}
+
+		cfClient.createStack(request);
+		CloudFormationWaiter waiter = cfClient.waiter();
+		DescribeStacksRequest stacksRequest = DescribeStacksRequest.builder().stackName(STACK_NAME)
+				.build();
+		WaiterResponse<DescribeStacksResponse> stacksResponse = waiter
+				.waitUntilStackCreateComplete(stacksRequest);
+		stacksResponse.matched().exception().ifPresent(e -> {
+			throw CloudFormationException.builder().message(e.getMessage()).cause(e).build();
+		});
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void unregister() {
+		// Delete secret associated with this entity
+		ecrIntegrationEntity.setWatchtowerSecret(null);
+
+		// Delete CloudFormation stack
+		DeleteStackRequest request = DeleteStackRequest.builder().stackName(STACK_NAME).build();
+		cfClient.deleteStack(request);
+		CloudFormationWaiter waiter = cfClient.waiter();
+		DescribeStacksRequest stacksRequest = DescribeStacksRequest.builder().stackName(STACK_NAME)
+				.build();
+		WaiterResponse<DescribeStacksResponse> stacksResponse = waiter
+				.waitUntilStackDeleteComplete(stacksRequest);
+		stacksResponse.matched().exception().ifPresent(e -> {
+			throw CloudFormationException.builder().message(e.getMessage()).cause(e).build();
+		});
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void rejectImage(ImageScan image, List<ImageViolationEntity> violations) {
-		// TODO Auto-generated method stub
-
+		BatchDeleteImageRequest request = BatchDeleteImageRequest.builder()
+				.registryId(image.getApiLabel())
+				.repositoryName(image.getRepository())
+				.imageIds(Collections
+						.singleton(ImageIdentifier.builder().imageTag(image.getTag()).build()))
+				.build();
+		BatchDeleteImageResponse result = ecrClient.batchDeleteImage(request);
+		if (result.failures().isEmpty()) {
+			LOG.info("Deleted image with tag '{}' from repository '{}'", image.getTag(),
+					image.getRepository());
+		} else {
+			result.failures().forEach(failure -> {
+				LOG.warn("Failed to delete image with tag '{}' from repository '{}': {}",
+						image.getTag(), image.getRepository(), failure.failureReason());
+			});
+		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public ImageSecurityReport getSecurityReportForImage(ImageScan image) {
-		// TODO Auto-generated method stub
-		return null;
+		DescribeImageScanFindingsRequest request = DescribeImageScanFindingsRequest.builder()
+				.imageId(ImageIdentifier.builder().imageTag(image.getTag()).build())
+				.registryId(image.getRegistry())
+				.repositoryName(image.getRepository())
+				.maxResults(1000)
+				.build();
+
+		// Iterate through all pages of findings
+		DescribeImageScanFindingsIterable responses = ecrClient
+				.describeImageScanFindingsPaginator(request);
+		List<ImageSecurityFinding> findings = responses.stream()
+				.flatMap(response -> response.imageScanFindings().findings().stream())
+				.map(this::createImageSecurityFinding)
+				.collect(Collectors.toList());
+
+		ImageSecurityReport report = new ImageSecurityReport(image);
+		report.setFindings(findings);
+		return report;
+	}
+
+	private ImageSecurityFinding createImageSecurityFinding(ImageScanFinding imageScanFinding) {
+		ImageSecurityFinding finding = new ImageSecurityFinding();
+		finding.setSeverity(convertSeverityToRulePriority(imageScanFinding.severity()));
+		Map<String, String> attributesMap = imageScanFinding.attributes().stream()
+				.collect(Collectors.toMap(Attribute::key, Attribute::value));
+		finding.setPackageName(attributesMap.getOrDefault("package_name", "N/A"));
+		finding.setPackageVersion(
+				attributesMap.getOrDefault("package_version", "N/A"));
+		finding.setScore(attributesMap.getOrDefault("CVSS2_SCORE", "N/A"));
+		finding.setVector(attributesMap.getOrDefault("CVSS2_VECTOR", "N/A"));
+		finding.setFindingName(imageScanFinding.name());
+		finding.setDescription(imageScanFinding.description());
+		finding.setUri(imageScanFinding.uri());
+		return finding;
+	}
+
+	private RulePriority convertSeverityToRulePriority(FindingSeverity severity) {
+		switch (severity) {
+			case CRITICAL:
+			case HIGH:
+				return RulePriority.HIGH;
+			case MEDIUM:
+				return RulePriority.MEDIUM;
+			case LOW:
+			case INFORMATIONAL:
+			case UNDEFINED:
+			case UNKNOWN_TO_SDK_VERSION:
+			default:
+				return RulePriority.LOW;
+		}
+	}
+
+	/**
+	 * Helper to wrap AWS requests in a try/catch to throw an appropriate exception. Uses the given
+	 * message for any thrown exception.
+	 *
+	 * @param request supplier for the request to execute
+	 * @param message message to include with the thrown exception
+	 * @param <T>     type of the AWS response
+	 * @return the AWS response
+	 * @throws ApiIntegrationException if any exception occurs during the request
+	 */
+	private <T> T sendAwsRequest(Supplier<T> request, String message)
+			throws ApiIntegrationException {
+		try {
+			return request.get();
+		} catch (Exception e) {
+			throw new ApiIntegrationException(message + ": " + e.getMessage());
+		}
 	}
 
 }

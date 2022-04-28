@@ -9,8 +9,8 @@ import org.springframework.stereotype.Repository;
  * @author csmith
  */
 @Repository(value = "apiIntegrationRepo")
-public interface APIIntegrationRepository extends JpaRepository<APIIntegrationEntity, Long> {
+public interface ApiIntegrationRepository extends JpaRepository<ApiIntegrationEntity, Long> {
 
-	APIIntegrationEntity getByApiLabel(String apiLabel);
+	ApiIntegrationEntity findByApiLabel(String apiLabel);
 
 }

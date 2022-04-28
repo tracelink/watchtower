@@ -1,10 +1,9 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
 /**
- * Thrown to indicate an issue has happened related to an {@linkplain APIIntegrationEntity}
- * 
- * @author csmith
+ * Thrown to indicate an issue has happened related to an {@linkplain ApiIntegrationEntity}
  *
+ * @author csmith
  */
 public class ApiIntegrationException extends Exception {
 

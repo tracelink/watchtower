@@ -25,7 +25,7 @@ import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
@@ -62,7 +62,7 @@ public class PRScanResultServiceTest {
 	private RuleService mockRuleService;
 
 	@MockBean
-	private APIIntegrationService mockApiService;
+	private ApiIntegrationService mockApiService;
 
 	@RegisterExtension
 	public CoreLogWatchExtension logWatcher =

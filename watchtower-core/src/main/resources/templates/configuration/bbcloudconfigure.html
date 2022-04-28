@@ -1,26 +1,19 @@
-<form  method="POST" action="/apisettings/update">
-    <div class="form-row">
-        <div class="form-group col">
-            <label class="font-weight-bold">API Label</label>
-            <input type="text" class="form-control" placeholder="API Base" name="apiLabel" th:value="${entity?.apiLabel}"/>
-        </div>
-        <div class="form-group col">
-            <label class="font-weight-bold">Workspace</label>
-            <input type="text" class="form-control" placeholder="Workspace" name="workspace" th:value="${entity?.workspace}"/>
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col">
-            <label class="font-weight-bold">Username</label>
-            <input type="text" class="form-control" placeholder="Username" name="user"  th:value="${entity?.user}"/>
-        </div>
-        <div class="form-group col">
-            <label class="font-weight-bold">Authentication</label>
-            <input type="password" class="form-control" th:placeholder="${entity==null ? 'Authentication' : 'Hidden For Security'}" name="auth"/>
-        </div>
-    </div>
-    <input type="hidden" name="apiId" th:value="${entity?.integrationId}"/>
-    <input type="hidden" name="apiType" th:value="${apiType.typeName}"/>
-    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-    <button class="btn btn-primary" type="Submit">Update API Setting</button>
-</form>
+<div class="form-row">
+  <div class="form-group col">
+    <label for="workspace">Workspace</label>
+    <input type="text" class="form-control" placeholder="Workspace" id="workspace" name="workspace"
+           th:value="${entity?.workspace}"/>
+  </div>
+  <div class="form-group col">
+    <label for="user">Username</label>
+    <input type="text" class="form-control" placeholder="Username" id="user" name="user"
+           th:value="${entity?.user}"/>
+  </div>
+  <div class="form-group col">
+    <label for="auth">Authentication</label>
+    <input type="password" class="form-control"
+           th:placeholder="${entity==null ? 'Authentication' : 'Hidden For Security'}" id="auth"
+           name="auth"/>
+  </div>
+</div>
+

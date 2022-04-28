@@ -1,14 +1,12 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
-
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import kong.unirest.json.JSONObject;
 
 /**
@@ -19,6 +17,7 @@ import kong.unirest.json.JSONObject;
  * @author csmith
  */
 public class BBPullRequest extends PullRequest {
+
 	public BBPullRequest(String apiLabel) {
 		super(apiLabel);
 	}
@@ -27,10 +26,10 @@ public class BBPullRequest extends PullRequest {
 	 * Fill this pull request with data from a Bitbucket webhook. The webhook contains pull request
 	 * json and repository json
 	 *
-	 * @param json the webhook json string
+	 * @param requestBody the webhook json string
 	 */
-	public void parseJsonFromWebhook(String json) {
-		DocumentContext doc = JsonPath.parse(json);
+	public void populateFromRequest(String requestBody) {
+		DocumentContext doc = JsonPath.parse(requestBody);
 		String pullRequestJson = JSONObject.valueToString(doc.read("$.pullrequest"));
 		String repoJson = JSONObject.valueToString(doc.read("$.repository"));
 

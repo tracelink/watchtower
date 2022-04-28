@@ -1,18 +1,17 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.bb;
 
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBPullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBPullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
-
 public class BBPullRequestTest {
+
 	public static String author = "author";
 	public static String sourceBranch = "sourceBranch";
 	public static String sourceHash = "0123456789";
@@ -26,7 +25,7 @@ public class BBPullRequestTest {
 	@Test
 	public void testBuildFromJSON() throws JSONException {
 		BBPullRequest bbpr = new BBPullRequest("");
-		bbpr.parseJsonFromWebhook(buildStandardJSONString());
+		bbpr.populateFromRequest(buildStandardJSONString());
 		Assertions.assertEquals(author, bbpr.getAuthor());
 		Assertions.assertEquals(sourceBranch, bbpr.getSourceBranch());
 		Assertions.assertEquals(destinationBranch, bbpr.getDestinationBranch());

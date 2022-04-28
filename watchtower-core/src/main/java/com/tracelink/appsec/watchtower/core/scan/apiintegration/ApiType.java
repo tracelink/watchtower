@@ -1,11 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import java.util.Map;
-
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
-
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
 
 /**
  * Enumeration of all API types configured and understood in watchtower.
@@ -18,22 +14,16 @@ public enum ApiType {
 	 */
 	BITBUCKET_CLOUD("Bitbucket Cloud", "configuration/bbcloudconfigure") {
 		@Override
-		public APIIntegrationEntity makeEntityForParams(
-				Map<String, String> parameters) throws ApiIntegrationException {
-			BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
-			entity.configureEntityFromParameters(parameters);
-			return entity;
+		public ApiIntegrationEntity createApiIntegrationEntity() {
+			return new BBCloudIntegrationEntity();
 		}
 	},
 	ECR("Amazon ECR", "configuration/ecrconfigure") {
 		@Override
-		public APIIntegrationEntity makeEntityForParams(Map<String, String> parameters)
-				throws ApiIntegrationException {
-			// TODO
-			return null;
+		public ApiIntegrationEntity createApiIntegrationEntity() {
+			return new EcrIntegrationEntity();
 		}
-	},
-	;
+	};
 
 	private final String typeName;
 	private final String template;
@@ -52,7 +42,7 @@ public enum ApiType {
 	 * Get the Template used to show a UI to create OR update this object's api entity. It is
 	 * expected that the template should at least contain the entity's Label and ID as the
 	 * parameters "apiLabel" and "apiId" respectively.
-	 * 
+	 *
 	 * @return the template name used for creating and updating an api entity for this type
 	 */
 	public String getTemplate() {
@@ -60,14 +50,11 @@ public enum ApiType {
 	}
 
 	/**
-	 * Create and fill the correct entity for the given {@linkplain ApiType} and request parameters
-	 * 
-	 * @param parameters the request parameters
-	 * @return an {@linkplain APIIntegrationEntity} filled with values from the request params
-	 * @throws ApiIntegrationException if the entity cannot be created
+	 * Create API integration entity for this {@linkplain ApiType} from the given request parameters
+	 *
+	 * @return an {@linkplain ApiIntegrationEntity} filled with values from the request params
 	 */
-	public abstract APIIntegrationEntity makeEntityForParams(
-			Map<String, String> parameters) throws ApiIntegrationException;
+	public abstract ApiIntegrationEntity createApiIntegrationEntity();
 
 	/**
 	 * Given a string name of the API type, match to an ApiType object, or null if no match was made
@@ -82,25 +69,5 @@ public enum ApiType {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Converts the {@linkplain ApiType} into a String for storage in the DB
-	 *
-	 * @author csmith
-	 */
-	@Converter
-	public static class ApiTypeConverter implements AttributeConverter<ApiType, String> {
-
-		@Override
-		public String convertToDatabaseColumn(ApiType attribute) {
-			return attribute.getTypeName();
-		}
-
-		@Override
-		public ApiType convertToEntityAttribute(String dbData) {
-			return ApiType.typeForName(dbData);
-		}
-
 	}
 }

@@ -1,19 +1,17 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.api;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * An interface for interacting with SCMs in order to work with pull requests, repositories, etc.
- * 
- * @author csmith
  *
+ * @author csmith
  */
 public interface IScmApi extends IWatchtowerApi {
 
@@ -27,7 +25,7 @@ public interface IScmApi extends IWatchtowerApi {
 
 	/**
 	 * Download the complete source of the current code base under examination
-	 * 
+	 *
 	 * @param pullRequest     the pull request to download the source of
 	 * @param targetDirectory the location to download the complete code
 	 * @throws IOException if any streaming/file exceptions occur
@@ -56,7 +54,7 @@ public interface IScmApi extends IWatchtowerApi {
 
 	/**
 	 * Notifies pull request of result/status of the report. Implementation is SCM specific
-	 * 
+	 *
 	 * @param pullRequest the pull request to send the comment to
 	 * @param comment     the formatted comment content
 	 */
@@ -64,14 +62,14 @@ public interface IScmApi extends IWatchtowerApi {
 
 	/**
 	 * Sends signal to SCM to block the pull request Implementation is SCM specific
-	 * 
+	 *
 	 * @param pullRequest the pull request to block
 	 */
 	void blockPR(PullRequest pullRequest);
 
 	/**
 	 * For a given repository, get all currently open pull requests
-	 * 
+	 *
 	 * @param repoName the repository name to search for open pull requests
 	 * @return a list of open pull requests
 	 */
@@ -79,7 +77,7 @@ public interface IScmApi extends IWatchtowerApi {
 
 	/**
 	 * For a given repository, test if the repository is still active in the SCM
-	 * 
+	 *
 	 * @param repoName the repository name to check
 	 * @return true if the repo still exists in the SCM, false otherwise
 	 */

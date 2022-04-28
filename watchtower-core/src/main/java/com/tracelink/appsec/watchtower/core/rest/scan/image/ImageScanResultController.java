@@ -1,9 +1,15 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanningService;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-
+import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,25 +20,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanningService;
-
-import net.minidev.json.JSONObject;
-
 @RestController
 @RequestMapping("/rest/imagescan/result")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_RESULTS_NAME + "')")
 public class ImageScanResultController {
-	private ImageScanResultService resultService;
+
+	private final ImageScanResultService resultService;
 
 	public ImageScanResultController(@Autowired ImageScanningService scanService,
-			@Autowired ImageScanResultService resultService,
-			@Autowired APIIntegrationService apiService) {
+			@Autowired ImageScanResultService resultService) {
 		this.resultService = resultService;
 	}
 
@@ -45,11 +41,9 @@ public class ImageScanResultController {
 		int pageNum = page.orElse(0);
 		List<ImageScanResult> results =
 				resultService.getScanResultsWithFilters(resultFilter, 10, pageNum);
-		String next =
-				uriBuilder
-						.replacePath(Paths.get("rest/scan/result", resultFilter.getName(),
-								String.valueOf(pageNum + 1)).toString())
-						.build().encode().toUriString();
+		String next = uriBuilder.replacePath(
+				Paths.get("rest/scan/result", resultFilter.getName(), String.valueOf(pageNum + 1))
+						.toString()).build().encode().toUriString();
 		JSONObject obj = new JSONObject();
 		if (!results.isEmpty()) {
 			obj.put("next", next);

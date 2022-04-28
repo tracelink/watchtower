@@ -1,5 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service;
 
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,42 +18,28 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
-
 /**
  * The Synchronizer is used to check back against all SCMs for all unresolved PRs to see if the PRs
  * have been declined or superceded or otherwise "resolved"
- * 
- * @author csmith
  *
+ * @author csmith
  */
 @Component
 public class PullRequestSynchronizer {
-	private static Logger LOG = LoggerFactory.getLogger(PullRequestSynchronizer.class);
 
+	private static final Logger LOG = LoggerFactory.getLogger(PullRequestSynchronizer.class);
 	private static final String SKIP_DEV_PROFILE = "dev";
 
 	private final Environment environment;
-
-	private PRContainerRepository prRepo;
-
-	private PRScanResultService prResultService;
-
-	private APIIntegrationService apiIntegrationService;
+	private final PRContainerRepository prRepo;
+	private final PRScanResultService prResultService;
+	private final ApiIntegrationService apiIntegrationService;
 
 	public PullRequestSynchronizer(
 			@Autowired Environment environment,
 			@Autowired PRContainerRepository prRepo,
 			@Autowired PRScanResultService prResultService,
-			@Autowired APIIntegrationService apiIntegrationService) {
+			@Autowired ApiIntegrationService apiIntegrationService) {
 		this.environment = environment;
 		this.prRepo = prRepo;
 		this.prResultService = prResultService;
@@ -76,7 +70,7 @@ public class PullRequestSynchronizer {
 			for (PullRequestContainerEntity entity : prPage) {
 				try {
 					PullRequest pr = entity.toPullRequest();
-					APIIntegrationEntity apiEntity =
+					ApiIntegrationEntity apiEntity =
 							apiIntegrationService.findByLabel(pr.getApiLabel());
 					IScmApi api = (IScmApi) apiEntity.createApi();
 					PullRequest filledPR = api.updatePRData(pr);
@@ -85,7 +79,7 @@ public class PullRequestSynchronizer {
 						numResolved++;
 					}
 
-				} catch (ScanRejectedException | ApiIntegrationException e) {
+				} catch (ScanRejectedException e) {
 					LOG.error("Error while creating api for data sync", e);
 				}
 			}

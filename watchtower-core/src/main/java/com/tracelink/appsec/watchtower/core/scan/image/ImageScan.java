@@ -1,49 +1,47 @@
 package com.tracelink.appsec.watchtower.core.scan.image;
 
-public class ImageScan {
-	private String apiLabel;
+import com.tracelink.appsec.watchtower.core.rest.scan.AbstractScan;
 
-	private String imageName;
+/**
+ * Abstract class to hold necessary info for an image scan request.
+ *
+ * @author csmith, mcool
+ */
+public abstract class ImageScan extends AbstractScan {
 
-	private String tagName;
+	private String registry;
+	private String repository;
+	private String tag;
 
-	private long submitTime;
+	public ImageScan(String apiLabel) {
+		super(apiLabel);
+	}
 
 	public String getScanName() {
-		return getImageName() + ":" + getTagName();
+		return getRepository() + ":" + getTag();
 	}
 
-	public String getApiLabel() {
-		return apiLabel;
+	public String getRegistry() {
+		return registry;
 	}
 
-	public void setApiLabel(String apiLabel) {
-		this.apiLabel = apiLabel;
+	public void setRegistry(String registry) {
+		this.registry = registry;
 	}
 
-	public String getImageName() {
-		return imageName;
+	public String getRepository() {
+		return repository;
 	}
 
-	public void setImageName(String imageName) {
-		this.imageName = imageName;
+	public void setRepository(String repository) {
+		this.repository = repository;
 	}
 
-	public String getTagName() {
-		return tagName;
+	public String getTag() {
+		return tag;
 	}
 
-	public void setTagName(String tagName) {
-		this.tagName = tagName;
+	public void setTag(String tag) {
+		this.tag = tag;
 	}
-
-	public long getSubmitTime() {
-		return submitTime;
-	}
-
-	public void setSubmitTime(long submitTime) {
-		this.submitTime = submitTime;
-	}
-
-
 }

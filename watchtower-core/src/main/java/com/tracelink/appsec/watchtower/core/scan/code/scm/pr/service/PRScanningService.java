@@ -1,27 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
+import ch.qos.logback.classic.Level;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.logging.LogsService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
-import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PRScanAgent;
@@ -29,35 +15,40 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
-
-import ch.qos.logback.classic.Level;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 /**
  * Manages creating scans for Pull Requests
- * 
- * @author csmith
  *
+ * @author csmith
  */
 @Service
 public class PRScanningService extends AbstractScanningService {
-	private static Logger LOG = LoggerFactory.getLogger(PRScanningService.class);
 
-	private LogsService logService;
+	private static final Logger LOG = LoggerFactory.getLogger(PRScanningService.class);
 
-	private RepositoryService repoService;
-
-	private PRScanResultService prScanResultService;
-
-	private ScanRegistrationService scanRegistrationService;
-
-	private APIIntegrationService apiService;
+	private final LogsService logService;
+	private final RepositoryService repoService;
+	private final PRScanResultService prScanResultService;
+	private final ScanRegistrationService scanRegistrationService;
+	private final ApiIntegrationService apiService;
 
 	public PRScanningService(
 			@Autowired LogsService logService,
 			@Autowired RepositoryService repoService,
 			@Autowired PRScanResultService prScanResultService,
 			@Autowired ScanRegistrationService scanRegistrationService,
-			@Autowired APIIntegrationService apiService,
+			@Autowired ApiIntegrationService apiService,
 			@Value("${watchtower.threads.prscan:4}") int threads,
 			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
 		super(threads, recoverFromDowntime);
@@ -75,11 +66,9 @@ public class PRScanningService extends AbstractScanningService {
 	 * @throws RejectedExecutionException if the async manager cannot handle another task
 	 * @throws ScanRejectedException      If the scan could not be started due to a configuration
 	 *                                    problem
-	 * @throws ApiIntegrationException    if the api client could not be created
 	 */
 	public void doPullRequestScan(PullRequest pr)
-			throws RejectedExecutionException, ScanRejectedException, ApiIntegrationException {
-		pr.setSubmitTime(System.currentTimeMillis());
+			throws RejectedExecutionException, ScanRejectedException {
 		String prName = pr.getPRString();
 		if (isQuiesced()) {
 			LOG.error("Quiesced. Did not schedule PR: " + prName);
@@ -102,7 +91,7 @@ public class PRScanningService extends AbstractScanningService {
 			LOG.info("PR: " + prName + " skipped as there are no scanners configured.");
 			return;
 		}
-		APIIntegrationEntity apiEntity = apiService.findByLabel(pr.getApiLabel());
+		ApiIntegrationEntity apiEntity = apiService.findByLabel(pr.getApiLabel());
 		IScmApi api = (IScmApi) apiEntity.createApi();
 		pr = api.updatePRData(pr);
 
@@ -127,9 +116,13 @@ public class PRScanningService extends AbstractScanningService {
 	@Override
 	protected void recoverFromDowntime() {
 		List<PullRequest> prs = new ArrayList<>();
-		Map<String, List<RepositoryEntity>> repoMap =
-				repoService.getAllRepos(CodeScanType.PULL_REQUEST);
-		for (APIIntegrationEntity entity : apiService.getAllSettings()) {
+		Map<String, List<RepositoryEntity>> repoMap = repoService
+				.getAllRepos(CodeScanType.PULL_REQUEST);
+		for (ApiIntegrationEntity entity : apiService.getAllSettings()) {
+			// Only recover if API integration is configured for pull request scans
+			if (!entity.getScanType().equals(CodeScanType.PULL_REQUEST)) {
+				continue;
+			}
 			LOG.debug("Recovering using API " + entity.getApiLabel());
 			List<PullRequest> recovered = recoverByApi(repoMap, entity);
 			prs.addAll(recovered);
@@ -149,38 +142,29 @@ public class PRScanningService extends AbstractScanningService {
 	}
 
 	private List<PullRequest> recoverByApi(Map<String, List<RepositoryEntity>> repoMap,
-			APIIntegrationEntity entity) {
+			ApiIntegrationEntity entity) {
 		List<PullRequest> prs = new ArrayList<>();
-		try {
-			IWatchtowerApi wApi = entity.createApi();
-			if (!(wApi instanceof IScmApi)) {
-				LOG.debug("Skipping API " + entity.getApiLabel() + " wrong api implementation");
-				return prs;
+		IScmApi api = (IScmApi) entity.createApi();
+		List<RepositoryEntity> repos =
+				repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
+		for (RepositoryEntity repo : repos) {
+			if (!repo.isEnabled()) {
+				continue;
 			}
-			IScmApi api = (IScmApi) entity.createApi();
-			List<RepositoryEntity> repos =
-					repoMap.getOrDefault(entity.getApiLabel(), new ArrayList<>());
-			for (RepositoryEntity repo : repos) {
-				if (!repo.isEnabled()) {
-					continue;
-				}
-				String repoName = repo.getRepoName();
-				if (!api.isRepositoryActive(repoName)) {
-					LOG.info("Disabling dead repository " + repoName);
-					repoService.disableRepo(repo);
-				} else {
-					LOG.debug("Recovering Repo " + repoName);
-					List<PullRequest> recovered = recoverByRepo(entity, api, repo);
-					prs.addAll(recovered);
-				}
+			String repoName = repo.getRepoName();
+			if (!api.isRepositoryActive(repoName)) {
+				LOG.info("Disabling dead repository " + repoName);
+				repoService.disableRepo(repo);
+			} else {
+				LOG.debug("Recovering Repo " + repoName);
+				List<PullRequest> recovered = recoverByRepo(entity, api, repo);
+				prs.addAll(recovered);
 			}
-		} catch (ApiIntegrationException e) {
-			LOG.error("Could not create API " + entity.getApiLabel() + " for recovery", e);
 		}
 		return prs;
 	}
 
-	private List<PullRequest> recoverByRepo(APIIntegrationEntity entity, IScmApi api,
+	private List<PullRequest> recoverByRepo(ApiIntegrationEntity entity, IScmApi api,
 			RepositoryEntity repo) {
 		long repoLastReview = repo.getLastReviewedDate();
 		List<PullRequest> prUpdates = api.getOpenPullRequestsForRepository(repo.getRepoName())

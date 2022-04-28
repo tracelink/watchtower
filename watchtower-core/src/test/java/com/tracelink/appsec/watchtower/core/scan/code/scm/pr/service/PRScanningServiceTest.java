@@ -27,8 +27,8 @@ import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.APIIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
@@ -61,7 +61,7 @@ public class PRScanningServiceTest {
 	private ScanRegistrationService mockScanRegistrationService;
 
 	@MockBean
-	private APIIntegrationService mockApiService;
+	private ApiIntegrationService mockApiService;
 
 	@Mock
 	private PullRequest mockPR;
@@ -87,7 +87,7 @@ public class PRScanningServiceTest {
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
 		BDDMockito.when(mockScanRegistrationService.getCodeScanners())
 				.thenReturn(Collections.singleton(new MockScanner()));
-		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockEntity.createApi()).thenReturn(mockApi);
 		BDDMockito.when(mockApiService.findByLabel(BDDMockito.any())).thenReturn(mockEntity);
 		scanningService.doPullRequestScan(mockPR);
@@ -154,7 +154,7 @@ public class PRScanningServiceTest {
 
 		IScmApi mockApi = BDDMockito.mock(IScmApi.class);
 		BDDMockito.when(mockApi.updatePRData(BDDMockito.any())).thenAnswer(e -> e.getArgument(0));
-		APIIntegrationEntity mockEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockEntity.createApi()).thenReturn(mockApi);
 
 		BDDMockito.when(mockScanRegistrationService.hasCodeScanners()).thenReturn(true);
@@ -181,7 +181,7 @@ public class PRScanningServiceTest {
 						Collections.singletonMap(apiLabel,
 								Collections.singletonList(mockRepoEntity)));
 
-		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
@@ -264,7 +264,7 @@ public class PRScanningServiceTest {
 						Collections.singletonMap(apiLabel,
 								Collections.singletonList(mockRepoEntity)));
 
-		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));
@@ -347,7 +347,7 @@ public class PRScanningServiceTest {
 						Collections.singletonMap(apiLabel,
 								Collections.singletonList(mockRepoEntity)));
 
-		APIIntegrationEntity mockApiEntity = BDDMockito.mock(APIIntegrationEntity.class);
+		ApiIntegrationEntity mockApiEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(mockApiEntity.getApiLabel()).thenReturn(apiLabel);
 		BDDMockito.when(mockApiService.getAllSettings())
 				.thenReturn(Collections.singletonList(mockApiEntity));

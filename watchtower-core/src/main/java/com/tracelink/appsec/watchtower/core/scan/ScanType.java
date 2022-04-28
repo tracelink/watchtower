@@ -1,23 +1,28 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
-import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
-
+/**
+ * Represents the type of a Watchtower scan and provides a method to get a display name for the UI.
+ *
+ * @author csmith
+ */
 public interface ScanType extends Serializable {
-	public String getTypeName();
 
-	public String getDisplayName();
+	String getTypeName();
+
+	String getDisplayName();
 
 	@Converter
-	public static class ScanTypeConverter implements AttributeConverter<ScanType, String> {
+	class ScanTypeConverter implements AttributeConverter<ScanType, String> {
+
 		private static final List<ScanType> types = new ArrayList<>();
 
 		public ScanTypeConverter() {
