@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.rest.scan.image.result;
+package com.tracelink.appsec.watchtower.core.scan.image.result;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

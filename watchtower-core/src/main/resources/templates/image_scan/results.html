@@ -52,7 +52,7 @@
                            <tr th:each="result : ${results}">
                                <td class="py-1 localizetime" th:text="${result.getEndDateMillis()}" th:data-order="${result.getEndDateMillis()}">Scan End</td>
                                <td class="py-1" th:text="${result.getApiLabel()}">Api Label</td>
-                               <td class="py-1" th:text="${result.getImageName()}">Image Name</td>
+                               <td class="py-1" th:text="${result.getRepositoryName()}">Repository Name</td>
                                <td class="py-1" th:text="${result.getTagName()}">Tag Name</td>
                                <td class="py-1" th:text="${result.getViolations() == null ? 0 : result.getViolations().size()}">Violations</td>
                                <td class="py-1">

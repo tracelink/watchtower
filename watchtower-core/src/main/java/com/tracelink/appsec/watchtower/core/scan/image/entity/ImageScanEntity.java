@@ -45,4 +45,8 @@ public class ImageScanEntity
 		return violations;
 	}
 
+	public void setViolations(List<ImageViolationEntity> violations) {
+		this.violations = violations;
+	}
+
 }

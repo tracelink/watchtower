@@ -19,7 +19,7 @@ public class ImageAdvisoryService {
 	}
 
 	public AdvisoryEntity getOrCreateAdvisory(ImageScanViolation sv) {
-		AdvisoryEntity advisory = advisoryRepo.findByAdvisoryName(sv.getFindingName());
+		AdvisoryEntity advisory = findByName(sv.getFindingName());
 		if (advisory == null) {
 			advisory = new AdvisoryEntity();
 			advisory.setAdvisoryName(sv.getFindingName());

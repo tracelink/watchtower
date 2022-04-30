@@ -1,5 +1,15 @@
 package com.tracelink.appsec.watchtower.web.dev;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
@@ -15,14 +25,6 @@ import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryServ
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 
 /**
  * Setup script to pre-populate Watchtower with a random assortment of scans, violations, rules,
@@ -82,7 +84,7 @@ class ImageDevelopmentSetup {
 		sv.setSeverity(RulePriority.valueOf(5 - (int) (score / (10 / 4))));
 		sv.setUri("https://nvd.nist.gov/view/vuln/detail?vulnId=" + sv.getFindingName());
 		sv.setVector("CVSS:3.1/AV:N/AC:L/PR:H/UI:R/S:U/C:H/I:H/A:H");
-		this.imageScanResultService.getOrCreateAdvisory(sv);
+		this.imageAdvisoryService.getOrCreateAdvisory(sv);
 	}
 
 

@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Test;
 
 public class AdvisoryEntityTest {
 
-	private static final String advisoryName = "Advisory";
-	private static final String description = "Description";
-	private static final String packageName = "PKG";
-	private static final String score = "9.4";
-	private static final String uri = "http://localhost";
-	private static final String vector = "VECTOR";
+	public static final String advisoryName = "Advisory";
+	public static final String description = "Description";
+	public static final String packageName = "PKG";
+	public static final String score = "9.4";
+	public static final String uri = "http://localhost";
+	public static final String vector = "VECTOR";
 
 	public static AdvisoryEntity buildStandardAdvisory() {
 		AdvisoryEntity advisory = new AdvisoryEntity();

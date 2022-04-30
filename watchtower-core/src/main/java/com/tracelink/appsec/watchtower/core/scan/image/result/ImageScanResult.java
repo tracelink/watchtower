@@ -8,7 +8,7 @@ import java.util.List;
 public class ImageScanResult {
 	private long id;
 	private String apiLabel;
-	private String imageName;
+	private String repositoryName;
 	private String tagName;
 	private LocalDateTime submitDate;
 	private String status;
@@ -32,12 +32,12 @@ public class ImageScanResult {
 		this.apiLabel = apiLabel;
 	}
 
-	public String getImageName() {
-		return imageName;
+	public String getRepositoryName() {
+		return repositoryName;
 	}
 
-	public void setImageName(String imageName) {
-		this.imageName = imageName;
+	public void setRepositoryName(String repositoryName) {
+		this.repositoryName = repositoryName;
 	}
 
 	public String getTagName() {

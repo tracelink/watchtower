@@ -1,6 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
-import ch.qos.logback.classic.Level;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.logging.LogsService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
@@ -14,12 +21,8 @@ import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.api.IImageApi;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.RejectedExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+
+import ch.qos.logback.classic.Level;
 
 @Service
 public class ImageScanningService extends AbstractScanningService {
@@ -31,18 +34,21 @@ public class ImageScanningService extends AbstractScanningService {
 	private final ApiIntegrationService apiService;
 	private final LogsService logService;
 	private final ImageScanResultService scanResultService;
+	private final ImageAdvisoryService imageAdvisoryService;
 
 	protected ImageScanningService(@Autowired RepositoryService repoService,
 			@Autowired ScanRegistrationService scanRegistrationService,
 			@Autowired ApiIntegrationService apiService,
 			@Autowired LogsService logService,
-			@Autowired ImageScanResultService scanResultService) {
+			@Autowired ImageScanResultService scanResultService,
+			@Autowired ImageAdvisoryService imageAdvisoryService) {
 		super(2, false);
 		this.repoService = repoService;
 		this.scanRegistrationService = scanRegistrationService;
 		this.apiService = apiService;
 		this.logService = logService;
 		this.scanResultService = scanResultService;
+		this.imageAdvisoryService = imageAdvisoryService;
 	}
 
 	public void doImageScan(ImageScan scan)
@@ -74,6 +80,7 @@ public class ImageScanningService extends AbstractScanningService {
 		ImageScanAgent scanAgent = new ImageScanAgent(scan)
 				.withApi(api)
 				.withScanResultService(this.scanResultService)
+				.withAdvisoryService(imageAdvisoryService)
 				.withScanners(scanRegistrationService.getImageScanners())
 				.withRuleset(ruleset.toDto())
 				.withBenchmarkEnabled(!logService.getLogsLevel().isGreaterOrEqual(Level.INFO));

@@ -43,15 +43,16 @@ public class ImageScanResultsController {
 			wmav.setViewName("redirect:/imagescan/results/" + filter + "?page=0");
 			return wmav;
 		}
-		wmav.addObject("filters", ImageResultFilter.values());
-		wmav.addObject("activeFilter", filter);
-		wmav.addObject("activePageNum", pageNum);
+
 		ImageResultFilter resultFilter = ImageResultFilter.toFilter(filter);
 		if (resultFilter == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown Filter");
 			wmav.setViewName("redirect:/imagescan/results");
 		} else {
+			wmav.addObject("filters", ImageResultFilter.values());
+			wmav.addObject("activeFilter", filter);
+			wmav.addObject("activePageNum", pageNum);
 			wmav.addObject("results",
 					resultService.getScanResultsWithFilters(resultFilter, 10, pageNum));
 		}

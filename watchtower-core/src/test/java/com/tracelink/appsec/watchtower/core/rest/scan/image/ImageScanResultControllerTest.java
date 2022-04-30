@@ -19,8 +19,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.rest.scan.image.result.ImageScanResultTest;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultTest;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
 import net.minidev.json.JSONObject;

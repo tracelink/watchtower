@@ -30,7 +30,7 @@ public class ImageScanReportController {
 		ImageScanEntity scanEntity = scanResultService.findById(id);
 		if (scanEntity == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
-					"Unknown ticket");
+					"Unknown ID");
 			mav.setViewName("redirect:/imagescan");
 		} else {
 			mav.addObject("result", scanResultService.generateResultForScan(scanEntity));

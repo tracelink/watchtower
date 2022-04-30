@@ -1,8 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.image.entity;
 
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanContainerEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import java.util.List;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -10,6 +9,9 @@ import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
+
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanContainerEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 
 /**
  * Container Entity class for Uploads with reverse join to {@linkplain ImageScanEntity}
@@ -23,8 +25,8 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 	@Column(name = "api_label")
 	private String apiLabel;
 
-	@Column(name = "image_name")
-	private String imageName;
+	@Column(name = "repository_name")
+	private String repositoryName;
 
 	@Column(name = "tag_name")
 	private String tagName;
@@ -39,7 +41,7 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 
 	public ImageScanContainerEntity(ImageScan scan) {
 		setApiLabel(scan.getApiLabel());
-		setImageName(scan.getRepository());
+		setRepositoryName(scan.getRepository());
 		setTagName(scan.getTag());
 	}
 
@@ -51,12 +53,12 @@ public class ImageScanContainerEntity extends AbstractScanContainerEntity<ImageS
 		this.apiLabel = apiLabel;
 	}
 
-	public String getImageName() {
-		return imageName;
+	public String getRepositoryName() {
+		return repositoryName;
 	}
 
-	public void setImageName(String imageName) {
-		this.imageName = imageName;
+	public void setRepositoryName(String repositoryName) {
+		this.repositoryName = repositoryName;
 	}
 
 	public String getTagName() {

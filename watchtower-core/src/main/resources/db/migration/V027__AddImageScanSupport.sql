@@ -13,7 +13,7 @@ CREATE TABLE ecr_integration_entity (
 CREATE TABLE image_container (
 	container_id BIGINT NOT NULL AUTO_INCREMENT,
 	api_label varchar(255) NOT NULL,
-	image_name varchar(255) NOT NULL,
+	repository_name varchar(255) NOT NULL,
 	tag_name varchar(255) NOT NULL,
 	last_review_date BIGINT DEFAULT NULL,
 	PRIMARY KEY (container_id)

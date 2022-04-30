@@ -9,8 +9,17 @@ import com.tracelink.appsec.watchtower.core.rest.scan.AbstractScan;
  */
 public abstract class ImageScan extends AbstractScan {
 
+	/**
+	 * The hostname:port or other identifier to access this container registry
+	 */
 	private String registry;
+	/**
+	 * The path to an image (everything after host:port/registry id and before the : for tag)
+	 */
 	private String repository;
+	/**
+	 * The tag name (everything after the :)
+	 */
 	private String tag;
 
 	public ImageScan(String apiLabel) {

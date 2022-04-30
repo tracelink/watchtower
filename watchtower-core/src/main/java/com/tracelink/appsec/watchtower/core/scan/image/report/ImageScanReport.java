@@ -47,13 +47,4 @@ public class ImageScanReport extends AbstractScanReport {
 		return Collections.unmodifiableList(violations);
 	}
 
-	/**
-	 * Joins the data from the provided {@linkplain ImageScanReport} into this one
-	 * 
-	 * @param other the other scan report
-	 */
-	public void join(ImageScanReport other) {
-		errors.addAll(other.getErrors());
-		violations.addAll(other.getViolations());
-	}
 }

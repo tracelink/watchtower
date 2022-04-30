@@ -1,5 +1,16 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.stereotype.Service;
+
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
@@ -8,7 +19,6 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainer
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanError;
-import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageViolationRepository;
@@ -16,15 +26,6 @@ import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultViolation;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.stereotype.Service;
 
 /**
  * Handles logic around storing a retrieving scan results
@@ -41,18 +42,15 @@ public class ImageScanResultService
 	private final RepositoryRepository imageRepo;
 	private final ImageScanRepository scanRepo;
 	private final ImageViolationRepository vioRepo;
-	private final ImageAdvisoryService imageAdvisoryService;
 
-	public ImageScanResultService(@Autowired ImageContainerRepository prRepo,
+	public ImageScanResultService(@Autowired ImageContainerRepository containerRepo,
 			@Autowired RepositoryRepository imageRepo, @Autowired ImageScanRepository scanRepo,
-			@Autowired ImageViolationRepository vioRepo,
-			@Autowired ImageAdvisoryService imageAdvisoryService) {
+			@Autowired ImageViolationRepository vioRepo) {
 		super(scanRepo, vioRepo);
-		this.containerRepo = prRepo;
+		this.containerRepo = containerRepo;
 		this.imageRepo = imageRepo;
 		this.scanRepo = scanRepo;
 		this.vioRepo = vioRepo;
-		this.imageAdvisoryService = imageAdvisoryService;
 	}
 
 	/**
@@ -81,7 +79,7 @@ public class ImageScanResultService
 		}
 		long now = System.currentTimeMillis();
 		ImageScanContainerEntity imageEntity =
-				containerRepo.findOneByApiLabelAndImageNameAndTagName(scan.getApiLabel(),
+				containerRepo.findOneByApiLabelAndRepositoryNameAndTagName(scan.getApiLabel(),
 						scan.getRepository(), scan.getTag());
 		if (imageEntity == null) {
 			imageEntity = new ImageScanContainerEntity(scan);
@@ -142,7 +140,7 @@ public class ImageScanResultService
 		ImageScanContainerEntity container = scanEntity.getContainer();
 		result.setId(scanEntity.getId());
 		result.setApiLabel(container.getApiLabel());
-		result.setImageName(container.getImageName());
+		result.setRepositoryName(container.getRepositoryName());
 		result.setTagName(container.getTagName());
 		result.setSubmitDate(scanEntity.getSubmitDate());
 		result.setStatus(scanEntity.getStatus().getDisplayName());
@@ -173,10 +171,6 @@ public class ImageScanResultService
 
 	public ImageScanEntity findById(long id) {
 		return scanRepo.findById(id);
-	}
-
-	public AdvisoryEntity getOrCreateAdvisory(ImageScanViolation sv) {
-		return this.imageAdvisoryService.getOrCreateAdvisory(sv);
 	}
 
 }

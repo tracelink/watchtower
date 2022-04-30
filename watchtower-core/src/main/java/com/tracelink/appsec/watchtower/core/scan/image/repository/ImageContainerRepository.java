@@ -8,7 +8,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainer
 @Repository("imageContainerRepository")
 public interface ImageContainerRepository extends IContainerRepository<ImageScanContainerEntity> {
 
-	ImageScanContainerEntity findOneByApiLabelAndImageNameAndTagName(String apiLabel,
-			String imageName, String tagName);
+	ImageScanContainerEntity findOneByApiLabelAndRepositoryNameAndTagName(String apiLabel,
+			String repositoryName, String tagName);
 
 }

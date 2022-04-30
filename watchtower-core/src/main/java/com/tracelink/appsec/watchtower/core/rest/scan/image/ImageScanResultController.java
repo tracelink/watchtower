@@ -25,8 +25,7 @@ import net.minidev.json.JSONObject;
 @RequestMapping("/rest/imagescan/result")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_RESULTS_NAME + "')")
 public class ImageScanResultController {
-
-	private final ImageScanResultService resultService;
+	private ImageScanResultService resultService;
 
 	public ImageScanResultController(@Autowired ImageScanResultService resultService) {
 		this.resultService = resultService;

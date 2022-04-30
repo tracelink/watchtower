@@ -23,6 +23,7 @@ public class EcrImageScanTest {
 		Assertions.assertEquals(API_LABEL, scan.getApiLabel());
 		Assertions.assertEquals(REGISTRY_NAME, scan.getRegistry());
 		Assertions.assertEquals(REPOSITORY_NAME, scan.getRepository());
+		Assertions.assertEquals(REPOSITORY_NAME + ":" + TAG_NAME, scan.getScanName());
 		Assertions.assertEquals(TAG_NAME, scan.getTag());
 	}
 }

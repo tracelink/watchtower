@@ -1,4 +1,4 @@
-package com.tracelink.appsec.watchtower.core.rest.scan.image.result;
+package com.tracelink.appsec.watchtower.core.scan.image.result;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
 
 public class ImageScanResultTest {
 
@@ -17,7 +16,7 @@ public class ImageScanResultTest {
 	private static final LocalDateTime endDate = LocalDateTime.of(2022, 1, 1, 1, 0);
 	private static final String errorMessage = "ERROR";
 	private static final long id = 0;
-	private static final String imageName = "IMAGENAME";
+	private static final String repositoryName = "IMAGENAME";
 	private static final String status = ScanStatus.DONE.getDisplayName();
 	private static final LocalDateTime submitDate = LocalDateTime.of(2022, 1, 1, 0, 0);
 	private static final String tagName = "TAG";
@@ -28,7 +27,7 @@ public class ImageScanResultTest {
 		result.setEndDate(endDate);
 		result.setErrorMessage(errorMessage);
 		result.setId(id);
-		result.setImageName(imageName);
+		result.setRepositoryName(repositoryName);
 		result.setStatus(status);
 		result.setSubmitDate(submitDate);
 		result.setTagName(tagName);
@@ -46,7 +45,7 @@ public class ImageScanResultTest {
 				result.getEndDateMillis());
 		Assertions.assertEquals(errorMessage, result.getErrorMessage());
 		Assertions.assertEquals(id, result.getId());
-		Assertions.assertEquals(imageName, result.getImageName());
+		Assertions.assertEquals(repositoryName, result.getRepositoryName());
 		Assertions.assertEquals(status, result.getStatus());
 		Assertions.assertEquals(submitDate, result.getSubmitDate());
 		Assertions.assertEquals(submitDate.toInstant(ZoneOffset.UTC).toEpochMilli(),

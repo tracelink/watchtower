@@ -29,6 +29,8 @@ public class ImageScanAgent extends
 
 	private ImageScanResultService scanResultService;
 
+	private ImageAdvisoryService imageAdvisoryService;
+
 	private long startTime;
 
 	public ImageScanAgent(ImageScan scan) {
@@ -46,6 +48,11 @@ public class ImageScanAgent extends
 		return this;
 	}
 
+	public ImageScanAgent withAdvisoryService(ImageAdvisoryService imageAdvisoryService) {
+		this.imageAdvisoryService = imageAdvisoryService;
+		return this;
+	}
+
 	protected void initialize() throws ScanInitializationException {
 		this.startTime = System.currentTimeMillis();
 		super.initialize();
@@ -54,6 +61,9 @@ public class ImageScanAgent extends
 		}
 		if (scanResultService == null) {
 			throw new ScanInitializationException("Scan Result Service must be configured");
+		}
+		if (imageAdvisoryService == null) {
+			throw new ScanInitializationException("Image Advisory Service must be configured");
 		}
 	}
 
@@ -72,7 +82,7 @@ public class ImageScanAgent extends
 		for (ImageScanReport report : reports) {
 			report.getViolations().stream().forEach(sv -> {
 				AdvisoryEntity advisory =
-						this.scanResultService.getOrCreateAdvisory(sv);
+						this.imageAdvisoryService.getOrCreateAdvisory(sv);
 				ImageViolationEntity violation = new ImageViolationEntity(sv, advisory);
 				RulesetDto ruleset = getRuleset();
 				if (ruleset.getBlockingLevel() != null) {
