@@ -25,15 +25,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
 import software.amazon.awssdk.services.cloudformation.model.Capability;
 import software.amazon.awssdk.services.cloudformation.model.CloudFormationException;
 import software.amazon.awssdk.services.cloudformation.model.CreateStackRequest;
-import software.amazon.awssdk.services.cloudformation.model.CreateStackResponse;
 import software.amazon.awssdk.services.cloudformation.model.DeleteStackRequest;
-import software.amazon.awssdk.services.cloudformation.model.DeleteStackResponse;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksResponse;
 import software.amazon.awssdk.services.cloudformation.model.OnFailure;
@@ -44,7 +43,7 @@ import software.amazon.awssdk.services.ecr.model.Attribute;
 import software.amazon.awssdk.services.ecr.model.BatchDeleteImageRequest;
 import software.amazon.awssdk.services.ecr.model.BatchDeleteImageResponse;
 import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsRequest;
-import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsResponse;
+import software.amazon.awssdk.services.ecr.model.EcrException;
 import software.amazon.awssdk.services.ecr.model.FindingSeverity;
 import software.amazon.awssdk.services.ecr.model.ImageIdentifier;
 import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
@@ -91,40 +90,28 @@ public class EcrApi implements IImageApi {
 		// Check CloudFormation API access
 		String createStackMessage = String
 				.format(TEST_CONNECTION_MSG, "create stack", "CloudFormation");
-		CreateStackResponse createStackResponse = sendAwsRequest(() -> cfClient
-				.createStack(CreateStackRequest.builder().build()), createStackMessage);
-		if (createStackResponse.sdkHttpResponse().statusCode() != 400) {
-			throw new ApiIntegrationException(createStackMessage);
-		}
+		tryAwsRequest(() -> cfClient.createStack(CreateStackRequest.builder().build()),
+				createStackMessage, 400);
+
 		String describeStacksMessage = String
 				.format(TEST_CONNECTION_MSG, "describe stacks", "CloudFormation");
-		DescribeStacksResponse describeStacksResponse = sendAwsRequest(() -> cfClient
-				.describeStacks(DescribeStacksRequest.builder().build()), describeStacksMessage);
-		if (describeStacksResponse.sdkHttpResponse().statusCode() != 400) {
-			throw new ApiIntegrationException(describeStacksMessage);
-		}
+		tryAwsRequest(() -> cfClient.describeStacks(DescribeStacksRequest.builder().build()),
+				describeStacksMessage, 200);
+
 		String deleteStackMessage = String
 				.format(TEST_CONNECTION_MSG, "delete stack", "CloudFormation");
-		DeleteStackResponse deleteStackResponse = sendAwsRequest(() -> cfClient
-				.deleteStack(DeleteStackRequest.builder().build()), deleteStackMessage);
-		if (deleteStackResponse.sdkHttpResponse().statusCode() != 400) {
-			throw new ApiIntegrationException(deleteStackMessage);
-		}
+		tryAwsRequest(() -> cfClient.deleteStack(DeleteStackRequest.builder().build()),
+				deleteStackMessage, 400);
 
 		// Check ECR API access
 		String findingsMessage = String.format(TEST_CONNECTION_MSG, "get scan findings", "ECR");
-		DescribeImageScanFindingsResponse findingsResponse = sendAwsRequest(() -> ecrClient
+		tryAwsRequest(() -> ecrClient
 						.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
-				findingsMessage);
-		if (findingsResponse.sdkHttpResponse().statusCode() != 400) {
-			throw new ApiIntegrationException(findingsMessage);
-		}
+				findingsMessage, 400);
+
 		String deleteImageMessage = String.format(TEST_CONNECTION_MSG, "delete image", "ECR");
-		BatchDeleteImageResponse deleteResponse = sendAwsRequest(() -> ecrClient
-				.batchDeleteImage(BatchDeleteImageRequest.builder().build()), deleteImageMessage);
-		if (deleteResponse.sdkHttpResponse().statusCode() != 400) {
-			throw new ApiIntegrationException(deleteImageMessage);
-		}
+		tryAwsRequest(() -> ecrClient.batchDeleteImage(BatchDeleteImageRequest.builder().build()),
+				deleteImageMessage, 400);
 	}
 
 	/**
@@ -188,6 +175,10 @@ public class EcrApi implements IImageApi {
 		WaiterResponse<DescribeStacksResponse> stacksResponse = waiter
 				.waitUntilStackDeleteComplete(stacksRequest);
 		stacksResponse.matched().exception().ifPresent(e -> {
+			// Ignore exception if there is no stack to delete
+			if (e.getMessage().contains("Stack with id " + STACK_NAME + " does not exist")) {
+				return;
+			}
 			throw CloudFormationException.builder().message(e.getMessage()).cause(e).build();
 		});
 	}
@@ -273,21 +264,31 @@ public class EcrApi implements IImageApi {
 	}
 
 	/**
-	 * Helper to wrap AWS requests in a try/catch to throw an appropriate exception. Uses the given
-	 * message for any thrown exception.
+	 * Helper to wrap AWS requests in a try/catch to handle expected errors. Uses the given message
+	 * for any thrown exception.
 	 *
 	 * @param request supplier for the request to execute
 	 * @param message message to include with the thrown exception
 	 * @param <T>     type of the AWS response
-	 * @return the AWS response
-	 * @throws ApiIntegrationException if any exception occurs during the request
+	 * @throws ApiIntegrationException if the AWS request cannot be made without unexpected errors
 	 */
-	private <T> T sendAwsRequest(Supplier<T> request, String message)
-			throws ApiIntegrationException {
+	private <T extends AwsResponse> void tryAwsRequest(Supplier<T> request, String message,
+			int validStatusCode) throws ApiIntegrationException {
+		T response;
 		try {
-			return request.get();
+			response = request.get();
+		} catch (CloudFormationException | EcrException e) {
+			if (e.statusCode() != validStatusCode) {
+				throw new ApiIntegrationException(message + ": " + e.getMessage());
+			} else {
+				return;
+			}
 		} catch (Exception e) {
 			throw new ApiIntegrationException(message + ": " + e.getMessage());
+		}
+		if (response.sdkHttpResponse().statusCode() != validStatusCode) {
+			throw new ApiIntegrationException(
+					message + ": Received status code " + response.sdkHttpResponse().statusCode());
 		}
 	}
 
