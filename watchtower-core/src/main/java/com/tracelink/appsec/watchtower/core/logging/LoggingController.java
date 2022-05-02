@@ -95,7 +95,7 @@ public class LoggingController {
 	 *
 	 */
 	class AutoDeleteInputStreamResource extends InputStreamResource {
-		public AutoDeleteInputStreamResource(File file) throws FileNotFoundException {
+		AutoDeleteInputStreamResource(File file) throws FileNotFoundException {
 			super(new FileInputStream(file) {
 				@Override
 				public void close() throws IOException {

@@ -47,7 +47,8 @@ public class ApiIntegrationService {
 	 * @param apiIntegrationEntity the entity definition
 	 * @throws IllegalArgumentException if the entity cannot be saved
 	 */
-	public void upsertEntity(ApiIntegrationEntity apiIntegrationEntity) {
+	public void upsertEntity(ApiIntegrationEntity apiIntegrationEntity)
+			throws IllegalArgumentException {
 		ApiIntegrationEntity savedEntity = findByLabel(apiIntegrationEntity.getApiLabel());
 		if (savedEntity != null) {
 			if (apiIntegrationEntity.getIntegrationId() != savedEntity.getIntegrationId()) {

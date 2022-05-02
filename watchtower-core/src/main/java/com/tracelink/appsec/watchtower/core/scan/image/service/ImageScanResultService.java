@@ -71,6 +71,14 @@ public class ImageScanResultService
 		return this.containerRepo.count();
 	}
 
+	/**
+	 * Store an Image Report to the database
+	 * 
+	 * @param scan       the scan to save
+	 * @param startTime  the starting time of the scan
+	 * @param violations the violations found in this scan
+	 * @param errors     the errors found in this scan
+	 */
 	public void saveImageReport(ImageScan scan, long startTime,
 			List<ImageViolationEntity> violations,
 			List<ImageScanError> errors) {
@@ -135,6 +143,13 @@ public class ImageScanResultService
 		return results;
 	}
 
+	/**
+	 * Given a scan entity, create the {@linkplain ImageScanResult} denoting the current status of
+	 * the scan
+	 * 
+	 * @param scanEntity the scan to get a result for
+	 * @return the {@linkplain ImageScanResult} for this scan
+	 */
 	public ImageScanResult generateResultForScan(ImageScanEntity scanEntity) {
 		ImageScanResult result = new ImageScanResult();
 		ImageScanContainerEntity container = scanEntity.getContainer();

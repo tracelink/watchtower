@@ -11,14 +11,15 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
  * result against a number of Assertions
  * 
  * @author csmith
- *
+ * @param <R> The type of {@link AbstractScanReport} used in this tester
+ * @param <I> The Scanner Target (item scanned) type used in this tester
  */
-public class TestScanConfiguration<R extends AbstractScanReport, S> {
-	private S scannerTarget;
+public class TestScanConfiguration<R extends AbstractScanReport, I> {
+	private I scannerTarget;
 	private RulesetDto ruleset;
 	private Consumer<R> clause;
 
-	public S getScannerTarget() {
+	public I getScannerTarget() {
 		return this.scannerTarget;
 	}
 
@@ -30,7 +31,7 @@ public class TestScanConfiguration<R extends AbstractScanReport, S> {
 	 * @param scannerTarget the target for this config
 	 * @return this builder
 	 */
-	public TestScanConfiguration<R, S> withScannerTarget(S scannerTarget) {
+	public TestScanConfiguration<R, I> withScannerTarget(I scannerTarget) {
 		this.scannerTarget = scannerTarget;
 		return this;
 	}
@@ -46,7 +47,7 @@ public class TestScanConfiguration<R extends AbstractScanReport, S> {
 	 * @param ruleset the ruleset to use
 	 * @return this builder
 	 */
-	public TestScanConfiguration<R, S> withRuleset(RulesetDto ruleset) {
+	public TestScanConfiguration<R, I> withRuleset(RulesetDto ruleset) {
 		this.ruleset = ruleset;
 		return this;
 	}
@@ -62,7 +63,7 @@ public class TestScanConfiguration<R extends AbstractScanReport, S> {
 	 * @param clause the consumer clause that Asserts the correctness of the report
 	 * @return this builder
 	 */
-	public TestScanConfiguration<R, S> withAssertClause(Consumer<R> clause) {
+	public TestScanConfiguration<R, I> withAssertClause(Consumer<R> clause) {
 		this.clause = clause;
 		return this;
 	}

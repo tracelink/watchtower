@@ -9,6 +9,12 @@ import com.tracelink.appsec.watchtower.core.scan.IViolationRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
 
+/**
+ * Repository to manage Image Violations
+ * 
+ * @author csmith
+ *
+ */
 @Repository("imageViolationRepository")
 public interface ImageViolationRepository extends IViolationRepository<ImageViolationEntity> {
 	@Query("SELECT v.scan FROM ImageViolationEntity v GROUP BY v.scan")

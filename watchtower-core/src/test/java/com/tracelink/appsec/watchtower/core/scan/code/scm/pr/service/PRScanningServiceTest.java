@@ -333,7 +333,7 @@ public class PRScanningServiceTest {
 
 		scanningService.recoverFromDowntime();
 		BDDMockito.verify(mockApi, BDDMockito.times(0)).updatePRData(prCaptor.capture());
-		BDDMockito.verify(mockRepoService).disableRepo(mockRepoEntity);
+		BDDMockito.verify(mockRepoService).disableRepository(mockRepoEntity);
 	}
 
 	@Test
@@ -414,7 +414,7 @@ public class PRScanningServiceTest {
 
 		scanningService.recoverFromDowntime();
 		BDDMockito.verify(mockApi, BDDMockito.times(0)).updatePRData(prCaptor.capture());
-		BDDMockito.verify(mockRepoService, BDDMockito.times(0)).disableRepo(mockRepoEntity);
+		BDDMockito.verify(mockRepoService, BDDMockito.times(0)).disableRepository(mockRepoEntity);
 	}
 
 	private void setupDefaultMocks() throws ScanRejectedException {

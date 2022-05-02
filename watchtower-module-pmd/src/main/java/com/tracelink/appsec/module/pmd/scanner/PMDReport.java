@@ -67,8 +67,9 @@ public class PMDReport extends CodeScanReport {
 				return RulePriority.MEDIUM_LOW;
 			case LOW:
 				return RulePriority.LOW;
+			default:
+				throw new IllegalArgumentException("Unknown conversion for pmd rule priority");
 		}
-		throw new IllegalArgumentException("Unknown conversion for pmd rule priority");
 	}
 
 	/**

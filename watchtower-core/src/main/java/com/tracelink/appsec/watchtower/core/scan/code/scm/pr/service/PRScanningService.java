@@ -154,7 +154,7 @@ public class PRScanningService extends AbstractScanningService {
 			String repoName = repo.getRepoName();
 			if (!api.isRepositoryActive(repoName)) {
 				LOG.info("Disabling dead repository " + repoName);
-				repoService.disableRepo(repo);
+				repoService.disableRepository(repo);
 			} else {
 				LOG.debug("Recovering Repo " + repoName);
 				List<PullRequest> recovered = recoverByRepo(entity, api, repo);

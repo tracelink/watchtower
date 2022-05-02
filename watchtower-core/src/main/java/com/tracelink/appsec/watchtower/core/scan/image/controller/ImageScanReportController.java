@@ -13,6 +13,12 @@ import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
+/**
+ * Controller for getting information about image scan reports
+ * 
+ * @author csmith
+ *
+ */
 @Controller
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_RESULTS_NAME + "')")
 @RequestMapping("/imagescan/report")

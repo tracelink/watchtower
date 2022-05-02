@@ -14,7 +14,6 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanningService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
@@ -24,6 +23,11 @@ import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 import ch.qos.logback.classic.Level;
 
+/**
+ * Manages creating scans for Images
+ *
+ * @author csmith
+ */
 @Service
 public class ImageScanningService extends AbstractScanningService {
 
@@ -51,8 +55,16 @@ public class ImageScanningService extends AbstractScanningService {
 		this.imageAdvisoryService = imageAdvisoryService;
 	}
 
+	/**
+	 * Queue a new Scan onto the next available async thread.
+	 *
+	 * @param scan an object describing the image to review
+	 * @throws RejectedExecutionException if the async manager cannot handle another task
+	 * @throws ScanRejectedException      If the scan could not be started due to a configuration
+	 *                                    problem
+	 */
 	public void doImageScan(ImageScan scan)
-			throws RejectedExecutionException, ScanRejectedException, ApiIntegrationException {
+			throws RejectedExecutionException, ScanRejectedException {
 		String imageName = scan.getScanName();
 		if (isQuiesced()) {
 			LOG.error("Quiesced. Did not schedule image scan: " + imageName);

@@ -34,7 +34,7 @@ class UploadDevelopmentSetup {
 	private final UploadContainerRepository uploadRepo;
 	private final UploadScanRepository uploadScanRepo;
 
-	public UploadDevelopmentSetup(
+	UploadDevelopmentSetup(
 			@Autowired UploadScanResultService uploadScanResultService,
 			@Autowired UploadContainerRepository uploadRepo,
 			@Autowired UploadScanRepository uploadScanRepo) {

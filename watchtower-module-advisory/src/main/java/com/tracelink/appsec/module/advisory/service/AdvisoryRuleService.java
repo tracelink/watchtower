@@ -68,6 +68,7 @@ public class AdvisoryRuleService {
 	 * Save the supplied DTO as a Advisory Rule Entity
 	 *
 	 * @param dto the rule data to save
+	 * @return the saved AdvisoryRule
 	 * @throws RuleDesignerException if the rule name already exists
 	 */
 	public AdvisoryRuleEntity saveNewRule(AdvisoryRuleDto dto) throws RuleDesignerException {

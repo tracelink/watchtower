@@ -67,6 +67,12 @@ public enum RulePriority {
 	}
 
 
+	/**
+	 * Attribute Converter to manage translating between database-stored values and Java Objects
+	 * 
+	 * @author csmith
+	 *
+	 */
 	@Converter
 	public static class RulePriorityConverter implements AttributeConverter<RulePriority, String> {
 

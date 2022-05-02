@@ -20,6 +20,12 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryService;
 
+/**
+ * Controller used to manage the Rule Designer for Advisories
+ * 
+ * @author csmith
+ *
+ */
 @Controller
 @RequestMapping("/designer/advisory")
 @PreAuthorize("hasAuthority('" + AdvisoryModule.ADVISORY_RULE_DESIGNER_PRIVILEGE_NAME + "')")

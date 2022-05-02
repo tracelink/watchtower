@@ -6,6 +6,12 @@ import com.tracelink.appsec.module.advisory.AdvisoryModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
 
+/**
+ * Service used to handle Rule Designer work
+ * 
+ * @author csmith
+ *
+ */
 @Service
 public class AdvisoryRuleDesigner implements IRuleDesigner {
 

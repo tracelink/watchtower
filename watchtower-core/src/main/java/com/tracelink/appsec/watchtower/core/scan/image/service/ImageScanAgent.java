@@ -19,6 +19,15 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEnti
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanError;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
 
+/**
+ * Handles orchestration of individual scanners for scans of an Image.
+ * <p>
+ * Ensures that all objects are initialized and executes scanners against a working directory.
+ * Collects reports and sends to the report method for implementations to manage. Finally, reports
+ * on benchmarks, if configured and then starts a cleanup procedure for implementations
+ *
+ * @author csmith, mcool
+ */
 public class ImageScanAgent extends
 		AbstractScanAgent<ImageScanAgent, IImageScanner, ImageScanConfig, ImageScanReport> {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
@@ -38,21 +47,43 @@ public class ImageScanAgent extends
 		this.scan = scan;
 	}
 
+	/**
+	 * Set the {@linkplain IImageApi} for this Agent's configuration
+	 * 
+	 * @param api the {@linkplain IImageApi} to use
+	 * @return this agent
+	 */
 	public ImageScanAgent withApi(IImageApi api) {
 		this.api = api;
 		return this;
 	}
 
+	/**
+	 * Set the {@linkplain ImageScanResultService} for this Agent's configuration
+	 * 
+	 * @param scanResultService the {@linkplain ImageScanResultService} to use
+	 * @return this agent
+	 */
 	public ImageScanAgent withScanResultService(ImageScanResultService scanResultService) {
 		this.scanResultService = scanResultService;
 		return this;
 	}
 
+	/**
+	 * Set the {@linkplain ImageAdvisoryService} for this Agent's configuration
+	 * 
+	 * @param imageAdvisoryService the {@linkplain ImageAdvisoryService} to use
+	 * @return this agent
+	 */
 	public ImageScanAgent withAdvisoryService(ImageAdvisoryService imageAdvisoryService) {
 		this.imageAdvisoryService = imageAdvisoryService;
 		return this;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	protected void initialize() throws ScanInitializationException {
 		this.startTime = System.currentTimeMillis();
 		super.initialize();
@@ -67,6 +98,10 @@ public class ImageScanAgent extends
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	protected ImageScanConfig createScanConfig() {
 		// Create scan config
 		ImageScanConfig config = new ImageScanConfig();
@@ -76,6 +111,10 @@ public class ImageScanAgent extends
 		return config;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	protected void report(List<ImageScanReport> reports) {
 		List<ImageViolationEntity> violations = new ArrayList<>();
 		List<ImageScanError> errors = new ArrayList<>();

@@ -26,6 +26,13 @@ public abstract class AbstractScan {
 		return apiLabel;
 	}
 
+	/**
+	 * Given a String value of an HTTP Request Body, populate the data of this Scan request
+	 * 
+	 * @param requestBody the string value of the incoming HTTP Request
+	 * @throws ApiIntegrationException if any value in the request is incorrect, or if the request
+	 *                                 does not contain enough information to begin this scan
+	 */
 	public abstract void populateFromRequest(String requestBody) throws ApiIntegrationException;
 
 	public abstract String getScanName();

@@ -195,14 +195,14 @@ public class DevelopmentSetup {
 	}
 
 	private void setSomeReposDisabled(Random random) {
-		repositoryService.disableRepo(repositoryService.upsertRepo(CodeScanType.PULL_REQUEST,
+		repositoryService.disableRepository(repositoryService.upsertRepo(CodeScanType.PULL_REQUEST,
 				API_LABEL_1, "Disabled repo1"));
-		repositoryService.disableRepo(repositoryService.upsertRepo(CodeScanType.PULL_REQUEST,
+		repositoryService.disableRepository(repositoryService.upsertRepo(CodeScanType.PULL_REQUEST,
 				API_LABEL_2, "Disabled repo2"));
 
-		repositoryService.disableRepo(repositoryService.upsertRepo(ImageScanType.CONTAINER,
+		repositoryService.disableRepository(repositoryService.upsertRepo(ImageScanType.CONTAINER,
 				IMAGE_API_LABEL_1, "Disabled repo1"));
-		repositoryService.disableRepo(repositoryService.upsertRepo(ImageScanType.CONTAINER,
+		repositoryService.disableRepository(repositoryService.upsertRepo(ImageScanType.CONTAINER,
 				IMAGE_API_LABEL_2, "Disabled repo2"));
 	}
 }

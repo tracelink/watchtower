@@ -12,6 +12,13 @@ import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
 
+/**
+ * Scanner implementation for Advisory Rules. The Scanner will parse an {@linkplain ImageScanReport}
+ * to identify findings that fail Advisory Rules.
+ * 
+ * @author csmith
+ *
+ */
 public class AdvisoryScanner implements IImageScanner {
 
 	@Override

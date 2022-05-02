@@ -16,6 +16,12 @@ import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryServ
 import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 
+/**
+ * Controller to get Advisory information from the system
+ * 
+ * @author csmith
+ *
+ */
 @RestController
 @RequestMapping("/rest/advisory")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_RESULTS_NAME + "')")

@@ -71,6 +71,10 @@ public abstract class AbstractCodeScanAgent<T extends AbstractCodeScanAgent<T>>
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	protected CodeScanConfig createScanConfig() {
 		// Create scan config
 		CodeScanConfig config = new CodeScanConfig();

@@ -50,6 +50,11 @@ public class PRDevelopmentSetup {
 		this.prScanRepo = prScanRepo;
 	}
 
+	/**
+	 * Setup the PR Development configuation
+	 * 
+	 * @param random the RNG to use
+	 */
 	public void addPRScanHistory(Random random) {
 		List<RepositoryEntity> repos =
 				repositoryService.getAllRepos(CodeScanType.PULL_REQUEST).values().stream()

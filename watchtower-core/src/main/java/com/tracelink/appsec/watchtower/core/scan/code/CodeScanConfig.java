@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanConfig;
 
 /**
- * Scan configuration object managing all sub-configurations
+ * Scan configuration object for Code Scanning
  *
  * @author csmith, mcool
  */

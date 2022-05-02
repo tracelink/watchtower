@@ -24,6 +24,9 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
  *
  * @author csmith, mcool
  * @param <T> The type of {@link AbstractScanAgent} (for builder subclassing)
+ * @param <S> The type of {@link IScanner} used to scan in this agent
+ * @param <C> The type of {@link AbstractScanConfig} used to configure the scans
+ * @param <R> The type of {@link AbstractScanReport} use to report findings from this scan
  */
 public abstract class AbstractScanAgent<T extends AbstractScanAgent<T, S, C, R>, S extends IScanner<C, R>, C extends AbstractScanConfig, R extends AbstractScanReport>
 		implements Runnable {
@@ -172,6 +175,11 @@ public abstract class AbstractScanAgent<T extends AbstractScanAgent<T, S, C, R>,
 		return reports;
 	}
 
+	/**
+	 * Create the Scan Configuration for this scan
+	 * 
+	 * @return the Scan Configuration
+	 */
 	protected abstract C createScanConfig();
 
 	/**

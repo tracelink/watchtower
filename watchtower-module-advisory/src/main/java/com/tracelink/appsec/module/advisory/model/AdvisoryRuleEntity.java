@@ -5,6 +5,12 @@ import javax.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 
+/**
+ * Entity designation for an Advisory Rule
+ * 
+ * @author csmith
+ *
+ */
 @Entity
 @Table(name = "advisory_rules")
 public class AdvisoryRuleEntity extends RuleEntity {

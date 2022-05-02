@@ -2,6 +2,11 @@ package com.tracelink.appsec.watchtower.core.scan;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
+/**
+ * Scan configuration object managing all sub-configurations
+ *
+ * @author csmith, mcool
+ */
 public abstract class AbstractScanConfig {
 	/**
 	 * ruleset DTO object for this scan

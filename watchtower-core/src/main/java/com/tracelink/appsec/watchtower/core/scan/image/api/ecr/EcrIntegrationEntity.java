@@ -1,5 +1,18 @@
 package com.tracelink.appsec.watchtower.core.scan.image.api.ecr;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
 import com.tracelink.appsec.watchtower.core.scan.ScanType;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
@@ -7,17 +20,12 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEx
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.RegisterState;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Entity for the ECR Integration API
+ *
+ * @author csmith
+ */
 @Entity
 @Table(name = "ecr_integration_entity")
 public class EcrIntegrationEntity extends ApiIntegrationEntity {

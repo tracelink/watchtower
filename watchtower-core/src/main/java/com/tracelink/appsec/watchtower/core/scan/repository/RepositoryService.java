@@ -97,7 +97,13 @@ public class RepositoryService {
 		return repoRepo.save(repo);
 	}
 
-	public RepositoryEntity disableRepo(RepositoryEntity repo) {
+	/**
+	 * Mark the repository as disabled
+	 * 
+	 * @param repo the repository to disable
+	 * @return the repository that has been disabled
+	 */
+	public RepositoryEntity disableRepository(RepositoryEntity repo) {
 		repo.setEnabled(false);
 		return repoRepo.saveAndFlush(repo);
 	}

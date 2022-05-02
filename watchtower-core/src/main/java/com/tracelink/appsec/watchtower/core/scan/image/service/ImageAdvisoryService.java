@@ -9,6 +9,12 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.AdvisoryRepository;
 
+/**
+ * Service used to CRUD Advisory Entities
+ * 
+ * @author csmith
+ *
+ */
 @Service
 public class ImageAdvisoryService {
 

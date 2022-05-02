@@ -5,6 +5,12 @@ import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditModelAndView;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 
+/**
+ * Implementation of {@linkplain IRuleEditor} for the Advisory Rules
+ * 
+ * @author csmith
+ *
+ */
 public class AdvisoryRuleEditor implements IRuleEditor {
 	@Override
 	public RuleEditModelAndView getDefaultRuleEditModelAndView(RuleDto rule) {

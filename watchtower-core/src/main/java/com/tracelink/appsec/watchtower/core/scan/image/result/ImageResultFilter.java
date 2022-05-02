@@ -1,5 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan.image.result;
 
+/**
+ * An Enum of options to filter scan results for Image Scans
+ * 
+ * @author csmith
+ *
+ */
 public enum ImageResultFilter {
 	ALL("all", "All Scans"),
 	VIOLATIONS("violations", "Scans with Violations");

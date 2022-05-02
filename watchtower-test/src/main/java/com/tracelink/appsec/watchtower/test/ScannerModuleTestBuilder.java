@@ -12,8 +12,10 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
  * that the overall test harness {@link CodeScannerModuleTest} can work
  *
  * @author csmith
+ * @param <R> The type of {@link AbstractScanReport} used in this tester
+ * @param <I> The Scanner Target (item scanned) type used in this tester
  */
-public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
+public class ScannerModuleTestBuilder<R extends AbstractScanReport, I> {
 
 	private String name;
 	private String schemaName;
@@ -21,7 +23,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	private Class<? extends RuleDto> supportedRuleClass;
 	private Supplier<? extends RuleDto> ruleSupplier;
 	private final Set<ScannerModuleTestOption> ignoredOptions = new HashSet<>();
-	private TestScanConfiguration<R, S> testScanConfig;
+	private TestScanConfiguration<R, I> testScanConfig;
 
 	public String getName() {
 		return name;
@@ -33,7 +35,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param name the module name
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> withName(String name) {
+	public ScannerModuleTestBuilder<R, I> withName(String name) {
 		this.name = name;
 		return this;
 	}
@@ -48,7 +50,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param schemaName schema history table name
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> withSchemaName(String schemaName) {
+	public ScannerModuleTestBuilder<R, I> withSchemaName(String schemaName) {
 		this.schemaName = schemaName;
 		return this;
 	}
@@ -63,7 +65,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param migration the migrations location
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> withMigration(String migration) {
+	public ScannerModuleTestBuilder<R, I> withMigration(String migration) {
 		this.migration = migration;
 		return this;
 	}
@@ -78,7 +80,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param supportedRuleClass the class of Rules this module uses
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> withSupportedRuleClass(
+	public ScannerModuleTestBuilder<R, I> withSupportedRuleClass(
 			Class<? extends RuleDto> supportedRuleClass) {
 		this.supportedRuleClass = supportedRuleClass;
 		return this;
@@ -95,7 +97,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param ruleSupplier the Supplier that generates a rule for this module
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> withRuleSupplier(
+	public ScannerModuleTestBuilder<R, I> withRuleSupplier(
 			Supplier<? extends RuleDto> ruleSupplier) {
 		this.ruleSupplier = ruleSupplier;
 		return this;
@@ -112,12 +114,12 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param testOption the test option to ignore during testing
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> andIgnoreTestOption(ScannerModuleTestOption testOption) {
+	public ScannerModuleTestBuilder<R, I> andIgnoreTestOption(ScannerModuleTestOption testOption) {
 		ignoredOptions.add(testOption);
 		return this;
 	}
 
-	public TestScanConfiguration<R, S> getTestScanConfiguration() {
+	public TestScanConfiguration<R, I> getTestScanConfiguration() {
 		return testScanConfig;
 	}
 
@@ -128,8 +130,8 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, S> {
 	 * @param testConfig the Test Scan Config
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, S> withTestScanConfigurationBuilder(
-			TestScanConfiguration<R, S> testConfig) {
+	public ScannerModuleTestBuilder<R, I> withTestScanConfigurationBuilder(
+			TestScanConfiguration<R, I> testConfig) {
 		testScanConfig = testConfig;
 		return this;
 	}

@@ -5,6 +5,12 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO containing information about the result of an Image Scan
+ * 
+ * @author csmith
+ *
+ */
 public class ImageScanResult {
 	private long id;
 	private String apiLabel;

@@ -26,6 +26,18 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 
+/**
+ * The Module is the main implementation for a Watchtower scanner.
+ * <p>
+ * It contains the necessary information to manage and design rules for the scanner in order to
+ * function within Watchtower. It also contains functionality to store rules in the database and
+ * perform database migrations. It does not provide any Spring controls. See
+ * {@link WatchtowerModule} for that functionality, including JPA and Entity creation.
+ *
+ * @author mcool
+ * @param <S> The Scanner type implemented by this Module
+ * 
+ */
 public abstract class AbstractModule<S extends IScanner<?, ?>> {
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractModule.class);
 

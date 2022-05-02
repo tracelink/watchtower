@@ -19,9 +19,8 @@ import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
- * An encompassing test suite for Scanner Modules. This exercises all basic class contracts for all
- * objects required to be implemented by the Scanner Module
- *
+ * Test suite configuration for Code Scanners
+ * 
  * @author csmith
  */
 public abstract class CodeScannerModuleTest
@@ -30,9 +29,9 @@ public abstract class CodeScannerModuleTest
 	@Test
 	public void testScan() throws Exception {
 		Assumptions.assumeFalse(
-				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.SCANNER));
+				getScannerTester().getIgnoredOptions().contains(ScannerModuleTestOption.SCANNER));
 		TestScanConfiguration<CodeScanReport, String> testScan =
-				scannerTester.getTestScanConfiguration();
+				getScannerTester().getTestScanConfiguration();
 		Assumptions.assumeFalse(testScan == null);
 
 		String resource = testScan.getScannerTarget();
@@ -58,7 +57,7 @@ public abstract class CodeScannerModuleTest
 		config.setThreads(0);
 		config.setWorkingDirectory(testDir);
 
-		ICodeScanner scanner = moduleUnderTest.getScanner();
+		ICodeScanner scanner = getModuleUnderTest().getScanner();
 		CodeScanReport report = scanner.scan(config);
 		Assertions.assertNotNull(report);
 		assertClause.accept(report);

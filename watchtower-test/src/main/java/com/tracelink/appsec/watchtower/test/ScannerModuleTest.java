@@ -9,9 +9,18 @@ import com.tracelink.appsec.watchtower.core.module.AbstractModule;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
 
-public abstract class ScannerModuleTest<M extends AbstractModule, R extends AbstractScanReport, I> {
-	protected ScannerModuleTestBuilder<R, I> scannerTester;
-	protected M moduleUnderTest;
+/**
+ * An encompassing test suite for Scanner Modules. This exercises all basic class contracts for all
+ * objects required to be implemented by the Scanner Module
+ *
+ * @author csmith
+ * @param <M> The type of {@linkplain AbstractModule} under test
+ * @param <R> The type of {@linkplain AbstractScanReport} used in this tester
+ * @param <I> The Scanner Target (item scanned) type used in this tester
+ */
+public abstract class ScannerModuleTest<M extends AbstractModule<?>, R extends AbstractScanReport, I> {
+	private ScannerModuleTestBuilder<R, I> scannerTester;
+	private M moduleUnderTest;
 
 	/**
 	 * Construct a Scanner Module for this test
@@ -42,6 +51,14 @@ public abstract class ScannerModuleTest<M extends AbstractModule, R extends Abst
 		moduleUnderTest = buildScannerModule();
 		scannerTester = createTestPlanForModule();
 		configurePluginTester(scannerTester);
+	}
+
+	protected final ScannerModuleTestBuilder<R, I> getScannerTester() {
+		return scannerTester;
+	}
+
+	protected final M getModuleUnderTest() {
+		return moduleUnderTest;
 	}
 
 	@Test

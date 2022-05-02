@@ -1,5 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan.image.result;
 
+/**
+ * DAO for Violations in a report found in an Image Scan
+ * 
+ * @author csmith
+ *
+ */
 public class ImageScanResultViolation {
 	private String violationName;
 	private String severity;

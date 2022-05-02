@@ -10,6 +10,11 @@ import javax.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity.HexStringConverter;
 
+/**
+ * Entity for an Image Advisory (CVE, RHSA, etc)
+ * 
+ * @author csmith
+ */
 @Entity
 @Table(name = "advisories")
 public class AdvisoryEntity {

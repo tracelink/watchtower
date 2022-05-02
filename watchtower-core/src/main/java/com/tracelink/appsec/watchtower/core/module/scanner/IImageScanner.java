@@ -4,6 +4,12 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
 
+/**
+ * A Scanner implementation to manage Image Scans
+ * 
+ * @author csmith
+ *
+ */
 public interface IImageScanner extends IScanner<ImageScanConfig, ImageScanReport> {
 	/**
 	 * Return a report of this scan

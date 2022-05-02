@@ -21,6 +21,12 @@ import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultSe
 
 import net.minidev.json.JSONObject;
 
+/**
+ * REST Contoller for Scan Results, including filtering
+ * 
+ * @author csmith
+ *
+ */
 @RestController
 @RequestMapping("/rest/imagescan/result")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_RESULTS_NAME + "')")

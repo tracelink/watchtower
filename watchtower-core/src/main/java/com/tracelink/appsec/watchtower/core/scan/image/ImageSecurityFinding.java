@@ -2,6 +2,12 @@ package com.tracelink.appsec.watchtower.core.scan.image;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
+/**
+ * DAO for a finding discovered by an Image Scanner in a report
+ * 
+ * @author csmith
+ *
+ */
 public class ImageSecurityFinding {
 
 	private RulePriority severity;

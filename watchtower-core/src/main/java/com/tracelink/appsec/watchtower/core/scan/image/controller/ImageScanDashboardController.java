@@ -11,6 +11,12 @@ import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 
+/**
+ * Controller for the main Image Scan Dashboard
+ * 
+ * @author csmith
+ *
+ */
 @Controller
 @RequestMapping("/imagescan/dashboard")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_DASHBOARDS_NAME + "')")

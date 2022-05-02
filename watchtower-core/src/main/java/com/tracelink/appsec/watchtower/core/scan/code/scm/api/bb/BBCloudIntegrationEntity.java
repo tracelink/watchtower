@@ -1,20 +1,23 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
-import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+
 import org.apache.commons.lang3.StringUtils;
+
+import com.tracelink.appsec.watchtower.core.encryption.converter.StringEncryptedAttributeConverter;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
 
 /**
  * Entity for the Bitbucket Cloud Integration API
@@ -112,6 +115,13 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 		setAuth(parameters.get("auth"));
 	}
 
+	/**
+	 * Create a url pointing to the bitbucket cloud pull request
+	 * 
+	 * @param repository    the repository of the pull request
+	 * @param pullRequestId the id of the pull request
+	 * @return a url link for this pull request
+	 */
 	public String makePRLink(String repository, String pullRequestId) {
 		return String.format("https://bitbucket.org/%s/%s/pull-requests/%s", getWorkspace(),
 				repository, pullRequestId);

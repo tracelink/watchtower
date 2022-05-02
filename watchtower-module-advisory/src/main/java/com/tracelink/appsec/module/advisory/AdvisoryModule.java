@@ -16,6 +16,12 @@ import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.scanner.IImageScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
+/**
+ * This module is used to scan Images to identify if any are NOT allowed in a security report
+ * 
+ * @author csmith
+ *
+ */
 @WatchtowerModule
 public class AdvisoryModule extends AbstractImageScanModule {
 	public static final String ADVISORY_MODULE_NAME = "Advisory";

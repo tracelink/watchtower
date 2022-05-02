@@ -4,6 +4,11 @@ import com.tracelink.appsec.watchtower.core.scan.ScanType;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 
+/**
+ * Entity description for an SCM Integration Entity
+ *
+ * @author csmith
+ */
 public abstract class AbstractScmIntegrationEntity extends ApiIntegrationEntity {
 
 	@Override

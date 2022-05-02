@@ -3,14 +3,18 @@ package com.tracelink.appsec.watchtower.core.module.scanner;
 import org.springframework.stereotype.Component;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
 
 /**
  * The executor of a scan that returns a report given a config for this scan
  *
  * @author csmith, mcool
+ * @param <C> The type of {@link AbstractScanConfig} used to configure the scans
+ * @param <R> The type of {@link AbstractScanReport} use to report findings from this scan
  */
 @Component
-public interface IScanner<C, R> {
+public interface IScanner<C extends AbstractScanConfig, R extends AbstractScanReport> {
 	/**
 	 * Return a report of this scan
 	 *

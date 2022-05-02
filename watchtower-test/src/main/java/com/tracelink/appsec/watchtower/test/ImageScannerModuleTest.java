@@ -14,9 +14,8 @@ import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
 
 /**
- * An encompassing test suite for Scanner Modules. This exercises all basic class contracts for all
- * objects required to be implemented by the Scanner Module
- *
+ * Test suite configuration for Image Scanners
+ * 
  * @author csmith
  */
 public abstract class ImageScannerModuleTest
@@ -25,9 +24,9 @@ public abstract class ImageScannerModuleTest
 	@Test
 	public void testScan() throws Exception {
 		Assumptions.assumeFalse(
-				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.SCANNER));
+				getScannerTester().getIgnoredOptions().contains(ScannerModuleTestOption.SCANNER));
 		TestScanConfiguration<ImageScanReport, ImageSecurityReport> testScan =
-				scannerTester.getTestScanConfiguration();
+				getScannerTester().getTestScanConfiguration();
 		Assumptions.assumeFalse(testScan == null);
 
 		ImageSecurityReport resource = testScan.getScannerTarget();
@@ -42,7 +41,7 @@ public abstract class ImageScannerModuleTest
 		config.setRuleset(ruleset);
 		config.setSecurityReport(resource);
 
-		IImageScanner scanner = moduleUnderTest.getScanner();
+		IImageScanner scanner = getModuleUnderTest().getScanner();
 		ImageScanReport report = scanner.scan(config);
 		Assertions.assertNotNull(report);
 		assertClause.accept(report);
