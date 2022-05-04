@@ -93,7 +93,6 @@ public class ImageScanResultService
 			imageEntity = new ImageScanContainerEntity(scan);
 			imageEntity = containerRepo.saveAndFlush(imageEntity);
 		}
-		// TODO should we set a resolved flag?
 		imageEntity.setLastReviewedDate(now);
 		ImageScanContainerEntity savedImageEntity = containerRepo.saveAndFlush(imageEntity);
 

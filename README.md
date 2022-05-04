@@ -9,10 +9,6 @@ Collected scan data is displayed on server Dashboards.
 The server can include multiple Modules to perform different types of scans. Each module defines its
 own type of rules, which are then aggregated into rulesets and applied to code during a scan.
 
-## Status
-
-[Badges go here]
-
 ## License
 
 [MIT License](https://opensource.org/licenses/MIT)
@@ -178,10 +174,11 @@ so that modules can be easily added or removed from a deployment.
 
 | Module | Description | Documentation Link |
 |--------|-------------|--------------------|
+| Advisory | This module scans security reports from remote container repositories to detect if a container should be blocked because it has a security advisory that wasn't whitelisted. | [watchtower-module-advisory](.watchtower-module-advisory/README.md)| 
 | Checkov | This module integrates the Python [Checkov](https://www.checkov.io/) scanner into Watchtower to scan infrastructure-as-code and detect misconfigurations. | [watchtower-module-checkov](./watchtower-module-checkov/README.md)|
 | ESLint | This module integrate the [ESLint](https://eslint.org/) linter into Watchtower to scan JavaScript code for common problems. | [watchtower-module-eslint](./watchtower-module-eslint/README.md)|
-| JSON | This module defines Watchtower rules using JSONPath expressions to scan JSON files for issues. | [watchtower-module-json](./watchtower-module-json/README.md)
-| PMD | This module integrates the Java [PMD](https://pmd.github.io/) static code analyzer into Watchtower to scan Java, Ecmascript, Scala, and XML files. | [watchtower-module-pmd](./watchtower-module-pmd/README.md)
+| JSON | This module defines Watchtower rules using JSONPath expressions to scan JSON files for issues. | [watchtower-module-json](./watchtower-module-json/README.md)|
+| PMD | This module integrates the Java [PMD](https://pmd.github.io/) static code analyzer into Watchtower to scan Java, Ecmascript, Scala, and XML files. | [watchtower-module-pmd](./watchtower-module-pmd/README.md)|
 | Regex | This module defines Watchtower rules using Regex expressions to scan files of many types for issues. | [watchtower-module-regex](./watchtower-module-regex/README.md)|
 
 ## Customization
