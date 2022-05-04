@@ -2,6 +2,7 @@ package com.tracelink.appsec.watchtower.core.scan.image.api.ecr;
 
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 
@@ -22,14 +23,17 @@ public class EcrImageScan extends ImageScan {
 	@Override
 	public void populateFromRequest(String requestBody) throws ApiIntegrationException {
 		JSONObject json = new JSONObject(requestBody);
-		String registryId = json.getString("registryId");
-		String repository = json.getString("repository");
-		String tag = json.getJSONArray("tags").optString(0);
-		if (StringUtils.isBlank(tag)) {
-			throw new ApiIntegrationException("No image tag specified");
+		String registryId = json.optString("registryId");
+		String repository = json.optString("repository");
+		JSONArray tags = json.optJSONArray("tags");
+		if (StringUtils.isBlank(registryId) || StringUtils.isBlank(repository) || tags == null
+				|| tags.isEmpty() || tags.isNull(0)) {
+			throw new ApiIntegrationException(
+					"Required params are 'registryId', 'repository', and a nonempty 'tags' array");
 		}
+
 		setRegistry(registryId);
 		setRepository(repository);
-		setTag(tag);
+		setTag(tags.getString(0));
 	}
 }

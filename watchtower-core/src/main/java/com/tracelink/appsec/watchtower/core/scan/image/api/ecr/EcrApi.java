@@ -26,6 +26,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.AwsResponse;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
@@ -151,11 +152,13 @@ public class EcrApi implements IImageApi {
 		CloudFormationWaiter waiter = cfClient.waiter();
 		DescribeStacksRequest stacksRequest = DescribeStacksRequest.builder().stackName(STACK_NAME)
 				.build();
-		WaiterResponse<DescribeStacksResponse> stacksResponse = waiter
-				.waitUntilStackCreateComplete(stacksRequest);
-		stacksResponse.matched().exception().ifPresent(e -> {
-			throw CloudFormationException.builder().message(e.getMessage()).cause(e).build();
-		});
+		try {
+			// This will only return a response in the event that the stack create is complete
+			waiter.waitUntilStackCreateComplete(stacksRequest);
+		} catch (SdkClientException e) {
+			throw CloudFormationException.builder()
+					.message("Create stack failed. See AWS for more details").cause(e).build();
+		}
 	}
 
 	/**
@@ -174,9 +177,11 @@ public class EcrApi implements IImageApi {
 				.build();
 		WaiterResponse<DescribeStacksResponse> stacksResponse = waiter
 				.waitUntilStackDeleteComplete(stacksRequest);
+
 		stacksResponse.matched().exception().ifPresent(e -> {
+			String message = e.getMessage();
 			// Ignore exception if there is no stack to delete
-			if (e.getMessage().contains("Stack with id " + STACK_NAME + " does not exist")) {
+			if (message.contains("Stack with id " + STACK_NAME + " does not exist")) {
 				return;
 			}
 			throw CloudFormationException.builder().message(e.getMessage()).cause(e).build();
@@ -189,7 +194,7 @@ public class EcrApi implements IImageApi {
 	@Override
 	public void rejectImage(ImageScan image, List<ImageViolationEntity> violations) {
 		BatchDeleteImageRequest request = BatchDeleteImageRequest.builder()
-				.registryId(image.getApiLabel())
+				.registryId(image.getRegistry())
 				.repositoryName(image.getRepository())
 				.imageIds(Collections
 						.singleton(ImageIdentifier.builder().imageTag(image.getTag()).build()))
@@ -280,9 +285,8 @@ public class EcrApi implements IImageApi {
 		} catch (CloudFormationException | EcrException e) {
 			if (e.statusCode() != validStatusCode) {
 				throw new ApiIntegrationException(message + ": " + e.getMessage());
-			} else {
-				return;
 			}
+			return;
 		} catch (Exception e) {
 			throw new ApiIntegrationException(message + ": " + e.getMessage());
 		}
