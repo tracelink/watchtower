@@ -1,5 +1,13 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanningService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,20 +19,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
-import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrImageScan;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanningService;
-
 /**
  * REST interface to begin an image scan
- * 
- * @author csmith
  *
+ * @author csmith
  */
 @RestController
 @RequestMapping("/rest/imagescan")
@@ -72,7 +70,7 @@ public class ImageScanRestController {
 				scan.populateFromRequest(imageScan);
 				return scan;
 			default:
-				throw new ApiIntegrationException("No SCM API for this label.");
+				throw new ApiIntegrationException("No image API for this label.");
 		}
 	}
 

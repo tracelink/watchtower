@@ -80,7 +80,11 @@ environment variables listed in [Docker.env](Docker.env), then type `docker-comp
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
 
-There are two files included to aid deploying to Kubernetes. [deploy](deploy.yaml) is a basic EKS deployment model that can be tailored to fit your needs and [watchtower-secrets](watchtower-secrets.yaml) can be used to supply the db secrets to your EKS system using the Kubernetes configMap. For production usage, it is recommended to put these secrets into a secrets manager, based on your application's needs and infrastructure's availability.
+There are two files included to aid deploying to Kubernetes. [deploy](deploy.yaml) is a basic EKS
+deployment model that can be tailored to fit your needs
+and [watchtower-secrets](watchtower-secrets.yaml) can be used to supply the db secrets to your EKS
+system using the Kubernetes configMap. For production usage, it is recommended to put these secrets
+into a secrets manager, based on your application's needs and infrastructure's availability.
 
 If you are running directly from the jar file and not via Docker, note that some modules require
 specific setup as noted in their respective READMEs.
@@ -107,17 +111,30 @@ System Admin so that administrators cannot get locked out while modifying users 
 
 There are two built-in ways to authenticate to Watchtower.
 
-1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users authenticate to Watchtower directly. This is configured by default. A basic password checking policy class is installed already [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/auth/service/checker/ComplexityUserPasswordRequirementsChecker.java), implementors can override this in configuration classes as done [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/configuration/WatchtowerConfiguration.java). 
-2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`, `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as in [here](./watchtower-web/src/main/resources/application-prd.yaml).
+1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users
+   authenticate to Watchtower directly. This is configured by default. A basic password checking
+   policy class is installed
+   already [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/auth/service/checker/ComplexityUserPasswordRequirementsChecker.java)
+   , implementors can override this in configuration classes as
+   done [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/configuration/WatchtowerConfiguration.java)
+   .
+2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open
+   ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`
+   , `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as
+   in [here](./watchtower-web/src/main/resources/application-prd.yaml).
 
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.
 
-By default, there is a self-registration process that allows a user to join Watchtower and is assigned a default role as described in the Authorization section. This registration can be turned off by setting the configuration `watchtower.allowRegistration` to false. This could be used once the app is migrated to SSO and at least one local user account is created to protect against duplicate accounts.
+By default, there is a self-registration process that allows a user to join Watchtower and is
+assigned a default role as described in the Authorization section. This registration can be turned
+off by setting the configuration `watchtower.allowRegistration` to false. This could be used once
+the app is migrated to SSO and at least one local user account is created to protect against
+duplicate accounts.
 
-At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull Requests that have not been scanned in each configured repository and adds them to the scanning queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
-
-
+At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull
+Requests that have not been scanned in each configured repository and adds them to the scanning
+queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
 
 ## Authorization
 
@@ -211,6 +228,7 @@ Watchtower supports the following scan types:
 
 - Pull Request Scans
 - Upload Scans
+- Image Scans
 
 ### Pull Request Scans
 
@@ -242,6 +260,39 @@ files of a project, rather than only reporting on the subset of files that appea
 Watchtower provides a [CLI](./watchtower-cli/README.md) and
 a [Maven plugin](./watchtower-maven-plugin/README.md) to perform upload scans during the development
 phase of the SDLC.
+
+### Image Scans
+
+Image scans download an image security report from an image registry and report on any security
+findings. The scanner compares findings against a list of advisories that are effectively ignored by
+Watchtower and will not be flagged as violations. Rulesets allow for precise configuration of the
+allowed list of advisories for a particular image registry and repository.
+
+If the ruleset for an image scan is configured with a blocking level, then the image may be rejected
+according to the implementation of the API integration that initiated the scan. The image will only
+be rejected if the image security scan contains findings with a severity greater than or equal to
+the blocking level.
+
+#### ECR
+
+AWS's Elastic Container Registry can be configured as an API integration for automatic Watchtower
+image scans. Provide an AWS access key ID and secret key via the API settings page in Watchtower.
+The credentials should have permissions to access the following AWS functionality:
+
+- CloudFormation: create and delete stack, describe stacks
+- EventBridge: create and delete rule, connection, and API destination
+- ECR: describe image scan findings and delete image
+
+Test that the connection works as expected and then register the Watchtower webhook with AWS by
+clicking the 'Register' button. If registration is successful, the integration entity will be listed
+with a status of 'Registered'. After ECR completes an image scan, it will send a request to
+Watchtower to start the image scanning process using AWS's API Destinations. All credentials to
+connect to Watchtower are configured automatically during the registration process. To remove an ECR
+API integration, you must first unregister the integration, which will delete the AWS resources
+needed for the Watchtower webhook. Then you can delete the integration from Watchtower.
+
+For ECR, rejecting images with blocking-level violations consists of deleting the image from the
+repository.
 
 ## Database Column Encryption
 
@@ -312,6 +363,7 @@ rotated manually (if, for example, there is reason to believe they are compromis
 can be set to automatically rotate all keys after a certain number of days.
 
 ## Configuration
+
 | Configuration Key | Default Value | Value Options | Description|
 |-------------------|---------------|---------------|------------|
 |SPRING_PROFILES_ACTIVE|(blank)|prd, dev, prdtest, (custom)|Different built-in configuration parameters. `prd` is for production spring properties and requires a database configuration and sso configuration . `dev` uses an in-memory database and requires no setup. `prdtest` is for production-like testing such as a local docker container. `(custom)` is the implementor's choice. Any deployment can provide its own application.properties and override all properties.|
@@ -341,8 +393,10 @@ this will clash with the other Module.
 
 Several class selectors have been customized for the UI. These include:
 
-`datatable-invert` will begin datatables listing in reverse order (mostly for incrementing IDs and dates)
-`localizetime` will convert an html tag that exactly contains the epoch millis/seconds into a localized datetime string of the client's browser (Month Day, Year, Hours:Minutes:Seconds)
+`datatable-invert` will begin datatables listing in reverse order (mostly for incrementing IDs and
+dates)
+`localizetime` will convert an html tag that exactly contains the epoch millis/seconds into a
+localized datetime string of the client's browser (Month Day, Year, Hours:Minutes:Seconds)
 
 ## Authors
 

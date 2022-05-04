@@ -1,8 +1,10 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
 import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.repository.ApiKeyRepository;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationRepository;
 import java.security.KeyException;
 import org.hamcrest.MatcherAssert;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -73,6 +76,24 @@ public class ApiUserServiceTest {
 		} catch (UsernameNotFoundException e) {
 			MatcherAssert.assertThat(e.getMessage(), Matchers.is("Unknown Api Key"));
 		}
+	}
+
+	@Test
+	public void testLoadUserByUsernameIntegrationEntity() {
+		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
+		BDDMockito.when(integrationEntity.getWatchtowerSecret()).thenReturn("foo");
+		BDDMockito.when(mockApiKeyRepository.findByApiKeyId(BDDMockito.anyString()))
+				.thenReturn(null);
+		BDDMockito.when(mockIntegrationRepository.findByApiLabel(BDDMockito.anyString()))
+				.thenReturn(integrationEntity);
+		UserDetails userDetails = apiUserService.loadUserByUsername("apiLabel");
+		MatcherAssert.assertThat(userDetails.getUsername(), Matchers.is("apiLabel"));
+		MatcherAssert.assertThat(userDetails.getPassword(), Matchers.is("foo"));
+		MatcherAssert.assertThat(userDetails.getAuthorities(), Matchers.iterableWithSize(1));
+		MatcherAssert.assertThat(userDetails.getAuthorities(),
+				Matchers.contains(Matchers.hasProperty("authority",
+						Matchers.is(CorePrivilege.INTEGRATION_SCAN_SUBMIT))));
+		MatcherAssert.assertThat(userDetails.isEnabled(), Matchers.is(true));
 	}
 
 	@Test
