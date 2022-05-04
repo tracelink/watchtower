@@ -1,9 +1,13 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-
+import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,23 +18,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
-
-import net.minidev.json.JSONObject;
-
 /**
  * REST Contoller for Scan Results, including filtering
- * 
- * @author csmith
  *
+ * @author csmith
  */
 @RestController
 @RequestMapping("/rest/imagescan/result")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_RESULTS_NAME + "')")
 public class ImageScanResultController {
+
 	private ImageScanResultService resultService;
 
 	public ImageScanResultController(@Autowired ImageScanResultService resultService) {
@@ -49,11 +46,11 @@ public class ImageScanResultController {
 				resultService.getScanResultsWithFilters(resultFilter, pageSize, pageNum);
 		String next =
 				uriBuilder
-						.replacePath(Paths.get("rest/scan/result", resultFilter.getName(),
+						.replacePath(Paths.get("rest/imagescan/result", resultFilter.getName(),
 								String.valueOf(pageNum + 1)).toString())
 						.build().encode().toUriString();
 		JSONObject obj = new JSONObject();
-		if (results.size() == pageSize) {
+		if (!results.isEmpty()) {
 			obj.put("next", next);
 		}
 		obj.put("results", results);
