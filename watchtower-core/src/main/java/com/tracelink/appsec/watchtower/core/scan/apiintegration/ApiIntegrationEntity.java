@@ -113,6 +113,4 @@ public abstract class ApiIntegrationEntity {
 	 */
 	public abstract IWatchtowerApi createApi();
 
-	public abstract String getEndpointLink();
-
 }
