@@ -1,8 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,11 +22,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -150,14 +150,32 @@ public class ApiIntegrationControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testUpdateSettings() throws Exception {
-		String apiLabel = ApiType.BITBUCKET_CLOUD.getTypeName();
+		String apiType = ApiType.BITBUCKET_CLOUD.getTypeName();
 		mockMvc.perform(
-				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiLabel)
+				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiType)
 						.param("apiLabel", "a").param("workspace", "a").param("user", "a")
 						.param("auth", "a").with(SecurityMockMvcRequestPostProcessors.csrf()));
 
 		BDDMockito.verify(mockApiService)
 				.upsertEntity(BDDMockito.any(BBCloudIntegrationEntity.class));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
+	public void testUpdateSettingsFailure() throws Exception {
+		String apiLabel = ApiType.ECR.getTypeName();
+		BDDMockito.doThrow(new IllegalArgumentException("Something bad")).when(mockApiService)
+				.upsertEntity(BDDMockito.any());
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiLabel)
+						.param("apiLabel", "a").param("region", "a").param("registryId", "a")
+						.param("awsAccessKey", "a").param("awsSecretKey", "a")
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION, "Something bad"));
+
+		BDDMockito.verify(mockApiService)
+				.upsertEntity(BDDMockito.any(EcrIntegrationEntity.class));
 	}
 
 
@@ -175,5 +193,102 @@ public class ApiIntegrationControllerTest {
 				.andExpect(MockMvcResultMatchers.flash()
 						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 								"Unknown API Label"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
+	public void testTestConnection() throws Exception {
+		IWatchtowerApi api = BDDMockito.mock(IWatchtowerApi.class);
+		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
+		BDDMockito.when(integrationEntity.createApi()).thenReturn(api);
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
+				.thenReturn(integrationEntity);
+		String apiLabel = "myIntegration";
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/testConnection")
+						.param("apiLabel", apiLabel)
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
+								"Success"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
+	public void testTestConnectionFailure() throws Exception {
+		IWatchtowerApi api = BDDMockito.mock(IWatchtowerApi.class);
+		BDDMockito.doThrow(new ApiIntegrationException("Bad connection")).when(api)
+				.testClientConnection();
+		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
+		BDDMockito.when(integrationEntity.createApi()).thenReturn(api);
+		BDDMockito.when(mockApiService.findByLabel(BDDMockito.anyString()))
+				.thenReturn(integrationEntity);
+
+		String apiLabel = "myIntegration";
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/testConnection")
+						.param("apiLabel", apiLabel)
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
+								"Bad connection"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
+	public void testRegister() throws Exception {
+		String apiLabel = "myIntegration";
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/register")
+						.param("apiLabel", apiLabel)
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
+								"Started registration"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
+	public void testRegisterFailure() throws Exception {
+		String apiLabel = "myIntegration";
+		BDDMockito.doThrow(new ApiIntegrationException("Bad registration")).when(mockApiService)
+				.register(apiLabel);
+
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/register")
+						.param("apiLabel", apiLabel)
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
+								"Bad registration"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
+	public void testUnregister() throws Exception {
+		String apiLabel = "myIntegration";
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/unregister")
+						.param("apiLabel", apiLabel)
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
+								"Started registration removal"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_VIEW_NAME})
+	public void testUnregisterFailure() throws Exception {
+		String apiLabel = "myIntegration";
+		BDDMockito.doThrow(new ApiIntegrationException("Bad unregistration")).when(mockApiService)
+				.unregister(apiLabel);
+
+		mockMvc.perform(
+				MockMvcRequestBuilders.post("/apisettings/unregister")
+						.param("apiLabel", apiLabel)
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
+								"Bad unregistration"));
 	}
 }

@@ -1,8 +1,13 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultTest;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import java.util.Arrays;
 import java.util.List;
-
+import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -17,18 +22,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultTest;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
-
-import net.minidev.json.JSONObject;
-
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
 @AutoConfigureMockMvc
 public class ImageScanResultControllerTest {
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -71,7 +69,7 @@ public class ImageScanResultControllerTest {
 
 		JSONObject json = new JSONObject();
 		json.put("results", results);
-		json.put("next", "http://localhost/rest/scan/result/all/1");
+		json.put("next", "http://localhost/rest/imagescan/result/all/1");
 		String jsonString = springMvcJacksonConverter.getObjectMapper().writeValueAsString(json);
 
 		mockMvc.perform(MockMvcRequestBuilders
