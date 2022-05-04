@@ -1,12 +1,5 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.module.scanner.IImageScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -18,6 +11,11 @@ import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanError;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles orchestration of individual scanners for scans of an Image.
@@ -30,6 +28,7 @@ import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
  */
 public class ImageScanAgent extends
 		AbstractScanAgent<ImageScanAgent, IImageScanner, ImageScanConfig, ImageScanReport> {
+
 	private Logger LOG = LoggerFactory.getLogger(getClass());
 
 	private ImageScan scan;
@@ -49,7 +48,7 @@ public class ImageScanAgent extends
 
 	/**
 	 * Set the {@linkplain IImageApi} for this Agent's configuration
-	 * 
+	 *
 	 * @param api the {@linkplain IImageApi} to use
 	 * @return this agent
 	 */
@@ -60,7 +59,7 @@ public class ImageScanAgent extends
 
 	/**
 	 * Set the {@linkplain ImageScanResultService} for this Agent's configuration
-	 * 
+	 *
 	 * @param scanResultService the {@linkplain ImageScanResultService} to use
 	 * @return this agent
 	 */
@@ -71,7 +70,7 @@ public class ImageScanAgent extends
 
 	/**
 	 * Set the {@linkplain ImageAdvisoryService} for this Agent's configuration
-	 * 
+	 *
 	 * @param imageAdvisoryService the {@linkplain ImageAdvisoryService} to use
 	 * @return this agent
 	 */
@@ -96,6 +95,14 @@ public class ImageScanAgent extends
 		if (imageAdvisoryService == null) {
 			throw new ScanInitializationException("Image Advisory Service must be configured");
 		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected boolean shouldRunScanner(IImageScanner scanner, ImageScanConfig config) {
+		return true;
 	}
 
 	/**
