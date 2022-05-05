@@ -1,42 +1,57 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
+
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+
 /**
- * Enumeration of the supported types of scans
- * 
- * @author csmith
+ * Represents the type of a Watchtower scan and provides a method to get a display name for the UI.
  *
+ * @author csmith
  */
-public enum ScanType {
-	PULL_REQUEST("pull_request", "Pull Request"), UPLOAD("upload", "Upload");
+public interface ScanType extends Serializable {
 
-	private final String typeName;
-	private final String displayName;
+	String getTypeName();
 
-	ScanType(String typeName, String displayName) {
-		this.typeName = typeName;
-		this.displayName = displayName;
-	}
-
-	public String getTypeName() {
-		return this.typeName;
-	}
-
-	public String getDisplayName() {
-		return this.displayName;
-	}
+	String getDisplayName();
 
 	/**
-	 * Convert a string typeName to a {@linkplain ScanType}
+	 * Attribute Converter to manage translating between database-stored values and Java Objects
 	 * 
-	 * @param typeName the string representation of a {@linkplain ScanType}
-	 * @return The {@linkplain ScanType} for the input, or null if not found
+	 * @author csmith
+	 *
 	 */
-	public static ScanType ofType(String typeName) {
-		for (ScanType type : ScanType.values()) {
-			if (type.getTypeName().equals(typeName)) {
-				return type;
-			}
+	@Converter
+	class ScanTypeConverter implements AttributeConverter<ScanType, String> {
+
+		private static final List<ScanType> TYPES = new ArrayList<>();
+
+		public ScanTypeConverter() {
+			TYPES.addAll(Arrays.asList(CodeScanType.values()));
+			TYPES.addAll(Arrays.asList(ImageScanType.values()));
 		}
-		return null;
+
+		@Override
+		public String convertToDatabaseColumn(ScanType attribute) {
+			return attribute.getTypeName();
+		}
+
+		@Override
+		public ScanType convertToEntityAttribute(String dbData) {
+			for (ScanType type : TYPES) {
+				if (type.getTypeName().equals(dbData)) {
+					return type;
+				}
+			}
+			return null;
+		}
+
 	}
 }

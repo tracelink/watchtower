@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.task.TaskRejectedException;
 
-import com.tracelink.appsec.watchtower.core.scan.threadpool.PauseableThreadPoolTaskExecutor;
+import com.tracelink.appsec.watchtower.core.scan.code.threadpool.PauseableThreadPoolTaskExecutor;
 
 public class PauseableThreadPoolTaskExecutorTest {
 

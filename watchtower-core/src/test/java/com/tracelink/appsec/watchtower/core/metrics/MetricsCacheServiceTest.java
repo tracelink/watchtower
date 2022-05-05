@@ -18,13 +18,16 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.ScanType;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.entity.PullRequestViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadViolationEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
 import net.minidev.json.JSONObject;
 
@@ -35,20 +38,27 @@ public class MetricsCacheServiceTest {
 	PRScanResultService mockPrScanResultService;
 	@MockBean
 	UploadScanResultService mockUploadScanResultService;
+	@MockBean
+	ImageScanResultService mockImageScanResultService;
 
 	MetricsCacheService metricsCacheService;
 
 	private static String XXE_NAME = "XXE";
 	private static String SER_NAME = "SERIALIZATION";
 
+	private static String CVE_1 = "CVE-123";
+	private static String CVE_2 = "CVE-234";
+
 	@BeforeEach
 	public void setup() {
 		metricsCacheService =
-				new MetricsCacheService(mockPrScanResultService, mockUploadScanResultService);
+				new MetricsCacheService(mockPrScanResultService, mockUploadScanResultService,
+						mockImageScanResultService);
 		configureDefaults();
 	}
 
 	private void configureDefaults() {
+		// Pull Request Setup for scanIteratorBetweenDates
 		PullRequestViolationEntity prXxe = BDDMockito.mock(PullRequestViolationEntity.class);
 		BDDMockito.when(prXxe.getViolationName()).thenReturn(XXE_NAME);
 
@@ -71,6 +81,7 @@ public class MetricsCacheServiceTest {
 				.scanIteratorBetweenDates(BDDMockito.anyLong(), BDDMockito.anyLong()))
 				.thenReturn(mockIterator(prScan1, prScan2));
 
+		// Upload Setup for scanIteratorBetweenDates
 		UploadViolationEntity uploadXxe = BDDMockito.mock(UploadViolationEntity.class);
 		BDDMockito.when(uploadXxe.getViolationName()).thenReturn(XXE_NAME);
 
@@ -95,9 +106,37 @@ public class MetricsCacheServiceTest {
 				.scanIteratorBetweenDates(BDDMockito.anyLong(), BDDMockito.anyLong()))
 				.thenReturn(mockIterator(uploadScan1, uploadScan2));
 
+		// Image Setup for scanIteratorBetweenDates
+		ImageViolationEntity imageVio = BDDMockito.mock(ImageViolationEntity.class);
+		BDDMockito.when(imageVio.getViolationName()).thenReturn(CVE_1);
+
+		ImageViolationEntity imageVio2 = BDDMockito.mock(ImageViolationEntity.class);
+		BDDMockito.when(imageVio2.getViolationName()).thenReturn(CVE_1);
+
+		ImageViolationEntity imageVio3 = BDDMockito.mock(ImageViolationEntity.class);
+		BDDMockito.when(imageVio3.getViolationName()).thenReturn(CVE_2);
+
+		ImageScanEntity imageScan1 = BDDMockito.mock(ImageScanEntity.class);
+		BDDMockito.when(imageScan1.getViolations())
+				.thenReturn(Arrays.asList(imageVio, imageVio3));
+		BDDMockito.when(imageScan1.getEndDate()).thenReturn(LocalDate.now().atStartOfDay());
+		BDDMockito.when(imageScan1.getNumViolations()).thenReturn(2L);
+		ImageScanEntity imageScan2 = BDDMockito.mock(ImageScanEntity.class);
+		BDDMockito.when(imageScan2.getViolations())
+				.thenReturn(Collections.singletonList(imageVio2));
+		BDDMockito.when(imageScan2.getEndDate())
+				.thenReturn(LocalDate.now().minusMonths(2).atStartOfDay());
+		BDDMockito.when(imageScan2.getNumViolations()).thenReturn(1L);
+		BDDMockito.when(mockImageScanResultService
+				.scanIteratorBetweenDates(BDDMockito.anyLong(), BDDMockito.anyLong()))
+				.thenReturn(mockIterator(imageScan1, imageScan2));
+
+		// Oldest Scans
 		BDDMockito.when(mockPrScanResultService.getOldestScanDate())
 				.thenReturn(LocalDate.now().withDayOfMonth(1).minusMonths(1));
 		BDDMockito.when(mockUploadScanResultService.getOldestScanDate())
+				.thenReturn(LocalDate.now().withDayOfMonth(1).minusMonths(1));
+		BDDMockito.when(mockImageScanResultService.getOldestScanDate())
 				.thenReturn(LocalDate.now().withDayOfMonth(1).minusMonths(1));
 	}
 
@@ -132,7 +171,7 @@ public class MetricsCacheServiceTest {
 	public void testUpdateViolationsByType() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json =
-				this.metricsCacheService.getViolationsByType(ScanType.PULL_REQUEST, "all-time");
+				this.metricsCacheService.getViolationsByType(CodeScanType.PULL_REQUEST, "all-time");
 		MatcherAssert.assertThat(json.getAsString("labels"),
 				Matchers.allOf(Matchers.containsString(SER_NAME),
 						Matchers.allOf(Matchers.containsString(XXE_NAME))));
@@ -145,7 +184,7 @@ public class MetricsCacheServiceTest {
 	@Test
 	public void testUpdateViolationsByPeriod() {
 		this.metricsCacheService.updateAllMetrics();
-		JSONObject json = this.metricsCacheService.getViolationsByPeriod(ScanType.UPLOAD,
+		JSONObject json = this.metricsCacheService.getViolationsByPeriod(CodeScanType.UPLOAD,
 				"last-six-months");
 		MatcherAssert.assertThat(json.getAsString("counts"),
 				Matchers.allOf(Matchers.containsString("2"),
@@ -156,7 +195,7 @@ public class MetricsCacheServiceTest {
 	public void testUpdateViolationsByPeriodAndType() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json = this.metricsCacheService
-				.getViolationsByPeriodAndType(ScanType.PULL_REQUEST, "last-four-weeks");
+				.getViolationsByPeriodAndType(CodeScanType.PULL_REQUEST, "last-four-weeks");
 		MatcherAssert.assertThat(json.getAsString(XXE_NAME), Matchers.containsString("2"));
 		MatcherAssert.assertThat(json.getAsString(SER_NAME), Matchers.containsString("1"));
 	}
@@ -165,7 +204,7 @@ public class MetricsCacheServiceTest {
 	public void testUpdateScansByPeriod() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json =
-				this.metricsCacheService.getScansByPeriod(ScanType.PULL_REQUEST, "last-week");
+				this.metricsCacheService.getScansByPeriod(CodeScanType.PULL_REQUEST, "last-week");
 		System.out.println(json);
 		MatcherAssert.assertThat(json.getAsString("counts"),
 				Matchers.containsString("1, 1"));
@@ -175,7 +214,7 @@ public class MetricsCacheServiceTest {
 	public void testGetBadInterval() {
 		this.metricsCacheService.updateAllMetrics();
 		JSONObject json =
-				this.metricsCacheService.getScansByPeriod(ScanType.PULL_REQUEST, "foobar");
+				this.metricsCacheService.getScansByPeriod(CodeScanType.PULL_REQUEST, "foobar");
 		MatcherAssert.assertThat(json.getAsString("error"),
 				Matchers.containsString("Unknown time period"));
 	}
@@ -183,7 +222,7 @@ public class MetricsCacheServiceTest {
 	@Test
 	public void testGetEmptyMetrics() {
 		JSONObject json =
-				this.metricsCacheService.getScansByPeriod(ScanType.PULL_REQUEST, "last-week");
+				this.metricsCacheService.getScansByPeriod(CodeScanType.PULL_REQUEST, "last-week");
 		MatcherAssert.assertThat(json.getAsString("error"),
 				Matchers.containsString("Null metric for that period"));
 	}
@@ -191,11 +230,13 @@ public class MetricsCacheServiceTest {
 	@Test
 	public void testPauseUnpause() throws InterruptedException {
 		this.metricsCacheService.pause();
-		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(), Matchers.is(false));
+		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(),
+				Matchers.is(false));
 		new Thread(() -> {
 			this.metricsCacheService.updateAllMetrics();
 		}).start();
-		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(), Matchers.is(false));
+		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(),
+				Matchers.is(false));
 		this.metricsCacheService.resume();
 		Thread.sleep(1000);
 		MatcherAssert.assertThat(this.metricsCacheService.isMetricsCacheReady(), Matchers.is(true));
@@ -205,16 +246,18 @@ public class MetricsCacheServiceTest {
 	public void testGetScanCount() {
 		BDDMockito.when(mockPrScanResultService.countScans()).thenReturn(2L);
 		this.metricsCacheService.updateAllMetrics();
-		Assertions.assertEquals(2, this.metricsCacheService.getScanCount(ScanType.PULL_REQUEST));
-		Assertions.assertEquals(0, this.metricsCacheService.getScanCount(ScanType.UPLOAD));
+		Assertions.assertEquals(2,
+				this.metricsCacheService.getScanCount(CodeScanType.PULL_REQUEST));
+		Assertions.assertEquals(0, this.metricsCacheService.getScanCount(CodeScanType.UPLOAD));
 	}
 
 	@Test
 	public void testGetViolationCount() {
 		BDDMockito.when(mockPrScanResultService.countViolations()).thenReturn(2L);
 		this.metricsCacheService.updateAllMetrics();
-		Assertions.assertEquals(2, this.metricsCacheService.getViolationCount(ScanType.PULL_REQUEST));
-		Assertions.assertEquals(0, this.metricsCacheService.getViolationCount(ScanType.UPLOAD));
+		Assertions.assertEquals(2,
+				this.metricsCacheService.getViolationCount(CodeScanType.PULL_REQUEST));
+		Assertions.assertEquals(0, this.metricsCacheService.getViolationCount(CodeScanType.UPLOAD));
 	}
 
 	@Test
@@ -222,9 +265,9 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals(2.0,
-				this.metricsCacheService.getAverageScanTime(ScanType.PULL_REQUEST), 0.0);
+				this.metricsCacheService.getAverageScanTime(CodeScanType.PULL_REQUEST), 0.0);
 		Assertions.assertEquals(0.0,
-				this.metricsCacheService.getAverageScanTime(ScanType.UPLOAD), 0.0);
+				this.metricsCacheService.getAverageScanTime(CodeScanType.UPLOAD), 0.0);
 	}
 
 	@Test
@@ -232,7 +275,7 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals("2 ms",
-				this.metricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST));
+				this.metricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
 	}
 
 	@Test
@@ -240,7 +283,7 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0 * 1000);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals("2.00 s",
-				this.metricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST));
+				this.metricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
 	}
 
 	@Test
@@ -248,6 +291,6 @@ public class MetricsCacheServiceTest {
 		BDDMockito.when(mockPrScanResultService.getAverageTime()).thenReturn(2.0 * 1000 * 60);
 		this.metricsCacheService.updateAllMetrics();
 		Assertions.assertEquals("2.00 mins",
-				this.metricsCacheService.getAverageScanTimeString(ScanType.PULL_REQUEST));
+				this.metricsCacheService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
 	}
 }

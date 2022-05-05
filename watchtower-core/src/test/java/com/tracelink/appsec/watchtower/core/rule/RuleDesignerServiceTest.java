@@ -75,20 +75,20 @@ public class RuleDesignerServiceTest {
 	@Test
 	public void testGetDefaultDesignerView() throws Exception {
 		RuleDesignerModelAndView mockMAV = BDDMockito.mock(RuleDesignerModelAndView.class);
-		BDDMockito.when(mockRuleDesigner.getRuleDesignerModelAndView()).thenReturn(mockMAV);
+		BDDMockito.when(mockRuleDesigner.getDefaultRuleDesignerModelAndView()).thenReturn(mockMAV);
 
 		RuleDesignerService rds = new RuleDesignerService();
 		rds.registerRuleDesigner("Mock", mockRuleDesigner);
 
 		Assertions.assertEquals(mockMAV,
-				rds.getDesignerModelAndView("Mock"));
+				rds.getDefaultDesignerModelAndView("Mock"));
 	}
 
 	@Test
 	public void testGetDefaultDesignerViewException() throws Exception {
 		RuleDesignerService rds = new RuleDesignerService();
 		try {
-			rds.getDesignerModelAndView("Mock");
+			rds.getDefaultDesignerModelAndView("Mock");
 			Assertions.fail("Should have thrown an exception");
 		} catch (ModuleNotFoundException e) {
 			Assertions.assertTrue(e.getMessage().contains("No designer exists"));

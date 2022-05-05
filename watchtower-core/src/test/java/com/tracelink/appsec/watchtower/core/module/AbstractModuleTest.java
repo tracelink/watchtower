@@ -21,7 +21,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
 import com.tracelink.appsec.watchtower.core.rule.RuleEditorService;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -45,7 +45,7 @@ public class AbstractModuleTest {
 	private ScanRegistrationService mockScanRegistrationService;
 
 	@Mock
-	private IScanner mockScanner;
+	private ICodeScanner mockScanner;
 
 	@Mock
 	private IRuleDesigner mockDesigner;
@@ -65,7 +65,7 @@ public class AbstractModuleTest {
 	 * "not best practice" we have to commit a different cardinal sin and manually inject the mocks
 	 * during testing using Reflection
 	 */
-	private AbstractModule injectMocks(AbstractModule module) {
+	private AbstractCodeScanModule injectMocks(AbstractCodeScanModule module) {
 		ReflectionTestUtils.setField(module, "flyway", flyway);
 		ReflectionTestUtils.setField(module, "ruleEditorService", mockRuleEditorService);
 		ReflectionTestUtils.setField(module, "rulesetService", mockRulesetService);
@@ -92,7 +92,7 @@ public class AbstractModuleTest {
 	@Test
 	public void testBuildModuleFlyway() throws Exception {
 		String testString = "hello";
-		AbstractModule module = injectMocks(new MockModule());
+		AbstractCodeScanModule module = injectMocks(new MockModule());
 		module.buildModule();
 		Connection conn = flyway.getConfiguration().getDataSource().getConnection();
 		PreparedStatement stmt = conn.prepareStatement("INSERT INTO test (testval) VALUES (?)");
@@ -106,15 +106,15 @@ public class AbstractModuleTest {
 
 	@Test
 	public void testBuildModuleRegisterWithRuleService() throws Exception {
-		AbstractModule module = injectMocks(new MockModule());
+		AbstractCodeScanModule module = injectMocks(new MockModule());
 		module.buildModule();
 		BDDMockito.verify(mockRuleEditorService, Mockito.times(1)).registerRuleEditor(moduleName,
 				mockRuleManager);
 	}
 
 	@Test
-	public void testBuildModuleRegisterWithScanninService() throws Exception {
-		AbstractModule module = injectMocks(new MockModule());
+	public void testBuildModuleRegisterWithScanningService() throws Exception {
+		AbstractCodeScanModule module = injectMocks(new MockModule());
 		module.buildModule();
 		BDDMockito.verify(mockScanRegistrationService, Mockito.times(1)).registerScanner(moduleName,
 				mockScanner);
@@ -122,7 +122,7 @@ public class AbstractModuleTest {
 
 	@Test
 	public void testBuildModuleRegisterWithRuleDesignerService() throws Exception {
-		AbstractModule module = injectMocks(new MockModule());
+		AbstractCodeScanModule module = injectMocks(new MockModule());
 		module.buildModule();
 		BDDMockito.verify(mockRuleDesignerService, Mockito.times(1)).registerRuleDesigner(
 				moduleName,
@@ -133,7 +133,7 @@ public class AbstractModuleTest {
 	public void testBuildModuleNameNull() {
 		Assertions.assertThrows(IllegalStateException.class,
 				() -> {
-					AbstractModule module = injectMocks(new MockModule(null));
+					AbstractCodeScanModule module = injectMocks(new MockModule(null));
 					module.buildModule();
 				});
 	}
@@ -144,12 +144,12 @@ public class AbstractModuleTest {
 				() -> {
 					BDDMockito.doThrow(ModuleException.class).when(mockRuleEditorService)
 							.registerRuleEditor(moduleName, mockRuleManager);
-					AbstractModule module = injectMocks(new MockModule());
+					AbstractCodeScanModule module = injectMocks(new MockModule());
 					module.buildModule();
 				});
 	}
 
-	private class MockModule extends AbstractModule {
+	private class MockModule extends AbstractCodeScanModule {
 		private String name = moduleName;
 
 		public MockModule(String name) {
@@ -176,7 +176,7 @@ public class AbstractModuleTest {
 		}
 
 		@Override
-		public IScanner getScanner() {
+		public ICodeScanner getScanner() {
 			return mockScanner;
 		}
 

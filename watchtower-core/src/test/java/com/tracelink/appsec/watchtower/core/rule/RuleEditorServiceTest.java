@@ -87,12 +87,12 @@ public class RuleEditorServiceTest {
 		BDDMockito.when(ruleService.getRulesForModule(BDDMockito.anyString()))
 				.thenReturn(Collections.singletonList(mockDto));
 
-		BDDMockito.when(mockRuleManager.getRuleEditModelAndView(mockDto))
+		BDDMockito.when(mockRuleManager.getDefaultRuleEditModelAndView(mockDto))
 				.thenReturn(new RuleEditModelAndView(view));
 		RuleEditModelAndView mav = ruleEditorService.getRuleEditModelAndView(module, ruleId);
 		MatcherAssert.assertThat(mav.getModel().get("activeRule"), Matchers.is(mockDto));
 		MatcherAssert.assertThat(mav.getModel().get("ruleView"), Matchers.is(view));
-		BDDMockito.verify(mockRuleManager).getRuleEditModelAndView(mockDto);
+		BDDMockito.verify(mockRuleManager).getDefaultRuleEditModelAndView(mockDto);
 	}
 
 	@Test
@@ -103,7 +103,7 @@ public class RuleEditorServiceTest {
 		RuleEditModelAndView mav = ruleEditorService.getRuleEditModelAndView(module, null);
 		MatcherAssert.assertThat(mav.getModel().get("activeRule"), Matchers.nullValue());
 		BDDMockito.verify(mockRuleManager, BDDMockito.never())
-				.getRuleEditModelAndView(BDDMockito.any());
+				.getDefaultRuleEditModelAndView(BDDMockito.any());
 	}
 
 	@Test

@@ -2,20 +2,20 @@ package com.tracelink.appsec.watchtower.test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
 
 /**
  * The TestBuilder allows Scanner Module authors to supply a few expected values for their module so
- * that the overall test harness {@link ScannerModuleTest} can work
+ * that the overall test harness {@link CodeScannerModuleTest} can work
  *
  * @author csmith
+ * @param <R> The type of {@link AbstractScanReport} used in this tester
+ * @param <I> The Scanner Target (item scanned) type used in this tester
  */
-public class ScannerModuleTestBuilder {
+public class ScannerModuleTestBuilder<R extends AbstractScanReport, I> {
 
 	private String name;
 	private String schemaName;
@@ -23,7 +23,7 @@ public class ScannerModuleTestBuilder {
 	private Class<? extends RuleDto> supportedRuleClass;
 	private Supplier<? extends RuleDto> ruleSupplier;
 	private final Set<ScannerModuleTestOption> ignoredOptions = new HashSet<>();
-	private TestScanConfiguration testScanConfig;
+	private TestScanConfiguration<R, I> testScanConfig;
 
 	public String getName() {
 		return name;
@@ -35,7 +35,7 @@ public class ScannerModuleTestBuilder {
 	 * @param name the module name
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder withName(String name) {
+	public ScannerModuleTestBuilder<R, I> withName(String name) {
 		this.name = name;
 		return this;
 	}
@@ -50,7 +50,7 @@ public class ScannerModuleTestBuilder {
 	 * @param schemaName schema history table name
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder withSchemaName(String schemaName) {
+	public ScannerModuleTestBuilder<R, I> withSchemaName(String schemaName) {
 		this.schemaName = schemaName;
 		return this;
 	}
@@ -65,7 +65,7 @@ public class ScannerModuleTestBuilder {
 	 * @param migration the migrations location
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder withMigration(String migration) {
+	public ScannerModuleTestBuilder<R, I> withMigration(String migration) {
 		this.migration = migration;
 		return this;
 	}
@@ -80,7 +80,7 @@ public class ScannerModuleTestBuilder {
 	 * @param supportedRuleClass the class of Rules this module uses
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder withSupportedRuleClass(
+	public ScannerModuleTestBuilder<R, I> withSupportedRuleClass(
 			Class<? extends RuleDto> supportedRuleClass) {
 		this.supportedRuleClass = supportedRuleClass;
 		return this;
@@ -97,7 +97,7 @@ public class ScannerModuleTestBuilder {
 	 * @param ruleSupplier the Supplier that generates a rule for this module
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder withRuleSupplier(
+	public ScannerModuleTestBuilder<R, I> withRuleSupplier(
 			Supplier<? extends RuleDto> ruleSupplier) {
 		this.ruleSupplier = ruleSupplier;
 		return this;
@@ -114,12 +114,12 @@ public class ScannerModuleTestBuilder {
 	 * @param testOption the test option to ignore during testing
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder andIgnoreTestOption(ScannerModuleTestOption testOption) {
+	public ScannerModuleTestBuilder<R, I> andIgnoreTestOption(ScannerModuleTestOption testOption) {
 		ignoredOptions.add(testOption);
 		return this;
 	}
 
-	public TestScanConfiguration getTestScanConfiguration() {
+	public TestScanConfiguration<R, I> getTestScanConfiguration() {
 		return testScanConfig;
 	}
 
@@ -130,74 +130,12 @@ public class ScannerModuleTestBuilder {
 	 * @param testConfig the Test Scan Config
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder withTestScanConfigurationBuilder(
-			TestScanConfiguration testConfig) {
+	public ScannerModuleTestBuilder<R, I> withTestScanConfigurationBuilder(
+			TestScanConfiguration<R, I> testConfig) {
 		testScanConfig = testConfig;
 		return this;
 	}
 
 
-	/**
-	 * This Scan Config allows a tester to define a scanning configuration that will exercise the
-	 * scanner on a given resource file using a defined ruleset and provide the ability to check the
-	 * result against a number of Assertions
-	 * 
-	 * @author csmith
-	 *
-	 */
-	public static class TestScanConfiguration {
-		private String resourceFile;
-		private RulesetDto ruleset;
-		private Consumer<ScanReport> clause;
 
-		public String getResourceFile() {
-			return this.resourceFile;
-		}
-
-		/**
-		 * Add a Resource file from /src/test/resources to this scan configuration. Note that this
-		 * must be a simple file, not a file that needs unzipping or other transformation. This
-		 * resource must also start with a '/' and be housed in the module's src/test/resources
-		 * folder
-		 * 
-		 * @param resource the resource file to use
-		 * @return this builder
-		 */
-		public TestScanConfiguration withTargetResourceFile(String resource) {
-			resourceFile = resource;
-			return this;
-		}
-
-		public RulesetDto getRuleset() {
-			return this.ruleset;
-		}
-
-		/**
-		 * Add a Ruleset definition to this scan configuration. This ruleset contains the rules that
-		 * will be run by the scanner on the resource file.
-		 * 
-		 * @param ruleset the ruleset to use
-		 * @return this builder
-		 */
-		public TestScanConfiguration withRuleset(RulesetDto ruleset) {
-			this.ruleset = ruleset;
-			return this;
-		}
-
-		public Consumer<ScanReport> getAssertClause() {
-			return this.clause;
-		}
-
-		/**
-		 * Provide a Consumer that will Assert the accuracy of the resulting {@linkplain ScanReport}
-		 * from the scanner.
-		 * 
-		 * @param clause the consumer clause that Asserts the correctness of the report
-		 * @return this builder
-		 */
-		public TestScanConfiguration withAssertClause(Consumer<ScanReport> clause) {
-			this.clause = clause;
-			return this;
-		}
-	}
 }

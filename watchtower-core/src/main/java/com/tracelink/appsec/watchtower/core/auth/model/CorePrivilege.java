@@ -2,9 +2,8 @@ package com.tracelink.appsec.watchtower.core.auth.model;
 
 /**
  * Core Privileges are owned and used by the Watchtower Core system
- * 
- * @author csmith
  *
+ * @author csmith
  */
 public enum CorePrivilege {
 
@@ -32,7 +31,7 @@ public enum CorePrivilege {
 
 	/* Core Config */
 	API_SETTINGS_VIEW(CorePrivilege.API_SETTINGS_VIEW_NAME, CorePrivilege.CONFIG_CATEGORY,
-			"User may view and test the current SCM API Settings (minus any credentials), as well as see the webhook endpoint for APIs."),
+			"User may view and test the current API Integration Settings (minus any credentials), as well as see the webhook endpoint for APIs."),
 	API_SETTINGS_MODIFY(CorePrivilege.API_SETTINGS_MODIFY_NAME, CorePrivilege.CONFIG_CATEGORY,
 			"User may modify the current API Settings."),
 	REPOSITORY_SETTINGS_VIEW(CorePrivilege.REPO_SETTINGS_VIEW_NAME, CorePrivilege.CONFIG_CATEGORY,
@@ -82,7 +81,7 @@ public enum CorePrivilege {
 	public static final String LOGGING_DOWNLOAD_NAME = "Logging Download";
 
 	/* Core Config Names */
-	public static final String API_SETTINGS_VIEW_NAME = "SCM API Settings View";
+	public static final String API_SETTINGS_VIEW_NAME = "API Settings View";
 	public static final String API_SETTINGS_MODIFY_NAME = "API Settings Modify";
 	public static final String REPO_SETTINGS_VIEW_NAME = "Repository Settings View";
 	public static final String REPO_SETTINGS_MODIFY_NAME = "Repository Settings Modify";
@@ -100,6 +99,9 @@ public enum CorePrivilege {
 	public static final String SCAN_SUBMIT_NAME = "Scan Submit";
 	public static final String SCAN_ADMIN_NAME = "Scan Admin";
 	public static final String SCAN_RESULTS_NAME = "Scan Results View";
+
+	/* API Integration Scan */
+	public static final String INTEGRATION_SCAN_SUBMIT = "Integration Scan Submit";
 
 	private final String name;
 	private final String category;

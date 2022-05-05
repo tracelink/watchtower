@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.IImageScanner;
 import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
 
 /**
@@ -20,7 +22,8 @@ public class ScanRegistrationService {
 	/**
 	 * Map from module name to scanner implementation
 	 */
-	private Map<String, IScanner> scanners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private Map<String, ICodeScanner> codeScanners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private Map<String, IImageScanner> imageScanners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 	/**
 	 * Registers a scanner with this service.
@@ -31,22 +34,39 @@ public class ScanRegistrationService {
 	 * @throws ModuleException          if there is already a scanner associated with the given
 	 *                                  module
 	 */
-	public void registerScanner(String module, IScanner scanner)
+	public void registerScanner(String module, IScanner<?, ?> scanner)
 			throws IllegalArgumentException, ModuleException {
 		if (StringUtils.isBlank(module) || scanner == null) {
 			throw new IllegalArgumentException("Module and scanner cannot be null.");
 		}
-		if (scanners.containsKey(module)) {
-			throw new ModuleException("A scanner for the given module already exists: " + module);
+		if (scanner instanceof ICodeScanner) {
+			if (codeScanners.containsKey(module)) {
+				throw new ModuleException(
+						"A scanner for the given module already exists: " + module);
+			}
+			codeScanners.put(module, (ICodeScanner) scanner);
+		} else if (scanner instanceof IImageScanner) {
+			if (imageScanners.containsKey(module)) {
+				throw new ModuleException(
+						"A scanner for the given module already exists: " + module);
+			}
+			imageScanners.put(module, (IImageScanner) scanner);
 		}
-		scanners.put(module, scanner);
 	}
 
-	public Collection<IScanner> getScanners() {
-		return this.scanners.values();
+	public Collection<ICodeScanner> getCodeScanners() {
+		return this.codeScanners.values();
 	}
 
-	public boolean isEmpty() {
-		return this.scanners.isEmpty();
+	public boolean hasCodeScanners() {
+		return !this.codeScanners.isEmpty();
+	}
+
+	public Collection<IImageScanner> getImageScanners() {
+		return this.imageScanners.values();
+	}
+
+	public boolean hasImageScanners() {
+		return !this.imageScanners.isEmpty();
 	}
 }

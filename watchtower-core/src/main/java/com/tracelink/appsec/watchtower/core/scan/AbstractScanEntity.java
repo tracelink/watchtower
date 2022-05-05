@@ -22,7 +22,7 @@ import com.tracelink.appsec.watchtower.core.scan.ScanStatus.ScanStatusConverter;
  * @author csmith
  */
 @MappedSuperclass
-public abstract class AbstractScanEntity<C extends AbstractScanContainer<?>, V extends AbstractViolationEntity<?>> {
+public abstract class AbstractScanEntity<C extends AbstractScanContainerEntity<?>, V extends AbstractScanViolationEntity<?>> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

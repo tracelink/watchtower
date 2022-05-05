@@ -25,9 +25,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.upload.result.UploadScanResult;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanningService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanResult;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
 
 
 @ExtendWith(SpringExtension.class)

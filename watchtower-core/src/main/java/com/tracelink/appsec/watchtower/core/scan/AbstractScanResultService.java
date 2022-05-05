@@ -19,7 +19,7 @@ import org.springframework.data.domain.Sort.Direction;
  * @param <S> a type describing this scan result's associated Scan
  * @param <V> a type describing this scan result's associated Violation
  */
-public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, ?>, V extends AbstractViolationEntity<S>> {
+public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, ?>, V extends AbstractScanViolationEntity<S>> {
 
 	private final IScanRepository<S> scanRepo;
 	private final IViolationRepository<V> vioRepo;

@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.upload.entity.UploadViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 
 import net.minidev.json.JSONObject;
 

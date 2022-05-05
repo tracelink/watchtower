@@ -67,7 +67,7 @@ public class RuleDesignerControllerTest {
 		RuleDesignerModelAndView mockMAV = new RuleDesignerModelAndView(null);
 		List<String> modules = Arrays.asList("Test");
 
-		BDDMockito.when(mockDesignerService.getDesignerModelAndView(BDDMockito.anyString()))
+		BDDMockito.when(mockDesignerService.getDefaultDesignerModelAndView(BDDMockito.anyString()))
 				.thenReturn(mockMAV);
 		BDDMockito.when(mockDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(modules);
@@ -80,7 +80,7 @@ public class RuleDesignerControllerTest {
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.RULE_DESIGNER_NAME})
 	public void testGetLangDesignerBad() throws Exception {
-		BDDMockito.when(mockDesignerService.getDesignerModelAndView(BDDMockito.anyString()))
+		BDDMockito.when(mockDesignerService.getDefaultDesignerModelAndView(BDDMockito.anyString()))
 				.thenThrow(new ModuleNotFoundException(""));
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/designer/mock"))

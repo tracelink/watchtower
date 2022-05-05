@@ -1,21 +1,79 @@
 <!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-12 col-sm-6 text-center text-sm-left mb-0">
-        <h3 class="page-title">API Configuration</h3>
-    </div>
+<div class="page-header row no-gutters py-4" xmlns="http://www.w3.org/1999/html">
+  <div class="col-12 col-sm-6 text-center text-sm-left mb-0">
+    <h3 class="page-title" th:text="${apiType.getTypeName() + ' API Integration'}"></h3>
+  </div>
 </div>
 <!-- End Page Header -->
-<!-- Content -->
-<!-- Top Row -->
+<!-- Integration Details -->
 <div class="row border-bottom">
-    <div class="col">
-        <div class="card">
-            <div class="card-header border-bottom">
-                <h6 class="m-0" th:text="${'Configure ' + apiType.getTypeName() + ' Setting'}"/>
-            </div>
-            <div class="card-body">
-            	<div th:replace="${template}"/>
-            </div>
+  <div class="col">
+    <div class="card card-small">
+      <div class="card-header border-bottom">
+        <div class="d-flex justify-content-between">
+          <h6 class="card-title align-self-center mb-0">Details</h6>
+          <div class="btn-toolbar">
+            <form
+                th:if="${entity?.registerState?.displayName?.equals('Not Registered')}"
+                class="form-inline" method="POST" action="/apisettings/register">
+              <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="btn btn-info mr-2">Register</button>
+            </form>
+            <form
+                th:if="${#lists.contains({'Registered', 'Failed'}, entity?.registerState?.displayName)}"
+                class="form-inline" method="POST" action="/apisettings/unregister">
+              <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="btn btn-warning mr-2">Unregister</button>
+            </form>
+            <form
+                th:if="${#lists.contains({'Not Supported', 'Not Registered', 'Failed'}, entity?.registerState?.displayName)}"
+                class="form-inline" method="POST" action="/apisettings/delete">
+              <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+          </div>
         </div>
+      </div>
+      <form method="POST" action="/apisettings/update">
+        <div class="card-body border-bottom">
+          <div class="row">
+            <div class="col">
+              <label for="apiLabel" class="col-form-label">API Label</label>
+              <input type="text" id="apiLabel" name="apiLabel"
+                     th:class="${entity != null ? 'form-control-plaintext' : 'form-control'}"
+                     th:value="${entity?.apiLabel}"
+                     placeholder="A unique label for this integration (alphanumeric characters only)"
+                     th:readonly="${entity != null}">
+            </div>
+            <div
+                th:unless="${entity == null || entity?.registerState?.displayName?.equals('Not Supported')}"
+                class="col">
+              <label for="registerState" class="col-form-label">Registration State</label>
+              <input type="text" id="registerState" class="form-control-plaintext"
+                     th:value="${entity?.registerState?.displayName}" readonly>
+            </div>
+          </div>
+          <div th:unless="${entity?.registerError == null}" class="row">
+            <div class="col">
+              <label for="registerError" class="col-form-label">Registration Error</label>
+              <input type="text" id="registerError" class="form-control-plaintext"
+                     th:value="${entity?.registerError}" readonly>
+            </div>
+          </div>
+        </div>
+        <div class="card-body border-bottom">
+          <div th:replace="${template}"></div>
+        </div>
+        <div class="card-footer">
+          <input type="hidden" name="apiId" th:value="${entity?.integrationId}"/>
+          <input type="hidden" name="apiType" th:value="${apiType.typeName}"/>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button class="btn btn-primary" type="Submit">Update API Setting</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>

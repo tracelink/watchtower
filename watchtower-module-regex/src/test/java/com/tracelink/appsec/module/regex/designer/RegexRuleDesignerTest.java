@@ -18,7 +18,7 @@ public class RegexRuleDesignerTest {
 
 	@Test
 	public void testGetRuleDesignerModelAndView() {
-		RuleDesignerModelAndView mav = regexDesigner.getRuleDesignerModelAndView();
+		RuleDesignerModelAndView mav = regexDesigner.getDefaultRuleDesignerModelAndView();
 		assertMav(mav);
 	}
 

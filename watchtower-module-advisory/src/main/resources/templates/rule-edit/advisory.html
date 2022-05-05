@@ -1,0 +1,33 @@
+<!-- Card Footer -->
+<div class="card-footer">
+	<p class="card-title text-left">Whitelist Rule</p>
+	<div class="row mb-2">
+		<label for="name" class="col-sm-2 col-form-label">Name</label>
+		<div class="col-sm-6">
+			<input type="text" readonly class="form-control" id="name"
+				th:value="${rule.name}">
+		</div>
+	</div>
+	<div class="row mb-2">
+		<label for="author" class="col-sm-2 col-form-label">Author</label>
+		<div class="col-sm-4">
+			<input type="text" readonly class="form-control" id="author"
+				th:value="${rule.author}">
+		</div>
+	</div>
+	<div class="row mb-2">
+		<label for="ruleMessage" class="col-sm-2">Message</label>
+		<div class="col-sm-10">
+			<textarea class="form-control" readonly rows="4" id="ruleMessage"
+				th:text="${rule.message}"></textarea>
+		</div>
+	</div>
+	<div class="row mb-2">
+		<label for="externalUrl" class="col-sm-2">External URL</label>
+		<div class="col-sm-10">
+			<input type="text" readonly class="form-control" id="externalUrl"
+				th:value="${rule.externalUrl}"/>
+		</div>
+	</div>
+</div>
+<!-- End Card Footer -->

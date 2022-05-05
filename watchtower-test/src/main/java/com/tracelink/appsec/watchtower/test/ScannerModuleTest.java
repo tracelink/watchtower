@@ -1,43 +1,33 @@
 package com.tracelink.appsec.watchtower.test;
 
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.function.Consumer;
-
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.module.AbstractModule;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
-import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
-import com.tracelink.appsec.watchtower.test.ScannerModuleTestBuilder.TestScanConfiguration;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
 
 /**
  * An encompassing test suite for Scanner Modules. This exercises all basic class contracts for all
  * objects required to be implemented by the Scanner Module
  *
  * @author csmith
+ * @param <M> The type of {@linkplain AbstractModule} under test
+ * @param <R> The type of {@linkplain AbstractScanReport} used in this tester
+ * @param <I> The Scanner Target (item scanned) type used in this tester
  */
-public abstract class ScannerModuleTest {
-
-	private ScannerModuleTestBuilder scannerTester;
-	private AbstractModule moduleUnderTest;
+public abstract class ScannerModuleTest<M extends AbstractModule<?>, R extends AbstractScanReport, I> {
+	private ScannerModuleTestBuilder<R, I> scannerTester;
+	private M moduleUnderTest;
 
 	/**
 	 * Construct a Scanner Module for this test
 	 * 
 	 * @return an implementation of {@linkplain AbstractModule} to test
 	 */
-	protected abstract AbstractModule buildScannerModule();
+	protected abstract M buildScannerModule();
 
 	/**
 	 * Configuration method to make the {@linkplain ScannerModuleTestBuilder} work for the Scanner
@@ -45,10 +35,13 @@ public abstract class ScannerModuleTest {
 	 * 
 	 * @param testPlan a {@linkplain ScannerModuleTestBuilder} to configure
 	 */
-	protected abstract void configurePluginTester(ScannerModuleTestBuilder testPlan);
+	protected abstract void configurePluginTester(
+			ScannerModuleTestBuilder<R, I> testPlan);
 
-	private ScannerModuleTestBuilder createTestPlanForModule() {
-		ScannerModuleTestBuilder smtb = new ScannerModuleTestBuilder();
+
+	private ScannerModuleTestBuilder<R, I> createTestPlanForModule() {
+		ScannerModuleTestBuilder<R, I> smtb =
+				new ScannerModuleTestBuilder<>();
 		scannerTester = smtb;
 		return smtb;
 	}
@@ -58,6 +51,14 @@ public abstract class ScannerModuleTest {
 		moduleUnderTest = buildScannerModule();
 		scannerTester = createTestPlanForModule();
 		configurePluginTester(scannerTester);
+	}
+
+	protected final ScannerModuleTestBuilder<R, I> getScannerTester() {
+		return scannerTester;
+	}
+
+	protected final M getModuleUnderTest() {
+		return moduleUnderTest;
 	}
 
 	@Test
@@ -96,41 +97,6 @@ public abstract class ScannerModuleTest {
 		Assertions.assertNotNull(this.moduleUnderTest.getScanner());
 	}
 
-	@Test
-	public void testScan() throws Exception {
-		Assumptions.assumeFalse(
-				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.SCANNER));
-		TestScanConfiguration testScan = scannerTester.getTestScanConfiguration();
-		Assumptions.assumeFalse(testScan == null);
-
-		String resource = testScan.getResourceFile();
-		RulesetDto ruleset = testScan.getRuleset();
-		Consumer<ScanReport> assertClause = testScan.getAssertClause();
-		Assertions.assertNotNull(resource, "Misconfigured TestConfig: Missing Resource File");
-		Assertions.assertNotNull(ruleset, "Misconfigured TestConfig: Missing Ruleset");
-		Assertions.assertNotNull(assertClause, "Misconfigured TestConfig: Missing Asssertions");
-
-		Path testDir = Files.createTempDirectory(null);
-		Path testFile = testDir.resolve(Paths.get(resource).getFileName());
-
-		try (InputStream is =
-				getClass().getResourceAsStream(testScan.getResourceFile());
-				FileOutputStream fos = new FileOutputStream(testFile.toFile())) {
-			IOUtils.copy(is, fos);
-		}
-		Assertions.assertTrue(testFile.toFile().exists());
-		ScanConfig config = new ScanConfig();
-		config.setBenchmarkEnabled(false);
-		config.setDebugEnabled(false);
-		config.setRuleset(ruleset);
-		config.setThreads(0);
-		config.setWorkingDirectory(testDir);
-
-		IScanner scanner = moduleUnderTest.getScanner();
-		ScanReport report = scanner.scan(config);
-		Assertions.assertNotNull(report);
-		assertClause.accept(report);
-	}
 
 	@Test
 	public void testDesignerExists() {
@@ -144,7 +110,7 @@ public abstract class ScannerModuleTest {
 		Assumptions.assumeFalse(
 				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.DESIGNER));
 		Assertions.assertNotNull(
-				this.moduleUnderTest.getRuleDesigner().getRuleDesignerModelAndView());
+				this.moduleUnderTest.getRuleDesigner().getDefaultRuleDesignerModelAndView());
 	}
 
 	@Test
@@ -158,8 +124,9 @@ public abstract class ScannerModuleTest {
 	public void testEditorMAVExists() {
 		Assumptions.assumeFalse(
 				scannerTester.getIgnoredOptions().contains(ScannerModuleTestOption.EDITOR));
-		Assertions.assertNotNull(this.moduleUnderTest.getRuleEditor().getRuleEditModelAndView(
-				this.scannerTester.getRuleSupplier().get()));
+		Assertions
+				.assertNotNull(this.moduleUnderTest.getRuleEditor().getDefaultRuleEditModelAndView(
+						this.scannerTester.getRuleSupplier().get()));
 	}
 
 	@Test

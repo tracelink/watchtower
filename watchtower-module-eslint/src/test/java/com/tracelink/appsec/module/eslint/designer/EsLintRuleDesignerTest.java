@@ -43,7 +43,7 @@ public class EsLintRuleDesignerTest {
 
 	@Test
 	public void testGetRuleDesignerModelAndView() {
-		RuleDesignerModelAndView mav = ruleDesigner.getRuleDesignerModelAndView();
+		RuleDesignerModelAndView mav = ruleDesigner.getDefaultRuleDesignerModelAndView();
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"),
 				Matchers.is(EsLintRuleDesigner.DEFAULT_SOURCE_CODE));

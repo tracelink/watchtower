@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.configuration;
 
+import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -9,8 +10,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
-
-import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
 
 /**
  * Security Config for endpoints under /rest/*.
@@ -47,7 +46,7 @@ public class RestSecurityConfig extends SecurityConfig {
 
 	/**
 	 * Configure the correct authentication service for these paths
-	 * 
+	 * <p>
 	 * {@inheritDoc}
 	 */
 	@Override
@@ -59,7 +58,7 @@ public class RestSecurityConfig extends SecurityConfig {
 	 * By forcing this {@linkplain AuthenticationEntryPoint}, we can give the correct 401 response
 	 * for basic auth requests. Otherwise, we would fall into the {@linkplain UISecurityConfig}'s
 	 * catch-all and end up on "/"
-	 * 
+	 *
 	 * @return a basic auth entry point
 	 */
 	private AuthenticationEntryPoint authEntryPoint() {

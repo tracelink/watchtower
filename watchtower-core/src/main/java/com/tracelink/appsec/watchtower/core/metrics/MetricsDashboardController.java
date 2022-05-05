@@ -1,7 +1,9 @@
 package com.tracelink.appsec.watchtower.core.metrics;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.ScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 
 /**
  * Controller for the dashboard and home page of Watchtower
@@ -25,9 +29,12 @@ import com.tracelink.appsec.watchtower.core.scan.ScanType;
 public class MetricsDashboardController {
 
 	private MetricsCacheService metricsService;
+	private List<ScanType> scanMetrics = new ArrayList<>();
 
 	public MetricsDashboardController(@Autowired MetricsCacheService metricsService) {
 		this.metricsService = metricsService;
+		this.scanMetrics.addAll(Arrays.asList(CodeScanType.values()));
+		this.scanMetrics.addAll(Arrays.asList(ImageScanType.values()));
 	}
 
 	@GetMapping
@@ -45,7 +52,7 @@ public class MetricsDashboardController {
 
 	private Map<String, Object> makeTopLevelMetrics() {
 		Map<String, Object> topLevelMetrics = new LinkedHashMap<>();
-		for (ScanType type : ScanType.values()) {
+		for (ScanType type : this.scanMetrics) {
 			topLevelMetrics.put(type.getDisplayName(),
 					Arrays.asList(
 							Pair.of("Scans Completed",

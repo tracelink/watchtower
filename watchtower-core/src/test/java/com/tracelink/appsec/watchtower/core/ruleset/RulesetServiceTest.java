@@ -26,8 +26,8 @@ import com.tracelink.appsec.watchtower.core.mock.MockRuleset;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryEntity;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryEntity;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 @ExtendWith(SpringExtension.class)
 public class RulesetServiceTest {

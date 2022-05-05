@@ -20,9 +20,9 @@ import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.module.json.scanner.JsonCallable;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
  * The Designer implementation for JSON
@@ -53,7 +53,7 @@ public class JsonRuleDesigner implements IRuleDesigner {
 	private final String defaultQuery = "$.people.*.[?(@.age>45)]";
 
 	@Override
-	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
+	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		return query(defaultQuery, defaultJson);
 	}
 
@@ -91,7 +91,7 @@ public class JsonRuleDesigner implements IRuleDesigner {
 		}
 		List<String> matches;
 		try {
-			ScanReport report = getReport(query, code);
+			CodeScanReport report = getReport(query, code);
 			matches = report.getViolations().stream().map(sv -> "Found on line: " + sv.getLineNum())
 					.collect(Collectors.toList());
 		} catch (IOException e) {
@@ -100,7 +100,7 @@ public class JsonRuleDesigner implements IRuleDesigner {
 		return matches;
 	}
 
-	private ScanReport getReport(String query, String code) throws IOException {
+	private CodeScanReport getReport(String query, String code) throws IOException {
 		Path temp = Files.createTempFile(null, null);
 		try (FileWriter fw = new FileWriter(temp.toFile())) {
 			fw.write(code);
@@ -115,7 +115,7 @@ public class JsonRuleDesigner implements IRuleDesigner {
 		ruleset.setRules(Collections.singleton(rule));
 
 		JsonCallable json = new JsonCallable(temp, ruleset);
-		ScanReport report = json.call();
+		CodeScanReport report = json.call();
 		FileUtils.deleteQuietly(temp.toFile());
 		return report;
 	}

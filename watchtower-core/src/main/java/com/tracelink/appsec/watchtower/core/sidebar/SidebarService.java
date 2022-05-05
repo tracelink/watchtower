@@ -1,13 +1,13 @@
 package com.tracelink.appsec.watchtower.core.sidebar;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.springframework.stereotype.Service;
-
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 
 /**
  * Service manages owning the Sidebar objects so that the UI can display them properly with correct
@@ -15,6 +15,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
  */
 @Service
 public class SidebarService {
+
 	private final List<SidebarMenuGroup> menuGroups = new ArrayList<>();
 
 	public SidebarService() {
@@ -74,6 +75,22 @@ public class SidebarService {
 										.setUrl("/uploadscan/results")
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.SCAN_RESULTS_NAME + "')"))),
+				// Image Menu
+				new SidebarMenuGroup().setGroupName("Image Scans")
+						.setMaterialIcon("developer_board")
+						.setLinks(Arrays.asList(
+								new SidebarLink()
+										.setDisplayName("Image Scan Dashboard")
+										.setMaterialIcon("dashboard")
+										.setUrl("/imagescan/dashboard")
+										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.SCAN_DASHBOARDS_NAME + "')"),
+								new SidebarLink()
+										.setDisplayName("Image Scan Results")
+										.setMaterialIcon("report_problem")
+										.setUrl("/imagescan/results")
+										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.SCAN_RESULTS_NAME + "')"))),
 				// Rules Menu
 				new SidebarMenuGroup().setGroupName("Rules")
 						.setMaterialIcon("menu")
@@ -101,13 +118,21 @@ public class SidebarService {
 						.setMaterialIcon("settings")
 						.setLinks(Arrays.asList(
 								new SidebarLink()
-										.setDisplayName("Repository Settings")
+										.setDisplayName("Code Repo Settings")
 										.setMaterialIcon("code")
-										.setUrl("/repository")
+										.setUrl("/repository/"
+												+ CodeScanType.PULL_REQUEST.getTypeName())
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.REPO_SETTINGS_VIEW_NAME + "')"),
 								new SidebarLink()
-										.setDisplayName("SCM API Settings")
+										.setDisplayName("Image Repo Settings")
+										.setMaterialIcon("equalizer")
+										.setUrl("/repository/"
+												+ ImageScanType.CONTAINER.getTypeName())
+										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.REPO_SETTINGS_VIEW_NAME + "')"),
+								new SidebarLink()
+										.setDisplayName("API Integrations")
 										.setMaterialIcon("list")
 										.setUrl("/apisettings")
 										.setAuthorizationExpression("hasAuthority('"
@@ -147,7 +172,7 @@ public class SidebarService {
 										.setExternalLink(true)
 										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.DB_ACCESS_NAME + "')")))
-		// End of Groups
+				// End of Groups
 		));
 	}
 

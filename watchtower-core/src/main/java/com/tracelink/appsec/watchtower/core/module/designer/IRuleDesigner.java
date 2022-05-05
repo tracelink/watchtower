@@ -14,7 +14,7 @@ public interface IRuleDesigner {
 	 * 
 	 * @return a {@link RuleDesignerModelAndView} for this module's Rule Designer
 	 */
-	RuleDesignerModelAndView getRuleDesignerModelAndView();
+	RuleDesignerModelAndView getDefaultRuleDesignerModelAndView();
 
 	String getPrivilegeNameForAccess();
 

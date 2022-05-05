@@ -1,7 +1,12 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
+import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
+import com.tracelink.appsec.watchtower.core.auth.repository.ApiKeyRepository;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationRepository;
 import java.security.KeyException;
-
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -11,16 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
-import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
-import com.tracelink.appsec.watchtower.core.auth.repository.ApiKeyRepository;
-import com.tracelink.appsec.watchtower.core.auth.repository.RoleRepository;
-import com.tracelink.appsec.watchtower.core.auth.repository.UserRepository;
 
 @ExtendWith(SpringExtension.class)
 public class ApiUserServiceTest {
@@ -34,17 +34,15 @@ public class ApiUserServiceTest {
 	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 	@MockBean
-	private UserRepository mockUserRepository;
-
-	@MockBean
-	private RoleRepository mockRoleRepository;
+	private ApiIntegrationRepository mockIntegrationRepository;
 
 	private ApiUserService apiUserService;
 
 	@BeforeEach
 	public void setup() {
 		this.apiUserService =
-				new ApiUserService(mockApiKeyRepository, mockUserService, passwordEncoder);
+				new ApiUserService(mockApiKeyRepository, mockUserService, mockIntegrationRepository,
+						passwordEncoder);
 	}
 
 	@Test
@@ -81,12 +79,30 @@ public class ApiUserServiceTest {
 	}
 
 	@Test
+	public void testLoadUserByUsernameIntegrationEntity() {
+		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
+		BDDMockito.when(integrationEntity.getWatchtowerSecret()).thenReturn("foo");
+		BDDMockito.when(mockApiKeyRepository.findByApiKeyId(BDDMockito.anyString()))
+				.thenReturn(null);
+		BDDMockito.when(mockIntegrationRepository.findByApiLabel(BDDMockito.anyString()))
+				.thenReturn(integrationEntity);
+		UserDetails userDetails = apiUserService.loadUserByUsername("apiLabel");
+		MatcherAssert.assertThat(userDetails.getUsername(), Matchers.is("apiLabel"));
+		MatcherAssert.assertThat(userDetails.getPassword(), Matchers.is("foo"));
+		MatcherAssert.assertThat(userDetails.getAuthorities(), Matchers.iterableWithSize(1));
+		MatcherAssert.assertThat(userDetails.getAuthorities(),
+				Matchers.contains(Matchers.hasProperty("authority",
+						Matchers.is(CorePrivilege.INTEGRATION_SCAN_SUBMIT))));
+		MatcherAssert.assertThat(userDetails.isEnabled(), Matchers.is(true));
+	}
+
+	@Test
 	public void testCreateNewApiKey() {
 		UserEntity user = new UserEntity();
 		String label = "label";
 		BDDMockito.when(mockApiKeyRepository.saveAndFlush(BDDMockito.any()))
 				.then(e -> e.getArgument(0));
-		ApiKeyEntity apiKey = apiUserService.createNewApiKey(label, user);
+		ApiKeyEntity apiKey = apiUserService.createUserApiKey(label, user);
 		MatcherAssert.assertThat(apiKey.getUser(), Matchers.is(user));
 		MatcherAssert.assertThat(apiKey.getKeyLabel(), Matchers.is(label));
 	}
@@ -100,7 +116,7 @@ public class ApiUserServiceTest {
 		apiKey.setApiKeyId(apiKeyId);
 		user.getApiKeys().add(apiKey);
 
-		apiUserService.deleteApiKey(apiKeyId, user);
+		apiUserService.deleteUserApiKey(apiKeyId, user);
 		MatcherAssert.assertThat(user.getApiKeys(), Matchers.not(Matchers.contains(apiKey)));
 		BDDMockito.verify(mockApiKeyRepository).delete(apiKey);
 	}
@@ -115,7 +131,7 @@ public class ApiUserServiceTest {
 		apiKey.setApiKeyId("DIFFERENT");
 		user.getApiKeys().add(apiKey);
 		try {
-			apiUserService.deleteApiKey(apiKeyId, user);
+			apiUserService.deleteUserApiKey(apiKeyId, user);
 			Assertions.fail("Should throw exception");
 		} catch (KeyException e) {
 			MatcherAssert.assertThat(e.getMessage(),

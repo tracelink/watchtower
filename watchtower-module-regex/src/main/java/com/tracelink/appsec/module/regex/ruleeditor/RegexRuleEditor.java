@@ -15,7 +15,7 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 public class RegexRuleEditor implements IRuleEditor {
 
 	@Override
-	public RuleEditModelAndView getRuleEditModelAndView(RuleDto rule) {
+	public RuleEditModelAndView getDefaultRuleEditModelAndView(RuleDto rule) {
 		RuleEditModelAndView mav = new RuleEditModelAndView("rule-edit/regex");
 		mav.addObject("rule", rule);
 		mav.addObject("priorities", RulePriority.values());

@@ -7,9 +7,10 @@ import java.io.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 import net.sourceforge.pmd.Report;
 import net.sourceforge.pmd.Rule;
@@ -18,11 +19,11 @@ import net.sourceforge.pmd.benchmark.TimingReport;
 import net.sourceforge.pmd.benchmark.TimingReportRenderer;
 
 /**
- * Translation from PMD to {@link ScanReport}
+ * Translation from PMD to {@link CodeScanReport}
  *
  * @author csmith, mcool
  */
-public class PMDReport extends ScanReport {
+public class PMDReport extends CodeScanReport {
 	private static final Logger LOG = LoggerFactory.getLogger(PMDReport.class);
 	private final TimingReport timingReport;
 
@@ -32,25 +33,42 @@ public class PMDReport extends ScanReport {
 
 		if (report.hasErrors()) {
 			report.errors().forEachRemaining(e -> addError(
-					new ScanError("In File '" + e.getFile() + "' Error: " + e.getMsg())));
+					new CodeScanError("In File '" + e.getFile() + "' Error: " + e.getMsg())));
 		}
 		if (report.hasConfigErrors()) {
 			report.configErrors().forEachRemaining(
-					e -> addError(new ScanError("Poorly Configured Rule. Reason: " + e.issue())));
+					e -> addError(
+							new CodeScanError("Poorly Configured Rule. Reason: " + e.issue())));
 		}
 		if (report.iterator().hasNext()) {
 			report.iterator().forEachRemaining(v -> {
 				Rule pmdRule = v.getRule();
 
-				ScanViolation sv = new ScanViolation();
+				CodeScanViolation sv = new CodeScanViolation();
 				sv.setViolationName(pmdRule.getName());
 				sv.setFileName(v.getFilename().trim());
 				sv.setLineNum(v.getBeginLine());
-				sv.setSeverity(pmdRule.getPriority().getName());
-				sv.setSeverityValue(pmdRule.getPriority().getPriority());
+				sv.setSeverity(convertPriority(pmdRule.getPriority()));
 				sv.setMessage(v.getDescription().trim());
 				addViolation(sv);
 			});
+		}
+	}
+
+	private RulePriority convertPriority(net.sourceforge.pmd.RulePriority pmdPriority) {
+		switch (pmdPriority) {
+			case HIGH:
+				return RulePriority.HIGH;
+			case MEDIUM_HIGH:
+				return RulePriority.MEDIUM_HIGH;
+			case MEDIUM:
+				return RulePriority.MEDIUM;
+			case MEDIUM_LOW:
+				return RulePriority.MEDIUM_LOW;
+			case LOW:
+				return RulePriority.LOW;
+			default:
+				throw new IllegalArgumentException("Unknown conversion for pmd rule priority");
 		}
 	}
 

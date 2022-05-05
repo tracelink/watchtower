@@ -17,7 +17,7 @@ public class JsonRuleDesignerTest {
 
 	@Test
 	public void testGetRuleDesignerModelAndView() {
-		RuleDesignerModelAndView mav = jsonDesigner.getRuleDesignerModelAndView();
+		RuleDesignerModelAndView mav = jsonDesigner.getDefaultRuleDesignerModelAndView();
 		assertMav(mav);
 	}
 

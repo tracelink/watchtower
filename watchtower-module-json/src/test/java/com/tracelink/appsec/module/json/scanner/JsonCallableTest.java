@@ -10,9 +10,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 public class JsonCallableTest {
 	private final String code = "{\n" +
@@ -49,7 +49,7 @@ public class JsonCallableTest {
 		Files.write(temp, code.getBytes());
 
 		JsonCallable call = new JsonCallable(temp, ruleset);
-		ScanReport report = call.call();
+		CodeScanReport report = call.call();
 		MatcherAssert.assertThat(report.getViolations(), Matchers.hasSize(1));
 		MatcherAssert.assertThat(report.getViolations().get(0).getLineNum(), Matchers.is(8));
 	}
@@ -67,7 +67,7 @@ public class JsonCallableTest {
 		Files.write(temp, "}{".getBytes());
 
 		JsonCallable call = new JsonCallable(temp, ruleset);
-		ScanReport report = call.call();
+		CodeScanReport report = call.call();
 		MatcherAssert.assertThat(report.getErrors(), Matchers.hasSize(1));
 		MatcherAssert.assertThat(report.getErrors().get(0).getErrorMessage(),
 				Matchers.containsString("Could not parse"));

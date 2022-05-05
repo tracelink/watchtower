@@ -18,9 +18,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.result.PRResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.result.PRScanResult;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
 
 import net.minidev.json.JSONObject;
 
@@ -37,7 +37,7 @@ public class PRScanRestResultControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME}, username = "user")
-	public void testScan() throws Exception {
+	public void testResult() throws Exception {
 		PRScanResult result = new PRScanResult();
 		result.setPrId("foo");
 
@@ -56,7 +56,7 @@ public class PRScanRestResultControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME}, username = "user")
-	public void testScanSpecific() throws Exception {
+	public void testResultSpecific() throws Exception {
 		PRScanResult result = new PRScanResult();
 		result.setPrId("foo");
 
@@ -76,7 +76,7 @@ public class PRScanRestResultControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME}, username = "user")
-	public void testScanEnd() throws Exception {
+	public void testResultEnd() throws Exception {
 		BDDMockito
 				.when(mockScanResultService
 						.getScanResultsWithFilters(PRResultFilter.UNRESOLVED, 10, 1))
