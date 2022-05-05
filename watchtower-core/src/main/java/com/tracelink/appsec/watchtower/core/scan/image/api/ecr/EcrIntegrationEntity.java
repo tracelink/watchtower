@@ -20,6 +20,7 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEx
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.RegisterState;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrRejectOption.EcrRejectOptionConverter;
 
 /**
  * Entity for the ECR Integration API
@@ -42,6 +43,10 @@ public class EcrIntegrationEntity extends ApiIntegrationEntity {
 	@Column(name = "aws_secret_key")
 	@Convert(converter = StringEncryptedAttributeConverter.class)
 	private String awsSecretKey;
+
+	@Column(name = "reject_option")
+	@Convert(converter = EcrRejectOptionConverter.class)
+	private EcrRejectOption rejectOption;
 
 	public EcrIntegrationEntity() {
 		setRegisterState(RegisterState.NOT_REGISTERED);
@@ -79,6 +84,14 @@ public class EcrIntegrationEntity extends ApiIntegrationEntity {
 		this.awsSecretKey = awsSecretKey;
 	}
 
+	public EcrRejectOption getRejectOption() {
+		return rejectOption;
+	}
+
+	public void setRejectOption(EcrRejectOption rejectOption) {
+		this.rejectOption = rejectOption;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -104,7 +117,7 @@ public class EcrIntegrationEntity extends ApiIntegrationEntity {
 		List<String> neededParams =
 				new ArrayList<>(
 						Arrays.asList("apiLabel", "region", "registryId", "awsAccessKey",
-								"awsSecretKey"));
+								"awsSecretKey", "rejectOption"));
 		parameters.entrySet().removeIf(e -> StringUtils.isBlank(e.getValue()));
 		neededParams.removeAll(parameters.keySet());
 
@@ -117,6 +130,7 @@ public class EcrIntegrationEntity extends ApiIntegrationEntity {
 		setRegistryId(parameters.get("registryId"));
 		setAwsAccessKey(parameters.get("awsAccessKey"));
 		setAwsSecretKey(parameters.get("awsSecretKey"));
+		setRejectOption(EcrRejectOption.fromString(parameters.get("rejectOption")));
 		setRegisterState(RegisterState.NOT_REGISTERED);
 	}
 

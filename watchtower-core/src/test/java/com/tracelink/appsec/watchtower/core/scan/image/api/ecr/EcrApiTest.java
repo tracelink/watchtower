@@ -1,12 +1,8 @@
 package com.tracelink.appsec.watchtower.core.scan.image.api.ecr;
 
-import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
-import com.tracelink.appsec.watchtower.core.rule.RulePriority;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
 import java.util.Arrays;
 import java.util.Collections;
+
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +17,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
+
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
@@ -62,6 +65,7 @@ public class EcrApiTest {
 		ecrIntegrationEntity.setRegistryId("1234567890");
 		ecrIntegrationEntity.setAwsAccessKey("foo");
 		ecrIntegrationEntity.setAwsSecretKey("bar");
+		ecrIntegrationEntity.setRejectOption(EcrRejectOption.DELETE_IMAGE);
 
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
@@ -333,6 +337,27 @@ public class EcrApiTest {
 	}
 
 	@Test
+	public void testRejectImageDoNothing() {
+		ecrIntegrationEntity.setRejectOption(EcrRejectOption.DO_NOTHING);
+		ImageScan imageScan = new EcrImageScan(ecrIntegrationEntity.getApiLabel());
+		imageScan.setRegistry("1234567890");
+		imageScan.setRepository("myImage");
+		imageScan.setTag("latest");
+
+		EcrApi ecrApi = ecrIntegrationEntity.createApi();
+		EcrClient ecrClient = getMockEcrClient(400, true, 200, false);
+		ReflectionTestUtils.setField(ecrApi, "ecrClient", ecrClient);
+
+		ecrApi.rejectImage(imageScan, Collections.emptyList());
+
+		BDDMockito.verify(ecrClient, BDDMockito.never())
+				.batchDeleteImage(BDDMockito.any(BatchDeleteImageRequest.class));
+		MatcherAssert.assertThat(logWatcher.getMessages().size(), Matchers.is(1));
+		MatcherAssert.assertThat(logWatcher.getFormattedMessages().get(0),
+				Matchers.containsString("Skipping Image Rejection"));
+	}
+
+	@Test
 	public void testRejectImageFailures() {
 		ImageScan imageScan = new EcrImageScan(ecrIntegrationEntity.getApiLabel());
 		imageScan.setRegistry("1234567890");
@@ -505,7 +530,8 @@ public class EcrApiTest {
 								getMockImageFinding(defaultAttributes)).build())
 						.sdkHttpResponse(
 								SdkHttpResponse.builder().statusCode(describeFindingsStatus)
-										.build()).build());
+										.build())
+						.build());
 
 		BDDMockito.when(ecrClient.describeImageScanFindingsPaginator(
 				BDDMockito.any(DescribeImageScanFindingsRequest.class)))
@@ -516,11 +542,12 @@ public class EcrApiTest {
 
 	private static ImageScanFinding getMockImageFinding(boolean defaultAttributes) {
 		return ImageScanFinding.builder()
-				.attributes(defaultAttributes ? Collections.emptyList() : Arrays.asList(
-						Attribute.builder().key("package_name").value("a").build(),
-						Attribute.builder().key("package_version").value("a").build(),
-						Attribute.builder().key("CVSS2_SCORE").value("a").build(),
-						Attribute.builder().key("CVSS2_VECTOR").value("a").build()))
+				.attributes(defaultAttributes ? Collections.emptyList()
+						: Arrays.asList(
+								Attribute.builder().key("package_name").value("a").build(),
+								Attribute.builder().key("package_version").value("a").build(),
+								Attribute.builder().key("CVSS2_SCORE").value("a").build(),
+								Attribute.builder().key("CVSS2_VECTOR").value("a").build()))
 				.severity(defaultAttributes ? FindingSeverity.HIGH : FindingSeverity.LOW)
 				.name("findingName")
 				.description("findingDescription")

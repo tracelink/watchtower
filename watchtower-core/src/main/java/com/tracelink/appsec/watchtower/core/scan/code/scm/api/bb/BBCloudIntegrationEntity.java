@@ -18,6 +18,7 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEx
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption.BBCloudRejectOptionConverter;
 
 /**
  * Entity for the Bitbucket Cloud Integration API
@@ -37,6 +38,10 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 	@Column(name = "authentication")
 	@Convert(converter = StringEncryptedAttributeConverter.class)
 	private String auth;
+
+	@Column(name = "reject_option")
+	@Convert(converter = BBCloudRejectOptionConverter.class)
+	private BBCloudRejectOption rejectOption;
 
 	public String getWorkspace() {
 		return workspace;
@@ -97,11 +102,20 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 		this.auth = auth;
 	}
 
+	public BBCloudRejectOption getRejectOption() {
+		return rejectOption;
+	}
+
+	public void setRejectOption(BBCloudRejectOption rejectOption) {
+		this.rejectOption = rejectOption;
+	}
+
 	@Override
 	public void configureEntityFromParameters(Map<String, String> parameters)
 			throws ApiIntegrationException {
 		List<String> neededParams =
-				new ArrayList<>(Arrays.asList("apiLabel", "workspace", "user", "auth"));
+				new ArrayList<>(
+						Arrays.asList("apiLabel", "workspace", "user", "auth", "rejectOption"));
 		parameters.entrySet().removeIf(e -> StringUtils.isBlank(e.getValue()));
 		neededParams.removeAll(parameters.keySet());
 
@@ -113,6 +127,7 @@ public class BBCloudIntegrationEntity extends AbstractScmIntegrationEntity {
 		setWorkspace(parameters.get("workspace"));
 		setUser(parameters.get("user"));
 		setAuth(parameters.get("auth"));
+		setRejectOption(BBCloudRejectOption.fromString(parameters.get("rejectOption")));
 	}
 
 	/**

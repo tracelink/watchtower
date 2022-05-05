@@ -1,11 +1,5 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb;
 
-import com.jayway.jsonpath.JsonPath;
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,6 +12,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.jayway.jsonpath.JsonPath;
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
+
 import kong.unirest.GetRequest;
 import kong.unirest.Headers;
 import kong.unirest.HttpRequestWithBody;
@@ -28,13 +38,6 @@ import kong.unirest.UnirestException;
 import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 import net.lingala.zip4j.ZipFile;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * An implementation of the {@linkplain IScmApi} for Bitbucket Cloud
@@ -252,6 +255,15 @@ public class BBCloudApi implements IScmApi {
 	 */
 	@Override
 	public void sendComment(PullRequest pullRequest, String comment) {
+		switch (apiEntity.getRejectOption()) {
+			case DO_NOTHING:
+				LOG.info("Skipping sending comment due to Integration Setting "
+						+ apiEntity.getRejectOption().getName());
+				return;
+			case BLOCK_PR:
+			case SEND_COMMENT:
+				break;
+		}
 		String prBase = apiEntity.makeApiPRUrl(pullRequest.getRepoName(), pullRequest.getPrId());
 		String url = buildRequestUrl(prBase, "comments");
 
@@ -284,6 +296,15 @@ public class BBCloudApi implements IScmApi {
 	 */
 	@Override
 	public void blockPR(PullRequest pullRequest) {
+		switch (apiEntity.getRejectOption()) {
+			case DO_NOTHING:
+			case SEND_COMMENT:
+				LOG.info("Skipping sending comment due to Integration Setting "
+						+ apiEntity.getRejectOption().getName());
+				return;
+			case BLOCK_PR:
+				break;
+		}
 		String prBase = apiEntity.makeApiPRUrl(pullRequest.getRepoName(), pullRequest.getPrId());
 		String url = buildRequestUrl(prBase, "decline");
 

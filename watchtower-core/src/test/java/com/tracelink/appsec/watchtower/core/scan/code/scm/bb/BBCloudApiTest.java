@@ -34,6 +34,7 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationEx
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudApi;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.data.DiffFile;
 
@@ -478,10 +479,28 @@ public class BBCloudApiTest {
 
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.SEND_COMMENT);
 
 		BBCloudApi api = new BBCloudApi(entity);
 		api.sendComment(mockPr, message);
 		WireMock.verify(
+				WireMock.postRequestedFor(WireMock.urlEqualTo(buildRequestUrl(prBase, "comments")))
+						.withRequestBody(WireMock.containing(message)));
+	}
+
+	@Test
+	public void testSendCommentDoNothing() {
+		String message = "No Violations Found";
+
+		WireMock.stubFor(
+				WireMock.post(buildRequestUrl(prBase, "comments"))
+						.willReturn(WireMock.aResponse().withStatus(201)));
+
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.DO_NOTHING);
+
+		BBCloudApi api = new BBCloudApi(entity);
+		api.sendComment(mockPr, message);
+		WireMock.verify(0,
 				WireMock.postRequestedFor(WireMock.urlEqualTo(buildRequestUrl(prBase, "comments")))
 						.withRequestBody(WireMock.containing(message)));
 	}
@@ -502,7 +521,7 @@ public class BBCloudApiTest {
 
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
-
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.SEND_COMMENT);
 		BBCloudApi api = new BBCloudApi(entity);
 		api.sendComment(mockPr, message);
 		WireMock.verify(2,
@@ -519,6 +538,7 @@ public class BBCloudApiTest {
 						.willReturn(WireMock.aResponse().withStatus(400)));
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.SEND_COMMENT);
 
 		BBCloudApi api = new BBCloudApi(entity);
 		api.sendComment(mockPr, message);
@@ -536,6 +556,7 @@ public class BBCloudApiTest {
 				.willReturn(WireMock.aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.SEND_COMMENT);
 
 		BBCloudApi api = new BBCloudApi(entity);
 		api.sendComment(mockPr, message);
@@ -557,7 +578,7 @@ public class BBCloudApiTest {
 						.willReturn(WireMock.aResponse().withStatus(200)));
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
-
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.BLOCK_PR);
 		BBCloudApi api = new BBCloudApi(entity);
 		api.blockPR(mockPr);
 		WireMock.verify(
@@ -565,9 +586,22 @@ public class BBCloudApiTest {
 	}
 
 	@Test
+	public void testBlockPRBadOption() {
+		WireMock.stubFor(
+				WireMock.post(buildRequestUrl(prBase, "decline"))
+						.willReturn(WireMock.aResponse().withStatus(200)));
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.SEND_COMMENT);
+		BBCloudApi api = new BBCloudApi(entity);
+		api.blockPR(mockPr);
+		WireMock.verify(0,
+				WireMock.postRequestedFor(WireMock.urlEqualTo(buildRequestUrl(prBase, "decline"))));
+	}
+
+	@Test
 	public void testBlockPRRateLimit() {
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.BLOCK_PR);
 		WireMock.stubFor(WireMock.post(buildRequestUrl(prBase, "decline"))
 				.willReturn(WireMock.aResponse().withStatus(429).withHeader("Retry-After", "20"))
 				.inScenario("sendDeclineRateLimit").whenScenarioStateIs(Scenario.STARTED)
@@ -591,6 +625,7 @@ public class BBCloudApiTest {
 						.willReturn(WireMock.aResponse().withStatus(400)));
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.BLOCK_PR);
 
 		BBCloudApi api = new BBCloudApi(entity);
 		api.blockPR(mockPr);
@@ -605,7 +640,7 @@ public class BBCloudApiTest {
 				.willReturn(WireMock.aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 		BDDMockito.when(entity.makeApiPRUrl(BDDMockito.anyString(), BDDMockito.anyString()))
 				.thenReturn(apiBase + prBase);
-
+		BDDMockito.when(entity.getRejectOption()).thenReturn(BBCloudRejectOption.BLOCK_PR);
 		BBCloudApi api = new BBCloudApi(entity);
 		api.blockPR(mockPr);
 		WireMock.verify(
