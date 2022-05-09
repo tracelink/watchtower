@@ -1,13 +1,8 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
-import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
-import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +17,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -80,7 +83,8 @@ public class ApiIntegrationControllerTest {
 	@WithMockUser(authorities = {CorePrivilege.API_SETTINGS_MODIFY_NAME})
 	public void testEditApi() throws Exception {
 		String label = "foo";
-		ApiIntegrationEntity entity = new BBCloudIntegrationEntity();
+		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
+		entity.setRejectOption(BBCloudRejectOption.BLOCK_PR);
 		BDDMockito.when(mockApiService.findByLabel(label)).thenReturn(entity);
 		mockMvc.perform(
 				MockMvcRequestBuilders.get("/apisettings/configure").param("apiLabel", label))
@@ -154,7 +158,9 @@ public class ApiIntegrationControllerTest {
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiType)
 						.param("apiLabel", "a").param("workspace", "a").param("user", "a")
-						.param("auth", "a").with(SecurityMockMvcRequestPostProcessors.csrf()));
+						.param("auth", "a")
+						.param("rejectOption", BBCloudRejectOption.BLOCK_PR.getName())
+						.with(SecurityMockMvcRequestPostProcessors.csrf()));
 
 		BDDMockito.verify(mockApiService)
 				.upsertEntity(BDDMockito.any(BBCloudIntegrationEntity.class));
@@ -166,10 +172,12 @@ public class ApiIntegrationControllerTest {
 		String apiLabel = ApiType.ECR.getTypeName();
 		BDDMockito.doThrow(new IllegalArgumentException("Something bad")).when(mockApiService)
 				.upsertEntity(BDDMockito.any());
+
 		mockMvc.perform(
 				MockMvcRequestBuilders.post("/apisettings/update").param("apiType", apiLabel)
 						.param("apiLabel", "a").param("region", "a").param("registryId", "a")
 						.param("awsAccessKey", "a").param("awsSecretKey", "a")
+						.param("rejectOption", BBCloudRejectOption.BLOCK_PR.getName())
 						.with(SecurityMockMvcRequestPostProcessors.csrf()))
 				.andExpect(MockMvcResultMatchers.flash()
 						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION, "Something bad"));

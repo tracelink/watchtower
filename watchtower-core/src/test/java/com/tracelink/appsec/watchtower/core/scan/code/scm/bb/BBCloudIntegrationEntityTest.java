@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption;
 
 public class BBCloudIntegrationEntityTest {
 
@@ -60,6 +61,7 @@ public class BBCloudIntegrationEntityTest {
 		params.put("user", user);
 		params.put("auth", auth);
 		params.put("workspace", workspace);
+		params.put("rejectOption", BBCloudRejectOption.DO_NOTHING.getName());
 
 		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
 		entity.configureEntityFromParameters(params);

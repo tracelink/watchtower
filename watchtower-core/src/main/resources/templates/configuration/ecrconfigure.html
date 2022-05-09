@@ -22,3 +22,13 @@
            th:placeholder="${entity == null ? 'Secret Key' : 'Hidden For Security'}"/>
   </div>
 </div>
+<div class="form-row">
+  <div class="form-group col-auto">
+    <label for="rejectOption" class="col-form-label">Action on Rejection</label>
+   	<select class="selectpicker w-100" data-style="rounded border"
+	           id="enable" name="rejectOption">
+     <option th:each="rejectOpt : ${T(com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrRejectOption).values()}" th:value="${rejectOpt.getName()}" th:text="${rejectOpt.getName()}" 
+     th:selected="${entity != null && #strings.equals(rejectOpt.getName(), entity?.rejectOption.getName)}"/>
+    </select>
+  </div>
+</div>

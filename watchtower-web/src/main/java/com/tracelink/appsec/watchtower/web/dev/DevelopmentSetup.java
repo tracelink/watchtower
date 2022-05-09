@@ -22,6 +22,7 @@ import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationSe
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.RegisterState;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
@@ -30,6 +31,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.repository.UploadSc
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrRejectOption;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryService;
@@ -143,12 +145,14 @@ public class DevelopmentSetup {
 		entity.setWorkspace("workspace1");
 		entity.setUser("myUser");
 		entity.setAuth("myAuth");
+		entity.setRejectOption(BBCloudRejectOption.BLOCK_PR);
 		apiService.save(entity);
 		BBCloudIntegrationEntity entity2 = new BBCloudIntegrationEntity();
 		entity2.setApiLabel(API_LABEL_2);
 		entity2.setWorkspace("workspace2");
 		entity2.setUser("myUser");
 		entity2.setAuth("myAuth");
+		entity2.setRejectOption(BBCloudRejectOption.DO_NOTHING);
 		apiService.save(entity2);
 
 		EcrIntegrationEntity entity3 = new EcrIntegrationEntity();
@@ -158,6 +162,7 @@ public class DevelopmentSetup {
 		entity3.setAwsAccessKey("apiKey1");
 		entity3.setAwsSecretKey("secretKey1");
 		entity3.setRegisterState(RegisterState.NOT_REGISTERED);
+		entity3.setRejectOption(EcrRejectOption.DELETE_IMAGE);
 		apiService.save(entity3);
 		EcrIntegrationEntity entity4 = new EcrIntegrationEntity();
 		entity4.setApiLabel(IMAGE_API_LABEL_2);
@@ -167,6 +172,7 @@ public class DevelopmentSetup {
 		entity4.setAwsSecretKey("secretKey2");
 		entity4.setRegisterState(RegisterState.FAILED);
 		entity4.setRegisterError("An error has occurred!");
+		entity4.setRejectOption(EcrRejectOption.DO_NOTHING);
 		apiService.save(entity4);
 	}
 

@@ -1,13 +1,8 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
-import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultTest;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import java.util.Arrays;
 import java.util.List;
-import net.minidev.json.JSONObject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -21,6 +16,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultTest;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+
+import net.minidev.json.JSONObject;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -74,6 +77,23 @@ public class ImageScanResultControllerTest {
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/imagescan/result"))
+				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+				.andExpect(MockMvcResultMatchers.content().json(jsonString));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME})
+	public void testGetResultForAccountRepoTag() throws Exception {
+		ImageScanResult result = ImageScanResultTest.buildStandardResult();
+
+		BDDMockito.when(resultService.generateResultForAccountRepoTag(BDDMockito.anyString(),
+				BDDMockito.anyString(), BDDMockito.anyString())).thenReturn(result);
+
+		String jsonString = springMvcJacksonConverter.getObjectMapper().writeValueAsString(result);
+
+		mockMvc.perform(MockMvcRequestBuilders
+				.get("/rest/imagescan/result")
+				.param("account", "account").param("repo", "repo").param("tag", "tag"))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.content().json(jsonString));
 	}

@@ -1,13 +1,9 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
-import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import net.minidev.json.JSONObject;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +11,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+
+import net.minidev.json.JSONObject;
 
 /**
  * REST Contoller for Scan Results, including filtering
@@ -56,5 +60,15 @@ public class ImageScanResultController {
 		obj.put("results", results);
 		return ResponseEntity.ok(obj);
 	}
+
+	@GetMapping(value = "", params = {"account", "repo", "tag"},
+			produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ImageScanResult> getResultForAccountRepoTag(
+			@RequestParam String account, @RequestParam String repo,
+			@RequestParam String tag) {
+		return ResponseEntity.ok(resultService.generateResultForAccountRepoTag(account, repo, tag));
+	}
+
+
 
 }

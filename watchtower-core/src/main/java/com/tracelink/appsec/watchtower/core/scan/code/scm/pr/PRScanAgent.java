@@ -248,6 +248,7 @@ public class PRScanAgent extends
 	 */
 	private void reportToSCM(List<PullRequestViolationEntity> violations,
 			List<CodeScanError> errors) {
+
 		api.sendComment(pullRequest, buildReport(violations));
 
 		if (hasBlockingViolations(violations)) {

@@ -2,7 +2,7 @@ FROM adoptopenjdk/openjdk8:ubi-slim AS base
 ENV VIRTUAL_ENV=/opt/watchtower/pythonvenv \
     PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN dnf install python38 -y && \
-    dnf module install nodejs:12 -y && \
+    dnf module install nodejs:16 -y && \
     dnf clean all
 RUN python3 -m ensurepip --upgrade && \
     pip3 install --upgrade pip --no-cache-dir && \

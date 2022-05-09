@@ -1,13 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.image.api.ecr;
 
 
-import com.tracelink.appsec.watchtower.core.rule.RulePriority;
-import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
-import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
-import com.tracelink.appsec.watchtower.core.scan.image.api.IImageApi;
-import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -18,11 +11,21 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityReport;
+import com.tracelink.appsec.watchtower.core.scan.image.api.IImageApi;
+import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageViolationEntity;
+
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.AwsResponse;
@@ -51,8 +54,8 @@ import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
 import software.amazon.awssdk.services.ecr.paginators.DescribeImageScanFindingsIterable;
 
 /**
- * API to communicate with AWS ECR for image scans. Holds a reference to an {@link
- * EcrIntegrationEntity} to authenticate to ECR and CloudFormation in AWS.
+ * API to communicate with AWS ECR for image scans. Holds a reference to an
+ * {@link EcrIntegrationEntity} to authenticate to ECR and CloudFormation in AWS.
  *
  * @author mcool
  */
@@ -107,7 +110,7 @@ public class EcrApi implements IImageApi {
 		// Check ECR API access
 		String findingsMessage = String.format(TEST_CONNECTION_MSG, "get scan findings", "ECR");
 		tryAwsRequest(() -> ecrClient
-						.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
+				.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
 				findingsMessage, 400);
 
 		String deleteImageMessage = String.format(TEST_CONNECTION_MSG, "delete image", "ECR");
@@ -193,6 +196,20 @@ public class EcrApi implements IImageApi {
 	 */
 	@Override
 	public void rejectImage(ImageScan image, List<ImageViolationEntity> violations) {
+		switch (ecrIntegrationEntity.getRejectOption()) {
+			case DO_NOTHING:
+				LOG.info("Skipping Image Rejection due to Integration Setting "
+						+ ecrIntegrationEntity.getRejectOption().getName());
+				break;
+			case DELETE_IMAGE:
+				deleteImage(image, violations);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown Integration Entity rejection option");
+		}
+	}
+
+	private void deleteImage(ImageScan image, List<ImageViolationEntity> violations) {
 		BatchDeleteImageRequest request = BatchDeleteImageRequest.builder()
 				.registryId(image.getRegistry())
 				.repositoryName(image.getRepository())
