@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -13,7 +14,10 @@ import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
+import com.tracelink.appsec.watchtower.core.scan.image.api.ecr.EcrIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.AdvisoryEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
@@ -42,15 +46,18 @@ public class ImageScanResultService
 	private final RepositoryRepository imageRepo;
 	private final ImageScanRepository scanRepo;
 	private final ImageViolationRepository vioRepo;
+	private final ApiIntegrationService apiService;
 
 	public ImageScanResultService(@Autowired ImageContainerRepository containerRepo,
 			@Autowired RepositoryRepository imageRepo, @Autowired ImageScanRepository scanRepo,
-			@Autowired ImageViolationRepository vioRepo) {
+			@Autowired ImageViolationRepository vioRepo,
+			@Autowired ApiIntegrationService apiService) {
 		super(scanRepo, vioRepo);
 		this.containerRepo = containerRepo;
 		this.imageRepo = imageRepo;
 		this.scanRepo = scanRepo;
 		this.vioRepo = vioRepo;
+		this.apiService = apiService;
 	}
 
 	/**
@@ -117,8 +124,7 @@ public class ImageScanResultService
 	}
 
 	public List<ImageScanResult> getScanResultsWithFilters(ImageResultFilter resultFilter,
-			int pageSize,
-			int pageNum) {
+			int pageSize, int pageNum) {
 		List<ImageScanResult> results;
 		switch (resultFilter) {
 			case ALL:
@@ -185,6 +191,37 @@ public class ImageScanResultService
 
 	public ImageScanEntity findById(long id) {
 		return scanRepo.findById(id);
+	}
+
+	public ImageScanResult generateResultForAccountRepoTag(String account, String repo,
+			String tag) {
+		Optional<EcrIntegrationEntity> entity = apiService.getAllSettings().stream()
+				.filter(e -> e.getApiType() == ApiType.ECR)
+				.map(e -> (EcrIntegrationEntity) e).filter(e -> e.getRegistryId().equals(account))
+				.findFirst();
+		ImageScanResult result;
+		if (entity.isPresent()) {
+			ImageScanContainerEntity container =
+					containerRepo.findOneByApiLabelAndRepositoryNameAndTagName(
+							entity.get().getApiLabel(), repo, tag);
+			if (container == null) {
+				result = makeErrorResult("Unknown Account/Repo/Tag combination");
+			} else if (container.getScans().size() == 0) {
+				result = makeErrorResult("Scan is not yet complete");
+				result.setStatus(ScanStatus.NOT_STARTED.getDisplayName());
+			} else {
+				result = generateResultForScan(container.getScans().get(0));
+			}
+		} else {
+			result = makeErrorResult("Unknown Account ID");
+		}
+		return result;
+	}
+
+	private ImageScanResult makeErrorResult(String error) {
+		ImageScanResult result = new ImageScanResult();
+		result.setErrorMessage(error);
+		return result;
 	}
 
 }

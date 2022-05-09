@@ -306,6 +306,8 @@ public class BBCloudApi implements IScmApi {
 				return;
 			case BLOCK_PR:
 				break;
+			default:
+				throw new IllegalArgumentException("Unknown Integration Entity rejection option");
 		}
 		String prBase = apiEntity.makeApiPRUrl(pullRequest.getRepoName(), pullRequest.getPrId());
 		String url = buildRequestUrl(prBase, "decline");

@@ -1,7 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 
-import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import java.util.Optional;
+
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -13,6 +13,8 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 
 @ExtendWith(SpringExtension.class)
 public class ApiIntegrationServiceTest {
@@ -157,10 +159,10 @@ public class ApiIntegrationServiceTest {
 
 		BDDMockito.when(apiRepo.findByApiLabel("myIntegration")).thenReturn(integrationEntity);
 
-		apiService.register("myIntegration");
+		apiService.register("myIntegration").get();
 
 		BDDMockito.verify(integrationEntity).setRegisterState(RegisterState.IN_PROGRESS);
-		BDDMockito.verify(apiRepo).saveAndFlush(integrationEntity);
+		BDDMockito.verify(apiRepo, BDDMockito.times(2)).saveAndFlush(integrationEntity);
 		BDDMockito.verify(api).register(passwordEncoder);
 	}
 

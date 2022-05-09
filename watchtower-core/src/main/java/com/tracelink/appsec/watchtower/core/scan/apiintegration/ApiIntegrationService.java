@@ -117,11 +117,12 @@ public class ApiIntegrationService {
 	 * integration label.
 	 *
 	 * @param apiLabel the apiLabel of the integration entity to register a webhook for
+	 * @return {@linkplain CompletableFuture} indicating the status of registration, if needed
 	 * @throws ApiIntegrationException if there is no integration entity with the given label or if
 	 *                                 the integration entity is in a state where it cannot be
 	 *                                 registered
 	 */
-	public void register(String apiLabel) throws ApiIntegrationException {
+	public CompletableFuture<Void> register(String apiLabel) throws ApiIntegrationException {
 		// Get integration entity for given label
 		ApiIntegrationEntity integrationEntity = apiRepo.findByApiLabel(apiLabel);
 		if (integrationEntity == null) {
@@ -138,7 +139,7 @@ public class ApiIntegrationService {
 
 		// Create API and register
 		IWatchtowerApi api = integrationEntity.createApi();
-		registerAsync(api).whenCompleteAsync((v, e) -> {
+		return registerAsync(api).whenCompleteAsync((v, e) -> {
 			if (e == null) {
 				integrationEntity.setRegisterState(RegisterState.REGISTERED);
 			} else {
