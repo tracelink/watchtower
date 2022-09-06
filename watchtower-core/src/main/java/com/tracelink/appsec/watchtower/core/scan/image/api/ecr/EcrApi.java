@@ -51,6 +51,7 @@ import software.amazon.awssdk.services.ecr.model.EcrException;
 import software.amazon.awssdk.services.ecr.model.FindingSeverity;
 import software.amazon.awssdk.services.ecr.model.ImageIdentifier;
 import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
+import software.amazon.awssdk.services.ecr.model.EnhancedImageScanFinding;
 import software.amazon.awssdk.services.ecr.paginators.DescribeImageScanFindingsIterable;
 
 /**
@@ -243,11 +244,26 @@ public class EcrApi implements IImageApi {
 		// Iterate through all pages of findings
 		DescribeImageScanFindingsIterable responses = ecrClient
 				.describeImageScanFindingsPaginator(request);
-		List<ImageSecurityFinding> findings = responses.stream()
-				.flatMap(response -> response.imageScanFindings().findings().stream())
-				.map(this::createImageSecurityFinding)
-				.collect(Collectors.toList());
 
+		// Pause allowing ECR scans to complete		
+		try {
+			Thread.sleep(60000);
+		} catch (Exception e) {
+			LOG.warn("Pause before findings failed. Results may not appear.");
+		}
+
+		List<ImageSecurityFinding> findings = responses.stream()
+				.flatMap(response -> response.imageScanFindings().enhancedFindings().stream())
+				.map(this::createEnhancedImageSecurityFinding)
+				.collect(Collectors.toList());
+		
+		// Check for basic findings if enhancedFindings() is empty
+		if(findings.isEmpty()) {
+			findings = responses.stream()
+					.flatMap(response -> response.imageScanFindings().findings().stream())
+					.map(this::createImageSecurityFinding)
+					.collect(Collectors.toList());	
+		}
 		ImageSecurityReport report = new ImageSecurityReport(image);
 		report.setFindings(findings);
 		return report;
@@ -269,6 +285,32 @@ public class EcrApi implements IImageApi {
 		return finding;
 	}
 
+	private ImageSecurityFinding createEnhancedImageSecurityFinding(EnhancedImageScanFinding enhancedImageScanFinding) {
+		ImageSecurityFinding finding = new ImageSecurityFinding();
+		finding.setSeverity(convertSeverityToRulePriority(enhancedImageScanFinding.severity()));
+		finding.setPackageName(enhancedImageScanFinding.packageVulnerabilityDetails().vulnerablePackages().get(0).name());
+		finding.setPackageVersion(enhancedImageScanFinding.packageVulnerabilityDetails().vulnerablePackages().get(0).version());
+		try {
+			if (enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).version() == "2.0") {
+				finding.setScore(enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).baseScore().toString());
+				finding.setVector(enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).scoringVector());
+			}
+			else {
+				finding.setScore("N/A");
+				finding.setVector("N/A");
+			}
+		} catch (Exception e) {
+				LOG.debug("@NotNull information missing from PackageVulnerabilityDetails().");
+				finding.setScore("N/A");
+				finding.setVector("N/A");
+		}
+
+		finding.setFindingName(enhancedImageScanFinding.title());
+		finding.setDescription(enhancedImageScanFinding.description());
+		finding.setUri(enhancedImageScanFinding.packageVulnerabilityDetails().sourceUrl());
+		return finding;
+	}
+
 	private RulePriority convertSeverityToRulePriority(FindingSeverity severity) {
 		switch (severity) {
 			case CRITICAL:
@@ -280,6 +322,22 @@ public class EcrApi implements IImageApi {
 			case INFORMATIONAL:
 			case UNDEFINED:
 			case UNKNOWN_TO_SDK_VERSION:
+			default:
+				return RulePriority.LOW;
+		}
+	}
+
+	private RulePriority convertSeverityToRulePriority(String severity) {
+		switch (severity) {
+			case "CRITICAL":
+			case "HIGH":
+				return RulePriority.HIGH;
+			case "MEDIUM":
+				return RulePriority.MEDIUM;
+			case "LOW":
+			case "INFORMATIONAL":
+			case "UNDEFINED":
+			case "UNKNOWN_TO_SDK_VERSION":
 			default:
 				return RulePriority.LOW;
 		}
