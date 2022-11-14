@@ -15,10 +15,12 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
 public class ImageScanReport extends AbstractScanReport {
 	private List<ImageScanError> errors;
 	private List<ImageScanViolation> violations;
+	private boolean scanTimedOut;
 
 	public ImageScanReport() {
 		errors = new ArrayList<ImageScanError>();
 		violations = new ArrayList<ImageScanViolation>();
+		scanTimedOut = false;
 	}
 
 	/**
@@ -45,6 +47,12 @@ public class ImageScanReport extends AbstractScanReport {
 
 	public List<ImageScanViolation> getViolations() {
 		return Collections.unmodifiableList(violations);
+	}
+	public boolean getScanTimedOut() {
+		return scanTimedOut;
+	}
+	public void setScanTimedOut(boolean timedOut) {
+		scanTimedOut = timedOut;
 	}
 
 }

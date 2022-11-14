@@ -125,6 +125,7 @@ public class ImageScanAgent extends
 	protected void report(List<ImageScanReport> reports) {
 		List<ImageViolationEntity> violations = new ArrayList<>();
 		List<ImageScanError> errors = new ArrayList<>();
+		boolean scanTimedOut = false;
 		for (ImageScanReport report : reports) {
 			report.getViolations().stream().forEach(sv -> {
 				AdvisoryEntity advisory =
@@ -137,14 +138,14 @@ public class ImageScanAgent extends
 				}
 				violations.add(violation);
 			});
+			if (report.getScanTimedOut()) {
+				scanTimedOut = report.getScanTimedOut();
+			}
 			errors.addAll(report.getErrors());
 		}
-
 		Collections.sort(violations);
-
 		reportViaApi(violations, errors);
-
-		scanResultService.saveImageReport(scan, startTime, violations, errors);
+		scanResultService.saveImageReport(scan, startTime, violations, errors, scanTimedOut);
 	}
 
 	private void reportViaApi(List<ImageViolationEntity> violations, List<ImageScanError> errors) {

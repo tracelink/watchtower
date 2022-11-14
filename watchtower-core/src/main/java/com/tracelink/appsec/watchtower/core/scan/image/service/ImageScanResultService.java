@@ -88,7 +88,7 @@ public class ImageScanResultService
 	 */
 	public void saveImageReport(ImageScan scan, long startTime,
 			List<ImageViolationEntity> violations,
-			List<ImageScanError> errors) {
+			List<ImageScanError> errors, boolean scanTimedOut) {
 		if (violations == null) {
 			return;
 		}
@@ -108,7 +108,11 @@ public class ImageScanResultService
 		scanEntity.setEndDate(now);
 		scanEntity.setSubmitDate(scan.getSubmitTime());
 		scanEntity.setStartDate(startTime);
-		scanEntity.setStatus(ScanStatus.DONE);
+		if (scanTimedOut) {
+			scanEntity.setStatus(ScanStatus.TIMED_OUT);
+		} else {
+			scanEntity.setStatus(ScanStatus.DONE);
+		}
 		if (!errors.isEmpty()) {
 			scanEntity.setError(errors.stream().map(ImageScanError::getErrorMessage)
 					.collect(Collectors.joining(", ")));
@@ -165,7 +169,7 @@ public class ImageScanResultService
 		result.setSubmitDate(scanEntity.getSubmitDate());
 		result.setStatus(scanEntity.getStatus().getDisplayName());
 		result.setErrorMessage(scanEntity.getError());
-		if (scanEntity.getStatus() == ScanStatus.DONE) {
+		if (scanEntity.getStatus() == ScanStatus.DONE || scanEntity.getStatus() == ScanStatus.TIMED_OUT) {
 			result.setEndDate(scanEntity.getEndDate());
 			result.setViolations(scanEntity.getViolations().stream()
 					.map(this::generateResultForViolation)

@@ -12,8 +12,11 @@ public class ImageSecurityReport {
 	private ImageScan image;
 	private List<ImageSecurityFinding> findings;
 
+	private boolean scanTimedOut;
+
 	public ImageSecurityReport(ImageScan image) {
 		this.image = image;
+		this.scanTimedOut = false;
 	}
 
 	public ImageScan getImage() {
@@ -26,6 +29,12 @@ public class ImageSecurityReport {
 
 	public void setFindings(List<ImageSecurityFinding> findings) {
 		this.findings = findings;
+	}
+	public boolean getScanTimedOut() {
+		return this.scanTimedOut;
+	}
+	public void setScanTimedOut(boolean timeout) {
+		this.scanTimedOut = timeout;
 	}
 
 }

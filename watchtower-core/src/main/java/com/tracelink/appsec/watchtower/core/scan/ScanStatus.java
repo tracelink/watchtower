@@ -9,7 +9,7 @@ import javax.persistence.AttributeConverter;
  *
  */
 public enum ScanStatus {
-	NOT_STARTED("Not Started"), IN_PROGRESS("In Progress"), DONE("Done"), FAILED("Failed");
+	NOT_STARTED("Not Started"), IN_PROGRESS("In Progress"), DONE("Done"), FAILED("Failed"), TIMED_OUT("Timed Out");
 
 	private final String displayName;
 

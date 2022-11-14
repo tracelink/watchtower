@@ -54,7 +54,7 @@
                                <td class="py-1" th:text="${result.getApiLabel()}">Api Label</td>
                                <td class="py-1" th:text="${result.getRepositoryName()}">Repository Name</td>
                                <td class="py-1" th:text="${result.getTagName()}">Tag Name</td>
-                               <td class="py-1" th:text="${result.getViolations() == null ? 0 : result.getViolations().size()}">Violations</td>
+                               <td class="py-1" th:text="${result.getStatus().equals('Timed Out') ? 'T/O' : (result.getViolations() == null ? 0 : result.getViolations().size())}">Violations</td>
                                <td class="py-1">
                                		<a class="btn btn-success btn-sm py-1" th:href="${'/imagescan/report/' + result.getId()}">Report</a>
                                </td>

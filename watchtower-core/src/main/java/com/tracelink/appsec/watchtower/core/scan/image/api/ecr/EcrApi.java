@@ -245,12 +245,37 @@ public class EcrApi implements IImageApi {
 		DescribeImageScanFindingsIterable responses = ecrClient
 				.describeImageScanFindingsPaginator(request);
 
+		//Initialize ImageSecurityReport object to set scanTimedOut flag if needed
+		ImageSecurityReport report = new ImageSecurityReport(image);
+
 		// Pause allowing ECR scans to complete		
 		try {
 			Thread.sleep(60000);
 		} catch (Exception e) {
 			LOG.warn("Pause before findings failed. Results may not appear.");
 		}
+
+		// While timeout has not been reached, if no responses contain status "COMPLETE":
+		// Pause for 5 minutes, recheck
+		boolean scanComplete = responses.stream().anyMatch(response -> response.imageScanStatus().statusAsString().equals("COMPLETE"));
+		long start = System.currentTimeMillis();
+		long end = start + 60 * 60000;
+		while(System.currentTimeMillis() < end) {
+			if (!scanComplete) {
+				try {
+					Thread.sleep(300000);
+				} catch (InterruptedException e) {
+					LOG.warn("Pause while scan status not complete failed. Results may not appear.");
+				}
+			} else {
+				break;
+			}
+			// Update boolean
+			scanComplete = responses.stream().anyMatch(response -> response.imageScanStatus().statusAsString().equals("COMPLETE"));
+		}
+
+		// Set scan timed out flag
+		report.setScanTimedOut(!scanComplete);
 
 		List<ImageSecurityFinding> findings = responses.stream()
 				.flatMap(response -> response.imageScanFindings().enhancedFindings().stream())
@@ -264,7 +289,7 @@ public class EcrApi implements IImageApi {
 					.map(this::createImageSecurityFinding)
 					.collect(Collectors.toList());	
 		}
-		ImageSecurityReport report = new ImageSecurityReport(image);
+		//ImageSecurityReport report = new ImageSecurityReport(image);
 		report.setFindings(findings);
 		return report;
 	}

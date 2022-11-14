@@ -24,6 +24,7 @@ public class AdvisoryScanner implements IImageScanner {
 	@Override
 	public ImageScanReport scan(ImageScanConfig config) {
 		ImageScanReport report = new ImageScanReport();
+		report.setScanTimedOut(config.getSecurityReport().getScanTimedOut());
 		RulesetDto ruleset = config.getRuleset();
 		List<AdvisoryRuleDto> advisoryRules =
 				ruleset.getAllRules().stream().filter(r -> (r instanceof AdvisoryRuleDto))

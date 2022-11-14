@@ -87,19 +87,23 @@ class ImageDevelopmentSetup {
 		this.imageAdvisoryService.getOrCreateAdvisory(sv);
 	}
 
-
 	private void saveImage(boolean activeState, RepositoryEntity image,
 			List<AdvisoryEntity> advisories, Random random) {
 		ImageScan imageScan = new EcrImageScan(image.getApiLabel());
 		imageScan.setRepository(image.getRepoName());
 		imageScan.setTag("v1.0");
+		boolean scanTimedOut = false;
 		// 50% chance of 0 vios, then 25% chance of 1,2,3,4 vios
 		int numVios = random.nextBoolean() ? 0 : 1 + random.nextInt(4);
 		List<ImageViolationEntity> vios = new ArrayList<>();
 		for (int i = 0; i < numVios; i++) {
 			vios.add(makeImageVio(activeState, advisories, random));
 		}
-		imageScanResultService.saveImageReport(imageScan, 0, vios, new ArrayList<>());
+		// 50% chance 0 vios is a Timed Out scan
+		if (vios.size() == 0) {
+			scanTimedOut = random.nextBoolean();
+		}
+		imageScanResultService.saveImageReport(imageScan, 0, vios, new ArrayList<>(), scanTimedOut);
 	}
 
 	private ImageViolationEntity makeImageVio(boolean hasNoBlocking,

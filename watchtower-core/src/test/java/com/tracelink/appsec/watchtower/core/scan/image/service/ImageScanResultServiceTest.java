@@ -80,7 +80,6 @@ public class ImageScanResultServiceTest {
 		BDDMockito.when(scanRepo.findById(BDDMockito.anyLong())).thenReturn(entity);
 		Assertions.assertEquals(entity, imageScanResultService.findById(1L));
 	}
-
 	@Test
 	public void testSaveImageReport() {
 		ImageScan scan = EcrImageScanTest.buildStandardEcrImageScan();
@@ -91,13 +90,12 @@ public class ImageScanResultServiceTest {
 				.thenAnswer(e -> e.getArgument(0));
 		ImageScanError error = ImageScanReportTests.buildStandardError();
 		imageScanResultService.saveImageReport(scan, 0L, Arrays.asList(violation),
-				Arrays.asList(error));
+				Arrays.asList(error), false);
 		BDDMockito.verify(vioRepo).save(BDDMockito.any());
 	}
-
 	@Test
 	public void testSaveImageReportNullViolations() {
-		imageScanResultService.saveImageReport(null, 0L, null, null);
+		imageScanResultService.saveImageReport(null, 0L, null, null, false);
 		BDDMockito.verify(vioRepo, BDDMockito.never()).save(BDDMockito.any());
 		BDDMockito.verify(containerRepo, BDDMockito.never()).saveAndFlush(BDDMockito.any());
 	}
