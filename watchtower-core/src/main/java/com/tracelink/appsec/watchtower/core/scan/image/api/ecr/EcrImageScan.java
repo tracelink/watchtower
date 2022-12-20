@@ -25,6 +25,11 @@ public class EcrImageScan extends ImageScan {
 		JSONObject json = new JSONObject(requestBody);
 		String registryId = json.optString("registryId");
 		String repository = json.optString("repository");
+		// Extract repository name from Inspector2 Eventbridge event for enhanced scans.
+		// Value "repository-name" is formatted differently ("arn:aws:ecr:[region]]:[repository]:repository/[repository-name]") than basic scans ("[repository-name]").
+		if (repository.contains(registryId + ":repository/")) {
+			repository = repository.replaceFirst("^[^/]*/", "");
+		}
 		JSONArray tags = json.optJSONArray("tags");
 		if (StringUtils.isBlank(registryId) || StringUtils.isBlank(repository) || tags == null
 				|| tags.isEmpty() || tags.isNull(0)) {
