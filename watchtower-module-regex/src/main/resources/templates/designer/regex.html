@@ -83,6 +83,10 @@
             <form id="saveRegexRuleForm" method="post" class="form"
                   action="/designer/regex/save">
               <div class="form-group">
+                <input type="checkbox" name="mcrRule" id="mcrRule" value=""/>
+                <label for="mcrRule">Manual Code Review Rule</label>
+              </div>
+              <div class="form-group">
                 <label for="ruleName">Rule Name</label>
                 <input type="text" class="form-control" name="name" id="ruleName"
                        placeholder="Rule Name" th:value="${ruleName}"/>

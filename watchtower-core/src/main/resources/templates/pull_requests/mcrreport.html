@@ -1,0 +1,81 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+	<div class="col-12 col-sm-6 text-center text-sm-left mb-0">
+		<h3 class="page-title">Manual Code Review Report</h3>
+	</div>
+</div>
+<!-- End Page Header -->
+<!-- Content -->
+<div class="row">
+	<div class="col">
+		<div class="card h-100">
+			<div class="card-body">
+				<div class="row border-bottom mb-4">
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">Pull Request Name</h6>
+							<a th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank"/>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Scanned On</h6>
+							<div class="localizetime" th:text="${result.getDateMillis()}"></div>
+						</div>
+						<div class="mb-4">
+							<a class="btn btn-success btn-sm py-1" th:href="${'/scan/report/' + result.getId()}" target="_blank">Pull Request Scan Report</a>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-4">
+							<h6 class="d-block">API ID</h6>
+							<div th:text="${result.getApiLabel()}"></div>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Author</h6>
+							<div th:text="${result.getAuthor()}"></div>
+						</div>
+					</div>
+					<div class="col">
+						<div class="mb-2">
+							<form action="#" th:action="@{/scan/mcr/report/{id}/setstatus (id=${result.getId()})}" method="POST"
+								  th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).SCAN_MCR_MODIFY_NAME+''')')}">
+								<h6 class="d-block">MCR Status</h6>
+								<div class="input-group">
+									<select name="mcrstatus" class="form-control">
+										<option th:each="status : ${mcrStatuses}" th:value="${status}" th:text="${status.getDisplayName}" th:selected="${#strings.equals(status, currentMcrStatus)}"/>
+									</select>
+									<div class="input-group-append pl-2">
+										<button type="submit" class="btn btn-accent">Update Status</button>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div class="mb-4">
+							<h6 class="d-block">Total MCR Findings</h6>
+							<div th:text="${result.getMcrFindings().size()}"></div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<h6 class="">Files to Review</h6>
+						<table class="table mb-0 w-100 datatable">
+							<thead class="bg-light">
+								<tr>
+									<th scope="col" class="border-0">File</th>
+									<th scope="col" class="border-0">Reason for Review</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="key : ${consolidatedFindings.keySet()}">
+									<td th:text="${key}"></td>
+									<td th:text="'The following MCR matches were found within this file: ' + ${consolidatedFindings.get(key)}"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- End Content -->

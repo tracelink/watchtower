@@ -246,6 +246,32 @@ mark a repository as exempt from Watchtower scans.
 
 Pull request scans are currently implemented to integrate with Bitbucket Cloud.
 
+#### Manual Code Reviews
+
+The manual code review feature is intended to automate aspects of the secure code review process. 
+Each pull request scan will automatically be assessed for a manual code review and assigned a manual 
+code review status. There are (5) manual code review statuses: “Not Applicable”, “Pending Review”, 
+“In Progress”, “Reviewed”, and “Reviewed w/ Recommendations”.
+
+A pull request will automatically be assigned either the “Not Applicable” status or the 
+“Pending Review” status. A pull request is only assigned a “Pending Review” status if the following 
+criteria are met: at least one manual code review rule is included in the scanning ruleset and at 
+least one manual code review match is found. In all other cases, the pull request scan will be 
+assigned a “Not Applicable” MCR status.
+
+The Manual Code Review view will only display the manual code reviews of the most recent version of 
+a Pull Request Scan and will not display any manual code reviews with the MCR status of 
+“Not Applicable” or null. To narrow the MCR scope down to likely relevant code, manual code review findings 
+are only reported if found within a +/- 5 range of a modified line. Manual code review findings will be 
+consolidated by rule and by file. These findings will be displayed on a per file basis in list form of 
+the rule name(s). MCR findings will be excluded from pull request scan reports as well as from the Pull 
+Request Dashboard and metrics.
+
+Currently, manual code review rules can only be configured within the regex rule designer. To 
+configure a manual code review rule, check the “Manual Code Review Rule” checkbox when saving the 
+rule. All manual code review rules are informational by nature, therefore the priority will always 
+be set to informational.
+
 ### Upload Scans
 
 Upload scans provide a way to manually scan code for issues. The code to scan is uploaded as a zip

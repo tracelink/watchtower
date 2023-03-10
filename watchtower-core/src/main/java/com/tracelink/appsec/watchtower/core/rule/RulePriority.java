@@ -5,7 +5,7 @@ import javax.persistence.Converter;
 
 /**
  * Represents the priority of a rule, regardless of rule type. Each rule is assigned a priority from
- * 1 to 5, with 1 being the highest priority and 5 being the lowest priority. High priority rules
+ * 1 to 6, with 1 being the highest priority and 6 being the lowest priority. High priority rules
  * indicate that violations should be addressed immediately, whereas low priority rules might be
  * best practices or suggestions.
  *
@@ -16,7 +16,8 @@ public enum RulePriority {
 	MEDIUM_HIGH(2, "Medium High"),
 	MEDIUM(3, "Medium"),
 	MEDIUM_LOW(4, "Medium Low"),
-	LOW(5, "Low");
+	LOW(5, "Low"),
+	INFORMATIONAL(6, "Informational");
 
 	private final int priority;
 	private final String name;

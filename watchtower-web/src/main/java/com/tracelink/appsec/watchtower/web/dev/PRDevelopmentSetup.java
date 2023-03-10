@@ -122,12 +122,13 @@ public class PRDevelopmentSetup {
 	private PullRequestViolationEntity makePRVio(boolean hasNoBlocking, Random random) {
 		PullRequestViolationEntity vio = new PullRequestViolationEntity();
 		vio.setBlocking(hasNoBlocking ? false : random.nextBoolean());
+		vio.setBlocking(false);
 		vio.setFileName("foobar");
 		vio.setLineNum(1);
 		vio.setMessage("Test Violation");
 		vio.setNewViolation(random.nextDouble() < .3);
-		vio.setSeverity(RulePriority.HIGH);
-		vio.setViolationName("TestViolation" + random.nextInt(3));
+		vio.setViolationName(random.nextBoolean() ? "MCR Match: TestViolation" + random.nextInt(3) : "TestViolation" + random.nextInt(3));
+		vio.setSeverity(vio.getViolationName().startsWith("MCR Match:") ? RulePriority.INFORMATIONAL : RulePriority.HIGH);
 		return vio;
 	}
 }

@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result;
 
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestMCRStatus;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -28,6 +29,10 @@ public class PRScanResult {
 	private String repoName;
 
 	private List<PRScanResultViolation> violations;
+
+	private PullRequestMCRStatus mcrStatus;
+
+	private List<PRScanResultViolation> mcrFindings;
 
 	public void setId(long id) {
 		this.id = id;
@@ -104,5 +109,13 @@ public class PRScanResult {
 	public void setViolations(List<PRScanResultViolation> violations) {
 		this.violations = violations;
 	}
+
+	public List<PRScanResultViolation> getMcrFindings() { return mcrFindings; }
+
+	public void setMcrFindings(List<PRScanResultViolation> mcrFindings) {this.mcrFindings = mcrFindings; }
+
+	public void setMcrStatus(PullRequestMCRStatus mcrStatus) { this.mcrStatus = mcrStatus; }
+
+	public PullRequestMCRStatus getMcrStatus() {return mcrStatus; }
 
 }

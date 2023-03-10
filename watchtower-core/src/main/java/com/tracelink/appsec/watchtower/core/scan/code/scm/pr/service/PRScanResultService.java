@@ -5,6 +5,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
+import com.tracelink.appsec.watchtower.core.scan.code.AbstractCodeScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
@@ -12,15 +13,14 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestViolationEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.*;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestMCRStatus;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRContainerRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRScanRepository;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.repository.PRViolationRepository;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRResultFilter;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
-import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,13 +103,44 @@ public class PRScanResultService
 			scanEntity.setError(errors.stream().map(CodeScanError::getErrorMessage)
 					.collect(Collectors.joining(", ")));
 		}
+		scanEntity.setMcrStatus(resolveMCRStatus(violations));
+
 		PullRequestScanEntity savedScanEntity = scanRepo.saveAndFlush(scanEntity);
+
+		consolidateMCRFindings(violations);
 
 		violations.forEach(v -> {
 			v.setScan(savedScanEntity);
 			vioRepo.save(v);
 		});
 		vioRepo.flush();
+	}
+
+	/**
+	 * Determine if the Pull Request requires a Manual Code Review based on violation findings.
+	 *
+	 * @param violations the violations found in this scan
+	 */
+	public PullRequestMCRStatus resolveMCRStatus(List<PullRequestViolationEntity> violations) {
+		for (PullRequestViolationEntity v : violations) {
+			if (v.getViolationName().startsWith("MCR Match:")) {
+				return PullRequestMCRStatus.PENDING_REVIEW;
+			}
+		}
+
+		return PullRequestMCRStatus.NOT_APPLICABLE;
+	}
+
+	/**
+	 * Update the MCR status a Pull Request entity and all of its duplicates.
+	 *
+	 * @param id 			the id of the Pull Request scan entity to update
+	 * @param mcrStatus 	the MCR status to update to
+	 */
+	public void updateMcrStatus(long id, PullRequestMCRStatus mcrStatus) {
+		PullRequestScanEntity pr = scanRepo.findById(id);
+		pr.setMcrStatus(mcrStatus);
+		scanRepo.saveAndFlush(pr);
 	}
 
 	/**
@@ -173,9 +204,17 @@ public class PRScanResultService
 		result.setApiLabel(container.getApiLabel());
 		result.setRepoName(repo);
 		result.setPrId(id);
+		//Set violations, filter out MCR Findings
 		result.setViolations(
-				scanEntity.getViolations().stream().map(this::generateResultForViolation)
+				scanEntity.getViolations().stream().map(this::generateResultForViolation).filter(v -> !v.getViolationName().startsWith("MCR Match:"))
 						.collect(Collectors.toList()));
+
+		//Set mcrStatus and mcrFindings, filter out other violations
+		result.setMcrStatus(scanEntity.getMcrStatus());
+		result.setMcrFindings(
+				scanEntity.getViolations().stream().map(this::generateResultForViolation).filter(v -> v.getViolationName().startsWith("MCR Match:"))
+						.collect(Collectors.toList()));
+
 		return result;
 	}
 
@@ -231,7 +270,7 @@ public class PRScanResultService
 				break;
 			case VIOLATIONS:
 				results = vioRepo
-						.findAllGroupByScan(
+						.findAllNonMCRGroupByScan(
 								PageRequest.of(pageNum, pageSize, Sort.by(Direction.DESC, "scan")))
 						.stream()
 						.map(this::generateScanResultForScan)
@@ -245,6 +284,68 @@ public class PRScanResultService
 	}
 
 	/**
+	 * Get a list of {@linkplain PRScanResult} with MCRs based on the given filter and return the given page
+	 * number's worth of data
+	 *
+	 * @param filter   the filter to divy-up the results
+	 * @param pageSize the number of results to return
+	 * @param pageNum  the pagenumber of results to return
+	 * @return a list of size {@code pageSize} containing results using the {@code filter} on page
+	 * {@code pageNum}
+	 */
+	public List<PRScanResult> getScanMCRsWithFilters(PullRequestMCRFilter filter, int pageSize,
+													 int pageNum) {
+		List<PRScanResult> results;
+
+		switch (filter) {
+			case ALL:
+				results =
+						scanRepo.findLatestMcrsPerPR(PullRequestMCRStatus.NOT_APPLICABLE,
+										PageRequest.of(pageNum, pageSize,
+												Sort.by(Direction.DESC, "endDate")))
+								.stream().map(this::generateScanResultForScan)
+								.collect(Collectors.toList());
+				break;
+			case PENDING:
+				results =
+						scanRepo.findLatestMcrsPerPRByMcrStatus(PullRequestMCRStatus.PENDING_REVIEW,
+										PageRequest.of(pageNum, pageSize,
+												Sort.by(Direction.DESC, "endDate")))
+								.stream().map(this::generateScanResultForScan)
+								.collect(Collectors.toList());
+				break;
+			case PROGRESS:
+				results =
+						scanRepo.findLatestMcrsPerPRByMcrStatus(PullRequestMCRStatus.IN_PROGRESS,
+										PageRequest.of(pageNum, pageSize,
+												Sort.by(Direction.DESC, "endDate")))
+								.stream().map(this::generateScanResultForScan)
+								.collect(Collectors.toList());
+				break;
+			case REVIEWED:
+				results =
+						scanRepo.findLatestMcrsPerPRByMcrStatus(PullRequestMCRStatus.REVIEWED,
+										PageRequest.of(pageNum, pageSize,
+												Sort.by(Direction.DESC, "endDate")))
+								.stream().map(this::generateScanResultForScan)
+								.collect(Collectors.toList());
+				break;
+			case RECOMMENDATIONS:
+				results =
+						scanRepo.findLatestMcrsPerPRByMcrStatus(PullRequestMCRStatus.RECOMMENDATIONS,
+										PageRequest.of(pageNum, pageSize,
+												Sort.by(Direction.DESC, "endDate")))
+								.stream().map(this::generateScanResultForScan)
+								.collect(Collectors.toList());
+				break;
+			default:
+				LOG.error("Filter is not configured to get MCRs");
+				throw new IllegalArgumentException("Filter is not configured to get MCRs");
+		}
+		return results;
+	}
+
+	/**
 	 * Get an individual result for a scan id
 	 *
 	 * @param scanId the id of the scan to get results for
@@ -253,6 +354,59 @@ public class PRScanResultService
 	public PRScanResult getScanResultForScanId(String scanId) {
 		Optional<PullRequestScanEntity> entity = scanRepo.findById(Long.valueOf(scanId));
 		return entity.isPresent() ? generateScanResultForScan(entity.get()) : null;
+	}
+
+	/**
+	 * Consolidate MCR findings so only one of the same finding per file
+	 * is reported
+	 *
+	 * @param violations scan violations
+	 */
+
+	private void consolidateMCRFindings(List<PullRequestViolationEntity> violations) {
+		//Pull all MCR findings
+		List<PullRequestViolationEntity> mcrFindings = violations.stream()
+				.filter(v -> v.getViolationName().startsWith("MCR Match: "))
+				.collect(Collectors.toList());
+		//Remove all MCR findings from violations
+		mcrFindings.forEach(violations::remove);
+		//Set line # to 0, as this will be findings per file
+		mcrFindings.forEach(v -> v.setLineNum(0));
+		//Consolidate into distinct findings
+		mcrFindings = mcrFindings.stream()
+				.distinct()
+				.collect(Collectors.toList());
+		//Replace old findings with the consolidated per file findings
+		violations.addAll(mcrFindings);
+	}
+
+	/**
+	 * Consolidate findings so only distinct violation names are displayed, group by file
+	 *
+	 * @param id the id of the scan to consolidate MCR findings
+	 */
+	public Dictionary<String, String> getConsolidatedMCRFindings(String id) {
+		Dictionary<String, String> consolidatedMCRResults = new Hashtable<>();
+		Optional<PullRequestScanEntity> pr = scanRepo.findById(Long.valueOf(id));
+
+
+		List<String> files = pr.get().getViolations().stream()
+				.filter(v -> v.getViolationName().startsWith("MCR Match: "))
+				.map(PullRequestViolationEntity::getFileName)
+				.distinct()
+				.collect(Collectors.toList());
+		for (String file : files) {
+			String consolidatedFindings = pr.get().getViolations().stream()
+					.filter(v -> v.getFileName().equals(file))
+					.map(AbstractCodeScanViolationEntity::getViolationName)
+					.filter(violationName -> violationName.startsWith("MCR Match: "))
+					.map(v -> v.replaceAll("MCR Match: ", ""))
+					.distinct()
+					.collect(Collectors.joining(", "));
+			consolidatedMCRResults.put(file, consolidatedFindings);
+		}
+
+		return consolidatedMCRResults;
 	}
 
 	/**

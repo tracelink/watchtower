@@ -224,13 +224,27 @@ public class PRScanAgent extends
 		});
 
 		// Use the diff files to determine if each violation is new or preexisting
+		// Use diff files to determine if MCR finding is likely relevant to the PR
 		Iterator<PullRequestViolationEntity> violationIter = violations.iterator();
 		while (violationIter.hasNext()) {
 			PullRequestViolationEntity violation = violationIter.next();
+			boolean mcrInRangeOfModifiedLine = false;
+			// We are only looking for MCR matches that are within a small range of the modified code.
+			if (violation.getViolationName().startsWith("MCR Match:") && diffFiles.containsKey(violation.getFileName())) {
+				for (int i = violation.getLineNum() - 5; i <= violation.getLineNum() + 5; i++) {
+					if (diffFiles.get(violation.getFileName()).isLineChanged(i)) {
+						mcrInRangeOfModifiedLine = true;
+						break;
+					}
+				}
+			}
 			// We are only looking for violations that occur in files that have been modified. So
 			// remove all latent violations in source code files that have nothing to do with this
 			// Pull Request
 			if (!diffFiles.containsKey(violation.getFileName())) {
+				violationIter.remove();
+			// Remove any MCR findings that were not within range of the modified code.
+			} else if (violation.getViolationName().startsWith("MCR Match:") && !mcrInRangeOfModifiedLine) {
 				violationIter.remove();
 			} else {
 				violation.setNewViolation(diffFiles.get(violation.getFileName())
@@ -270,12 +284,15 @@ public class PRScanAgent extends
 		int numExistingViolations = 0;
 
 		for (PullRequestViolationEntity v : violations) {
-			if (v.isNewViolation()) {
-				numNewViolations++;
-				violationReport(newViolationReport, v, true);
-			} else {
-				numExistingViolations++;
-				violationReport(existingViolationReport, v, false);
+			//Do not include MCR findings in violation report
+			if(!v.getViolationName().startsWith("MCR Match:")) {
+				if (v.isNewViolation()) {
+					numNewViolations++;
+					violationReport(newViolationReport, v, true);
+				} else {
+					numExistingViolations++;
+					violationReport(existingViolationReport, v, false);
+				}
 			}
 		}
 

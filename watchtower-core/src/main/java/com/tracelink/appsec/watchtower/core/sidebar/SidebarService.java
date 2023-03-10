@@ -52,6 +52,12 @@ public class SidebarService {
 										.setMaterialIcon("report_problem")
 										.setUrl("/scan/results")
 										.setAuthorizationExpression("hasAuthority('"
+												+ CorePrivilege.SCAN_RESULTS_NAME + "')"),
+								new SidebarLink()
+										.setDisplayName("Manual Code Reviews")
+										.setMaterialIcon("report_problem")
+										.setUrl("/scan/mcr")
+										.setAuthorizationExpression("hasAuthority('"
 												+ CorePrivilege.SCAN_RESULTS_NAME + "')"))),
 				// Upload Scans Menu
 				new SidebarMenuGroup().setGroupName("Upload Scans")

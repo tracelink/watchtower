@@ -60,7 +60,9 @@ public enum CorePrivilege {
 	SCAN_ADMIN(CorePrivilege.SCAN_ADMIN_NAME, CorePrivilege.SCAN_CATEGORY,
 			"User may pause, quiesce, and resume scanners."),
 	SCAN_RESULTS(CorePrivilege.SCAN_RESULTS_NAME, CorePrivilege.SCAN_CATEGORY,
-			"User may view all scan results for all time.");
+			"User may view all scan results for all time."),
+	SCAN_MCR_MODIFY(CorePrivilege.SCAN_MCR_MODIFY_NAME, CorePrivilege.SCAN_CATEGORY,
+			"User may modify the MCR status of a Pull Request Scan.");
 
 	private static final String ADMIN_CATEGORY = "Admin";
 	private static final String CONFIG_CATEGORY = "Configuration";
@@ -99,6 +101,7 @@ public enum CorePrivilege {
 	public static final String SCAN_SUBMIT_NAME = "Scan Submit";
 	public static final String SCAN_ADMIN_NAME = "Scan Admin";
 	public static final String SCAN_RESULTS_NAME = "Scan Results View";
+	public static final String SCAN_MCR_MODIFY_NAME = "Scan MCR Modify";
 
 	/* API Integration Scan */
 	public static final String INTEGRATION_SCAN_SUBMIT = "Integration Scan Submit";
