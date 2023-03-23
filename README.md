@@ -262,10 +262,8 @@ assigned a “Not Applicable” MCR status.
 The Manual Code Review view will only display the manual code reviews of the most recent version of 
 a Pull Request Scan and will not display any manual code reviews with the MCR status of 
 “Not Applicable” or null. To narrow the MCR scope down to likely relevant code, manual code review findings 
-are only reported if found within a +/- 5 range of a modified line. Manual code review findings will be 
-consolidated by rule and by file. These findings will be displayed on a per file basis in list form of 
-the rule name(s). MCR findings will be excluded from pull request scan reports as well as from the Pull 
-Request Dashboard and metrics.
+are only reported if found within a +/- 5 lines range of a modified line. MCR findings will be excluded from 
+pull request scan reports as well as from the Pull Request Dashboard and metrics.
 
 Currently, manual code review rules can only be configured within the regex rule designer. To 
 configure a manual code review rule, check the “Manual Code Review Rule” checkbox when saving the 

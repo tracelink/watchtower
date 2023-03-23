@@ -4,6 +4,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestMCRStatus;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.List;
 
 /**
@@ -38,14 +38,14 @@ public class PullRequestMCRReportController {
 			RedirectAttributes redirectAttributes) {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("pull_requests/mcrreport");
 		PRScanResult scanResult = scanResultService.getScanResultForScanId(id);
-		Dictionary<String, String> consolidatedFindings = scanResultService.getConsolidatedMCRFindings(id);
+		List<PRScanResultViolation> mcrFindings = scanResult.getMcrFindings();
 		if (scanResult == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown ID");
 			mav.setViewName("redirect:/scan/mcr/");
 		} else {
 			mav.addObject("result", scanResult);
-			mav.addObject("consolidatedFindings", consolidatedFindings);
+			mav.addObject("mcrFindings", mcrFindings);
 			mav.addScriptReference("/scripts/scan_report.js");
 		}
 		mav.addObject("mcrStatuses", PullRequestMCRStatus.values());

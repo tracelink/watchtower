@@ -5,7 +5,6 @@ import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
-import com.tracelink.appsec.watchtower.core.scan.code.AbstractCodeScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.AbstractScmIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
@@ -213,6 +212,7 @@ public class PRScanResultService
 		result.setMcrStatus(scanEntity.getMcrStatus());
 		result.setMcrFindings(
 				scanEntity.getViolations().stream().map(this::generateResultForViolation).filter(v -> v.getViolationName().startsWith("MCR Match:"))
+						.distinct()
 						.collect(Collectors.toList()));
 
 		return result;
@@ -370,43 +370,12 @@ public class PRScanResultService
 				.collect(Collectors.toList());
 		//Remove all MCR findings from violations
 		mcrFindings.forEach(violations::remove);
-		//Set line # to 0, as this will be findings per file
-		mcrFindings.forEach(v -> v.setLineNum(0));
 		//Consolidate into distinct findings
 		mcrFindings = mcrFindings.stream()
 				.distinct()
 				.collect(Collectors.toList());
 		//Replace old findings with the consolidated per file findings
 		violations.addAll(mcrFindings);
-	}
-
-	/**
-	 * Consolidate findings so only distinct violation names are displayed, group by file
-	 *
-	 * @param id the id of the scan to consolidate MCR findings
-	 */
-	public Dictionary<String, String> getConsolidatedMCRFindings(String id) {
-		Dictionary<String, String> consolidatedMCRResults = new Hashtable<>();
-		Optional<PullRequestScanEntity> pr = scanRepo.findById(Long.valueOf(id));
-
-
-		List<String> files = pr.get().getViolations().stream()
-				.filter(v -> v.getViolationName().startsWith("MCR Match: "))
-				.map(PullRequestViolationEntity::getFileName)
-				.distinct()
-				.collect(Collectors.toList());
-		for (String file : files) {
-			String consolidatedFindings = pr.get().getViolations().stream()
-					.filter(v -> v.getFileName().equals(file))
-					.map(AbstractCodeScanViolationEntity::getViolationName)
-					.filter(violationName -> violationName.startsWith("MCR Match: "))
-					.map(v -> v.replaceAll("MCR Match: ", ""))
-					.distinct()
-					.collect(Collectors.joining(", "));
-			consolidatedMCRResults.put(file, consolidatedFindings);
-		}
-
-		return consolidatedMCRResults;
 	}
 
 	/**

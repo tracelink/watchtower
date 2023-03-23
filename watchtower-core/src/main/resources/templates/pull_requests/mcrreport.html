@@ -57,19 +57,23 @@
 				</div>
 				<div class="row">
 					<div class="col">
-						<h6 class="">Files to Review</h6>
+						<h6 class="">MCR Findings</h6>
 						<table class="table mb-0 w-100 datatable">
 							<thead class="bg-light">
-								<tr>
-									<th scope="col" class="border-0">File</th>
-									<th scope="col" class="border-0">Reason for Review</th>
-								</tr>
+							<tr>
+								<th scope="col" class="border-0">MCR Finding</th>
+								<th scope="col" class="border-0">File</th>
+								<th scope="col" class="border-0">Line Number</th>
+								<th scope="col" class="border-0">Description</th>
+							</tr>
 							</thead>
 							<tbody>
-								<tr th:each="key : ${consolidatedFindings.keySet()}">
-									<td th:text="${key}"></td>
-									<td th:text="'The following MCR matches were found within this file: ' + ${consolidatedFindings.get(key)}"></td>
-								</tr>
+							<tr th:each="vio : ${mcrFindings}">
+								<td th:text="${vio.getViolationName()}"></td>
+								<td th:text="${vio.getFileName()}"></td>
+								<td th:text="${vio.getLineNumber()}"></td>
+								<td th:text="${vio.getMessage()}"></td>
+							</tr>
 							</tbody>
 						</table>
 					</div>
