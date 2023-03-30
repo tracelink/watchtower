@@ -43,15 +43,7 @@ import software.amazon.awssdk.services.cloudformation.model.OnFailure;
 import software.amazon.awssdk.services.cloudformation.model.Parameter;
 import software.amazon.awssdk.services.cloudformation.waiters.CloudFormationWaiter;
 import software.amazon.awssdk.services.ecr.EcrClient;
-import software.amazon.awssdk.services.ecr.model.Attribute;
-import software.amazon.awssdk.services.ecr.model.BatchDeleteImageRequest;
-import software.amazon.awssdk.services.ecr.model.BatchDeleteImageResponse;
-import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsRequest;
-import software.amazon.awssdk.services.ecr.model.EcrException;
-import software.amazon.awssdk.services.ecr.model.FindingSeverity;
-import software.amazon.awssdk.services.ecr.model.ImageIdentifier;
-import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
-import software.amazon.awssdk.services.ecr.model.EnhancedImageScanFinding;
+import software.amazon.awssdk.services.ecr.model.*;
 import software.amazon.awssdk.services.ecr.paginators.DescribeImageScanFindingsIterable;
 
 /**
@@ -63,7 +55,6 @@ import software.amazon.awssdk.services.ecr.paginators.DescribeImageScanFindingsI
 public class EcrApi implements IImageApi {
 
 	private static final Logger LOG = LoggerFactory.getLogger(EcrApi.class);
-	private static final String STACK_TEMPLATE = "static/ecr-watchtower-webhook-template.json";
 	private static final String STACK_NAME = "ecr-watchtower-webhook";
 	private static final String TEST_CONNECTION_MSG = "Cannot %s via %s";
 
@@ -71,6 +62,7 @@ public class EcrApi implements IImageApi {
 	private final CloudFormationClient cfClient;
 	private final EcrClient ecrClient;
 	private final String watchtowerEndpoint;
+	private final String STACK_TEMPLATE;
 
 	public EcrApi(EcrIntegrationEntity ecrIntegrationEntity) {
 		this.ecrIntegrationEntity = ecrIntegrationEntity;
@@ -85,6 +77,14 @@ public class EcrApi implements IImageApi {
 		this.watchtowerEndpoint = ServletUriComponentsBuilder.fromCurrentContextPath()
 				.pathSegment("rest", "imagescan", ecrIntegrationEntity.getApiLabel()).build()
 				.toString();
+		// Determine if enhanced or basic scanning is configured in AWS
+		// Assign STACK_TEMPLATE based on scan type
+		GetRegistryScanningConfigurationRequest getRegistryScanningConfigurationRequest = GetRegistryScanningConfigurationRequest.builder().build();
+		if (this.ecrClient.getRegistryScanningConfiguration(getRegistryScanningConfigurationRequest).scanningConfiguration().scanTypeAsString().equals("ENHANCED")) {
+			this.STACK_TEMPLATE = "static/enhanced-ecr-watchtower-webhook-template.json";
+		} else {
+			this.STACK_TEMPLATE = "static/ecr-watchtower-webhook-template.json";
+		}
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class EcrApi implements IImageApi {
 		// Check ECR API access
 		String findingsMessage = String.format(TEST_CONNECTION_MSG, "get scan findings", "ECR");
 		tryAwsRequest(() -> ecrClient
-				.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
+						.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
 				findingsMessage, 400);
 
 		String deleteImageMessage = String.format(TEST_CONNECTION_MSG, "delete image", "ECR");
@@ -245,25 +245,29 @@ public class EcrApi implements IImageApi {
 		DescribeImageScanFindingsIterable responses = ecrClient
 				.describeImageScanFindingsPaginator(request);
 
-		// Pause allowing ECR scans to complete		
+		// Allow enhanced findings time to populate fully
 		try {
 			Thread.sleep(60000);
 		} catch (Exception e) {
-			LOG.warn("Pause before findings failed. Results may not appear.");
+			LOG.warn("Pause before findings failed. Results may not be accurate.");
 		}
 
-		List<ImageSecurityFinding> findings = responses.stream()
-				.flatMap(response -> response.imageScanFindings().enhancedFindings().stream())
-				.map(this::createEnhancedImageSecurityFinding)
-				.collect(Collectors.toList());
-		
-		// Check for basic findings if enhancedFindings() is empty
-		if(findings.isEmpty()) {
+		// Initialize findings
+		List<ImageSecurityFinding> findings;
+
+		// Check if enhanced scan findings exist, else iterate basic findings
+		if (ecrClient.describeImageScanFindings(request).imageScanFindings().hasEnhancedFindings()) {
+			findings = responses.stream()
+					.flatMap(response -> response.imageScanFindings().enhancedFindings().stream())
+					.map(this::createEnhancedImageSecurityFinding)
+					.collect(Collectors.toList());
+		} else {
 			findings = responses.stream()
 					.flatMap(response -> response.imageScanFindings().findings().stream())
 					.map(this::createImageSecurityFinding)
-					.collect(Collectors.toList());	
+					.collect(Collectors.toList());
 		}
+
 		ImageSecurityReport report = new ImageSecurityReport(image);
 		report.setFindings(findings);
 		return report;
@@ -291,7 +295,7 @@ public class EcrApi implements IImageApi {
 		finding.setPackageName(enhancedImageScanFinding.packageVulnerabilityDetails().vulnerablePackages().get(0).name());
 		finding.setPackageVersion(enhancedImageScanFinding.packageVulnerabilityDetails().vulnerablePackages().get(0).version());
 		try {
-			if (enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).version() == "2.0") {
+			if (enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).version().equals("2.0")) {
 				finding.setScore(enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).baseScore().toString());
 				finding.setVector(enhancedImageScanFinding.packageVulnerabilityDetails().cvss().get(0).scoringVector());
 			}
@@ -300,9 +304,9 @@ public class EcrApi implements IImageApi {
 				finding.setVector("N/A");
 			}
 		} catch (Exception e) {
-				LOG.debug("@NotNull information missing from PackageVulnerabilityDetails().");
-				finding.setScore("N/A");
-				finding.setVector("N/A");
+			LOG.debug("@NotNull information missing from PackageVulnerabilityDetails().");
+			finding.setScore("N/A");
+			finding.setVector("N/A");
 		}
 
 		finding.setFindingName(enhancedImageScanFinding.title());
@@ -353,7 +357,7 @@ public class EcrApi implements IImageApi {
 	 * @throws ApiIntegrationException if the AWS request cannot be made without unexpected errors
 	 */
 	private <T extends AwsResponse> void tryAwsRequest(Supplier<T> request, String message,
-			int validStatusCode) throws ApiIntegrationException {
+													   int validStatusCode) throws ApiIntegrationException {
 		T response;
 		try {
 			response = request.get();

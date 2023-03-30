@@ -279,6 +279,7 @@ The credentials should have permissions to access the following AWS functionalit
 - CloudFormation: create and delete stack, describe stacks
 - EventBridge: create and delete rule, connection, and API destination
 - ECR: describe image scan findings and delete image
+- Inspector2: list findings (enhanced scans only)
 
 Test that the connection works as expected and then register the Watchtower webhook with AWS by
 clicking the 'Register' button. If registration is successful, the integration entity will be listed
@@ -290,6 +291,9 @@ needed for the Watchtower webhook. Then you can delete the integration from Watc
 
 For ECR, rejecting images with blocking-level violations consists of deleting the image from the
 repository.
+
+ECR scan type changes within the AWS account will require de-registering and re-registering the 
+Watchtower webhook to delete the original CloudFormation stack and create the appropriate new stack.
 
 ## Database Column Encryption
 
