@@ -111,7 +111,7 @@ public class EcrApi implements IImageApi {
 		// Check ECR API access
 		String findingsMessage = String.format(TEST_CONNECTION_MSG, "get scan findings", "ECR");
 		tryAwsRequest(() -> ecrClient
-						.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
+				.describeImageScanFindings(DescribeImageScanFindingsRequest.builder().build()),
 				findingsMessage, 400);
 
 		String deleteImageMessage = String.format(TEST_CONNECTION_MSG, "delete image", "ECR");
@@ -357,7 +357,7 @@ public class EcrApi implements IImageApi {
 	 * @throws ApiIntegrationException if the AWS request cannot be made without unexpected errors
 	 */
 	private <T extends AwsResponse> void tryAwsRequest(Supplier<T> request, String message,
-													   int validStatusCode) throws ApiIntegrationException {
+			int validStatusCode) throws ApiIntegrationException {
 		T response;
 		try {
 			response = request.get();
