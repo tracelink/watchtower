@@ -2,6 +2,7 @@ package com.tracelink.appsec.watchtower.core.scan.code;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -13,6 +14,7 @@ import javax.persistence.Transient;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestScanEntity;
 
 /**
  * Entity description for a violation entity.
@@ -137,6 +139,27 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 			compare = this.getFileName().compareTo(o.getFileName());
 		}
 		return compare;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof AbstractCodeScanViolationEntity) {
+			AbstractCodeScanViolationEntity<PullRequestScanEntity> temp = (AbstractCodeScanViolationEntity<PullRequestScanEntity>) obj;
+			if (this.id == temp.id &&
+					this.violationName.equals(temp.violationName) &&
+					this.lineNum == temp.lineNum &&
+					this.fileName.equals(temp.fileName) &&
+					this.isNewViolation == temp.isNewViolation &&
+					this.blocking == temp.blocking &&
+					this.message.equals(temp.message))
+				return true;
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, violationName, lineNum, fileName, isNewViolation, blocking, message);
 	}
 
 }

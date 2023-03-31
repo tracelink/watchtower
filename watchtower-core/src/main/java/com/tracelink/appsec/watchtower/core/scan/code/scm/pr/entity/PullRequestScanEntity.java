@@ -2,14 +2,10 @@ package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity;
 
 import java.util.List;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestMCRStatus;
 
 /**
  * Scan Entity class for Pull Requests with join to {@linkplain PullRequestContainerEntity} and
@@ -22,6 +18,9 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 @Table(name = "pull_request_scans")
 public class PullRequestScanEntity
 		extends AbstractScanEntity<PullRequestContainerEntity, PullRequestViolationEntity> {
+
+	@Column(name = "mcr_status")
+	private PullRequestMCRStatus mcrStatus;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "container_id", nullable = false)
@@ -44,5 +43,11 @@ public class PullRequestScanEntity
 	public List<PullRequestViolationEntity> getViolations() {
 		return violations;
 	}
+
+	public PullRequestMCRStatus getMcrStatus() {
+		return mcrStatus;
+	}
+
+	public void setMcrStatus(PullRequestMCRStatus mcrStatus) { this.mcrStatus = mcrStatus;	}
 
 }

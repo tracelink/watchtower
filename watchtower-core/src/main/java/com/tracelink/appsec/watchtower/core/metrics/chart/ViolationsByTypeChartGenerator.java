@@ -8,6 +8,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
 
@@ -32,7 +33,9 @@ public class ViolationsByTypeChartGenerator extends
 	protected Map<String, Long> accumulate(Map<String, Long> partialResult,
 			List<AbstractScanEntity<?, ?>> items) {
 		items.stream().map(AbstractScanEntity::getViolations)
-				.flatMap(List::stream).map(AbstractScanViolationEntity::getViolationName)
+				.flatMap(List::stream)
+				.filter(v -> !v.getSeverity().equals(RulePriority.INFORMATIONAL))
+				.map(AbstractScanViolationEntity::getViolationName)
 				.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
 				.forEach((k, v) -> partialResult.merge(k, v, Long::sum));
 		return partialResult;

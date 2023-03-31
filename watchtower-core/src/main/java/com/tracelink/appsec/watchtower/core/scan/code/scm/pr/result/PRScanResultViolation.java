@@ -1,5 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result;
 
+import java.util.Objects;
+
 /**
  * Helper class to hold important information about the results of a PR violation
  * 
@@ -65,6 +67,25 @@ public class PRScanResultViolation {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof PRScanResultViolation) {
+			PRScanResultViolation temp = (PRScanResultViolation) obj;
+			return this.violationName.equals(temp.violationName) &&
+					this.lineNumber == temp.lineNumber &&
+					this.severity.equals(temp.severity) &&
+					this.severityValue == temp.severityValue &&
+					this.fileName.equals(temp.fileName) &&
+					this.message.equals(temp.message);
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(violationName, lineNumber, severity, severityValue, fileName, message);
 	}
 
 }

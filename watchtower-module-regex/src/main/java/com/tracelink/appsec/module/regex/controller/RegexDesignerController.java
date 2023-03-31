@@ -48,12 +48,18 @@ public class RegexDesignerController {
 	}
 
 	@PostMapping("/designer/regex/save")
-	public RuleDesignerModelAndView saveRule(@RequestParam String name,
+	public RuleDesignerModelAndView saveRule(@RequestParam(value = "mcrRule", required = false) String mcrRule,
+			@RequestParam String name,
 			@RequestParam String message,
 			@RequestParam String fileExtension, @RequestParam int priority,
 			@RequestParam String query, @RequestParam String externalUrl,
 			@RequestParam String source, Authentication auth,
 			RedirectAttributes redirectAttributes) {
+
+		if (mcrRule != null) {
+			name = "MCR Match: " + name;
+			priority = 6;
+		}
 
 		RegexCustomRuleDto regexDto = createRegexRuleDto(name, message, fileExtension, priority, query,
 				externalUrl, auth);

@@ -1,0 +1,70 @@
+<!-- Page Header -->
+<div class="page-header row no-gutters py-4">
+    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
+        <h3 class="page-title">Manual Code Reviews Viewer</h3>
+    </div>
+</div>
+<!-- End Page Header -->
+<div class="row border-bottom pb-1 mb-2">
+    <div class="col">
+        <div class="card card-small mb-2">
+            <div class="card-header border-bottom py-1">
+                <h6 class="d-inline m-0">Select a Filter</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item px-3">
+                    <!-- Button Groups -->
+                    <div class="btn-group btn-group-toggle">
+                        <a th:each="filter, oStat : ${filters}"
+                           th:href="'/scan/mcr/' + ${filter.getName()}"
+                           th:class="${filter.getName().equals(activeFilter) } ? 'btn btn-white active' : 'btn btn-white'"
+                           th:text="${filter.getDisplay()}"></a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row" th:if="${results}">
+	<div class="col">
+        <div class="card card-small mb-2">
+        	<div>
+        	   <div class="card-header border-bottom">
+             	   	<h6 class="d-inline " th:text="${'Page: ' + activePageNum}"/>
+             	   	<div class="d-block float-right">
+             	   		<a th:class="${'btn btn-primary ' + (activePageNum == 0 ? 'disabled' : '')}" th:href="${'/scan/mcr/' + activeFilter + '?page=' + (activePageNum-1)}">Previous</a>
+             	   		<a class="btn btn-primary" th:href="${'/scan/mcr/' + activeFilter + '?page=' + (activePageNum+1)}">Next</a>
+          	   		</div>
+               </div>
+               <div class="card-body pb-3 text-center">
+                   <table class="table mb-0 datatable-clean">
+                       <thead class="bg-light">
+                       <tr>
+                           <th scope="col" class="border-0">Date</th>
+                           <th scope="col" class="border-0">SCM ID</th>
+                           <th scope="col" class="border-0">Pull Request ID</th>
+                           <th scope="col" class="border-0">Matches</th>
+                           <th scope="col" class="border-0">Status</th>
+                           <th scope="col" class="border-0">View MCR</th>
+                       </tr>
+                       </thead>
+                       <tbody>
+                           <tr th:each="result : ${results}">
+                               <td class="py-1 localizetime" th:text="${result.getDateMillis()}" th:data-order="${result.getDate()}">Date Reviewed</td>
+                               <td class="py-1" th:text="${result.getApiLabel()}">SCM ID</td>
+                               <td class="py-1">
+                               		<a th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank"/>
+                               </td>
+                               <td class="py-1" th:text="${result.getMcrFindings().size()}">Matches</td>
+                               <td class="py-1" th:text="${result.getMcrStatus().getDisplayName}">Status</td>
+                               <td class="py-1">
+                               		<a class="btn btn-success btn-sm py-1" th:href="${'/scan/mcr/report/' + result.getId()}">MCR</a>
+                               </td>
+                           </tr>
+                       </tbody>
+                   </table>
+               </div>
+           </div>
+        </div>
+    </div>
+</div>

@@ -256,7 +256,7 @@ public class PRScanResultServiceTest {
 				.thenReturn(new PageImpl<>(Arrays.asList(se)));
 		BDDMockito.when(mockPrRepo.findByResolvedFalse(BDDMockito.any(PageRequest.class)))
 				.thenReturn(new PageImpl<>(Arrays.asList(ce)));
-		BDDMockito.when(mockVioRepo.findAllGroupByScan(BDDMockito.any(PageRequest.class)))
+		BDDMockito.when(mockVioRepo.findAllNonMCRGroupByScan(BDDMockito.any(PageRequest.class)))
 				.thenReturn(new PageImpl<>(Arrays.asList(se)));
 		List<PRScanResult> allResult =
 				this.scanResultService.getScanResultsWithFilters(PRResultFilter.ALL, 10, 0);

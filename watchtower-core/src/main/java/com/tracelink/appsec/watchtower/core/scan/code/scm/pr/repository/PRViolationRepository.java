@@ -18,6 +18,6 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestV
 @Repository("prViolationRepository")
 public interface PRViolationRepository extends IViolationRepository<PullRequestViolationEntity> {
 
-	@Query("SELECT v.scan FROM PullRequestViolationEntity v GROUP BY v.scan")
-	Page<PullRequestScanEntity> findAllGroupByScan(Pageable page);
+	@Query("SELECT v.scan FROM PullRequestViolationEntity v WHERE v.violationName NOT LIKE 'MCR Match:%' GROUP BY v.scan")
+	Page<PullRequestScanEntity> findAllNonMCRGroupByScan(Pageable page);
 }

@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.stream.Collectors;
+
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -57,12 +59,12 @@ public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, 
 
 	/**
 	 * Counts the number of violations that have been found, only considering those which are new
-	 * violations
+	 * violations and are not informational
 	 *
 	 * @return number of violations found
 	 */
 	public long countViolations() {
-		return vioRepo.count();
+		return vioRepo.findAll().stream().filter(v -> !v.getSeverity().equals(RulePriority.INFORMATIONAL)).count();
 	}
 
 	/**
