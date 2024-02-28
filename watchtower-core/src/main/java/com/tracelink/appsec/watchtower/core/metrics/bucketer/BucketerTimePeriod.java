@@ -9,7 +9,7 @@ package com.tracelink.appsec.watchtower.core.metrics.bucketer;
  */
 public enum BucketerTimePeriod {
 	LAST_WEEK("last-week"), LAST_FOUR_WEEKS("last-four-weeks"), LAST_SIX_MONTHS(
-			"last-six-months"), ALL_TIME("all-time");
+			"last-six-months"),LAST_YEAR("last-year"), ALL_TIME("all-time");
 
 	private final String period;
 

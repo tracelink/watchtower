@@ -51,6 +51,11 @@ public abstract class StandardIntervalBucketer<T> extends AbstractBucketer<T> {
 						LocalDate.now().withDayOfMonth(1).minusMonths(5).atStartOfDay(),
 						LocalDate.now().plusDays(1).atStartOfDay());
 				break;
+			case LAST_YEAR:
+				bucketIntervals = new MonthIntervals(
+						LocalDate.now().withMonth(1).withDayOfMonth(1).minusYears(1).atStartOfDay(),
+						LocalDate.now().withMonth(1).withDayOfMonth(1).atStartOfDay());
+				break;
 			case ALL_TIME:
 				bucketIntervals = new MonthIntervals(
 						earliestDateTimeSupplier.get().withDayOfMonth(1),
