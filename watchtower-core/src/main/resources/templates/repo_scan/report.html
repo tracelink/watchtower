@@ -1,0 +1,121 @@
+<div data-repo-scan th:with="compared=${report != null and report.comparison() != null and report.comparison().comparable()},
+    st=${T(com.tracelink.appsec.watchtower.core.scan.presentation.StatusPresentationModel).from(scan)},
+    tiles=${scan.scannerTiles}">
+<!-- The pull request report's header (UAT #32): status chip by the title, one Download menu, one row
+     of fact chips, the Scanners row and the AWS line; then the views. The findings have the Code
+     section as the pull request report has it: one entry per file with findings, whose code is
+     fetched from the SCM at the scanned commit when it is opened, and never stored. -->
+<div class="wt-home-head wt-report-head">
+  <div th:replace="~{fragments/pageheader :: header(${scan.repository.repoName + ' @ ' + scan.branch}, ${scan.repository.apiLabel})}"></div>
+  <th:block th:insert="~{fragments/status :: chip(${st})}"></th:block>
+  <div class="wt-report-status">
+    <details th:replace="~{fragments/remote-assessments :: downloads(${report != null ? '/reposcan/report/' + scan.id + '/export?format=csv' : null}, ${report != null ? '/reposcan/report/' + scan.id + '/export?format=sarif' : null})}"></details>
+  </div>
+</div>
+<div class="wt-meta-chips mb-3" aria-label="Scan summary">
+  <a class="wt-mini-chip wt-mini-chip--link wt-meta-chip" th:href="@{/repositories/{id}(id=${scan.repository.id})}"><span
+      class="material-icons" aria-hidden="true">code</span><span th:text="${scan.repository.repoName}">repo</span></a>
+  <button th:if="${scan.commitHash != null}" type="button" class="wt-mini-chip wt-meta-chip wt-copy-chip"
+      th:attr="data-copy-text=${scan.commitHash}, data-tip=${scan.commitHash + '. Click to copy.'}" th:aria-label="${'Copy commit ' + scan.commitHash}"><span
+      class="material-icons" aria-hidden="true">commit</span><span class="wt-mono" th:text="${scan.commitHash.length() > 7 ? scan.commitHash.substring(0, 7) : scan.commitHash}"></span><span
+      class="material-icons" aria-hidden="true">content_copy</span></button>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Ruleset used for this scan"><span class="material-icons" aria-hidden="true">rule</span><span th:text="${rulesetLabel != null ? rulesetLabel : scan.rulesetName}">ruleset</span></span>
+  <span th:if="${compared}" class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Compared with the previous scan of this branch, which used the same scanners"><span
+      class="material-icons" aria-hidden="true">compare_arrows</span><span th:text="${report.comparison().newCount() + ' new · ' + report.comparison().fixedCount() + ' fixed'}">0 new · 0 fixed</span></span>
+  <span th:unless="${compared}" class="wt-mini-chip wt-meta-chip wt-tone-warning" tabindex="0"
+      data-tip="Not compared: the previous scan used different scanners, or this one was not complete, so nothing is marked new or fixed."><span
+      class="material-icons" aria-hidden="true">compare_arrows</span>Not compared</span>
+</div>
+<section class="wt-scan-strip mb-3" aria-label="Scanners">
+  <div th:replace="~{fragments/scanstrip :: scanners(${tiles}, null)}"></div>
+</section>
+
+<!-- The report views, then the AWS review chip and its Open in AWS icon on the same line. -->
+<div class="wt-report-views mb-3">
+<nav class="wt-segmented-filter" aria-label="Report views">
+  <a th:href="@{/reposcan/report/{id}(id=${scan.id})}" class="wt-segment" th:classappend="${view == 'findings' ? ' is-active' : ''}"
+     th:aria-current="${view == 'findings' ? 'page' : null}"><span class="material-icons" aria-hidden="true">bug_report</span>Findings</a>
+  <a th:href="@{/reposcan/report/{id}(id=${scan.id},view='byrule')}" class="wt-segment" th:classappend="${view == 'byrule' ? ' is-active' : ''}"
+     th:aria-current="${view == 'byrule' ? 'page' : null}"><span class="material-icons" aria-hidden="true">rule</span>By rule <span class="wt-count-badge" th:text="${ruleCounts.size()}"></span></a>
+  <a th:href="@{/reposcan/report/{id}(id=${scan.id},view='fixed')}" class="wt-segment" th:classappend="${view == 'fixed' ? ' is-active' : ''}"
+     th:aria-current="${view == 'fixed' ? 'page' : null}"><span class="material-icons" aria-hidden="true">task_alt</span>Fixed since the last scan
+    <span class="wt-count-badge" th:text="${compared ? report.comparison().fixedCount() : '—'}"></span></a>
+</nav>
+<div th:replace="~{fragments/remote-assessments :: status}"></div>
+</div>
+<p th:if="${report != null and view == 'findings' and report.isTruncated()}" class="wt-field-help"
+    th:text="${'Showing the ' + report.findings().size() + ' most severe of ' + report.totalFindings() + ' findings.'}"></p>
+<!-- One findings card: local and AWS findings together (AwsReport board, 2026-10-22). -->
+<th:block th:if="${view == 'findings' and (report != null or (providerStatuses != null and !providerStatuses.isEmpty()))}">
+  <div th:replace="~{fragments/remote-assessments :: findings(${providerIncomplete == true or (report != null and !report.scannerErrors().isEmpty())}, true)}"></div>
+</th:block>
+<th:block th:if="${report == null}">
+  <div th:replace="~{fragments/emptystate :: state(${scan.reportKey == null ? 'This scan has no report.' : 'This report has expired.'})}"></div>
+</th:block>
+<th:block th:if="${report != null and view == 'findings'}">
+
+  <section id="wt-code-section" class="wt-code-section mt-4 mb-4" th:unless="${codeFiles.isEmpty()}">
+    <div class="wt-code-section-header">
+      <h2 class="h5 m-0">Code</h2>
+      <details class="wt-popover">
+        <summary aria-label="Where this code comes from"><span class="material-icons" aria-hidden="true">info</span></summary>
+        <div class="wt-popover__body">Fetched from the repository at the scanned commit when you open a file,
+          and never stored. A secrets scanner's line is masked.</div>
+      </details>
+    </div>
+    <!-- Each file loads its code once, when opened; the first loads with the page. The trigger is
+         on the <details> itself, whose toggle event does not bubble. hx-select="unset": the body's
+         hx-select="#content" (for boosted navigation) is inherited, and would keep nothing of a
+         fragment - which is why the old per-finding snippet never showed any code. -->
+    <details class="wt-code-file" th:each="file, s : ${codeFiles}" th:open="${s.first}"
+        hx-target="find .wt-code-body" hx-select="unset" hx-swap="innerHTML"
+        th:attr="data-file=${file.name},hx-get=@{/reposcan/report/{id}/code(id=${scan.id},file=${file.name})},hx-trigger=${s.first ? 'load' : 'toggle once'}">
+      <summary class="wt-code-file-header">
+        <span class="wt-code-chevron material-icons" aria-hidden="true">chevron_right</span>
+        <span class="wt-code-path" th:text="${file.name}"></span>
+        <span class="wt-code-count" th:text="${file.findingCount + (file.findingCount == 1 ? ' finding' : ' findings')}"></span>
+      </summary>
+      <div class="wt-code-body"><div class="wt-code-unavailable">Loading…</div></div>
+    </details>
+  </section>
+
+</th:block>
+
+<!-- UAT #19: findings by rule and fixed findings are addressable views, searchable and paged. -->
+<section th:if="${view == 'byrule'}" id="results-region" aria-labelledby="byrule-heading">
+  <h2 id="byrule-heading" class="h5">Findings by rule</h2>
+  <form method="get" class="wt-toolbar mb-3"><input type="hidden" name="view" value="byrule">
+    <md-outlined-text-field name="search" label="Search rule" maxlength="200" th:value="${search}"></md-outlined-text-field>
+    <md-outlined-button type="submit">Search</md-outlined-button></form>
+  <th:block th:if="${ruleRows.content.isEmpty()}"><div th:replace="~{fragments/emptystate :: state('No rules match.')}"></div></th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Findings by rule" th:unless="${ruleRows.content.isEmpty()}">
+    <table class="table mb-0"><caption>Findings in this scan for each rule, most first</caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">Findings</th></tr></thead>
+      <tbody><tr th:each="e : ${ruleRows.content}"><td th:text="${e.key}"></td><td th:text="${e.value}"></td></tr></tbody>
+    </table>
+  </div>
+  <div th:replace="~{fragments/pagination :: pagination(${viewUrl}, ${ruleRows})}"></div>
+</section>
+<section th:if="${view == 'fixed'}" id="results-region" aria-labelledby="fixed-heading"
+    th:with="verified=${report != null and report.comparison() != null and report.comparison().comparable()}">
+  <h2 id="fixed-heading" class="h5" th:text="${verified ? 'Fixed since the last scan' : 'No longer reported (not verified as fixed)'}">Fixed since the last scan</h2>
+  <p th:if="${report != null and report.comparison() != null}" class="wt-page-meta" th:text="${#strings.listJoin(report.comparison().reasons(), '; ')}"></p>
+  <p th:if="${report == null or report.comparison() == null or !report.comparison().comparable()}" class="wt-field-help">
+    These findings were not compared with a scan of the same coverage, so they are not counted as fixed.</p>
+  <p th:if="${report != null and report.comparison() != null and report.comparison().fixedSampleTruncated()}" class="wt-field-help">
+    This list keeps a sample of 1,000 findings; the count above includes every removed finding.</p>
+  <form method="get" class="wt-toolbar mb-3"><input type="hidden" name="view" value="fixed">
+    <md-outlined-text-field name="search" label="Search rule or file" maxlength="200" th:value="${search}"></md-outlined-text-field>
+    <md-outlined-button type="submit">Search</md-outlined-button></form>
+  <th:block th:if="${fixedRows.content.isEmpty()}"><div th:replace="~{fragments/emptystate :: state('No fixed findings to show.')}"></div></th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Fixed findings" th:unless="${fixedRows.content.isEmpty()}">
+    <table class="table mb-0"><caption th:text="${verified ? 'Findings in the previous comparable scan that this scan no longer reports' : 'Findings in an earlier scan that this scan does not report; coverage was not compared'}"></caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">File</th><th scope="col">Message</th></tr></thead>
+      <tbody><tr th:each="x : ${fixedRows.content}"><td th:text="${x.rule}"></td><td><code th:text="${x.file}"></code></td><td th:text="${x.message}"></td></tr></tbody>
+    </table>
+  </div>
+  <div th:replace="~{fragments/pagination :: pagination(${viewUrl}, ${fixedRows})}"></div>
+</section>
+</div>
+
+<div th:replace="~{fragments/feedback :: dialog('repository', ${scan.id})}"></div>

@@ -6,7 +6,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.thymeleaf.spring5.view.ThymeleafView;
+import org.thymeleaf.spring6.view.ThymeleafView;
 
 public class WatchtowerModelAndViewTest {
 

@@ -7,10 +7,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
 import org.apache.commons.io.FileUtils;
 
 import com.google.gson.Gson;
@@ -28,6 +31,7 @@ import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
 import com.tracelink.appsec.watchtower.core.scan.code.processor.AbstractProcessor;
 import com.tracelink.appsec.watchtower.core.scan.code.processor.CallableCreator;
 import com.tracelink.appsec.watchtower.core.scan.code.processor.MultiThreadedProcessor;
@@ -49,6 +53,11 @@ public class EsLintScanner implements ICodeScanner {
 
 	public EsLintScanner(LinterEngine engine) {
 		this.engine = engine;
+	}
+
+	@Override
+	public EngineExecutionIdentity getExecutionIdentity(CodeScanConfig config) {
+		return engine.getExecutionIdentity(this, config);
 	}
 
 	/**
@@ -74,7 +83,8 @@ public class EsLintScanner implements ICodeScanner {
 			}
 
 			// Run processor
-			AbstractProcessor processor = getProcessor(config, rulesetPath);
+			AbstractProcessor processor =
+					getProcessor(config, rulesetPath).withFileTypes(config.getFileTypes());
 
 			try (Benchmarker b = benchmarking.newBenchmarker(TimerType.DefaultTimerType.SCAN)) {
 				processor.runScan(config.getRuleset(), config.getWorkingDirectory());
@@ -98,8 +108,15 @@ public class EsLintScanner implements ICodeScanner {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return EsLintCustomRuleDto.class;
+	public List<String> getDefaultFileTypes() {
+		// The bridge parses every file it is given as JavaScript (ES2020) and reports a parse error for
+		// anything else, so only script files are listed.
+		return List.of(".js", ".cjs", ".mjs");
+	}
+
+	@Override
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Arrays.asList(EsLintCustomRuleDto.class, EsLintProvidedRuleDto.class);
 	}
 
 	/**
@@ -193,6 +210,7 @@ public class EsLintScanner implements ICodeScanner {
 				}
 				// Create scan violation
 				CodeScanViolation violation = new CodeScanViolation();
+				violation.setRuleIdentity(rule.getExecutionIdentity());
 				violation.setViolationName(message.getRuleId());
 				violation.setFileName(fileName.toString());
 				violation.setLineNum(message.getLine());

@@ -39,7 +39,7 @@ public class PullRequestMCRController {
 	@GetMapping
 	public WatchtowerModelAndView getResultsHome() {
 		WatchtowerModelAndView wmav = new WatchtowerModelAndView("pull_requests/mcrs");
-		wmav.addObject("filters", PullRequestMCRFilter.values());
+		wmav.setViewName("redirect:/scan/mcr/all");
 		return wmav;
 	}
 
@@ -65,8 +65,15 @@ public class PullRequestMCRController {
 					"Unknown Filter");
 			wmav.setViewName("redirect:/scan/mcr");
 		} else {
-			wmav.addObject("results",
-					resultService.getScanMCRsWithFilters(resultFilter, 10, pageNum));
+			var pagedResult = resultService.getScanMCRsWithFilters(resultFilter, 10, pageNum);
+			if (pagedResult.totalPages() > 0 && pageNum >= pagedResult.totalPages()) {
+				wmav.setViewName("redirect:/scan/mcr/" + filter + "?page="
+						+ (pagedResult.totalPages() - 1));
+				return wmav;
+			}
+			wmav.addObject("results", pagedResult.content());
+			wmav.addObject("hasNext", pagedResult.hasNext());
+			wmav.addObject("pagination", pagedResult);
 		}
 		return wmav;
 	}

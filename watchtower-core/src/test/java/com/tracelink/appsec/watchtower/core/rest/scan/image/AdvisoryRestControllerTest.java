@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +32,7 @@ public class AdvisoryRestControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private ImageAdvisoryService imageAdvisoryService;
 
 	@Test
@@ -59,4 +59,23 @@ public class AdvisoryRestControllerTest {
 				.andExpect(MockMvcResultMatchers.content().json(json.toJSONString()));
 	}
 
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME})
+	public void testSearchAdvisoriesReturnsOnePageWithTotal() throws Exception {
+		AdvisoryEntity advisory = AdvisoryEntityTest.buildStandardAdvisory();
+		BDDMockito.when(imageAdvisoryService.search("openssl", 7.0, "score", 1, 25))
+				.thenReturn(new com.tracelink.appsec.watchtower.core.scan.image.service.ImageAdvisoryService.AdvisoryPage(
+						Arrays.asList(advisory), 26, 1, 25));
+		BDDMockito.when(imageAdvisoryService.search("", 0, "bogus", 0, 25))
+				.thenThrow(new IllegalArgumentException("Check the search, score, sort and page"));
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/rest/advisory/search").param("search", "openssl")
+				.param("minScore", "7").param("page", "1"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.total").value(26))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.advisories[0].advisoryName").value(advisory.getAdvisoryName()));
+		mockMvc.perform(MockMvcRequestBuilders.get("/rest/advisory/search").param("sort", "bogus"))
+				.andExpect(MockMvcResultMatchers.status().isBadRequest());
+	}
 }

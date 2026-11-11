@@ -1,8 +1,14 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummary;
+import com.tracelink.appsec.watchtower.core.scan.presentation.ScanFailure;
+import com.tracelink.appsec.watchtower.core.scan.presentation.ScannerBadge;
+import com.tracelink.appsec.watchtower.core.scan.presentation.StatusPresentationModel;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * Helper class to hold important information about the results of an Upload scan
@@ -29,6 +35,8 @@ public class UploadScanResult {
 	private LocalDateTime endDate;
 
 	private List<UploadScanResultViolation> violations;
+	private ScanExecutionSummary executionSummary =
+			new ScanExecutionSummary(null, Collections.emptyList());
 
 	public String getName() {
 		return name;
@@ -54,8 +62,32 @@ public class UploadScanResult {
 		this.status = status;
 	}
 
+	@JsonIgnore
+	public StatusPresentationModel getStatusPresentation() {
+		var snapshot = executionSummary.codeSnapshot();
+		if (snapshot == null && !executionSummary.scanners().isEmpty()) {
+			return StatusPresentationModel.from(com.tracelink.appsec.watchtower.core.scan.presentation.ScanAssessment.ofExecutions(
+					ScanStatus.toStatus(status), executionSummary.scanners(), List.of()));
+		}
+		return StatusPresentationModel.from(com.tracelink.appsec.watchtower.core.scan.presentation.ScanAssessment.of(ScanStatus.toStatus(status), snapshot, List.of(), com.tracelink.appsec.watchtower.core.scan.presentation.ScanAssessment.failureReasons(executionSummary.scanners())));
+	}
+
+	/** The failure message without the server's working folders (also in the REST response). */
 	public String getErrorMessage() {
-		return error;
+		return ScanFailure.withoutServerPaths(error);
+	}
+
+	/** Why the scan failed, in plain words, or null when it did not fail. */
+	@JsonIgnore
+	public ScanFailure getFailure() {
+		return ScanFailure.of(error);
+	}
+
+	/** The report's scanner tiles, the same as Home's Scanners column. */
+	@JsonIgnore
+	public ScannerBadge.Summary getScannerTiles() {
+		return ScannerBadge.from(
+				executionSummary.scanners(), null);
 	}
 
 	public void setErrorMessage(String error) {
@@ -87,7 +119,7 @@ public class UploadScanResult {
 	}
 
 	public long getSubmitDateMillis() {
-		return submitDate == null ? 0L : submitDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(submitDate);
 	}
 
 	public LocalDateTime getEndDate() {
@@ -99,7 +131,16 @@ public class UploadScanResult {
 	}
 
 	public long getEndDateMillis() {
-		return endDate == null ? 0L : endDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(endDate);
+	}
+
+	/** Submitted to finished, in the same format as every other scan list. */
+	@JsonIgnore
+	public String getDurationText() {
+		return getEndDateMillis() > 0
+				? com.tracelink.appsec.watchtower.core.scan.presentation.HomeActivityItem.formatDuration(
+						getSubmitDateMillis(), getEndDateMillis())
+				: "Not finished";
 	}
 
 	public int getViolationsFound() {
@@ -112,6 +153,13 @@ public class UploadScanResult {
 
 	public void setViolations(List<UploadScanResultViolation> violations) {
 		this.violations = violations;
+	}
+
+	public ScanExecutionSummary getExecutionSummary() { return executionSummary; }
+
+	public void setExecutionSummary(ScanExecutionSummary value) {
+		this.executionSummary = value == null
+				? new ScanExecutionSummary(null, Collections.emptyList()) : value;
 	}
 
 

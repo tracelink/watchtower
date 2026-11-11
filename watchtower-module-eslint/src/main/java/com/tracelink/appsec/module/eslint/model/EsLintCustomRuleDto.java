@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Represents a data transfer object for the {@link EsLintRuleEntity} for custom rules. All fields
@@ -20,14 +21,13 @@ import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
  */
 public class EsLintCustomRuleDto extends CustomRuleDto implements EsLintRuleDto {
 
-	@Valid
-	private List<EsLintMessageDto> messages = new ArrayList<>();
+	private List<@Valid EsLintMessageDto> messages = new ArrayList<>();
 
 	@NotNull(message = "Create Funtion" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Create Funtion" + CANNOT_BE_EMPTY)
 	private String createFunction;
 
-	private String schema;
+	private String schema = "[]";
 
 	/**
 	 * {@inheritDoc}
@@ -79,6 +79,23 @@ public class EsLintCustomRuleDto extends CustomRuleDto implements EsLintRuleDto 
 				getMessages().stream().map(EsLintMessageDto::toEntity)
 						.collect(Collectors.toSet()));
 		rule.setCreateFunction(getCreateFunction());
+		rule.setSchema(getSchema());
 		return rule;
+	}
+	@Override
+	public String getExternalRuleKey() { return getName(); }
+
+	@Override
+	protected RuleRevision executableDefinition() {
+		if (getMessages().stream().map(EsLintMessageDto::getKey).distinct().count()
+				!= getMessages().size()) {
+			return null;
+		}
+		return newDefinition().field("createFunction", getCreateFunction())
+				.field("schema", getSchema())
+				.unordered("messages", getMessages().stream().map(message ->
+						RuleRevision.definition("eslint-message", "parameter")
+								.field("key", message.getKey())
+								.field("value", message.getValue()).hash()).toList());
 	}
 }

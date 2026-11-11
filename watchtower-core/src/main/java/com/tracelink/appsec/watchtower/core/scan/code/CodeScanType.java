@@ -9,7 +9,8 @@ import com.tracelink.appsec.watchtower.core.scan.ScanType;
  *
  */
 public enum CodeScanType implements ScanType {
-	PULL_REQUEST("pull_request", "Pull Request"), UPLOAD("upload", "Upload");
+	PULL_REQUEST("pull_request", "Pull Request"), UPLOAD("upload", "Upload"),
+	REPOSITORY("repository", "Repository");
 
 	private final String typeName;
 	private final String displayName;

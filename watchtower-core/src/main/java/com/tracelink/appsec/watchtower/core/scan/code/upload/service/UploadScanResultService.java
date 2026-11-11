@@ -3,6 +3,7 @@ package com.tracelink.appsec.watchtower.core.scan.code.upload.service;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -15,11 +16,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
+import com.tracelink.appsec.watchtower.core.metrics.MetricsProjectionWriter;
+import com.tracelink.appsec.watchtower.core.rule.RuleChange;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanExecutionSnapshotCodec;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummary;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummaryCodec;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
@@ -48,6 +55,15 @@ public class UploadScanResultService
 	private UploadViolationRepository vioRepo;
 
 	private RuleService ruleService;
+ @Autowired(required=false)
+ private com.tracelink.appsec.watchtower.core.metrics.RuleMetricWriter ruleMetrics;
+
+	private MetricsProjectionWriter metricsProjectionWriter;
+
+	@Autowired(required = false)
+	void setMetricsProjectionWriter(MetricsProjectionWriter writer) {
+		this.metricsProjectionWriter = writer;
+	}
 
 	public UploadScanResultService(@Autowired UploadContainerRepository uploadRepo,
 			@Autowired UploadScanRepository scanRepo, @Autowired UploadViolationRepository vioRepo,
@@ -78,7 +94,7 @@ public class UploadScanResultService
 		use.setRuleSet(upload.getRuleSetName());
 		use.setName(upload.getName());
 		use.setSubmitter(upload.getUser());
-		use.setZipPath(upload.getFilePath());
+		use.setStorageKey(upload.getStorageKey());
 		use = uploadRepo.saveAndFlush(use);
 
 		UploadScanEntity scan = new UploadScanEntity();
@@ -141,6 +157,11 @@ public class UploadScanResultService
 	 */
 	public void saveFinalUploadScan(String ticket,
 			List<UploadViolationEntity> violations) {
+		saveFinalUploadScan(ticket, violations, null);
+	}
+
+	public void saveFinalUploadScan(String ticket, List<UploadViolationEntity> violations,
+			ScanExecutionSummary summary) {
 		long now = System.currentTimeMillis();
 
 		UploadScanContainerEntity use = findUploadScanByTicket(ticket);
@@ -153,6 +174,7 @@ public class UploadScanResultService
 		UploadScanEntity scan = use.getLatestUploadScan();
 		scan.setEndDate(now);
 		scan.setStatus(ScanStatus.DONE);
+		applyExecutionSummary(scan, summary);
 		UploadScanEntity savedScanEntity = scanRepo.saveAndFlush(scan);
 
 		violations.forEach(v -> {
@@ -161,6 +183,36 @@ public class UploadScanResultService
 		});
 
 		vioRepo.flush();
+  if (ruleMetrics != null) {
+   try {
+    ruleMetrics.recordEntities("upload", savedScanEntity.getId(), savedScanEntity.getEndDateMillis(),
+      com.tracelink.appsec.watchtower.core.scan.code.CodeScanExecutionSnapshotCodec.decode(savedScanEntity.getExecutionSnapshotJson()), violations);
+   } catch (RuntimeException e) {
+    LOG.warn("Rule identity projection failed for upload scan {}", savedScanEntity.getId());
+   }
+  }
+		if (metricsProjectionWriter != null) {
+			try {
+				metricsProjectionWriter.record("upload", savedScanEntity, violations);
+			} catch (RuntimeException e) {
+				metricsProjectionWriter.recordFailure("upload", e);
+			}
+		}
+	}
+
+	public void saveExecutionSummary(String ticket, ScanExecutionSummary summary) {
+		UploadScanContainerEntity container = findUploadScanByTicket(ticket);
+		if (container == null || summary == null) return;
+		UploadScanEntity entity = container.getLatestUploadScan();
+		applyExecutionSummary(entity, summary);
+		scanRepo.saveAndFlush(entity);
+	}
+
+	private void applyExecutionSummary(UploadScanEntity entity, ScanExecutionSummary summary) {
+		if (summary == null) return;
+		entity.setRulesEvaluated(summary.rulesEvaluated());
+		entity.setExecutionSnapshotJson(CodeScanExecutionSnapshotCodec.encode(summary.codeSnapshot()));
+		entity.setScannerExecutionsJson(ScanExecutionSummaryCodec.encode(summary.scanners()));
 	}
 
 	/**
@@ -239,30 +291,41 @@ public class UploadScanResultService
 		result.setSubmitDate(scanEntity.getSubmitDate());
 		result.setStatus(scanEntity.getStatus().getDisplayName());
 		result.setErrorMessage(scanEntity.getError());
+		result.setExecutionSummary(new ScanExecutionSummary(scanEntity.getRulesEvaluated(),
+				ScanExecutionSummaryCodec.decode(scanEntity.getScannerExecutionsJson())));
 		if (scanEntity.getStatus() == ScanStatus.DONE) {
 			result.setEndDate(scanEntity.getEndDate());
+			long scannedAtMillis = scanEntity.getEndDateMillis();
 			result.setViolations(scanEntity.getViolations().stream()
-					.map(this::generateResultForViolation)
+					.map(violation -> generateResultForViolation(violation, scannedAtMillis))
+					.sorted(Comparator.comparingInt(UploadScanResultViolation::getSeverityValue))
 					.collect(Collectors.toList()));
 		}
 
 		return result;
 	}
 
-	private UploadScanResultViolation generateResultForViolation(UploadViolationEntity violation) {
+	private UploadScanResultViolation generateResultForViolation(UploadViolationEntity violation,
+			long scannedAtMillis) {
 		UploadScanResultViolation urv = new UploadScanResultViolation();
+  urv.setViolationId(violation.getId());
 		urv.setViolationName(violation.getViolationName());
 		urv.setLineNumber(violation.getLineNum());
 		urv.setSeverity(violation.getSeverity().getName());
 		urv.setSeverityValue(violation.getSeverity().getPriority());
 		urv.setFileName(violation.getFileName());
 
-		String message = "Rule guidance not found";
+		String message = "No guidance written for this rule yet.";
 		String extUrl = "";
 		RuleEntity rule = ruleService.getRule(violation.getViolationName());
 		if (rule != null) {
 			message = rule.getMessage();
 			extUrl = rule.getExternalUrl();
+			if (ruleService.changedAfter(rule, scannedAtMillis)) {
+				urv.setRuleChange(RuleChange.CHANGED);
+			}
+		} else {
+			urv.setRuleChange(RuleChange.DELETED);
 		}
 		urv.setMessage(message);
 		urv.setExternalUrl(extUrl);
@@ -283,40 +346,31 @@ public class UploadScanResultService
 				.collect(Collectors.toList());
 	}
 
-	public List<UploadScanResult> getScanResultsWithFilters(UploadResultFilter filter,
+	public PagedResult<UploadScanResult> getScanResultsWithFilters(UploadResultFilter filter,
 			int pageSize, int pageNum) {
-		List<UploadScanResult> results;
 		switch (filter) {
 			case ALL:
-				results =
+				return PagedResult.of(
 						scanRepo.findAll(
 								PageRequest.of(pageNum, pageSize,
-										Sort.by(Direction.DESC, "endDate")))
-								.stream().map(this::generateResultForScan)
-								.collect(Collectors.toList());
-				break;
+										Sort.by(Direction.DESC, "endDate"))),
+						this::generateResultForScan);
 			case VIOLATIONS:
-				results = vioRepo
-						.findAllGroupByScan(
-								PageRequest.of(pageNum, pageSize, Sort.by(Direction.DESC, "scan")))
-						.stream()
-						.map(this::generateResultForScan)
-						.collect(Collectors.toList());
-				break;
+				return PagedResult.of(
+						vioRepo.findAllGroupByScan(
+								PageRequest.of(pageNum, pageSize, Sort.by(Direction.DESC, "scan"))),
+						this::generateResultForScan);
 			case INCOMPLETE:
-				results = scanRepo
-						.findByStatusIn(
+				return PagedResult.of(
+						scanRepo.findByStatusIn(
 								Arrays.asList(ScanStatus.FAILED, ScanStatus.IN_PROGRESS,
 										ScanStatus.NOT_STARTED),
 								PageRequest.of(pageNum, pageSize,
-										Sort.by(Direction.DESC, "endDate")))
-						.stream().map(this::generateResultForScan).collect(Collectors.toList());
-				break;
+										Sort.by(Direction.DESC, "endDate"))),
+						this::generateResultForScan);
 			default:
 				LOG.error("Filter is not configured to get Uploads");
 				throw new IllegalArgumentException("Filter is not configured to get Uploads");
 		}
-		return results;
 	}
 }
-

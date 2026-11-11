@@ -10,13 +10,12 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import org.springframework.core.task.AsyncListenableTaskExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.SchedulingTaskExecutor;
 import org.springframework.scheduling.concurrent.ExecutorConfigurationSupport;
 import org.springframework.util.Assert;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureTask;
 
 /**
  * Handles logic around pausing or resuming tasks on an executor queue
@@ -24,30 +23,63 @@ import org.springframework.util.concurrent.ListenableFutureTask;
  * @author csmith
  */
 public class PauseableThreadPoolTaskExecutor extends ExecutorConfigurationSupport
-		implements AsyncListenableTaskExecutor, SchedulingTaskExecutor {
+		implements SchedulingTaskExecutor {
 
 	private static final long serialVersionUID = -2456802575609852046L;
 
+	private static final Logger LOG =
+			LoggerFactory.getLogger(PauseableThreadPoolTaskExecutor.class);
+
 	private static final int SHUTDOWN_TIMEOUT = 60;
+
+	/**
+	 * Scans allowed to wait in the queue before further submissions are rejected. The
+	 * queue used to be unbounded, so a webhook flood could queue agents until the heap
+	 * ran out. Rejecting is preferable: the caller learns immediately and Bitbucket can
+	 * retry the delivery.
+	 */
+	public static final int DEFAULT_QUEUE_CAPACITY = 100;
 
 	private PauseableThreadPoolExecutor threadPool;
 
 	private final int threads;
 
+	private final int queueCapacity;
+
 	public PauseableThreadPoolTaskExecutor(int numThreads) {
+		this(numThreads, DEFAULT_QUEUE_CAPACITY);
+	}
+
+	public PauseableThreadPoolTaskExecutor(int numThreads, int queueCapacity) {
 		super();
 		setWaitForTasksToCompleteOnShutdown(true);
 		setAwaitTerminationSeconds(SHUTDOWN_TIMEOUT);
 		Assert.state(numThreads > 0,
 				"Number of threads for Task Executor must be a positive integer");
+		Assert.state(queueCapacity > 0,
+				"Queue capacity for Task Executor must be a positive integer");
 		this.threads = numThreads;
+		this.queueCapacity = queueCapacity;
+	}
+
+	public int getQueueCapacity() {
+		return this.queueCapacity;
 	}
 
 	@Override
 	protected ExecutorService initializeExecutor(ThreadFactory threadFactory,
 			RejectedExecutionHandler rejectedExecutionHandler) {
 		threadPool = new PauseableThreadPoolExecutor(threads, threads,
-				new LinkedBlockingQueue<Runnable>());
+				new LinkedBlockingQueue<Runnable>(queueCapacity));
+		// The default AbortPolicy already throws, which execute() turns into a
+		// TaskRejectedException for the caller. This only adds the log line, so a
+		// rejection is visible in the pod logs rather than only in an HTTP response.
+		threadPool.setRejectedExecutionHandler((task, executor) -> {
+			LOG.error("Scan queue is full (capacity " + queueCapacity
+					+ ", active " + executor.getActiveCount()
+					+ "). Rejecting submission; the caller should retry later.");
+			new ThreadPoolExecutor.AbortPolicy().rejectedExecution(task, executor);
+		});
 		return threadPool;
 	}
 
@@ -120,32 +152,6 @@ public class PauseableThreadPoolTaskExecutor extends ExecutorConfigurationSuppor
 		ExecutorService executor = getThreadPoolExecutor();
 		try {
 			return executor.submit(task);
-		} catch (RejectedExecutionException ex) {
-			throw new TaskRejectedException(
-					"Executor [" + executor + "] did not accept task: " + task, ex);
-		}
-	}
-
-	@Override
-	public ListenableFuture<?> submitListenable(Runnable task) {
-		ExecutorService executor = getThreadPoolExecutor();
-		try {
-			ListenableFutureTask<Object> future = new ListenableFutureTask<Object>(task, null);
-			executor.execute(future);
-			return future;
-		} catch (RejectedExecutionException ex) {
-			throw new TaskRejectedException(
-					"Executor [" + executor + "] did not accept task: " + task, ex);
-		}
-	}
-
-	@Override
-	public <T> ListenableFuture<T> submitListenable(Callable<T> task) {
-		ExecutorService executor = getThreadPoolExecutor();
-		try {
-			ListenableFutureTask<T> future = new ListenableFutureTask<T>(task);
-			executor.execute(future);
-			return future;
 		} catch (RejectedExecutionException ex) {
 			throw new TaskRejectedException(
 					"Executor [" + executor + "] did not accept task: " + task, ex);

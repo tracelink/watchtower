@@ -1,8 +1,10 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -11,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -32,24 +34,26 @@ import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageScanRepos
 import com.tracelink.appsec.watchtower.core.scan.image.repository.ImageViolationRepository;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageResultFilter;
 import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResultViolation;
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 @ExtendWith(SpringExtension.class)
 public class ImageScanResultServiceTest {
 
-	@MockBean
+	@MockitoBean
 	private ImageContainerRepository containerRepo;
 
-	@MockBean
+	@MockitoBean
 	private RepositoryRepository imageRepo;
 
-	@MockBean
+	@MockitoBean
 	private ImageScanRepository scanRepo;
 
-	@MockBean
+	@MockitoBean
 	private ImageViolationRepository vioRepo;
 
-	@MockBean
+	@MockitoBean
 	private ApiIntegrationService apiService;
 
 	private ImageScanResultService imageScanResultService;
@@ -108,11 +112,12 @@ public class ImageScanResultServiceTest {
 		scanEntity.setViolations(Arrays.asList(ImageScanEntityTests.buildStandardViolation()));
 		BDDMockito.when(scanRepo.findAll(BDDMockito.any(PageRequest.class)))
 				.thenReturn(new PageImpl<ImageScanEntity>(Arrays.asList(scanEntity)));
-		List<ImageScanResult> results =
+		PagedResult<ImageScanResult> results =
 				imageScanResultService.getScanResultsWithFilters(ImageResultFilter.ALL, 1, 1);
-		Assertions.assertEquals(1, results.size());
+		Assertions.assertEquals(1, results.content().size());
+		Assertions.assertFalse(results.hasNext());
 		Assertions.assertEquals(scanEntity.getContainer().getRepositoryName(),
-				results.get(0).getRepositoryName());
+				results.content().get(0).getRepositoryName());
 	}
 
 	@Test
@@ -121,13 +126,39 @@ public class ImageScanResultServiceTest {
 		scanEntity.setViolations(Arrays.asList(ImageScanEntityTests.buildStandardViolation()));
 		BDDMockito.when(vioRepo.findAllGroupByScan(BDDMockito.any(PageRequest.class)))
 				.thenReturn(new PageImpl<ImageScanEntity>(Arrays.asList(scanEntity)));
-		List<ImageScanResult> results = imageScanResultService
+		PagedResult<ImageScanResult> results = imageScanResultService
 				.getScanResultsWithFilters(ImageResultFilter.VIOLATIONS, 1, 1);
-		Assertions.assertEquals(1, results.size());
+		Assertions.assertEquals(1, results.content().size());
+		Assertions.assertFalse(results.hasNext());
 		Assertions.assertEquals(scanEntity.getContainer().getRepositoryName(),
-				results.get(0).getRepositoryName());
+				results.content().get(0).getRepositoryName());
 	}
 
+
+	@Test
+	public void testGetScanResultsWithFiltersALLSortsViolationsBySeverity() {
+		// Severity-first triage (Tier C backlog item): violations must come back ordered
+		// High -> Low regardless of persistence order.
+		ImageScanEntity scanEntity = ImageScanEntityTests.buildStandardScan();
+
+		ImageViolationEntity low = ImageScanEntityTests.buildStandardViolation();
+		low.setSeverity(RulePriority.LOW);
+		ImageViolationEntity high = ImageScanEntityTests.buildStandardViolation();
+		high.setSeverity(RulePriority.HIGH);
+		ImageViolationEntity medium = ImageScanEntityTests.buildStandardViolation();
+		medium.setSeverity(RulePriority.MEDIUM);
+
+		scanEntity.setViolations(Arrays.asList(low, high, medium));
+		BDDMockito.when(scanRepo.findAll(BDDMockito.any(PageRequest.class)))
+				.thenReturn(new PageImpl<ImageScanEntity>(Arrays.asList(scanEntity)));
+
+		PagedResult<ImageScanResult> results =
+				imageScanResultService.getScanResultsWithFilters(ImageResultFilter.ALL, 1, 1);
+
+		List<Integer> severityOrder = results.content().get(0).getViolations().stream()
+				.map(ImageScanResultViolation::getSeverityValue).collect(Collectors.toList());
+		Assertions.assertEquals(Arrays.asList(1, 3, 5), severityOrder);
+	}
 
 	@Test
 	public void testGenerateResultForAccountRepoTag() {

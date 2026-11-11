@@ -8,11 +8,11 @@ package com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result;
  */
 public enum PRResultFilter {
 
-	ALL("all", "All Scans"),
+	ALL("all", "All"),
 	//
-	UNRESOLVED("unresolved", "Unresolved Pull Requests"),
+	UNRESOLVED("unresolved", "Open pull requests"),
 	//
-	VIOLATIONS("violations", "Scans with Violations");
+	VIOLATIONS("violations", "With findings");
 
 	private final String name;
 

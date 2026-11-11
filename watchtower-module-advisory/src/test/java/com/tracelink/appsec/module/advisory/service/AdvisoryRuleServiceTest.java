@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.advisory.model.AdvisoryRuleDto;
@@ -21,7 +21,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerExceptio
 
 @ExtendWith(SpringExtension.class)
 public class AdvisoryRuleServiceTest {
-	@MockBean
+	@MockitoBean
 	private AdvisoryRuleRepository ruleRepository;
 
 	private AdvisoryRuleService ruleService;

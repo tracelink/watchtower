@@ -1,6 +1,6 @@
 package com.tracelink.appsec.module.eslint.service;
 
-import javax.validation.Validator;
+import jakarta.validation.Validator;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +24,15 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  */
 @Service
 public class EsLintRuleService {
+
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
 
 	private final EsLintRuleRepository ruleRepository;
 	private final LinterEngine engine;
@@ -68,6 +77,7 @@ public class EsLintRuleService {
 		}
 		// Save rule
 		ruleRepository.saveAndFlush(dto.toEntity());
+		invalidateRuleCache();
 	}
 
 	/**
@@ -109,7 +119,10 @@ public class EsLintRuleService {
 				}
 			}
 			rule.setCreateFunction(custom.getCreateFunction());
+			rule.setSchema(custom.getSchema());
 		}
+		rule.refreshRevision();
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 }

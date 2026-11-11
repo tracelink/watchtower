@@ -1,0 +1,57 @@
+<section th:fragment="workload" id="pr-scan-workload"
+    class="card card-small wt-scan-workload mb-4"
+    aria-labelledby="pr-scan-workload-heading" th:hidden="${scanWorkload.empty}"
+    hx-get="/scan-workload" hx-trigger="every 10s"
+    hx-target="#pr-scan-workload" hx-select="#pr-scan-workload" hx-swap="outerHTML">
+  <!-- Idle, the card is hidden (it keeps polling and reappears when scans queue); the page's
+       "Idle" chip says so instead of a whole card for one word. -->
+  <header class="card-header wt-scan-workload__header" th:classappend="${scanWorkload.empty} ? '' : ' border-bottom'">
+    <h2 id="pr-scan-workload-heading" class="h5 m-0">Pull request scans</h2>
+    <div class="wt-scan-workload__metrics" aria-label="Current pull request scan workload">
+      <span th:if="${scanWorkload.empty}" class="wt-status-chip wt-status-chip--success" data-workload-idle>Idle</span>
+      <span th:unless="${scanWorkload.empty}"><strong th:text="${scanWorkload.queued}">0</strong> queued</span>
+      <span th:unless="${scanWorkload.empty}"><strong th:text="${scanWorkload.running}">0</strong> scanning</span>
+      <span th:if="${scanWorkload.validationFailed > 0}" class="wt-workload-failed"><strong th:text="${scanWorkload.validationFailed}">0</strong> validation failed · 24h</span>
+      <span th:if="${scanWorkload.queued > 0}">oldest wait <strong th:text="${scanWorkload.oldestWait}">0s</strong></span>
+    </div>
+  </header>
+  <div class="card-body" th:unless="${scanWorkload.empty}">
+    <div class="wt-table-scroll wt-scan-workload__list" role="region"
+        aria-label="Queued, running, and recently rejected pull request scans" tabindex="0">
+      <table class="table mb-0">
+        <caption>Queued and running pull request scans with validation failures from the last 24 hours, oldest first</caption>
+        <thead><tr><th scope="col">Pull request</th><th scope="col">Connection</th><th scope="col">Status</th><th scope="col">Age</th><th scope="col">Queued</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          <tr th:each="item : ${scanWorkload.items}">
+            <th scope="row" class="wt-scan-target" th:text="${item.target}">repo #1</th>
+            <td th:text="${item.apiLabel}">SCM</td>
+            <td><div class="wt-workload-status"><span class="wt-status-chip" th:classappend="${' wt-tone-' + item.tone}"><span class="material-icons" aria-hidden="true" th:text="${item.icon}">schedule</span><span th:text="${item.status}">Queued</span></span><details class="wt-execution-skip-info" th:if="${item.reason != null}"><summary aria-label="Show validation failure reason"><span class="material-icons" aria-hidden="true">info</span></summary><div class="wt-execution-skip-popover"><strong>Validation failed</strong><p class="mb-0 mt-1" th:text="${item.reason}">Reason</p></div></details></div></td>
+            <td th:text="${item.age}">0s</td>
+            <td><span class="localizetime" th:attr="data-millis=${item.enqueuedMillis()}"
+                th:text="${#temporals.format(item.enqueuedAt, 'dd MMM yyyy, HH:mm')}">25 Sep 2026, 12:00</span></td>
+            <td class="text-end">
+              <!-- A failed request can be taken off the list; the server checks the privilege again. -->
+              <form th:if="${item.canDismiss}" sec:authorize="hasAuthority('PR Settings Modify')" method="post"
+                  th:action="@{/scan-workload/{id}/dismiss(id=${item.id})}"
+                  th:attr="data-confirm='Remove ' + ${item.target} + ' from the list? It already failed and is not scanning.'"
+                  data-confirm-action="Remove">
+                <button type="submit" class="wt-icon-action" aria-label="Remove from the list" data-tip="Remove from the list"><span class="material-icons" aria-hidden="true">delete</span></button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- One live chip: green "Idle", or how many pull request scans are running and waiting. -->
+<span th:fragment="chip" id="pr-scan-workload-chip" class="wt-mini-chip wt-meta-chip" tabindex="0"
+    th:classappend="${scanWorkload.empty} ? ' wt-tone-success' : ' wt-tone-info'"
+    th:attr="data-tip=${scanWorkload.empty} ? 'No pull request scans waiting or running right now' : ${scanWorkload.running + ' running, ' + scanWorkload.queued + ' waiting'}"
+    hx-get="/scan-workload?part=chip" hx-trigger="every 10s" hx-target="#pr-scan-workload-chip"
+    hx-select="#pr-scan-workload-chip" hx-swap="outerHTML">
+  <span class="material-icons" aria-hidden="true" th:text="${scanWorkload.empty} ? 'check_circle' : 'sync'">check_circle</span>
+  <span th:if="${scanWorkload.empty}">Idle</span>
+  <span th:unless="${scanWorkload.empty}"><strong th:text="${scanWorkload.running}">0</strong> running · <strong th:text="${scanWorkload.queued}">0</strong> waiting</span>
+</span>

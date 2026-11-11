@@ -1,5 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.code.scm.pr;
 
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.RepositorySlug;
+
 /**
  * This is a holder for PullRequest information originating from the UI. It only contains a subset
  * of required data to allow the scan to start.
@@ -46,7 +48,8 @@ public class ManualPullRequest {
 	 */
 	public PullRequest createPR() {
 		PullRequest pr = new PullRequest(getApiLabel());
-		pr.setRepoName(getRepo());
+		// Typed as either the slug or the display name; the webhook names it by the slug
+		pr.setRepoName(RepositorySlug.of(getRepo()));
 		pr.setPrId(getPrid());
 		return pr;
 	}

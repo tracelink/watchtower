@@ -1,7 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.image.api.ecr;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 public enum EcrRejectOption {
 	DO_NOTHING("Do Nothing"),

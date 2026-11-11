@@ -23,7 +23,8 @@ public class ViolationsByPeriodChartGenerator extends
 	@Override
 	protected Long accumulate(Long partialResult, List<AbstractScanEntity<?, ?>> items) {
 		return partialResult + items.stream()
-				.filter(s -> s.getViolations().stream().noneMatch(v -> v.getSeverity().equals(RulePriority.INFORMATIONAL)))
+				.filter(s -> s.getViolations().stream()
+						.noneMatch(v -> RulePriority.INFORMATIONAL.equals(v.getSeverity())))
 				.mapToLong(AbstractScanEntity::getNumViolations)
 				.sum();
 	}

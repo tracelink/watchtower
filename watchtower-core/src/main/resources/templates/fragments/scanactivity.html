@@ -1,0 +1,68 @@
+<!-- One scan activity table for Home and every scan dashboard, so a scan looks the same everywhere
+     (UAT walkthrough, 2026-10-15; Fixes board 2026-10-22): type under the target, status chip,
+     scanner tiles, findings as count + severity chips (or "—" + one chip), duration, a short finished
+     time with the full time on hover, and the report link. Cells never wrap. -->
+<!-- A page that lists only pull requests wraps this in th:with="showState=true" to add their
+     Open/Resolved State column. -->
+<table th:fragment="table(items, caption)" class="table table-hover mb-0 wt-activity-table" th:with="withState=${showState != null and showState}">
+  <caption class="visually-hidden" th:text="${caption}">Recent scans</caption>
+  <thead><tr><th scope="col">Target</th><th scope="col" th:if="${withState}">State</th><th scope="col">Status</th><th scope="col">Scanners</th><th scope="col">Findings</th><th scope="col">Duration</th><th scope="col">Finished</th><th scope="col">Report</th></tr></thead>
+  <tbody>
+    <tr th:each="activity : ${items}">
+      <th scope="row" class="wt-scan-target">
+        <a th:if="${activity.targetUrl != null}" class="wt-entity-link" th:href="${activity.targetUrl}" th:text="${activity.target}"
+           th:target="${activity.targetExternal ? '_blank' : null}" th:rel="${activity.targetExternal ? 'noopener noreferrer' : null}"></a>
+        <span th:if="${activity.targetUrl == null}" th:text="${activity.target}"></span>
+        <span class="wt-scan-kind"><span class="material-icons" aria-hidden="true" th:text="${activity.kindIcon}"></span><span th:text="${activity.kindLabel}"></span><span th:if="${activity.detail != null}" th:text="${' · ' + activity.detail}"></span></span>
+      </th>
+      <td th:if="${withState}"><span th:if="${activity.stateLabel != null}" class="wt-mini-chip" tabindex="0"
+            th:classappend="${activity.stateLabel == 'Resolved'} ? ' wt-mini-chip--ok' : ''" th:attr="data-tip=${activity.stateTip}"><span
+            class="material-icons" aria-hidden="true" th:text="${activity.stateIcon}"></span><span th:text="${activity.stateLabel}"></span></span></td>
+      <td><span class="wt-status-chip" th:classappend="${' wt-tone-' + activity.status.tone}" tabindex="0"
+                th:attr="data-tip=${activity.status.accessibleText}" th:aria-label="${activity.status.label + '. ' + activity.status.accessibleText}"><span class="material-icons" aria-hidden="true" th:text="${activity.status.icon}"></span><span th:text="${activity.status.label}"></span></span></td>
+      <td>
+        <span class="wt-scanner-tiles" role="list" aria-label="Scanners">
+          <span th:each="scanner : ${activity.scanners.visible}" role="listitem" class="wt-scanner-tile" th:classappend="${' wt-scanner-tile--' + scanner.state}"
+                tabindex="0" th:attr="data-tip=${scanner.label}" th:aria-label="${scanner.label}"><span class="material-icons" aria-hidden="true" th:text="${scanner.icon}"></span></span>
+          <span th:if="${activity.scanners.moreCount > 0}" role="listitem" class="wt-mini-chip" tabindex="0"
+                th:attr="data-tip=${activity.scanners.moreLabel}" th:aria-label="${activity.scanners.moreLabel}"
+                th:text="${'+' + activity.scanners.moreCount}">+0</span>
+          <span th:unless="${activity.scanners.recorded}" role="listitem" class="wt-muted" tabindex="0"
+                data-tip="Which scanners ran was not recorded for this older scan." aria-label="Scanners not recorded">—</span>
+        </span>
+      </td>
+      <td>
+        <span class="wt-findings-cell" th:with="finished=${activity.status.processingCompleted}">
+          <!-- Always the count + severity chips, or "—" + one chip; never a clean-looking 0 for a scan
+               that did not finish. -->
+          <th:block th:if="${activity.findingCount == 0 and !finished}"><span class="wt-muted" tabindex="0" data-tip="No findings yet: the scan has not finished."
+                th:unless="${activity.status.tone == 'danger'}" aria-label="No findings yet: the scan has not finished">—</span><th:block
+                th:if="${activity.status.tone == 'danger'}"><span class="wt-muted" aria-hidden="true">—</span><span
+                class="wt-mini-chip" tabindex="0" data-tip="The scan did not finish, so it has no verified findings."
+                aria-label="Incomplete: the scan did not finish, so it has no verified findings">Incomplete</span></th:block></th:block>
+          <th:block th:if="${activity.findingCount == 0 and finished and activity.status.tone != 'success'}"
+                    th:with="noneTip=${activity.status.tone == 'warning'
+                        ? 'No findings were recorded, but not every scanner finished, so this doesn’t mean clean.'
+                        : 'No findings were recorded, but which scanners ran was not recorded, so this doesn’t mean clean.'}"><span
+                class="wt-muted" aria-hidden="true">—</span><span class="wt-mini-chip" tabindex="0" th:attr="data-tip=${noneTip}"
+                th:aria-label="${'None recorded. ' + noneTip}">None recorded</span></th:block>
+          <strong th:if="${activity.findingCount == 0 and finished and activity.status.tone == 'success'}" class="wt-num" tabindex="0"
+                  data-tip="No findings: every scanner finished." aria-label="0 findings">0</strong>
+          <th:block th:if="${activity.findingCount > 0}">
+            <strong class="wt-num" th:text="${activity.findingCount}"></strong>
+            <div th:replace="~{fragments/severity :: countSummary(${activity.severityCounts})}"></div>
+            <span th:if="${activity.providerIncomplete}" class="wt-mini-chip" tabindex="0"
+                  data-tip="Not every scanner finished; this count includes only the findings that were recorded."
+                  aria-label="Incomplete: not every scanner finished">Incomplete</span>
+          </th:block>
+          <th:block sec:authorize="hasAuthority('Scan Results View')"><a th:replace="~{fragments/severity :: mcrChip(${activity.mcrCount}, ${activity.mcrReportUrl})}"></a></th:block>
+          <span th:if="${activity.mcrCount > 0}" sec:authorize="!hasAuthority('Scan Results View')" class="wt-mini-chip"><span class="material-icons" aria-hidden="true">rate_review</span><span th:text="${activity.mcrCount + ' MCR'}"></span></span>
+        </span>
+      </td>
+      <td class="wt-num" th:text="${activity.duration}"></td>
+      <td><span th:if="${activity.sortTime > 0}" class="localizetime" data-time-style="short" th:text="${activity.sortTime}"></span><span
+          th:unless="${activity.sortTime > 0}" class="wt-muted">Not finished</span></td>
+      <td><a sec:authorize="hasAuthority('Scan Results View')" class="btn btn-secondary btn-sm wt-report-link" th:href="${activity.reportUrl}" th:aria-label="${'View report for ' + activity.target}"><span>View report</span><span class="material-icons" aria-hidden="true">arrow_forward</span></a></td>
+    </tr>
+  </tbody>
+</table>

@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.encryption.repository;
 
 import com.tracelink.appsec.watchtower.core.encryption.model.DataEncryptionKey;
 import java.util.Optional;
-import javax.persistence.QueryHint;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.stereotype.Repository;
@@ -19,6 +19,6 @@ import org.springframework.stereotype.Repository;
 public interface DataEncryptionKeyRepository extends JpaRepository<DataEncryptionKey, Long> {
 
 	@QueryHints(value = {
-			@QueryHint(name = org.hibernate.annotations.QueryHints.FLUSH_MODE, value = "COMMIT")})
+			@QueryHint(name = org.hibernate.jpa.QueryHints.HINT_FLUSH_MODE, value = "COMMIT")})
 	Optional<DataEncryptionKey> findByConverterClassName(String converterClassName);
 }

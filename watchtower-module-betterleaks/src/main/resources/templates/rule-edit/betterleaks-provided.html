@@ -1,0 +1,22 @@
+<!-- A provided Betterleaks rule: only its priority is editable. The other values are facts, shown
+     as text (docs/design-system.md, "Restraint"); the hidden inputs carry what the POST needs. -->
+<div class="card-footer">
+  <form class="wt-md-form" action="/rule/edit/betterleaks" method="POST" th:object="${rule}">
+    <div class="wt-meta-chips">
+      <span th:replace="~{fragments/rulefacts :: fact('person', ${rule.author}, 'Author')}"></span>
+      <th:block th:if="${rule.category != null}"><span th:replace="~{fragments/rulefacts :: fact('category', ${rule.category.displayName}, 'Category')}"></span></th:block>
+      <th:block th:if="${rule.confidence != null and !rule.confidence.isBlank()}"><span th:replace="~{fragments/rulefacts :: fact('verified', ${#strings.capitalize(rule.confidence) + ' confidence'}, 'Confidence')}"></span></th:block>
+      <th:block th:if="${rule.externalUrl != null and !rule.externalUrl.isEmpty()}"><a th:replace="~{fragments/rulefacts :: doc(${rule.externalUrl})}"></a></th:block>
+    </div>
+    <p th:text="${rule.message}"></p>
+    <md-outlined-select th:replace="~{fragments/rulefacts :: severity(${priorities}, ${rule.priority})}"></md-outlined-select>
+    <input type="hidden" id="name" name="name" th:value="${rule.name}">
+    <input type="hidden" id="author" name="author" th:value="${rule.author}">
+    <input type="hidden" id="externalUrl" name="externalUrl" th:value="${rule.externalUrl}">
+    <input type="hidden" id="message" name="message" th:value="${rule.message}">
+    <input type="hidden" th:name="id" th:value="${rule.id}">
+    <input type="hidden" th:name="${_csrf.parameterName}"
+           th:value="${_csrf.token}"/>
+    <md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save severity</md-filled-button>
+  </form>
+</div>

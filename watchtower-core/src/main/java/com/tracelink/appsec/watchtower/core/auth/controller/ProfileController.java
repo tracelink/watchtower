@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.auth.controller;
 
 import com.tracelink.appsec.watchtower.core.auth.model.ApiKeyEntity;
+import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.service.ApiUserService;
 import com.tracelink.appsec.watchtower.core.auth.service.UserService;
@@ -42,7 +43,10 @@ public class ProfileController {
 
 		modelAndView.addObject("user_name", user.getUsername());
 		modelAndView.addObject("user_role", user.getRolesString());
-		modelAndView.addObject("join_date", user.getCreated());
+		// Role chips in the profile header (UAT walkthrough, 2026-10-16).
+		modelAndView.addObject("user_roles", user.getRoles().stream()
+				.map(RoleEntity::getRoleName).sorted().toList());
+		modelAndView.addObject("join_date", user.getCreatedMillis());
 		modelAndView.addObject("local_user", user.getSsoId() == null);
 		modelAndView.addObject("apiKeys", user.getApiKeys());
 		modelAndView.addScriptReference("/scripts/profile.js");
@@ -79,8 +83,10 @@ public class ProfileController {
 		UserEntity user = userService.findByUsername(authenticatedUser.getName());
 		ApiKeyEntity apiKeyEntity = apiUserService.createUserApiKey(apiKeyLabel, user);
 		redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
-				"Created Key ID: " + apiKeyEntity.getApiKeyId() + " and Secret: "
-						+ apiKeyEntity.getFirstTimeSecret());
+				"API key created. Copy the secret now; it will not be shown again.");
+		redirectAttributes.addFlashAttribute("newApiKeyId", apiKeyEntity.getApiKeyId());
+		redirectAttributes.addFlashAttribute("newApiKeySecret",
+				apiKeyEntity.getFirstTimeSecret());
 		return "redirect:/profile";
 	}
 

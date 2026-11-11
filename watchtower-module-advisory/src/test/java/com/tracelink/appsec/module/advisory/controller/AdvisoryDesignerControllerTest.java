@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -34,16 +34,16 @@ public class AdvisoryDesignerControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private AdvisoryRuleDesigner ruleDesigner;
 
-	@MockBean
+	@MockitoBean
 	private RuleDesignerService ruleDesignerService;
 
-	@MockBean
+	@MockitoBean
 	private ImageAdvisoryService imageAdvisoryService;
 
-	@MockBean
+	@MockitoBean
 	private AdvisoryRuleService ruleService;
 
 
@@ -63,6 +63,24 @@ public class AdvisoryDesignerControllerTest {
 				.andExpect(MockMvcResultMatchers.model().attribute(
 						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 						Matchers.containsString("Successfully Saved Rule " + name)));
+	}
+
+	@Test
+	@WithMockUser(authorities = {AdvisoryModule.ADVISORY_RULE_DESIGNER_PRIVILEGE_NAME})
+	public void testSaveRuleForAnAdvisoryThatDoesNotExistSaysSoAndSavesNothing() throws Exception {
+		// Dev E2E G02: an unknown advisory name answered with a bare HTTP 500.
+		BDDMockito.when(imageAdvisoryService.findByName(BDDMockito.anyString())).thenReturn(null);
+		RuleDesignerModelAndView mav = new RuleDesignerModelAndView(null);
+		BDDMockito.when(ruleDesigner.getDefaultRuleDesignerModelAndView()).thenReturn(mav);
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/designer/advisory/save")
+				.param("advisoryName", "no-such-advisory")
+				.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.model().attribute(
+						WatchtowerModelAndView.FAILURE_NOTIFICATION,
+						Matchers.containsString("no-such-advisory")));
+		BDDMockito.verify(ruleService, BDDMockito.never()).saveNewRule(BDDMockito.any());
 	}
 
 	@Test

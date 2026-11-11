@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.encryption.converter;
 
 import com.tracelink.appsec.watchtower.core.encryption.service.KeyEncryptionService;
 import java.security.Key;
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**

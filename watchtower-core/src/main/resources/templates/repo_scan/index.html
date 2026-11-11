@@ -1,0 +1,194 @@
+<!-- Plans and Queue are tabs of Repository results (Fixes + RepoQueue boards, 2026-10-22): the same
+     title, scanner state, pause icon, New scan and tab row as /scans/results. -->
+<div th:replace="~{fragments/resultstabs :: head(${view}, ${#authorization.expression('hasAuthority(''Scan Submit'')') and !integrations.isEmpty()})}"></div>
+<!-- One table per tab, details in dialogs (docs/design-system.md, "Restraint"). Repositories are managed in the inventory
+     (/repository/pull_request). Everything below the header is #results-region, which the pager
+     swaps. -->
+<div id="results-region" data-repo-scan
+    th:with="canScan=${#authorization.expression('hasAuthority(''Scan Submit'')')}">
+<nav th:replace="~{fragments/resultstabs :: tabs(${view})}"></nav>
+<th:block th:if="${canScan and !integrations.isEmpty()}">
+  <md-dialog th:replace="~{repo_scan/scandialog :: dialog(null, ${integrations}, ${rulesetChoices}, ${frequencies})}"></md-dialog>
+</th:block>
+
+<!-- Runs -->
+<th:block th:if="${view == 'runs'}">
+  <th:block th:if="${runs.isEmpty()}"><div th:replace="~{fragments/emptystate :: state('No repository scan has run yet.')}"></div></th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Runs" th:unless="${runs.isEmpty()}">
+    <table class="table mb-0">
+      <caption>Latest run of each plan</caption>
+      <thead><tr><th scope="col">Scan</th><th scope="col">Status</th><th scope="col">Repositories</th><th scope="col">Scanners</th><th scope="col">Findings</th><th scope="col">Started</th><th scope="col"><span class="visually-hidden">Open</span></th></tr></thead>
+      <tbody>
+        <!-- One row per plan's latest run (UAT #32): status of its worst repository, a progress
+             bar (green finished, red failed), the scanners that took part and the findings. -->
+        <tr th:each="run : ${runs}" th:with="o=${runOverviews[run.plan.id]}, done=${run.count('DONE')}, failed=${run.count('FAILED')},
+            runUrl=@{/reposcan/run/{p}/{r}(p=${run.plan.id},r=${run.plan.runCount})}">
+          <th scope="row" class="wt-scan-target">
+            <a class="wt-entity-link" th:href="${runUrl}" th:text="${run.plan.displayName}">wt-test</a>
+            <span class="wt-scan-kind"><span class="material-icons" aria-hidden="true">tag</span><span th:text="${'Run ' + run.plan.runCount}">Run 6</span>
+              <span class="material-icons" aria-hidden="true" th:text="${run.plan.frequency != null and run.plan.frequency.recurring} ? 'event_repeat' : 'person'">person</span><span
+                th:text="${run.plan.frequency != null and run.plan.frequency.recurring} ? 'Scheduled' : ${run.plan.createdBy}">username</span></span>
+          </th>
+          <td><th:block th:if="${o != null}"><th:block th:insert="~{fragments/status :: chip(${o.status})}"></th:block></th:block></td>
+          <td><span class="wt-run-progress" tabindex="0"
+                th:attr="data-tip=${done + ' finished, ' + failed + ' failed of ' + run.total()}"
+                th:aria-label="${done + ' finished, ' + failed + ' failed of ' + run.total()}">
+              <span class="wt-run-progress__bar" aria-hidden="true"><span class="wt-run-progress__done"
+                  th:style="${'width:' + (run.total() == 0 ? 0 : done * 100 / run.total()) + '%'}"></span><span class="wt-run-progress__failed"
+                  th:style="${'width:' + (run.total() == 0 ? 0 : failed * 100 / run.total()) + '%'}"></span></span>
+              <span class="wt-num" th:text="${(done + failed) + ' / ' + run.total()}">1 / 1</span></span></td>
+          <td>
+            <span class="wt-scanner-tiles" role="list" aria-label="Scanners" th:if="${o != null and o.scanners.recorded}">
+              <span th:each="scanner : ${o.scanners.shown}" role="listitem" class="wt-scanner-tile" th:classappend="${' wt-scanner-tile--' + scanner.state}"
+                  tabindex="0" th:attr="data-tip=${scanner.label}" th:aria-label="${scanner.label}"><span class="material-icons" aria-hidden="true" th:text="${scanner.icon}"></span></span>
+            </span>
+            <span th:if="${o != null and !o.detailed and run.total() > 0}" class="wt-muted" tabindex="0"
+                data-tip="Large run: open it to see each repository's scanners and findings.">—</span>
+          </td>
+          <td>
+            <span class="wt-findings-cell" th:if="${o != null and o.detailed}">
+              <span th:if="${o.findings == 0}" class="wt-muted">0</span>
+              <th:block th:if="${o.findings > 0}"><strong class="wt-num" th:text="${o.findings}">2</strong>
+                <div th:replace="~{fragments/severity :: countSummary(${o.severities})}"></div></th:block>
+            </span>
+          </td>
+          <td><span class="localizetime" data-time-style="short" th:text="${run.plan.lastRunAt}"></span></td>
+          <td><a class="btn btn-secondary btn-sm wt-report-link" th:href="${runUrl}" th:aria-label="${'Open run of ' + run.plan.displayName}"><span>Open</span><span class="material-icons" aria-hidden="true">arrow_forward</span></a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:unless="${runs.isEmpty()}"><div th:replace="~{fragments/pagination(baseUrl=${baseUrl}, pagination=${pagination})}"></div></th:block>
+</th:block>
+
+<!-- Plans -->
+<th:block th:if="${view == 'plans'}">
+  <!-- No plan yet: a picture of where plans come from (the When choices in New scan). -->
+  <section th:if="${plans.isEmpty()}" class="wt-empty-picture">
+    <span class="material-icons wt-empty-picture__icon" aria-hidden="true">event_repeat</span>
+    <strong>No recurring scans</strong>
+    <span class="wt-muted">In New scan, pick when it runs:</span>
+    <ul class="wt-segmented-filter wt-segmented-filter--static" aria-label="When a scan runs">
+      <li class="wt-segment"><span class="material-icons" aria-hidden="true">bolt</span>Now</li>
+      <li class="wt-segment"><span class="material-icons" aria-hidden="true">today</span>Daily</li>
+      <li class="wt-segment"><span class="material-icons" aria-hidden="true">date_range</span>Weekly</li>
+      <li class="wt-segment"><span class="material-icons" aria-hidden="true">calendar_month</span>Monthly</li>
+    </ul>
+    <md-outlined-button th:if="${canScan and !integrations.isEmpty()}" type="button"
+        data-wt-dialog-target="#repoScanDialog" has-icon>
+      <span class="material-icons" slot="icon" aria-hidden="true">add</span>New scan
+    </md-outlined-button>
+  </section>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Plans" th:unless="${plans.isEmpty()}">
+    <table class="table mb-0">
+      <caption>Recurring repository scan plans</caption>
+      <thead><tr><th scope="col">Plan</th><th scope="col">Schedule</th><th scope="col">Next run</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        <tr th:each="plan : ${plans}">
+          <th scope="row" th:text="${plan.name}">plan</th>
+          <td th:text="${T(com.tracelink.appsec.watchtower.core.scan.code.scm.repo.RepoScanViewService).schedule(plan)}">Daily at 02:00 UTC</td>
+          <td><span class="localizetime" data-time-style="short" th:text="${plan.nextRunAt}"></span></td>
+          <td><span class="wt-status-chip" th:classappend="${plan.enabled} ? ' wt-tone-success' : ' wt-tone-neutral'" th:text="${plan.enabled ? 'On' : 'Off'}">On</span></td>
+          <td><div class="wt-table-actions" th:if="${canScan}">
+            <form method="POST" th:action="@{/reposcan/plans/{id}/run(id=${plan.id})}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="wt-icon-action" aria-label="Run now" title="Run now"><span class="material-icons" aria-hidden="true">play_circle_outline</span></button>
+            </form>
+            <form method="POST" th:action="@{/reposcan/plans/{id}/enabled(id=${plan.id})}">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <input type="hidden" name="enabled" th:value="${!plan.enabled}"/>
+              <button type="submit" class="wt-icon-action"
+                  th:attr="aria-label=${plan.enabled ? 'Turn off' : 'Turn on'},title=${plan.enabled ? 'Turn off' : 'Turn on'}"><span class="material-icons" aria-hidden="true"
+                  th:text="${plan.enabled ? 'pause' : 'play_arrow'}">pause</span></button>
+            </form>
+            <form method="POST" th:action="@{/reposcan/plans/{id}/delete(id=${plan.id})}"
+                th:attr="data-confirm=${'Delete the plan ' + plan.name + ' and its results?'}" data-confirm-action="Delete plan">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="wt-icon-action wt-icon-action--danger" aria-label="Delete plan" title="Delete"><span class="material-icons" aria-hidden="true">delete</span></button>
+            </form>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:unless="${plans.isEmpty()}"><div th:replace="~{fragments/pagination(baseUrl=${baseUrl}, pagination=${pagination})}"></div></th:block>
+</th:block>
+
+<!-- Queue: what is waiting or scanning (one line when nothing is), then the finished background
+     jobs with a filter. A job's result tells the truth: an integration check that found a failing
+     integration is amber "1 of 2 failing" with the name on hover (UAT walkthrough, 2026-10-16). -->
+<th:block th:if="${view == 'queue'}">
+  <span hidden data-assistant-kind="jobs"></span>
+  <div th:if="${repositoryAdmissionBlocker != null}" class="alert alert-warning mb-3" role="status">
+    <strong>Waiting for an earlier AWS assessment.</strong>
+    <a th:href="@{/reposcan/report/{id}(id=${repositoryAdmissionBlocker.scanId})}"
+       th:text="${'Open scan #' + repositoryAdmissionBlocker.scanId}">Open the earlier scan</a>
+    <span th:text="${repositoryAdmissionBlocker.assessment.reasonLabel()}"></span>
+  </div>
+  <section th:if="${queuedScans.isEmpty() and activeJobs.isEmpty()}" class="wt-queue-idle mb-3" role="status">
+    <span class="material-icons wt-text-success" aria-hidden="true">check_circle</span>
+    <strong>Nothing waiting or scanning</strong>
+    <span class="wt-muted">Queued scans show here first, oldest first.</span>
+  </section>
+  <div class="wt-table-scroll mb-4" tabindex="0" role="region" aria-label="Waiting and scanning"
+      th:unless="${queuedScans.isEmpty() and activeJobs.isEmpty()}">
+    <table class="table mb-0">
+      <caption>Scans and jobs waiting or running, oldest first</caption>
+      <thead><tr><th scope="col">Work</th><th scope="col">Status</th><th scope="col">Detail</th><th scope="col">Queued</th></tr></thead>
+      <tbody>
+        <tr th:each="job : ${activeJobs}">
+          <th scope="row"><span class="wt-job-name"><span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span
+              class="material-icons" th:text="${job.icon()}">sync</span></span><span th:text="${job.title()}">Sync</span></span></th>
+          <td><span class="wt-status-chip" tabindex="0" th:classappend="${' wt-tone-' + job.tone()}" th:attr="data-tip=${job.resultTip()}"><span
+              class="material-icons" aria-hidden="true" th:text="${job.resultIcon()}">sync</span><span th:text="${job.result()}">Running</span></span></td>
+          <td><span class="wt-meta-chips"><span th:each="chip : ${job.chips()}" class="wt-mini-chip" th:text="${chip}"></span></span></td>
+          <td><span class="localizetime" data-time-style="short" th:text="${job.createdAt()}"></span></td>
+        </tr>
+        <tr th:each="scan : ${queuedScans}">
+          <th scope="row" th:text="${scan.repository.repoName + ' @ ' + scan.branch}">repo @ main</th>
+          <td th:with="st=${T(com.tracelink.appsec.watchtower.core.scan.presentation.StatusPresentationModel).from(scan)}"><th:block th:insert="~{fragments/status :: chip(${st})}"></th:block></td>
+          <td th:with="plan=${queuePlans[scan.planId]}"><a class="wt-entity-link" th:href="@{/reposcan/run/{p}/{r}(p=${scan.planId},r=${scan.runNo})}"
+              th:text="${plan == null ? 'Scan #' + scan.planId : plan.runLabel(scan.runNo)}">Scan #1 · payments-api</a></td>
+          <td><span class="localizetime" data-time-style="short" th:text="${scan.submitDate}"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="wt-page-bar mb-2">
+    <h2 class="wt-section-title m-0">Recent background jobs</h2>
+    <nav class="wt-segmented-filter mb-0" aria-label="Show background jobs">
+      <a th:each="f : ${jobFilters}" th:href="@{/reposcan(view='queue',jobs=${f.key()})}"
+         th:class="${f == jobFilter} ? 'wt-segment is-active' : 'wt-segment'"
+         th:attr="aria-current=${f == jobFilter ? 'page' : null}"><span class="material-icons" aria-hidden="true"
+         th:text="${f.icon()}">list</span><span th:text="${f.label()}">All</span></a>
+    </nav>
+  </div>
+  <th:block th:if="${recentJobs.isEmpty()}"><div th:replace="~{fragments/emptystate :: state('No finished jobs of this kind yet.')}"></div></th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Recent background jobs" th:unless="${recentJobs.isEmpty()}">
+    <table class="table mb-0">
+      <caption>Background jobs that finished most recently</caption>
+      <thead><tr><th scope="col">Job</th><th scope="col">Result</th><th scope="col">Detail</th><th scope="col">Queued</th><th scope="col"><span class="visually-hidden">Diagnose</span></th></tr></thead>
+      <tbody>
+        <tr th:each="job : ${recentJobs}">
+          <th scope="row"><span class="wt-job-name"><span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span
+              class="material-icons" th:text="${job.icon()}">sync</span></span><span th:text="${job.title()}">Repository sync</span></span></th>
+          <td>
+            <a th:if="${job.link() != null}" th:href="${job.link()}" class="wt-status-chip wt-job-result" th:classappend="${' wt-tone-' + job.tone()}"
+                th:attr="data-tip=${job.resultTip()}" th:aria-label="${job.result() + '. ' + job.resultTip()}"><span
+                class="material-icons" aria-hidden="true" th:text="${job.resultIcon()}">warning</span><span th:text="${job.result()}">1 of 2 failing</span></a>
+            <span th:if="${job.link() == null}" class="wt-status-chip" tabindex="0" th:classappend="${' wt-tone-' + job.tone()}"
+                th:attr="data-tip=${job.resultTip()}" th:aria-label="${job.result() + '. ' + job.resultTip()}"><span
+                class="material-icons" aria-hidden="true" th:text="${job.resultIcon()}">check_circle</span><span th:text="${job.result()}">Done</span></span>
+          </td>
+          <td><span class="wt-meta-chips"><span th:each="chip : ${job.chips()}" class="wt-mini-chip" th:text="${chip}"></span></span></td>
+          <td><span class="localizetime" data-time-style="short" th:text="${job.createdAt()}"></span></td>
+          <td class="wt-ai-diagnose-cell"><button th:if="${job.diagnosable()}" type="button" class="wt-icon-action wt-icon-action--ai" data-ai-helper="diagnose" hidden
+              th:attr="data-job-id=${job.id()}" aria-label="Diagnose this failure" data-tip="Diagnose: ask the assistant what likely went wrong"><span
+              class="material-icons" aria-hidden="true">troubleshoot</span></button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>
+</div>

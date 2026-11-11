@@ -3,16 +3,16 @@ package com.tracelink.appsec.watchtower.core.scan.apiintegration;
 import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
 import com.tracelink.appsec.watchtower.core.scan.ScanType;
 import java.util.Map;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.Table;
 
 /**
  * Entity description for the abstract API entity inherited object. Holds information about the api
@@ -42,6 +42,36 @@ public abstract class ApiIntegrationEntity {
 
 	@Column(name = "watchtower_secret")
 	private String watchtowerSecret;
+
+	/** When the connection was last checked (test button, catalog sync, the 6-hourly check). */
+	@Column(name = "health_checked_at")
+	private Long healthCheckedAt;
+
+	@Column(name = "health_ok")
+	private Boolean healthOk;
+
+	/** Why the last check failed: truncated, credentials stripped. */
+	@Column(name = "health_error")
+	private String healthError;
+
+	public Long getHealthCheckedAt() {
+		return healthCheckedAt;
+	}
+
+	public Boolean getHealthOk() {
+		return healthOk;
+	}
+
+	public String getHealthError() {
+		return healthError;
+	}
+
+	/** Sets the last connection check; IntegrationHealthService records it in the database. */
+	public void setHealth(Long checkedAt, Boolean ok, String error) {
+		this.healthCheckedAt = checkedAt;
+		this.healthOk = ok;
+		this.healthError = error;
+	}
 
 	public long getIntegrationId() {
 		return integrationId;
@@ -105,6 +135,17 @@ public abstract class ApiIntegrationEntity {
 	 */
 	public abstract void configureEntityFromParameters(Map<String, String> parameters)
 			throws ApiIntegrationException;
+
+	/**
+	 * Adds already-configured secret values to an update request when their input fields were
+	 * intentionally left blank. Implementations must only copy secret values and must never expose
+	 * them to a view model.
+	 *
+	 * @param parameters mutable request parameters for the update
+	 */
+	public void preserveConfiguredSecrets(Map<String, String> parameters) {
+		// Most integration types do not define additional credentials.
+	}
 
 	/**
 	 * Create the corresponding API client for this api entity

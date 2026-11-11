@@ -1,0 +1,19 @@
+<!-- A report's Scanners row (UAT #13): one tile per scanner that took part, "+N" for the rest,
+     the rule count, or "Not recorded" for older scans. Shared by the pull request and upload
+     reports so a scanner looks the same everywhere. -->
+<div th:fragment="scanners(tiles, summary)" class="wt-scan-strip__scanners">
+  <span class="wt-meta-label">Scanners</span>
+  <span class="wt-scanner-tiles" role="list" aria-label="Scanners" th:if="${tiles != null and tiles.recorded}">
+    <span th:each="scanner : ${tiles.shown}" role="listitem" class="wt-scanner-tile" th:classappend="${' wt-scanner-tile--' + scanner.state}"
+        tabindex="0" th:attr="data-tip=${scanner.label}" th:aria-label="${scanner.label}"><span class="material-icons" aria-hidden="true" th:text="${scanner.icon}"></span></span>
+    <span th:unless="${tiles.unused.empty}" role="listitem" class="wt-mini-chip" tabindex="0"
+        th:attr="data-tip=${tiles.unusedLabel}" th:aria-label="${tiles.unusedLabel}"
+        th:text="${'+' + tiles.unused.size()}">+0</span>
+  </span>
+  <span th:unless="${tiles != null and tiles.recorded}" class="wt-mini-chip" tabindex="0"
+      data-tip="This older scan did not record which scanners ran or how long each took."><span
+      class="material-icons" aria-hidden="true">help_outline</span>Not recorded</span>
+  <span class="wt-mini-chip" tabindex="0" th:if="${summary != null and summary.recorded}"
+      data-tip="Rules the selected ruleset asked the scanners to apply"
+      th:text="${#numbers.formatInteger(summary.rulesEvaluated, 1, 'COMMA') + (summary.rulesEvaluated == 1 ? ' rule' : ' rules')}"></span>
+</div>

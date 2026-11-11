@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +30,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.storage.S3Service;
 
 @ExtendWith(MockitoExtension.class)
 public class UploadScanAgentTest {
@@ -43,18 +44,34 @@ public class UploadScanAgentTest {
 	@Mock
 	private RulesetDto mockRuleset;
 
-	private UploadScanContainerEntity makeContainer(String name, String ticket, Path zipPath) {
+	@Mock
+	private S3Service mockS3Service;
+
+	private UploadScanContainerEntity makeContainer(String name, String ticket, String s3Key) {
 		UploadScanContainerEntity container = BDDMockito.mock(UploadScanContainerEntity.class);
 		BDDMockito.when(container.getName()).thenReturn(name);
 		BDDMockito.when(container.getTicket()).thenReturn(ticket);
-		BDDMockito.when(container.getZipPath()).thenReturn(zipPath);
+		BDDMockito.when(container.getStorageKey()).thenReturn(s3Key);
 		return container;
+	}
+
+	/**
+	 * Stubs {@link S3Service#downloadRequired(String, Path)} to copy a local test-fixture
+	 * zip in place of an actual S3 download, mirroring what {@link UploadScanAgent}
+	 * expects the real service to do.
+	 */
+	private void stubDownload(String key, Path sourceZip) throws IOException {
+		BDDMockito.willAnswer(invocation -> {
+			Path target = invocation.getArgument(1);
+			Files.copy(sourceZip, target, StandardCopyOption.REPLACE_EXISTING);
+			return null;
+		}).given(mockS3Service).downloadRequired(BDDMockito.eq(key), BDDMockito.any(Path.class));
 	}
 
 	@Test
 	public void testInitializeException() {
 		UploadScanAgent agent =
-				new UploadScanAgent(makeContainer("name", "ticket", Paths.get("something")))
+				new UploadScanAgent(makeContainer("name", "ticket", "some-key"))
 						.withScanners(Collections.singleton(mockScanner))
 						.withRuleset(mockRuleset)
 						.withThreads(1);
@@ -69,19 +86,23 @@ public class UploadScanAgentTest {
 	@Test
 	public void testInitializeBadZip() throws URISyntaxException, IOException {
 		Path zip = Files.createTempFile(null, ".zip");
+		String key = "some-key";
+		String storageKey = UploadStorageLocation.forS3Key(key);
 
 		try (FileOutputStream fos = new FileOutputStream(zip.toFile())) {
 			IOUtils.copy(
 					UploadScanAgent.class.getResourceAsStream("/zipuploadfiles/illegalZipFile.zip"),
 					fos);
 		}
+		stubDownload(key, zip);
 
 		UploadScanAgent agent =
-				new UploadScanAgent(makeContainer("name", "ticket", zip))
+				new UploadScanAgent(makeContainer("name", "ticket", storageKey))
 						.withScanners(Collections.singleton(mockScanner))
 						.withRuleset(mockRuleset)
 						.withThreads(1)
-						.withScanResultService(mockScanResultService);
+						.withScanResultService(mockScanResultService)
+						.withS3Service(mockS3Service);
 		try {
 			agent.initialize();
 		} catch (ScanInitializationException e) {
@@ -95,15 +116,47 @@ public class UploadScanAgentTest {
 	public void testInitializeGoodZip()
 			throws URISyntaxException, IOException, ScanInitializationException {
 		Path zip = Files.createTempFile(null, ".zip");
+		String key = "some-key";
+		String storageKey = UploadStorageLocation.forS3Key(key);
 
 		try (FileOutputStream fos = new FileOutputStream(zip.toFile())) {
 			IOUtils.copy(
 					UploadScanAgent.class.getResourceAsStream("/zipuploadfiles/legalZipFile.zip"),
 					fos);
 		}
+		stubDownload(key, zip);
 
 		UploadScanAgent agent =
-				new UploadScanAgent(makeContainer("name", "ticket", zip))
+				new UploadScanAgent(makeContainer("name", "ticket", storageKey))
+						.withScanners(Collections.singleton(mockScanner))
+						.withRuleset(mockRuleset)
+						.withThreads(1)
+						.withScanResultService(mockScanResultService)
+						.withS3Service(mockS3Service);
+		try {
+			agent.initialize();
+		} finally {
+			agent.clean();
+		}
+		// S3-backed: clean() must remove both the local temp download and the S3
+		// object itself.
+		BDDMockito.verify(mockS3Service).deleteObject(key);
+	}
+
+	@Test
+	public void testInitializeLocalFallbackUnzipsDirectlyWithoutS3Service()
+			throws URISyntaxException, IOException, ScanInitializationException {
+		Path zip = Files.createTempFile(null, ".zip");
+		try (FileOutputStream fos = new FileOutputStream(zip.toFile())) {
+			IOUtils.copy(
+					UploadScanAgent.class.getResourceAsStream("/zipuploadfiles/legalZipFile.zip"),
+					fos);
+		}
+		String storageKey = UploadStorageLocation.forLocalPath(zip);
+
+		// No withS3Service() call: a locally-backed upload must never touch it.
+		UploadScanAgent agent =
+				new UploadScanAgent(makeContainer("name", "ticket", storageKey))
 						.withScanners(Collections.singleton(mockScanner))
 						.withRuleset(mockRuleset)
 						.withThreads(1)
@@ -113,25 +166,62 @@ public class UploadScanAgentTest {
 		} finally {
 			agent.clean();
 		}
+
+		Assertions.assertFalse(zip.toFile().exists(),
+				"clean() must delete the local upload file, matching pre-S3 behavior");
+	}
+
+	@Test
+	public void testInitializeLocalFallbackCleanNeverCallsS3ServiceWhenConfigured()
+			throws URISyntaxException, IOException, ScanInitializationException {
+		Path zip = Files.createTempFile(null, ".zip");
+		try (FileOutputStream fos = new FileOutputStream(zip.toFile())) {
+			IOUtils.copy(
+					UploadScanAgent.class.getResourceAsStream("/zipuploadfiles/legalZipFile.zip"),
+					fos);
+		}
+		String storageKey = UploadStorageLocation.forLocalPath(zip);
+
+		// A locally-backed upload's clean() must not call S3Service even when one is
+		// configured on the agent - a stray deleteObject() on a local path string would
+		// be a silent no-op today and a real deletion the moment the key scheme changes.
+		UploadScanAgent agent =
+				new UploadScanAgent(makeContainer("name", "ticket", storageKey))
+						.withScanners(Collections.singleton(mockScanner))
+						.withRuleset(mockRuleset)
+						.withThreads(1)
+						.withScanResultService(mockScanResultService)
+						.withS3Service(mockS3Service);
+		try {
+			agent.initialize();
+		} finally {
+			agent.clean();
+		}
+
+		BDDMockito.verifyNoInteractions(mockS3Service);
 	}
 
 	@Test
 	public void testInitializeBinaryFiles()
 			throws URISyntaxException, IOException, ScanInitializationException {
 		Path zip = Files.createTempFile(null, ".zip");
+		String key = "some-key";
+		String storageKey = UploadStorageLocation.forS3Key(key);
 
 		try (FileOutputStream fos = new FileOutputStream(zip.toFile())) {
 			IOUtils.copy(
 					UploadScanAgent.class.getResourceAsStream("/zipuploadfiles/binaryfile.zip"),
 					fos);
 		}
+		stubDownload(key, zip);
 
 		UploadScanAgent agent =
-				new UploadScanAgent(makeContainer("name", "ticket", zip))
+				new UploadScanAgent(makeContainer("name", "ticket", storageKey))
 						.withScanners(Collections.singleton(mockScanner))
 						.withRuleset(mockRuleset)
 						.withThreads(1)
-						.withScanResultService(mockScanResultService);
+						.withScanResultService(mockScanResultService)
+						.withS3Service(mockS3Service);
 		try {
 			agent.initialize();
 			Assertions.assertEquals(0, Files.list(agent.getWorkingDirectory()).count());
@@ -144,7 +234,7 @@ public class UploadScanAgentTest {
 	@Test
 	public void testReport() {
 		UploadScanAgent agent =
-				new UploadScanAgent(makeContainer("name", "ticket", Paths.get("something")))
+				new UploadScanAgent(makeContainer("name", "ticket", "something"))
 						.withScanners(Collections.singleton(mockScanner))
 						.withRuleset(mockRuleset)
 						.withThreads(1)
@@ -172,7 +262,7 @@ public class UploadScanAgentTest {
 		ArgumentCaptor<List<UploadViolationEntity>> listCaptor =
 				ArgumentCaptor.forClass(List.class);
 		BDDMockito.verify(mockScanResultService).saveFinalUploadScan(BDDMockito.anyString(),
-				listCaptor.capture());
+				listCaptor.capture(), BDDMockito.any(com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummary.class));
 		List<UploadViolationEntity> vioList = listCaptor.getValue();
 		Assertions.assertEquals(1, vioList.size());
 		Assertions.assertEquals(sev, vioList.get(0).getSeverity());
@@ -183,7 +273,7 @@ public class UploadScanAgentTest {
 		String ticket = "ticket";
 		String exceptionMessage = "foobar";
 		UploadScanAgent agent =
-				new UploadScanAgent(makeContainer("name", ticket, Paths.get("something")))
+				new UploadScanAgent(makeContainer("name", ticket, "something"))
 						.withScanners(Collections.singleton(mockScanner))
 						.withRuleset(mockRuleset)
 						.withThreads(1)

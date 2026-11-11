@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.controller;
 
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
 import java.util.Arrays;
 
 import org.hamcrest.Matchers;
@@ -7,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,15 +31,14 @@ public class UploadScanResultsControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanResultService mockScanResultService;
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME})
 	public void testGetFilterPage() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.get("/uploadscan/results"))
-				.andExpect(MockMvcResultMatchers.model().attribute("filters",
-						UploadResultFilter.values()));
+				.andExpect(MockMvcResultMatchers.redirectedUrl("/uploadscan/results/all"));
 	}
 
 	@Test
@@ -51,7 +51,7 @@ public class UploadScanResultsControllerTest {
 		BDDMockito
 				.when(mockScanResultService.getScanResultsWithFilters(BDDMockito.any(),
 						BDDMockito.anyInt(), BDDMockito.anyInt()))
-				.thenReturn(Arrays.asList(result));
+				.thenReturn(new PagedResult<>(Arrays.asList(result), false));
 
 		mockMvc.perform(
 				MockMvcRequestBuilders.get("/uploadscan/results/" + filter).param("page",

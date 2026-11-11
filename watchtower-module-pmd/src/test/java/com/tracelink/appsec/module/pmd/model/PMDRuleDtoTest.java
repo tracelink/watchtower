@@ -16,7 +16,7 @@ public class PMDRuleDtoTest {
 	private static String externalUrl = "https://example.com";
 	private static RulePriority priority = RulePriority.MEDIUM;
 	private static String parserLanguage = "java";
-	private static String ruleClass = "net.sourceforge.pmd.lang.rule.XPathRule";
+	private static String ruleClass = "net.sourceforge.pmd.lang.rule.xpath.XPathRule";
 	private static String xpath = "//PrimaryPrefix[Name[starts-with(@Image,\"System.out\")";
 	private PMDCustomRuleDto pmdRuleDto = setup();
 
@@ -47,6 +47,7 @@ public class PMDRuleDtoTest {
 		Assertions.assertEquals(externalUrl, pmdRuleDto.getExternalUrl());
 		Assertions.assertEquals(priority, pmdRuleDto.getPriority());
 		Assertions.assertEquals(parserLanguage, pmdRuleDto.getParserLanguage());
+		Assertions.assertEquals(java.util.Set.of(parserLanguage.toLowerCase(java.util.Locale.ROOT)), pmdRuleDto.scannedLanguages());
 		Assertions.assertEquals(ruleClass, pmdRuleDto.getRuleClass());
 		Assertions.assertEquals("xpath", pmdRuleDto.getProperties().iterator().next().getName());
 		Assertions.assertEquals(xpath, pmdRuleDto.getProperties().iterator().next().getValue());

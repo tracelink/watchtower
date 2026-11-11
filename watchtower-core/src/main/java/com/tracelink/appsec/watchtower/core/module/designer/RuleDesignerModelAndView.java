@@ -14,8 +14,11 @@ public class RuleDesignerModelAndView extends WatchtowerModelAndView {
 	public RuleDesignerModelAndView(String designerView) {
 		super("rules/designer");
 		addObject("designerView", designerView);
-		addScriptReference("/webjars/codemirror/5.60.0/lib/codemirror.js");
-		addStyleReference("/webjars/codemirror/5.60.0/lib/codemirror.css");
+		// CodeMirror 6 injects its own <style> tags at runtime; unlike CodeMirror 5,
+		// there is no separate stylesheet to reference here.
+		addScriptReference("/scripts/codemirror-bundle.js");
+		addScriptReference("/scripts/rule-designer.js");
+		addScriptReference("/scripts/designer-file-types.js");
 	}
 
 }

@@ -86,8 +86,8 @@ public abstract class ScannerModuleTest<M extends AbstractModule<?>, R extends A
 				this.moduleUnderTest.getScanner().getSupportedRuleClass());
 
 		RuleDto rule = this.scannerTester.getRuleSupplier().get();
-		Assertions.assertEquals(rule.getClass(),
-				this.moduleUnderTest.getScanner().getSupportedRuleClass());
+		Assertions.assertTrue(
+				this.moduleUnderTest.getScanner().getSupportedRuleClass().contains(rule.getClass()));
 	}
 
 	@Test

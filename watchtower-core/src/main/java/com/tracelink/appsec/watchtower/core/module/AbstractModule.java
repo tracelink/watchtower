@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.module;
 
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
@@ -11,6 +11,7 @@ import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
@@ -58,6 +59,9 @@ public abstract class AbstractModule<S extends IScanner<?, ?>> {
 
 	@Autowired
 	private ScanRegistrationService scanRegistrationService;
+
+	@Autowired
+	private ApplicationContext applicationContext;
 
 	/**
 	 * The name of the module.
@@ -200,9 +204,19 @@ public abstract class AbstractModule<S extends IScanner<?, ?>> {
 	/**
 	 * Certain processes must occur after all modules have been loaded. This method handles those
 	 * cases.
+	 * <p>
+	 * Only this module's own context counts: the actuator's management port runs in a child
+	 * context whose refresh event also reaches these listeners, and used to import every provided
+	 * rule a second time on each boot.
+	 *
+	 * @param event the refresh of this module's context or of a child context
 	 */
-	@EventListener(classes = ContextRefreshedEvent.class)
-	public void afterModulesLoaded() {
+	@EventListener
+	public void afterModulesLoaded(ContextRefreshedEvent event) {
+		if (event.getApplicationContext() != applicationContext) {
+			LOG.debug("Not importing provided rules for {} on a child context refresh", getName());
+			return;
+		}
 		try {
 			List<RulesetDto> providedRulesets = getProvidedRulesets();
 			if (providedRulesets != null) {

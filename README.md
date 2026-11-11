@@ -16,7 +16,7 @@ own type of rules, which are then aggregated into rulesets and applied to code d
 ## Table of Contents
 
 - [General Info](#general-info)
-- [How TraceLink uses Watchtower](#how-tracelink-uses-watchtower)
+- [How Watchtower is used](#how-watchtower-is-used)
 - [Technologies](#technologies)
 - [Installation](#installation)
 - [Authentication](#authentication)
@@ -39,12 +39,12 @@ rulesets that will be applied to individual scans. Additionally, it handles auth
 authorization of users, basic UI framing, logging, encryption of sensitive values, and Module
 management.
 
-## How TraceLink uses Watchtower
+## How Watchtower is used
 
-TraceLink ProdSec uses Watchtower to identify security-related and general code issues and report
+An application security team uses Watchtower to identify security-related and general code issues and report
 them back to developers. Watchtower integrates with SCM pull request systems, so scans are run
 automatically on pull request creation or update and issues are found before code is merged. This
-enables TraceLink developers to resolve issues earlier in the Software Development Lifecycle (SDLC),
+enables developers to resolve issues earlier in the Software Development Lifecycle (SDLC),
 when they are less costly. Watchtower also aggregates results from many scan types to simplify the
 scanning process and provide a single view of the most common issues across programming languages
 and frameworks.
@@ -76,32 +76,42 @@ environment variables listed in [Docker.env](Docker.env), then type `docker-comp
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
 
-There are two files included to aid deploying to Kubernetes. [deploy](deploy.yaml) is a basic EKS
-deployment model that can be tailored to fit your needs
-and [watchtower-secrets](watchtower-secrets.yaml) can be used to supply the db secrets to your EKS
-system using the Kubernetes configMap. For production usage, it is recommended to put these secrets
-into a secrets manager, based on your application's needs and infrastructure's availability.
+The [deploy manifest](deploy.yaml) is a basic EKS deployment model that can be tailored to fit your
+needs. Its pods read database and bootstrap credentials from the cluster-managed
+`watchtower-secrets` Kubernetes Secret. The deployment script validates that the required keys are
+non-empty but never prints, downloads for local use, reapplies, or modifies an existing Secret.
+
+On a first deployment where the Secret is absent, `deploy.sh` can migrate `db_url`, `db_user`, and
+`db_pass` from the legacy `watchtower-secrets` ConfigMap. Provide the new bootstrap password only
+for that one command:
+
+```bash
+read -rs -p 'Bootstrap admin password: ' WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD
+echo
+export WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD
+./deploy.sh prod
+unset WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD
+```
+
+If the Secret already exists but is incomplete, the script fails closed and tells the operator
+which keys to repair in Kubernetes; it does not overwrite them from the ConfigMap. First deployments
+without either a Secret or legacy ConfigMap must create the Secret through the cluster's normal
+secret-management process. The migration retains the ConfigMap for rollback; remove it manually
+after verifying the rollout.
 
 If you are running directly from the jar file and not via Docker, note that some modules require
 specific setup as noted in their respective READMEs.
 
-For development purposes and initial setup of Watchtower, an initial admin user is configured by
-default in the Watchtower database.
+For initial setup, configure a strong `WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD`. Watchtower creates the
+initial admin only when no administrator exists and never writes this credential to logs.
 
 | Username | Roles | 
 |----------|-------| 
 | admin | Full System Admin. Ability to access all Watchtower features. | 
 
-This user is given a random password that is output to the Watchtower logs. Once Watchtower has been
-deployed, set up a new, named admin user with a secure password and the Full System Admin role, and
-then disable or delete the default admin user to prevent unauthorized access to Watchtower
-configurations.
-
-On every startup, Watchtower will check for this admin user. If the user exists and is not disabled,
-Watchtower will automatically reset the password and output it to the logs. If the user doesn't
-exist, Watchtower will ensure a user does exist that has sufficient privileges to assign roles and
-privileges. If such a user does not exist, Watchtower will re-create the admin and grant it Full
-System Admin so that administrators cannot get locked out while modifying users or roles.
+After deployment, set up a named administrator with the Full System Admin role, then disable the
+bootstrap account. When that account remains enabled, the configured bootstrap credential is
+rotated on startup without being logged.
 
 ## Authentication
 
@@ -122,11 +132,8 @@ There are two built-in ways to authenticate to Watchtower.
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.
 
-By default, there is a self-registration process that allows a user to join Watchtower and is
-assigned a default role as described in the Authorization section. This registration can be turned
-off by setting the configuration `watchtower.allowRegistration` to false. This could be used once
-the app is migrated to SSO and at least one local user account is created to protect against
-duplicate accounts.
+Self-registration is disabled by default. It can be enabled deliberately with
+`watchtower.allowRegistration=true`; new users receive the default role described below.
 
 At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull
 Requests that have not been scanned in each configured repository and adds them to the scanning
@@ -397,7 +404,7 @@ can be set to automatically rotate all keys after a certain number of days.
 |JDBC_USERNAME|(blank)|any string|The JDBC username used to authenticate to MySQL|
 |JDBC_PASSWORD|(blank)|any string|The JDBC password used to authenticate to MySQL|
 |watchtower.runAfterStartup| true|true/false|Should Watchtower run the "After Startup" processes. This runs a downtime recovery operation to try to "catch-up" from any Watchtower downtime.|
-|watchtower.allowRegistration|true|true/false|Should Watchtower enable Self-Service Registration (buttons and screens)|
+|watchtower.allowRegistration|false|true/false|Should Watchtower enable Self-Service Registration (buttons and screens)|
 |watchtower.threads.prscan|4|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning pull requests|
 |watchtower.threads.uploadscan|2|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning file uploads|
 

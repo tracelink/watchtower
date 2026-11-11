@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.image;
 
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
 import java.util.Arrays;
 import java.util.List;
 
@@ -7,10 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,11 +36,12 @@ public class ImageScanResultControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private ImageScanResultService resultService;
 
-	@Autowired
-	private MappingJackson2HttpMessageConverter springMvcJacksonConverter;
+	private final ObjectMapper objectMapper = new ObjectMapper()
+			.registerModule(new JavaTimeModule())
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_RESULTS_NAME})
@@ -46,11 +50,11 @@ public class ImageScanResultControllerTest {
 		List<ImageScanResult> results = Arrays.asList(result);
 
 		BDDMockito.when(resultService.getScanResultsWithFilters(BDDMockito.any(),
-				BDDMockito.anyInt(), BDDMockito.anyInt())).thenReturn(results);
+				BDDMockito.anyInt(), BDDMockito.anyInt())).thenReturn(new PagedResult<>(results, false));
 
 		JSONObject json = new JSONObject();
 		json.put("results", results);
-		String jsonString = springMvcJacksonConverter.getObjectMapper().writeValueAsString(json);
+		String jsonString = objectMapper.writeValueAsString(json);
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/imagescan/result"))
@@ -68,12 +72,12 @@ public class ImageScanResultControllerTest {
 						result, result, result);
 
 		BDDMockito.when(resultService.getScanResultsWithFilters(BDDMockito.any(),
-				BDDMockito.anyInt(), BDDMockito.anyInt())).thenReturn(results);
+				BDDMockito.anyInt(), BDDMockito.anyInt())).thenReturn(new PagedResult<>(results, false));
 
 		JSONObject json = new JSONObject();
 		json.put("results", results);
 		json.put("next", "http://localhost/rest/imagescan/result/all/1");
-		String jsonString = springMvcJacksonConverter.getObjectMapper().writeValueAsString(json);
+		String jsonString = objectMapper.writeValueAsString(json);
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/imagescan/result"))
@@ -89,7 +93,7 @@ public class ImageScanResultControllerTest {
 		BDDMockito.when(resultService.generateResultForAccountRepoTag(BDDMockito.anyString(),
 				BDDMockito.anyString(), BDDMockito.anyString())).thenReturn(result);
 
-		String jsonString = springMvcJacksonConverter.getObjectMapper().writeValueAsString(result);
+		String jsonString = objectMapper.writeValueAsString(result);
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/imagescan/result")

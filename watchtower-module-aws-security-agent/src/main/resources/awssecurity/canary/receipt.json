@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "synthetic": true,
+  "executed": false,
+  "uploaded": false,
+  "expected_review_topic": "user-controlled shell command",
+  "expected_changed_line": 8,
+  "files": {
+    "source.zip": {
+      "bytes": 302,
+      "sha256": "67dee22893068b82585fbbce2ce674d2d27ce21dd2533f688ae7cb42f671a788"
+    },
+    "changes.diff": {
+      "bytes": 265,
+      "sha256": "01b9d8292e233a8060b9725dce4a3607a8ad82a35067af7766e9b72da738d8a5"
+    }
+  }
+}

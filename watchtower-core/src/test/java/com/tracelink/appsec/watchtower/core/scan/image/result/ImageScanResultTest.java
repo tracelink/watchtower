@@ -1,7 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.image.result;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Assertions;
@@ -41,14 +40,14 @@ public class ImageScanResultTest {
 		ImageScanResult result = buildStandardResult();
 		Assertions.assertEquals(apiLabel, result.getApiLabel());
 		Assertions.assertEquals(endDate, result.getEndDate());
-		Assertions.assertEquals(endDate.toInstant(ZoneOffset.UTC).toEpochMilli(),
+		Assertions.assertEquals(com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(endDate),
 				result.getEndDateMillis());
 		Assertions.assertEquals(errorMessage, result.getErrorMessage());
 		Assertions.assertEquals(id, result.getId());
 		Assertions.assertEquals(repositoryName, result.getRepositoryName());
 		Assertions.assertEquals(status, result.getStatus());
 		Assertions.assertEquals(submitDate, result.getSubmitDate());
-		Assertions.assertEquals(submitDate.toInstant(ZoneOffset.UTC).toEpochMilli(),
+		Assertions.assertEquals(com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(submitDate),
 				result.getSubmitDateMillis());
 		Assertions.assertEquals(tagName, result.getTagName());
 		Assertions.assertEquals(1, result.getViolations().size());

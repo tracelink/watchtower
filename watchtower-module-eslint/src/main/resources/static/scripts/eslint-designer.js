@@ -1,99 +1,120 @@
-$(document).ready(function() {
-	// Configure tooltip
-	$('[data-toggle="tooltip"]').tooltip();
+(() => {
+  const messagesBody = document.querySelector('.messages-tbody');
+  if (!messagesBody) return;
 
-	// Configure CodeMirror blocks
-    var sourceCodeEditor = CodeMirror.fromTextArea(document.getElementById('sourceCode'), {
-        lineNumbers: true,
-        mode: "javascript"
+  const sourceCodeEditor = CodeMirror.fromTextArea(document.getElementById('sourceCode'), {
+    lineNumbers: true, mode: 'javascript'
+  });
+  sourceCodeEditor.setSize(null, 240);
+  const astReader = CodeMirror.fromTextArea(document.getElementById('ast'), {
+    lineNumbers: true, mode: 'json', readOnly: true
+  });
+  astReader.setSize(null, 240);
+  const createFunctionEditor = CodeMirror.fromTextArea(document.getElementById('createFunction'), {
+    lineNumbers: true, mode: 'javascript'
+  });
+  createFunctionEditor.setSize(null, 240);
+  const createFunctionReader = CodeMirror.fromTextArea(
+    document.getElementById('customCreateFunction'), {
+      lineNumbers: true, mode: 'javascript', readOnly: true
     });
-	sourceCodeEditor.setSize(null, 240);
+  createFunctionReader.setSize(null, 240);
+  window.wtDesignerMatches?.(sourceCodeEditor);
+  // The syntax tree is folded away; the editor measures itself once it is shown.
+  document.querySelector('[data-eslint-tree]')?.addEventListener('toggle', () => astReader.refresh());
 
-	var astReader = CodeMirror.fromTextArea(document.getElementById('ast'), {
-		lineNumbers: true,
-		mode: "json",
-		readOnly: true
-	});
-	astReader.setSize(null, 240);
+  // The Messages chip names the message IDs; keep it current as rows are added or removed.
+  const messagesLabel = document.querySelector('[data-eslint-messages-label]');
+  const updateMessagesLabel = () => {
+    if (!messagesLabel) return;
+    const keys = Array.from(messagesBody.querySelectorAll('tr'))
+      .map(row => row.querySelector('input')?.value.trim())
+      .filter(Boolean);
+    const count = messagesBody.querySelectorAll('tr').length;
+    messagesLabel.textContent = count === 0 ? 'No messages'
+      : `${count === 1 ? '1 message' : `${count} messages`}${keys.length ? ': ' + keys.join(', ') : ''}`;
+  };
+  messagesBody.addEventListener('input', updateMessagesLabel);
 
-    var createFunctionEditor = CodeMirror.fromTextArea(document.getElementById('createFunction'), {
-    	lineNumbers: true,
-    	mode: "javascript"
+  const reindexMessages = () => {
+    messagesBody.querySelectorAll('tr').forEach((row, index) => {
+      const inputs = row.querySelectorAll('input');
+      if (inputs[0]) inputs[0].name = `messages[${index}].key`;
+      if (inputs[1]) inputs[1].name = `messages[${index}].value`;
     });
-    createFunctionEditor.setSize(null, 240);
+  };
 
-    var createFunctionReader = CodeMirror.fromTextArea(document.getElementById('customCreateFunction'), {
-        lineNumbers: true,
-        mode: "javascript",
-        readOnly:true
+  const createMessageInput = (name, placeholder) => {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control';
+    input.setAttribute('form', 'run-rule-form');
+    input.name = name;
+    input.placeholder = placeholder;
+    return input;
+  };
+
+  const addMessage = () => {
+    const index = messagesBody.querySelectorAll('tr').length;
+    const row = document.createElement('tr');
+    const keyCell = document.createElement('td');
+    keyCell.className = 'px-1';
+    keyCell.append(createMessageInput(`messages[${index}].key`, 'Message ID'));
+    const valueCell = document.createElement('td');
+    valueCell.className = 'px-1';
+    valueCell.append(createMessageInput(`messages[${index}].value`, 'Message Value'));
+    const actionCell = document.createElement('td');
+    actionCell.className = 'px-1 text-center';
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'wt-copy-button wt-icon-danger delete-message';
+    remove.setAttribute('aria-label', 'Delete message');
+    remove.title = 'Delete message';
+    const icon = document.createElement('span');
+    icon.className = 'material-icons';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = 'delete';
+    remove.append(icon);
+    actionCell.append(remove);
+    row.append(keyCell, valueCell, actionCell);
+    messagesBody.append(row);
+  };
+
+  document.querySelector('.add-message').addEventListener('click', () => {
+    addMessage();
+    updateMessagesLabel();
+  });
+  messagesBody.addEventListener('click', event => {
+    const button = event.target.closest('.delete-message');
+    if (!button) return;
+    button.closest('tr').remove();
+    reindexMessages();
+    updateMessagesLabel();
+  });
+
+  const openTrigger = document.getElementById('save-rule-btn');
+  const dialog = document.querySelector(openTrigger.dataset.wtDialogTarget);
+  openTrigger.addEventListener('click', () => {
+    const destination = document.querySelector('.save-messages');
+    destination.querySelector('.messages-table')?.remove();
+    const originalTable = document.querySelector('.messages-table');
+    const clone = originalTable.cloneNode(true);
+    const originalInputs = originalTable.querySelectorAll('input');
+    clone.querySelectorAll('input').forEach((input, index) => {
+      input.value = originalInputs[index].value;
+      input.readOnly = true;
+      input.setAttribute('form', 'save-rule-form');
     });
-    createFunctionReader.setSize(null, 240);
-
-    // Configure button to add message
-    $(".add-message").on("click", addMessage);
-
-    // Configure buttons to delete messages
-    $(".delete-message").on("click", deleteMessage);
-
-	// Configure save rule modals
-	configureCustomRuleModal(createFunctionReader);
-	configureCoreRuleModal();
-});
-
-function addMessage(event) {
-	const index = $(".messages-tbody tr").length;
-	const message = $(".messages-tbody").append("<tr>"
-		+ "<td class='px-1'>"
-		+ "<input type='text' class='form-control' form='run-rule-form' name='messages["+index +"].key' placeholder='Message ID'/>"
-		+ "</td>"
-		+ "<td class='px-1'>"
-		+ "<input type='text' class='form-control' form='run-rule-form' name='messages["+index+"].value' placeholder='Message Value'/>"
-		+ "</td>"
-		+ "<td class='px-1 text-center'>"
-		+ "<button class='btn btn-small btn-outline-danger px-1 py-1 delete-message'>"
-		+ "<i class='material-icons md-24'>delete</i>"
-		+ "</button>"
-		+ "</td>"
-		+ "</tr>");
-	// Reconfigure buttons to delete messages
-    $(".delete-message").on("click", deleteMessage);
-}
-
-function deleteMessage(event) {
-	// Get row of delete button
-	const row = $(event.target).closest("tr");
-	// Update indices of messages after this one
-	row.nextAll("tr").find("input").each(updateMessageIndices);
-	// Delete row of delete button
-	row.remove();
-}
-
-function updateMessageIndices(i, input) {
-	const name = input.name;
-	const oldIndex = name.split("[")[1].split("]")[0];
-	const newIndex = oldIndex - 1;
-	$(input).attr("name", name.replace("["+oldIndex+"]", "["+newIndex+"]"));
-}
-
-function configureCustomRuleModal(createFunctionReader) {
-	// Configure custom rule modal on open
-    $('#save-rule-modal').on('show.bs.modal', function(e) {
-    	$(".save-messages .messages-table").remove();
-    	$(".messages-table").clone().appendTo(".save-messages");
-    	$(".save-messages input").prop("readOnly", true);
-    	$(".save-messages input").attr("form", "save-rule-form");
-    	$(".save-messages tr").each(function (i, tr) {
-    		$(tr).children().last().remove();
-    	});
-    	let createFunction = $("#createFunction").val();
-    	createFunctionReader.setValue(createFunction);
-    	let sourceCode = $("#sourceCode").val();
-		$("#customSourceCode").val(sourceCode);
-	});
-
-	// Solves issue where CodeMirror does not display when modal is opened
-	$('#save-rule-modal').on('shown.bs.modal', function(e) {
-		createFunctionReader.refresh();
-	});
-}
-
+    clone.querySelectorAll('tr').forEach(row => row.lastElementChild?.remove());
+    destination.append(clone);
+    createFunctionReader.setValue(createFunctionEditor.getValue());
+    document.getElementById('customSourceCode').value = sourceCodeEditor.getValue();
+    dialog.show();
+  });
+  document.getElementById('cancel-save-rule-dialog')
+    .addEventListener('click', () => dialog.close());
+  dialog.addEventListener('opened', () => requestAnimationFrame(() => createFunctionReader.refresh()));
+  // The create function and messages are folded away; the reader measures itself once shown.
+  document.querySelector('[data-save-function]')
+    ?.addEventListener('toggle', () => requestAnimationFrame(() => createFunctionReader.refresh()));
+})();

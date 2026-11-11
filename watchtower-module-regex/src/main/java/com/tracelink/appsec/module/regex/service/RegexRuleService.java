@@ -34,6 +34,15 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
  */
 @Service
 public class RegexRuleService {
+
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
 	private static final Logger LOG = LoggerFactory.getLogger(RegexRuleService.class);
 
 	private RegexRuleRepository ruleRepository;
@@ -98,6 +107,7 @@ public class RegexRuleService {
 		}
 
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 
 	/**
@@ -114,6 +124,7 @@ public class RegexRuleService {
 		RegexRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());
 		ruleRepository.saveAndFlush(entity);
+		invalidateRuleCache();
 	}
 
 	public List<RulesetDto> getProvidedRulesets() {

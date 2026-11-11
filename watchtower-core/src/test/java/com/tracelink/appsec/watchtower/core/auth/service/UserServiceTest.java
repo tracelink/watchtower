@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,26 +28,48 @@ import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.repository.UserRepository;
 import com.tracelink.appsec.watchtower.core.auth.service.checker.UserPasswordRequirementsChecker;
+import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
 
 @ExtendWith(SpringExtension.class)
 public class UserServiceTest {
+	private static final String BOOTSTRAP_PASSWORD = "bootstrap-secret-value";
+
+	@RegisterExtension
+	public CoreLogWatchExtension logWatcher = CoreLogWatchExtension.forClass(UserService.class);
+
 	private UserService userService;
 
 	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-	@MockBean
+	@MockitoBean
 	private UserRepository mockUserRepository;
 
-	@MockBean
+	@MockitoBean
 	private RoleService mockRoleService;
 
-	@MockBean
+	@MockitoBean
 	private UserPasswordRequirementsChecker mockPwChecker;
 
 	@BeforeEach
 	public void setup() {
 		this.userService = new UserService(passwordEncoder, mockUserRepository,
-				mockRoleService, mockPwChecker);
+				mockRoleService, mockPwChecker, BOOTSTRAP_PASSWORD);
+	}
+
+	@Test
+	public void testBootstrapPasswordIsAppliedButNeverLogged() {
+		RoleEntity adminRole = new RoleEntity();
+		UserEntity admin = new UserEntity();
+		admin.setUsername(UserService.DEFAULT_ADMIN_USER);
+		admin.setEnabled(1);
+		BDDMockito.when(mockUserRepository.findByUsername(UserService.DEFAULT_ADMIN_USER))
+				.thenReturn(admin);
+
+		userService.ensureDefaultUsers(adminRole);
+
+		Assertions.assertTrue(passwordEncoder.matches(BOOTSTRAP_PASSWORD, admin.getPassword()));
+		Assertions.assertTrue(logWatcher.getFormattedMessages().stream()
+				.noneMatch(message -> message.contains(BOOTSTRAP_PASSWORD)));
 	}
 
 	@Test

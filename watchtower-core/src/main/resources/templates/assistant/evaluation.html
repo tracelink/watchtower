@@ -1,0 +1,48 @@
+<div data-assistant-admin th:attr="data-csrf-token=${_csrf.token},data-csrf-header=${_csrf.headerName}">
+ <section data-evaluation-dialog data-evaluation-page class="wt-evaluation">
+  <!-- Board AiSettings2 · Answer evaluation (2026-10-22): status chips, icon tiles, one budget banner,
+       Earlier runs behind a chip. -->
+  <div class="wt-home-head wt-report-head">
+   <div class="wt-integration-head__title">
+    <div th:replace="~{fragments/pageheader :: header('Answer evaluation', null)}"></div>
+    <span data-evaluation-recommendation></span>
+    <span class="wt-mini-chip" tabindex="0" data-tip="Every automatic check passes, every answer is scored, the average is at least 4 and no score is below 3. Turning chat on for more people stays an admin decision."><span class="material-icons" aria-hidden="true">help</span>What does Ready need?</span>
+   </div>
+   <div class="wt-table-actions wt-report-head__status">
+    <button type="button" class="wt-mini-chip wt-chip-button" data-evaluation-runs-card data-evaluation-runs-open hidden data-tip="Earlier runs: when, model, answered, score."><span class="material-icons" aria-hidden="true">history</span>Earlier runs<span class="wt-count-badge" data-evaluation-runs-count></span></button>
+    <md-filled-button type="button" data-evaluation-new has-icon><span slot="icon" class="material-icons" aria-hidden="true">play_arrow</span>New evaluation</md-filled-button>
+   </div>
+  </div>
+  <div class="wt-empty-picture mb-3" data-evaluation-empty hidden><span class="material-icons wt-empty-picture__icon" aria-hidden="true">fact_check</span><strong>No evaluations yet</strong><span class="wt-field-help">Run the assistant's questions, review the answers and score them before giving more people access.</span><md-outlined-button type="button" data-evaluation-new>Set up an evaluation</md-outlined-button></div>
+  <div data-evaluation-selected hidden>
+   <div class="wt-meta-chips mb-3" data-evaluation-run-chips></div>
+   <div class="wt-stat-tiles wt-evaluation-tiles">
+    <span class="wt-stat-tile" tabindex="0" data-tip="Questions the assistant answered."><span class="material-icons" aria-hidden="true">forum</span><span><strong data-evaluation-total-answered></strong><span>Answered</span></span></span>
+    <span class="wt-stat-tile" tabindex="0" data-tip="Answers whose automatic checks all passed."><span class="material-icons" aria-hidden="true">rule</span><span><strong data-evaluation-total-checks></strong><span>Checks passed</span></span></span>
+    <span class="wt-stat-tile" tabindex="0" data-tip="Answers a person has scored from 1 to 5." data-evaluation-scored-tile><span class="material-icons" aria-hidden="true">grade</span><span><strong data-evaluation-total-scored></strong><span>Scored</span></span></span>
+    <span class="wt-stat-tile" tabindex="0" data-tip="Recorded cost of this run."><span class="material-icons" aria-hidden="true">payments</span><span><strong data-evaluation-total-cost></strong><span>Cost</span></span></span>
+   </div>
+   <div class="wt-failure-line wt-evaluation-stop" data-evaluation-stop hidden><span class="material-icons" aria-hidden="true">savings</span><span data-evaluation-stop-text></span><a class="wt-button-link wt-button-link-secondary" href="/admin/assistant"><span class="material-icons" aria-hidden="true">tune</span>AI settings</a></div>
+   <p class="visually-hidden" data-evaluation-summary role="status"></p>
+  </div>
+  <div class="card mb-3 wt-assistant-audit-card" data-evaluation-results-card hidden>
+   <div class="wt-assistant-audit-head"><h2 class="wt-section-title mb-0">Questions</h2><div class="wt-segmented-filter wt-evaluation-filters ms-auto" aria-label="Filter questions"><button class="wt-segment is-active" type="button" data-evaluation-filter="all" aria-pressed="true"><span class="material-icons" aria-hidden="true">list</span>All<span class="wt-count-badge" data-evaluation-count="all"></span></button><button class="wt-segment" type="button" data-evaluation-filter="failed" aria-pressed="false"><span class="material-icons" aria-hidden="true">error</span>Needs attention<span class="wt-count-badge" data-evaluation-count="failed"></span></button><button class="wt-segment" type="button" data-evaluation-filter="passed" aria-pressed="false"><span class="material-icons" aria-hidden="true">check_circle</span>Passed<span class="wt-count-badge" data-evaluation-count="passed"></span></button></div></div>
+   <div class="wt-table-scroll"><table class="table mb-0 wt-setup-table"><caption class="visually-hidden">Evaluation questions, automatic checks and human scores</caption><thead><tr><th scope="col">Question</th><th scope="col">Category</th><th scope="col">Status</th><th scope="col">Score</th><th scope="col"><span class="visually-hidden">Review</span></th></tr></thead><tbody data-evaluation-results></tbody></table></div>
+  </div>
+  <p role="status" aria-live="polite" class="wt-field-help" data-evaluation-status></p>
+  <md-dialog class="wt-dialog-wide" data-evaluation-runs-dialog>
+   <div slot="headline" class="wt-dialog-headline"><span>Earlier runs</span><button class="wt-icon-action" type="button" data-evaluation-runs-close aria-label="Close earlier runs"><span class="material-icons" aria-hidden="true">close</span></button></div>
+   <div slot="content" class="wt-table-scroll"><table class="table mb-0 wt-setup-table"><caption class="visually-hidden">Answer evaluation runs, newest first</caption><thead><tr><th scope="col">When</th><th scope="col">Model</th><th scope="col">Status</th><th scope="col">Answered</th><th scope="col">Score</th><th scope="col"><span class="visually-hidden">Open</span></th></tr></thead><tbody data-evaluation-runs></tbody></table></div>
+  </md-dialog>
+  <md-dialog id="evaluation-setup-dialog" class="wt-dialog-wide" data-evaluation-setup-dialog>
+   <div slot="headline" class="wt-dialog-headline"><span>New evaluation</span><button class="wt-icon-action" type="button" data-evaluation-close-setup aria-label="Close evaluation setup"><span class="material-icons" aria-hidden="true">close</span></button></div>
+   <div slot="content" class="wt-md-form"><div class="wt-meta-chips mb-3" data-evaluation-ready aria-live="polite"></div><p class="wt-field-help">The evaluation asks questions through the real assistant, using its existing limits and budgets. Grant Assistant Use only to the people evaluating while Chat is being tested.</p><div data-evaluation-setup class="wt-setup-form-grid"><label>Model<select data-evaluation-model aria-label="Evaluation model"></select></label><label>Effort<select data-evaluation-effort aria-label="Evaluation effort"></select></label></div><p class="wt-field-help" data-evaluation-setup-help></p><a class="wt-button-link wt-button-link-secondary" href="/admin/assistant" data-evaluation-settings-link>Open AI settings</a></div>
+   <div slot="actions"><md-text-button type="button" data-evaluation-close-setup>Cancel</md-text-button><md-filled-button type="button" data-evaluation-start>Start evaluation</md-filled-button></div>
+  </md-dialog>
+  <md-dialog id="evaluation-answer-dialog" class="wt-dialog-wide" data-evaluation-review-dialog>
+   <div slot="headline" class="wt-dialog-headline"><span data-evaluation-review-title>Review answer</span><button class="wt-icon-action" type="button" data-evaluation-close-review aria-label="Close answer review"><span class="material-icons" aria-hidden="true">close</span></button></div>
+   <div slot="content" class="wt-md-form"><div class="wt-meta-chips mb-3"><span class="wt-field-help" data-evaluation-review-position></span><span data-evaluation-review-state></span></div><div class="wt-evaluation-review-section"><h3 class="wt-section-title">Question</h3><p data-evaluation-review-question></p></div><div class="wt-evaluation-review-section"><h3 class="wt-section-title">Assistant answer</h3><div class="wt-evaluation-answer" data-evaluation-review-answer></div></div><div class="wt-evaluation-review-section"><h3 class="wt-section-title">Automatic checks</h3><ul class="wt-evaluation-checks" data-evaluation-review-checks></ul></div><div class="wt-evaluation-review-section"><h3 class="wt-section-title">Your review</h3><div class="wt-evaluation-score-grid"><label>Answer quality<select data-evaluation-review-score aria-label="Answer quality score"><option value="">Choose score</option><option value="1">1 — Unusable</option><option value="2">2 — Poor</option><option value="3">3 — Adequate</option><option value="4">4 — Good</option><option value="5">5 — Excellent</option></select></label><label>Review note (optional)<textarea data-evaluation-review-note rows="2" maxlength="300" aria-label="Review note"></textarea></label></div><p class="wt-field-help" data-evaluation-review-status role="status" aria-live="polite"></p><md-text-button type="button" data-evaluation-reload-review hidden>Reload saved review</md-text-button></div></div>
+   <div slot="actions" class="wt-evaluation-review-actions"><md-text-button type="button" data-evaluation-previous>Previous</md-text-button><span><md-outlined-button type="button" data-evaluation-save>Save review</md-outlined-button><md-filled-button type="button" data-evaluation-next>Save and next</md-filled-button></span></div>
+  </md-dialog>
+ </section>
+</div>

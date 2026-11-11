@@ -33,7 +33,7 @@ function getCoreCategories(){
 	const config = path.resolve(require.resolve('eslint'),'../../conf/category-list.json');
 	let raw = fs.readFileSync(config);
 	let categoriesList = JSON.parse(raw)['categories'];
-	return categoriesList;
+	return JSON.stringify(categoriesList);
 }
 
 /**
@@ -46,7 +46,7 @@ function parseAst(code) {
     const results = linter.verify(code, { parserOptions: { ecmaVersion: 2020 }, rules: {}});
     // If there are errors, return
     if (results.length > 0) {
-    	return results;
+    	return JSON.stringify(results);
     }
     // Return the AST
     const ast = linter.getSourceCode().ast;

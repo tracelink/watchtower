@@ -4,15 +4,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
+import com.tracelink.appsec.watchtower.core.rule.RuleExecutionIdentity;
+import com.tracelink.appsec.watchtower.core.rule.RuleIdentityMetadata;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestScanEntity;
 
@@ -27,33 +27,27 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 		extends AbstractScanViolationEntity<S>
 		implements Comparable<AbstractCodeScanViolationEntity<S>> {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "vio_entity_id")
-	private long id;
-
-	@Column(name = "violation_name")
-	private String violationName;
-
 	@Column(name = "line_number")
 	private int lineNum;
 
 	@Column(name = "file_path")
 	private String fileName;
 
-	///////////////////////////////////////
-	// The following are not saved to the
-	// database as they are only important
-	// at the time of scanning and reporting
-	///////////////////////////////////////
+	@Embedded
+	private RuleIdentityMetadata ruleIdentity = new RuleIdentityMetadata();
+	@Column(name = "effective_blocking")
+	private Boolean effectiveBlocking;
+	@Column(name = "engine_fingerprint", length = 64)
+	private String engineFingerprint;
+
+	@Column(name = "new_finding")
+	private Boolean isNewViolation;
+
+	@Column(name = "final_blocking")
+	private Boolean blocking;
 
 	@Transient
-	private boolean isNewViolation;
-
-	@Transient
-	private boolean blocking;
-
-	@Transient
+	// Rule messages remain transient; this metadata does not persist repository source.
 	private String message;
 
 	/**
@@ -68,7 +62,22 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 		setSeverity(sv.getSeverity());
 		setViolationName(sv.getViolationName());
 		setMessage(sv.getMessage());
+		setRuleIdentity(sv.getRuleIdentity());
+		setEffectiveBlocking(sv.getEffectiveBlocking());
+		blocking = sv.getEffectiveBlocking();
+		engineFingerprint = sv.getEngineFingerprint();
 	}
+
+	public RuleExecutionIdentity getRuleIdentity() { return ruleIdentity == null ? null : ruleIdentity.toIdentity(); }
+	public void setRuleIdentity(RuleExecutionIdentity identity) { ruleIdentity = new RuleIdentityMetadata(identity); }
+	/** Retain partial historical provenance even when its engine/module is unknown. */
+	public Long getExecutionRuleId() { return ruleIdentity == null ? null : ruleIdentity.getRuleId(); }
+	public String getRuleRevision() { return ruleIdentity == null ? null : ruleIdentity.getRevision(); }
+	public Boolean getEffectiveBlocking() { return effectiveBlocking; }
+	public void setEffectiveBlocking(Boolean blocking) { effectiveBlocking = blocking; }
+	public String getEngineFingerprint() { return engineFingerprint; }
+	public Boolean getNewFinding() { return isNewViolation; }
+	public Boolean getFinalBlocking() { return blocking; }
 
 	public AbstractCodeScanViolationEntity() {
 		// Default constructor
@@ -77,14 +86,6 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 	public abstract S getScan();
 
 	public abstract void setScan(S scan);
-
-	public String getViolationName() {
-		return violationName;
-	}
-
-	public void setViolationName(String violationName) {
-		this.violationName = violationName;
-	}
 
 	public int getLineNum() {
 		return lineNum;
@@ -103,7 +104,7 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 	}
 
 	public boolean isNewViolation() {
-		return this.isNewViolation;
+		return Boolean.TRUE.equals(this.isNewViolation);
 	}
 
 	public void setNewViolation(boolean isNewViolation) {
@@ -119,7 +120,7 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 	}
 
 	public boolean isBlocking() {
-		return blocking;
+		return Boolean.TRUE.equals(blocking);
 	}
 
 	public void setBlocking(boolean blocking) {
@@ -145,13 +146,13 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 	public boolean equals(Object obj) {
 		if (obj instanceof AbstractCodeScanViolationEntity) {
 			AbstractCodeScanViolationEntity<PullRequestScanEntity> temp = (AbstractCodeScanViolationEntity<PullRequestScanEntity>) obj;
-			if (this.id == temp.id &&
-					this.violationName.equals(temp.violationName) &&
+			if (this.getId() == temp.getId() &&
+					this.getViolationName().equals(temp.getViolationName()) &&
 					this.lineNum == temp.lineNum &&
 					this.fileName.equals(temp.fileName) &&
-					this.isNewViolation == temp.isNewViolation &&
-					this.blocking == temp.blocking &&
-					this.message.equals(temp.message))
+					Objects.equals(this.isNewViolation, temp.isNewViolation) &&
+					Objects.equals(this.blocking, temp.blocking) &&
+					Objects.equals(this.message, temp.message))
 				return true;
 		}
 		return false;
@@ -159,7 +160,8 @@ public abstract class AbstractCodeScanViolationEntity<S extends AbstractScanEnti
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id, violationName, lineNum, fileName, isNewViolation, blocking, message);
+		return Objects.hash(getId(), getViolationName(), lineNum, fileName, isNewViolation, blocking,
+				message);
 	}
 
 }

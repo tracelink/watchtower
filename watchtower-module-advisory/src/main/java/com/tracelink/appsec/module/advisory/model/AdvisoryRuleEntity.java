@@ -1,7 +1,7 @@
 package com.tracelink.appsec.module.advisory.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 
@@ -24,7 +24,7 @@ public class AdvisoryRuleEntity extends RuleEntity {
 		ruleDto.setName(getName());
 		ruleDto.setPriority(getPriority());
 		ruleDto.setId(getId());
-		return ruleDto;
+		return withStewardship(ruleDto);
 	}
 
 }

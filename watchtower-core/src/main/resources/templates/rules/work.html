@@ -1,0 +1,264 @@
+<!-- Rule work (UAT walkthrough, 2026-10-16): the one segmented control with an icon and count per
+     queue, filters drawn as a search pill, chips and range buttons, and each row as pictures:
+     scanner tile, a state chip or meter, evidence chips, owner chip and one outlined action.
+     Setup gaps says its sentence once and fixes many rules at once from one dialog. -->
+<th:block th:with="labels=${ {'review':'Findings to review','investigate':'Investigations','reviews':'Due reviews','candidates':'Candidates','setup':'Setup gaps'} },
+    icons=${ {'review':'rate_review','investigate':'troubleshoot','reviews':'event_note','candidates':'lightbulb','setup':'build'} },
+    verbs=${ {'review':'review','investigate':'investigate','reviews':'review','candidates':'decide','setup':'set up'} },
+    whys=${ {'review':'Rules land here when they matched code recently but too few of their findings were reviewed, or someone marked a finding Unknown. Open a report and mark each match true or false positive.',
+             'investigate':'Rules land here when people reviewed enough of their findings and most were false positives. Open the rule health page, inspect the reviewed examples, then start a rule review or draft a candidate change.',
+             'reviews':'Rules land here when a rule review is open or in progress, or the rule review-by date has passed. Open the reviews, record the outcome, or update the review-by date.',
+             'candidates':'A proposed rule change is waiting. Draft: compare it against reviewed examples. In shadow: inspect what it would have matched, then promote or reject it.',
+             'setup':'Rules land here when they have no owner or CWE, or matched nothing although their engine ran.'} },
+    stateHeads=${ {'review':'Why it''s here','investigate':'Why it''s here','reviews':'State','candidates':'Stage'} },
+    evidenceHeads=${ {'review':'Evidence (' + filter.days + ' d)','investigate':'Evidence','reviews':'Due','candidates':'Proposed'} },
+    isSetup=${queue == 'setup'},
+    bulk=${queue == 'setup' and canModify}">
+<div class="wt-home-head wt-report-head wt-page-bar">
+ <div th:replace="~{fragments/pageheader :: header('Rule work', null)}"></div>
+ <div class="wt-meta-chips wt-report-head__status">
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-work-about
+      data-tip="What needs a person, and where to do it. Each tab is one kind of work, built from scan results, finding reviews, rule reviews and candidates; the most important items come first. Nothing here creates tasks or changes a rule, and AI is never required."><span
+      class="material-icons" aria-hidden="true">help_outline</span>What is this?</span>
+ </div>
+</div>
+
+<nav class="wt-segmented-filter mb-3" role="tablist" aria-label="Rule work queues">
+ <a th:each="q : ${queues}" role="tab" class="wt-segment"
+    th:href="@{/rules/work(queue=${q},search=${filter.search},owner=${mine ? '' : filter.owner},mine=${mine},days=${filter.days},pageSize=${rows.pageSize})}"
+    th:classappend="${queue == q} ? 'is-active'" th:aria-selected="${queue == q}"
+    th:attr="data-work-queue=${q}"><span class="material-icons" aria-hidden="true" th:text="${icons.get(q)}">rate_review</span><span
+    th:text="${labels.get(q)}">Findings to review</span><span class="wt-count-badge"
+    th:text="${counts.get(q) == null ? '—' : #numbers.formatInteger(counts.get(q), 1, 'COMMA')}"
+    th:attr="data-tip=${counts.get(q) == null ? 'Requires the Scan Results View permission' : null}">2</span></a>
+</nav>
+
+<form method="get" class="wt-meta-chips wt-work-filters mb-3" action="/rules/work" data-work-filters>
+ <input type="hidden" name="queue" th:value="${queue}">
+ <input type="hidden" name="days" th:value="${filter.days}">
+ <input type="hidden" name="mine" th:value="${mine}">
+ <input type="hidden" name="gap" th:value="${filter.gap}" th:if="${isSetup}">
+ <input type="hidden" name="scanner" th:value="${filter.scanner}" th:if="${isSetup}">
+ <input type="hidden" name="pageSize" th:value="${rows.pageSize}">
+ <md-outlined-text-field class="wt-search-pill wt-work-search" type="search" name="search" label="Search rule"
+     th:value="${filter.search}" autocomplete="off"><span slot="leading-icon" class="material-icons"
+     aria-hidden="true">search</span></md-outlined-text-field>
+ <details class="wt-popover wt-download-menu" th:unless="${mine}">
+  <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Owner: ' + (filter.owner.isEmpty() ? 'any' : filter.owner) + '. Change'}"><span
+      class="material-icons" aria-hidden="true">person</span><span
+      th:text="${filter.owner.isEmpty() ? 'Any owner' : filter.owner}">Any owner</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+  <div class="wt-popover__body wt-download-menu__body wt-work-owner">
+   <md-outlined-text-field name="owner" label="Owner or team" th:value="${filter.owner}" autocomplete="off"></md-outlined-text-field>
+   <md-outlined-button type="submit">Apply</md-outlined-button>
+  </div>
+ </details>
+ <input type="hidden" name="owner" value="" th:if="${mine}">
+ <nav class="wt-segmented-filter" aria-label="Window">
+  <a th:each="d : ${windows}" class="wt-segment"
+     th:href="@{/rules/work(queue=${queue},search=${filter.search},owner=${mine ? '' : filter.owner},mine=${mine},days=${d},gap=${filter.gap},scanner=${filter.scanner},pageSize=${rows.pageSize})}"
+     th:classappend="${filter.days == d} ? 'is-active'" th:attr="aria-current=${filter.days == d ? 'true' : null}"
+     th:text="${d + ' d'}">30 d</a>
+ </nav>
+ <a class="wt-mini-chip wt-meta-chip wt-mini-chip--link" data-work-mine
+    th:href="@{/rules/work(queue=${queue},mine=${!mine},days=${filter.days},gap=${filter.gap},scanner=${filter.scanner},pageSize=${rows.pageSize})}"
+    th:classappend="${mine} ? ' wt-mini-chip--ok'" th:attr="aria-pressed=${mine}"><span class="material-icons"
+    aria-hidden="true">person_pin</span>Assigned to me</a>
+ <th:block th:if="${isSetup}" th:with="gapLabels=${ {'all':'All gaps','owner':'No owner','cwe':'No CWE','nomatches':'No recent matches'} }">
+  <details class="wt-popover wt-download-menu">
+   <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Gap: ' + gapLabels.get(filter.gap) + '. Change'}"><span
+       th:text="${'Gap: ' + gapLabels.get(filter.gap)}">Gap: All gaps</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+   <div class="wt-popover__body wt-download-menu__body">
+    <a th:each="g : ${gaps}" class="wt-menu-item"
+       th:href="@{/rules/work(queue='setup',search=${filter.search},owner=${mine ? '' : filter.owner},mine=${mine},days=${filter.days},gap=${g},scanner=${filter.scanner},pageSize=${rows.pageSize})}"
+       th:attr="aria-current=${filter.gap == g ? 'true' : null}" th:text="${gapLabels.get(g)}">All gaps</a>
+   </div>
+  </details>
+  <details class="wt-popover wt-download-menu" data-work-scanner>
+   <summary class="wt-mini-chip wt-meta-chip"
+       th:aria-label="${'Scanner: ' + (filter.allScanners() ? 'all' : scanners.get(filter.scanner).name()) + '. Change'}"><span
+       class="material-icons" aria-hidden="true" th:text="${filter.allScanners() ? 'radar' : scanners.get(filter.scanner).icon()}">radar</span><span
+       th:text="${'Scanner: ' + (filter.allScanners() ? 'All' : scanners.get(filter.scanner).name())}">Scanner: All</span><span
+       class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+   <div class="wt-popover__body wt-download-menu__body">
+    <a class="wt-menu-item"
+       th:href="@{/rules/work(queue='setup',search=${filter.search},owner=${mine ? '' : filter.owner},mine=${mine},days=${filter.days},gap=${filter.gap},scanner='all',pageSize=${rows.pageSize})}"
+       th:attr="aria-current=${filter.allScanners() ? 'true' : null}">All</a>
+    <a th:each="s : ${scanners}" class="wt-menu-item"
+       th:href="@{/rules/work(queue='setup',search=${filter.search},owner=${mine ? '' : filter.owner},mine=${mine},days=${filter.days},gap=${filter.gap},scanner=${s.key},pageSize=${rows.pageSize})}"
+       th:attr="aria-current=${filter.scanner == s.key ? 'true' : null}"><span class="material-icons" aria-hidden="true"
+       th:text="${s.value.icon()}">coffee</span> <span th:text="${s.value.name()}">PMD</span></a>
+   </div>
+  </details>
+ </th:block>
+</form>
+
+<section id="results-region" aria-live="polite">
+ <div th:if="${!canSeeScans and (queue == 'review' or queue == 'investigate')}" class="wt-empty-picture" role="status">
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">lock</span>
+  <strong>Needs scan access</strong>
+  <span class="wt-muted">This list is built from scan results and requires the Scan Results View permission. The other lists remain available.</span>
+ </div>
+ <div th:if="${rows.content.isEmpty() and (canSeeScans or (queue != 'review' and queue != 'investigate'))}"
+      class="wt-empty-picture" data-work-empty>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true" th:text="${icons.get(queue)}">lightbulb</span>
+  <strong th:text="${'Nothing to ' + verbs.get(queue) + ' right now'}">Nothing to decide right now</strong>
+  <span class="wt-muted wt-empty-picture__why" th:text="${whys.get(queue)}">Why rules land here.</span>
+ </div>
+
+ <!-- Setup gaps: the sentence once, then rows that show only what is missing. -->
+ <div th:if="${isSetup and !rows.content.isEmpty()}" class="wt-work-gap-note" data-work-gap-note>
+  <span class="material-icons wt-tone-warning" aria-hidden="true">info</span>
+  <span>These rules are <strong>missing an owner, a CWE or recent matches</strong>. That's setup, not a quality problem.</span>
+ </div>
+ <form th:if="${bulk and !rows.content.isEmpty()}" id="workBulkForm" method="post" action="/rules/work/setup" data-work-bulk>
+  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+  <input type="hidden" name="search" th:value="${filter.search}">
+  <input type="hidden" name="days" th:value="${filter.days}">
+  <input type="hidden" name="gap" th:value="${filter.gap}">
+  <input type="hidden" name="scanner" th:value="${filter.scanner}">
+  <input type="hidden" name="pageSize" th:value="${rows.pageSize}">
+ </form>
+
+ <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Rule work" th:unless="${rows.content.isEmpty()}">
+  <div th:if="${bulk}" class="wt-work-bulkbar">
+   <label class="wt-checkbox-row"><input type="checkbox" data-work-select-all aria-label="Select all on this page"></label>
+   <span class="wt-work-bulkbar__count" role="status" aria-live="polite" data-work-selected>0 selected</span>
+   <md-filled-button type="button" data-wt-dialog-open="#workBulkDialog" data-work-bulk-open disabled has-icon>
+    <span class="material-icons" slot="icon" aria-hidden="true">group_add</span>Set owner and CWE for selected</md-filled-button>
+   <span class="wt-ai-anchor" data-ai-helper="cwe" hidden
+       th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}">
+    <md-text-button type="button" data-work-cwe-open disabled has-icon
+        data-tip="Ask the assistant for a CWE for the ticked rules. You review the answers before anything is saved.">
+     <span class="material-icons" slot="icon" aria-hidden="true">auto_awesome</span>Suggest CWEs</md-text-button>
+   </span>
+   <md-text-button type="button" data-wt-dialog-open="#cweStarterDialog" data-cwe-starter-open has-icon
+       data-tip="Give rules that have no CWE a first one from a curated list. You see the list before anything is saved.">
+    <span class="material-icons" slot="icon" aria-hidden="true">playlist_add_check</span>Fill from starter map</md-text-button>
+  </div>
+  <table class="table mb-0">
+   <caption th:text="${#numbers.formatInteger(rows.totalElements(), 1, 'COMMA') + ' items, most important first'}"></caption>
+   <thead><tr>
+    <th scope="col" th:if="${bulk}"><span class="visually-hidden">Select</span></th>
+    <th scope="col">Rule</th>
+    <th scope="col" th:unless="${isSetup}" th:text="${stateHeads.get(queue)}">Why it's here</th>
+    <th scope="col" th:unless="${isSetup}" th:text="${evidenceHeads.get(queue)}">Evidence</th>
+    <th scope="col" th:if="${isSetup}">Missing</th>
+    <th scope="col" th:unless="${isSetup}">Owner</th>
+    <th scope="col"><span class="visually-hidden">Next action</span></th></tr></thead>
+   <tbody>
+    <tr th:each="item : ${rows.content}" data-work-item>
+     <td th:if="${bulk}"><input type="checkbox" name="ruleId" form="workBulkForm" th:value="${item.ruleId}"
+         data-work-select th:attr="aria-label=${'Select ' + item.ruleName}"></td>
+     <th scope="row"><span class="wt-work-rule"><span class="wt-scanner-tile wt-scanner-tile--ran" role="img" tabindex="0"
+         th:attr="data-tip=${item.scanner.name() + ' rule'},aria-label=${item.scanner.name() + ' rule'}"><span class="material-icons"
+         aria-hidden="true" th:text="${item.scanner.icon()}">key</span></span><span th:text="${item.ruleName}">private-key</span></span></th>
+     <td th:unless="${isSetup}">
+      <span th:if="${item.state != null}" class="wt-mini-chip" tabindex="0" data-work-state
+          th:classappend="${item.state.tone().isEmpty() ? '' : ' wt-mini-chip--' + item.state.tone()}"
+          th:attr="data-tip=${item.state.tip()}"><span class="material-icons" aria-hidden="true"
+          th:text="${item.state.icon()}">campaign</span><span th:text="${item.state.text()}">Noisy</span></span>
+      <span th:if="${item.meter != null and !isSetup and queue == 'review'}" class="wt-meter-label" tabindex="0" data-work-meter
+          th:attr="data-tip=${item.meter.tip()}"><span class="wt-meter" aria-hidden="true"
+          th:classappend="${item.meter.alarm()} ? ' wt-meter--alarm'"><i th:style="${'inline-size:' + item.meter.percent() + '%'}"></i></span><span
+          th:text="${item.meter.text()}">1 of 6 reviewed</span></span>
+     </td>
+     <td th:unless="${isSetup}"><span class="wt-meta-chips">
+      <span th:if="${item.meter != null and queue != 'review'}" class="wt-meter-label" tabindex="0" data-work-meter
+          th:attr="data-tip=${item.meter.tip()}"><span class="wt-meter" aria-hidden="true"
+          th:classappend="${item.meter.alarm()} ? ' wt-meter--alarm'"><i th:style="${'inline-size:' + item.meter.percent() + '%'}"></i></span><span
+          th:text="${item.meter.text()}">6 of 8 false positives</span></span>
+      <span th:each="chip : ${item.chips}" class="wt-mini-chip" tabindex="0"
+          th:classappend="${chip.tone().isEmpty() ? '' : ' wt-mini-chip--' + chip.tone()}"
+          th:attr="data-tip=${chip.tip()}"><span class="material-icons" aria-hidden="true" th:text="${chip.icon()}">bug_report</span><span
+          th:text="${chip.text()}">1 match</span></span>
+      <span th:if="${item.updatedAt != null}" class="wt-mini-chip"><span class="material-icons" aria-hidden="true">update</span><span
+          class="localizetime" data-time-style="short" th:text="${item.updatedAt}"></span></span>
+     </span></td>
+     <td th:if="${isSetup}"><span class="wt-meta-chips" th:attr="data-tip=${item.evidence}">
+      <span th:each="chip : ${item.chips}" class="wt-mini-chip" tabindex="0"
+          th:classappend="${chip.tone().isEmpty() ? '' : ' wt-mini-chip--' + chip.tone()}"
+          th:attr="data-tip=${chip.tip()}"><span class="material-icons" aria-hidden="true" th:text="${chip.icon()}">person_off</span><span
+          th:text="${chip.text()}">Owner</span></span>
+     </span></td>
+     <td th:unless="${isSetup}">
+      <span th:if="${item.owner != null and !item.owner.isBlank()}" class="wt-mini-chip"><span class="material-icons"
+          aria-hidden="true">person</span><span th:text="${item.owner}">appsec team</span></span>
+      <span th:unless="${item.owner != null and !item.owner.isBlank()}" class="wt-mini-chip"><span class="material-icons"
+          aria-hidden="true">person_off</span>No owner</span>
+     </td>
+     <td class="text-end"><div class="wt-table-actions">
+      <th:block th:if="${isSetup}">
+       <a th:if="${item.actionUrl != null}" class="wt-icon-action" th:href="${item.actionUrl}"
+          th:attr="aria-label=${item.nextAction + ': ' + item.ruleName},data-tip=${item.nextAction}"><span class="material-icons"
+          aria-hidden="true" th:text="${item.actionIcon}">edit</span></a>
+       <span th:if="${item.actionUrl == null}" class="wt-mini-chip" tabindex="0" th:attr="data-tip=${item.nextAction}"><span
+           class="material-icons" aria-hidden="true">lock</span>View only</span>
+      </th:block>
+      <th:block th:unless="${isSetup}">
+       <a th:if="${item.actionUrl != null}" class="wt-button-link wt-button-link-secondary" th:href="${item.actionUrl}"><span
+           class="material-icons" aria-hidden="true" th:text="${item.actionIcon}">rate_review</span><span th:text="${item.nextAction}">Review findings</span></a>
+       <span th:if="${item.actionUrl == null}" th:text="${item.nextAction}"></span>
+      </th:block>
+     </div></td>
+    </tr>
+   </tbody>
+  </table>
+ </div>
+ <th:block th:unless="${rows.content.isEmpty()}"><div th:replace="~{fragments/pagination :: pagination(${pageUrl}, ${rows})}"></div></th:block>
+</section>
+
+<!-- Set owner and CWE for the ticked rules. A blank field keeps each rule's own value. -->
+<md-dialog id="workBulkDialog" th:if="${bulk}" data-work-bulk-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span>Set owner and CWE</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <span class="wt-mini-chip" data-work-bulk-count>0 rules selected</span>
+  <md-outlined-text-field label="Owner or team" name="owner" form="workBulkForm" maxlength="255"
+      supporting-text="Blank keeps each rule's owner"></md-outlined-text-field>
+  <md-outlined-text-field label="CWE" name="cwe" form="workBulkForm" pattern="CWE-[1-9][0-9]{0,8}"
+      supporting-text="For example CWE-79. Blank keeps each rule's CWE"></md-outlined-text-field>
+  <details class="wt-form-disclosure">
+   <summary>More options</summary>
+   <label class="wt-setting-row"><span class="wt-setting-row__label">Not a security rule</span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" name="notSecurity" value="true" form="workBulkForm"
+        aria-label="Not a security rule: a style or quality rule with no CWE"/></span></label>
+   <span class="wt-field-help">Leave the CWE blank. Rules that already have a CWE are left out.</span>
+  </details>
+ </div>
+ <div slot="actions">
+  <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+  <md-filled-button type="submit" form="workBulkForm" has-icon><span class="material-icons" slot="icon" aria-hidden="true">save</span>Save</md-filled-button>
+ </div>
+</md-dialog>
+
+<!-- Starter map: the curated CWEs for rules that have none. Previewed here; nothing is saved until Apply. -->
+<md-dialog id="cweStarterDialog" th:if="${bulk}" data-cwe-starter-dialog
+    th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}">
+ <div slot="headline" class="wt-dialog-headline"><span>Fill from starter map</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <div class="wt-meta-chips" data-starter-chips></div>
+  <div class="wt-table-scroll" data-starter-list></div>
+  <span class="wt-field-help" role="status" aria-live="polite" data-starter-status></span>
+ </div>
+ <div slot="actions">
+  <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+  <md-filled-button type="button" data-starter-apply disabled has-icon><span class="material-icons" slot="icon" aria-hidden="true">check</span><span data-starter-apply-label>Apply</span></md-filled-button>
+ </div>
+</md-dialog>
+
+<!-- Suggest CWEs: the assistant's answers for the ticked rules. Nothing is saved until Apply. -->
+<md-dialog id="cweSuggestDialog" th:if="${bulk}" data-work-cwe-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span>Suggested CWEs</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <div data-cwe-list></div>
+  <div class="wt-meta-chips" data-cwe-left></div>
+  <span class="wt-field-help" role="status" aria-live="polite" data-cwe-status></span>
+ </div>
+ <div slot="actions">
+  <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+  <md-filled-button type="button" data-cwe-apply disabled has-icon><span class="material-icons" slot="icon" aria-hidden="true">check</span><span data-cwe-apply-label>Apply</span></md-filled-button>
+ </div>
+</md-dialog>
+</th:block>

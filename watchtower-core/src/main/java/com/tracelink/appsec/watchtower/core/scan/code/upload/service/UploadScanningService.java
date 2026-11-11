@@ -11,15 +11,22 @@ import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScanAgent;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadStorageLocation;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
-import java.io.FileOutputStream;
+import com.tracelink.appsec.watchtower.core.scan.storage.S3Service;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +44,9 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Service
 public class UploadScanningService extends AbstractScanningService {
+	@org.springframework.beans.factory.annotation.Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.candidate.RuleShadowService candidateShadow;
+
 
 	private static final Logger LOG = LoggerFactory.getLogger(UploadScanningService.class);
 
@@ -44,12 +54,17 @@ public class UploadScanningService extends AbstractScanningService {
 	private final RulesetService rulesetService;
 	private final ScanRegistrationService scanRegistrationService;
 	private final UploadScanResultService uploadScanResultService;
-	private final Path workDir;
+	private final S3Service s3Service;
+	private final Path localWorkDir;
+	private final MeterRegistry meterRegistry;
+	private final Counter scanQueuedCounter;
 
 	public UploadScanningService(@Autowired LogsService logService,
 			@Autowired RulesetService rulesetService,
 			@Autowired ScanRegistrationService scanRegistrationService,
 			@Autowired UploadScanResultService uploadScanResultService,
+			@Autowired S3Service s3Service,
+			@Autowired MeterRegistry meterRegistry,
 			@Value("${watchtower.threads.uploadscan:2}") int threads,
 			@Value("${watchtower.runAfterStartup:true}") boolean recoverFromDowntime) {
 		super(threads, recoverFromDowntime);
@@ -57,11 +72,15 @@ public class UploadScanningService extends AbstractScanningService {
 		this.rulesetService = rulesetService;
 		this.scanRegistrationService = scanRegistrationService;
 		this.uploadScanResultService = uploadScanResultService;
-
-		this.workDir = Paths.get("./upload").toAbsolutePath();
-		if (!Files.exists(this.workDir)) {
-			this.workDir.toFile().mkdirs();
-		}
+		this.s3Service = s3Service;
+		this.localWorkDir = Paths.get("./upload").toAbsolutePath();
+		this.meterRegistry = meterRegistry;
+		this.scanQueuedCounter = Counter.builder("watchtower.scan.queued")
+				.tag("type", "upload")
+				.register(meterRegistry);
+		Gauge.builder("watchtower.scan.queue.depth", this, UploadScanningService::getTaskNumInQueue)
+				.tag("type", "upload")
+				.register(meterRegistry);
 	}
 
 	/**
@@ -109,26 +128,47 @@ public class UploadScanningService extends AbstractScanningService {
 	private void submitScan(UploadScanContainerEntity upload, RulesetEntity ruleset) {
 		// Create scan agent
 		UploadScanAgent scanAgent = new UploadScanAgent(upload)
+				.withCandidateShadow(candidateShadow)
 				.withScanners(scanRegistrationService.getCodeScanners())
 				.withRuleset(ruleset.toDto())
 				.withScanResultService(uploadScanResultService)
+				.withS3Service(s3Service)
+				.withMeterRegistry(meterRegistry)
 				.withBenchmarkEnabled(!logService.getLogsLevel().isGreaterOrEqual(Level.INFO));
 
 		CompletableFuture.runAsync(scanAgent, getExecutor());
+		scanQueuedCounter.increment();
 	}
 
 	/**
-	 * Copy the contents of a {@linkplain MultipartFile} to the working directory
+	 * Streams a {@linkplain MultipartFile} to S3 under a freshly minted key, falling
+	 * back to the local {@code ./upload} directory when S3 is not configured. Either
+	 * way the key does not need to match the scan's ticket, since
+	 * {@linkplain UploadScanContainerEntity#getStorageKey()} is what ties a scan to its
+	 * stored zip, not the key's shape - see {@linkplain UploadStorageLocation}.
 	 *
 	 * @param uploadFile the uploaded file
-	 * @return the path to the copied file in the working directory
-	 * @throws IOException if the copy fails
+	 * @return the storage key the upload was stored under
+	 * @throws IOException if the upload fails, in S3 or on local disk
 	 */
-	public Path copyToLocation(MultipartFile uploadFile) throws IOException {
-		Path zipLocation = Files.createTempFile(workDir, null, null);
-		FileOutputStream fos = new FileOutputStream(zipLocation.toFile());
-		IOUtils.copyLarge(uploadFile.getInputStream(), fos);
-		return zipLocation;
+	public String storeUpload(MultipartFile uploadFile) throws IOException {
+		if (s3Service.isEnabled()) {
+			String key = "uploads/" + UUID.randomUUID() + ".zip";
+			s3Service.uploadRequired(key, uploadFile.getInputStream(), uploadFile.getSize());
+			return UploadStorageLocation.forS3Key(key);
+		}
+		// Created on demand rather than trusting the constructor-time check. workDir is
+		// a relative path on the pod's disk, so it can disappear underneath a running
+		// instance - a cleanup job, or an emptyDir volume being replaced - and uploads
+		// would then fail until the pod restarted. createDirectories is a no-op when it
+		// already exists.
+		Files.createDirectories(localWorkDir);
+		Path zipLocation = Files.createTempFile(localWorkDir, null, null);
+		try (InputStream in = uploadFile.getInputStream();
+				OutputStream out = Files.newOutputStream(zipLocation)) {
+			IOUtils.copyLarge(in, out);
+		}
+		return UploadStorageLocation.forLocalPath(zipLocation);
 	}
 
 	@Override
@@ -154,21 +194,43 @@ public class UploadScanningService extends AbstractScanningService {
 
 	private void restartScans(List<UploadScanContainerEntity> scans) {
 		for (UploadScanContainerEntity scan : scans) {
-			if (scan.getZipPath().toFile().exists()) {
-				RulesetEntity ruleset;
+			String storageKey = scan.getStorageKey();
+			if (storageExists(storageKey)) {
 				try {
-					ruleset = rulesetService.getRuleset(scan.getRuleSet());
+					RulesetEntity ruleset = rulesetService.getRuleset(scan.getRuleSet());
+					// Ownership of the stored zip passes to the agent, which removes it in
+					// UploadScanAgent.clean(). Deleting it here would race the scan we
+					// just queued: submitScan() returns as soon as the agent is handed to
+					// the executor, not when it has finished reading it.
 					submitScan(scan, ruleset);
+					LOG.info("Resubmitted recovered upload scan " + scan.getTicket()
+							+ "; object retained at " + storageKey
+							+ " for the scan agent to consume");
 				} catch (RulesetNotFoundException e) {
 					uploadScanResultService.markScanFailed(scan.getTicket(),
 							"Scan was canceled due to system downtime and could not be recovered as the ruleset is invalid. Resubmit this request");
-				} finally {
-					FileUtils.deleteQuietly(scan.getZipPath().toFile());
+					// No agent was submitted, so nothing else will clean this up.
+					deleteStorage(storageKey);
 				}
 			} else {
 				uploadScanResultService.markScanFailed(scan.getTicket(),
 						"Scan was canceled due to system downtime and could not be recovered as the zip file no longer exists. Resubmit this request");
 			}
+		}
+	}
+
+	private boolean storageExists(String storageKey) {
+		if (UploadStorageLocation.isS3(storageKey)) {
+			return s3Service.keyExists(UploadStorageLocation.s3Key(storageKey));
+		}
+		return UploadStorageLocation.localPath(storageKey).toFile().exists();
+	}
+
+	private void deleteStorage(String storageKey) {
+		if (UploadStorageLocation.isS3(storageKey)) {
+			s3Service.deleteObject(UploadStorageLocation.s3Key(storageKey));
+		} else {
+			FileUtils.deleteQuietly(UploadStorageLocation.localPath(storageKey).toFile());
 		}
 	}
 

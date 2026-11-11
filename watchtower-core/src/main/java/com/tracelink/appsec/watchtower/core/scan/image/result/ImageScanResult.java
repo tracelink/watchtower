@@ -1,9 +1,13 @@
 package com.tracelink.appsec.watchtower.core.scan.image.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummary;
+import com.tracelink.appsec.watchtower.core.scan.presentation.StatusPresentationModel;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * DAO containing information about the result of an Image Scan
@@ -21,6 +25,8 @@ public class ImageScanResult {
 	private String errorMessage;
 	private LocalDateTime endDate;
 	private List<ImageScanResultViolation> violations = new ArrayList<>();
+	private ScanExecutionSummary executionSummary =
+			new ScanExecutionSummary(null, Collections.emptyList());
 
 	public void setId(long id) {
 		this.id = id;
@@ -59,7 +65,7 @@ public class ImageScanResult {
 	}
 
 	public long getSubmitDateMillis() {
-		return submitDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(submitDate);
 	}
 
 	public void setSubmitDate(LocalDateTime submitDate) {
@@ -72,6 +78,11 @@ public class ImageScanResult {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	@JsonIgnore
+	public StatusPresentationModel getStatusPresentation() {
+		return StatusPresentationModel.from(ScanStatus.toStatus(status));
 	}
 
 	public String getErrorMessage() {
@@ -87,11 +98,20 @@ public class ImageScanResult {
 	}
 
 	public long getEndDateMillis() {
-		return endDate.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(endDate);
 	}
 
 	public void setEndDate(LocalDateTime endDate) {
 		this.endDate = endDate;
+	}
+
+	/** Submitted to finished, in the same format as every other scan list. */
+	@JsonIgnore
+	public String getDurationText() {
+		return getEndDateMillis() > 0
+				? com.tracelink.appsec.watchtower.core.scan.presentation.HomeActivityItem.formatDuration(
+						getSubmitDateMillis(), getEndDateMillis())
+				: "Not finished";
 	}
 
 	public List<ImageScanResultViolation> getViolations() {
@@ -100,6 +120,19 @@ public class ImageScanResult {
 
 	public void setViolations(List<ImageScanResultViolation> violations) {
 		this.violations = violations;
+	}
+
+	public ScanExecutionSummary getExecutionSummary() { return executionSummary; }
+
+	/** The report's scanner tiles, the same as the other reports' Scanners row. */
+	@JsonIgnore
+	public com.tracelink.appsec.watchtower.core.scan.presentation.ScannerBadge.Summary getScannerTiles() {
+		return com.tracelink.appsec.watchtower.core.scan.presentation.ScannerBadge.from(executionSummary.scanners(), null);
+	}
+
+	public void setExecutionSummary(ScanExecutionSummary value) {
+		this.executionSummary = value == null
+				? new ScanExecutionSummary(null, Collections.emptyList()) : value;
 	}
 
 }

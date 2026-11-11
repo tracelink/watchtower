@@ -4,18 +4,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
+import com.tracelink.appsec.watchtower.core.ui.HtmlAssertions;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
@@ -27,10 +29,10 @@ public class UploadDashboardControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private MetricsCacheService mockMetricsService;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanResultService mockScanResultService;
 
 	@Test
@@ -42,11 +44,15 @@ public class UploadDashboardControllerTest {
 		BDDMockito.when(mockMetricsService.getAverageScanTimeString(CodeScanType.UPLOAD))
 				.thenReturn("7");
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/uploadscan/dashboard"))
+		MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/uploadscan/dashboard"))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.model().attribute("numScans", 3L))
 				.andExpect(MockMvcResultMatchers.model().attribute("numViolations", 5L))
-				.andExpect(MockMvcResultMatchers.model().attribute("avgScanTime", "7"));
+				.andExpect(MockMvcResultMatchers.model().attribute("avgScanTime", "7"))
+				.andExpect(MockMvcResultMatchers.model().attributeExists("recentScans"))
+				.andReturn();
+		HtmlAssertions.assertHtmlIntegrity(result);
+		BDDMockito.verify(mockScanResultService).getLastScans(5);
 	}
 
 	@Test
@@ -63,8 +69,8 @@ public class UploadDashboardControllerTest {
 				.andExpect(MockMvcResultMatchers.model().attribute("numScans", 3L))
 				.andExpect(MockMvcResultMatchers.model().attribute("numViolations", 5L))
 				.andExpect(MockMvcResultMatchers.model().attribute("avgScanTime", "7"))
-				.andExpect(MockMvcResultMatchers.model().attribute(
-						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
-						MetricsCacheService.METRICS_NOT_READY));
+				.andExpect(MockMvcResultMatchers.model().attribute("metricsReady", false))
+				.andExpect(MockMvcResultMatchers.model().attributeDoesNotExist(
+						WatchtowerModelAndView.SUCCESS_NOTIFICATION));
 	}
 }

@@ -8,13 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -25,6 +26,7 @@ import com.tracelink.appsec.watchtower.core.mock.MockRuleEntity;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditModelAndView;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.ui.HtmlAssertions;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -33,10 +35,10 @@ public class RuleEditControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private RuleService ruleService;
 
-	@MockBean
+	@MockitoBean
 	private RuleEditorService ruleManagerService;
 
 	private MockRuleEntity ruleEntity;
@@ -86,10 +88,31 @@ public class RuleEditControllerTest {
 				.thenReturn(mav);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/rule/edit/test"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content().string(
+						Matchers.not(Matchers.containsString("No rule modules are configured."))))
 				.andExpect(
 						MockMvcResultMatchers.flash().attribute(
 								WatchtowerModelAndView.FAILURE_NOTIFICATION,
 								Matchers.is(Matchers.emptyOrNullString())));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.RULE_MODIFY_NAME})
+	public void testGetRuleEditByModuleRendersCompactNoRulesState() throws Exception {
+		RuleEditModelAndView mav = new RuleEditModelAndView(null);
+		mav.addObject("modules", Collections.singleton("test"));
+		mav.addObject("rules", Collections.emptyList());
+		mav.addObject("activeModule", "test");
+		mav.addObject("activeRule", null);
+		BDDMockito.when(ruleManagerService.getRuleEditModelAndView("test", null)).thenReturn(mav);
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/rule/edit/test"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content().string(
+						Matchers.containsString("There are no rules configured for this module.")))
+				.andExpect(MockMvcResultMatchers.content().string(
+						Matchers.not(Matchers.containsString("No rule modules are configured."))));
 	}
 
 	@Test
@@ -128,6 +151,30 @@ public class RuleEditControllerTest {
 						MockMvcResultMatchers.flash().attribute(
 								WatchtowerModelAndView.FAILURE_NOTIFICATION,
 								Matchers.is(Matchers.emptyOrNullString())));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.RULE_MODIFY_NAME})
+	public void testGetRuleEditByRuleActiveRule() throws Exception {
+		// No other test in this class ever sets activeRule to a non-null value, so none of them
+		// render the Delete Rule button/dialog branch (th:if="${activeRule!=null}") or the
+		// th:replace="~{${ruleView}}" inclusion - both added/changed in the Material Web
+		// conversion. "rule-mgmt/mock" is the existing test-resource fragment other tests in
+		// this module already point ruleView at.
+		RuleEditModelAndView mav = new RuleEditModelAndView("rule-mgmt/mock");
+		mav.addObject("modules", Collections.singleton("test"));
+		mav.addObject("rules", Collections.singleton(rule));
+		mav.addObject("activeModule", "test");
+		mav.addObject("activeRule", rule);
+		BDDMockito
+				.when(ruleManagerService.getRuleEditModelAndView(BDDMockito.anyString(),
+						BDDMockito.anyLong()))
+				.thenReturn(mav);
+
+		MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/rule/edit/test/1"))
+				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+				.andReturn();
+		HtmlAssertions.assertHtmlIntegrity(mvcResult);
 	}
 
 	@Test
@@ -181,6 +228,38 @@ public class RuleEditControllerTest {
 						"Successfully deleted rule."));
 
 		BDDMockito.verify(ruleService).deleteRule(rule.getId());
+	}
+
+	@Test
+	@WithMockUser(username = "reviewer", authorities = {CorePrivilege.RULE_MODIFY_NAME})
+	public void testStewardshipFormBindsAndUsesAuthenticatedReviewer() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/1/stewardship")
+				.param("state", "DEPRECATED").param("owner", "security-team")
+				.param("reviewBy", "2026-12-01").param("cwe", "CWE-79").param("category", "Web")
+				.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.redirectedUrl("/rule/edit/regex/1"));
+		BDDMockito.verify(ruleService).updateStewardship(1, "regex",
+				new RuleStewardshipUpdate(RuleState.DEPRECATED, "security-team",
+						java.time.LocalDate.of(2026, 12, 1), "CWE-79", "Web"), "reviewer");
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.RULE_MODIFY_NAME})
+	public void testStewardshipRequiresCsrf() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/1/stewardship").param("state", "RETIRED"))
+				.andExpect(MockMvcResultMatchers.status().isForbidden());
+		BDDMockito.verify(ruleService, BDDMockito.never()).updateStewardship(
+				BDDMockito.anyLong(), BDDMockito.anyString(), BDDMockito.any(), BDDMockito.anyString());
+	}
+
+	@Test
+	@WithMockUser
+	public void testStewardshipRequiresRuleModify() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.post("/rule/edit/regex/1/stewardship")
+				.param("state", "RETIRED").with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.status().isForbidden());
+		BDDMockito.verify(ruleService, BDDMockito.never()).updateStewardship(
+				BDDMockito.anyLong(), BDDMockito.anyString(), BDDMockito.any(), BDDMockito.anyString());
 	}
 
 	@Test

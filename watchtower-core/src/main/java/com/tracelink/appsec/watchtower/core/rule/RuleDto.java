@@ -3,11 +3,12 @@ package com.tracelink.appsec.watchtower.core.rule;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
  * Represents a data transfer object for the {@link RuleEntity}. All fields in this object are in
@@ -24,6 +25,40 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	protected static final String CANNOT_BE_NULL = " cannot be null.";
 	protected static final String CANNOT_BE_EMPTY = " cannot be empty.";
 	private Long id;
+	private RuleStewardship stewardship = new RuleStewardship();
+
+	@JsonIgnore
+	public RuleStewardship getStewardship() { return stewardship; }
+
+	@JsonIgnore
+	public void setStewardship(RuleStewardship stewardship) { this.stewardship = stewardship; }
+
+	@JsonIgnore
+	public boolean isRetired() { return stewardship.getState() == RuleState.RETIRED; }
+
+	/** Current managed definition only; this must never backfill a historical finding revision. */
+	@JsonIgnore
+	public final String getRevision() {
+		RuleRevision definition = executableDefinition();
+		return definition == null ? null : definition.hash();
+	}
+
+	@JsonIgnore
+	public final RuleExecutionIdentity getExecutionIdentity() {
+		return new RuleExecutionIdentity(id == null || id <= 0 ? null : id, getModule(),
+				getRevision(), getExternalRuleKey(), stewardship.getOriginKey());
+	}
+
+	@JsonIgnore
+	public String getExternalRuleKey() { return null; }
+
+	/** Modules opt in explicitly; an unsupported definition remains unknown. */
+	protected RuleRevision executableDefinition() { return null; }
+
+	protected final RuleRevision newDefinition() {
+		return RuleRevision.definition(getModule(), getRuleDesignation().name())
+				.field("message", getMessage());
+	}
 
 	@NotNull(message = "Name" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Name" + CANNOT_BE_EMPTY)
@@ -70,6 +105,30 @@ public abstract class RuleDto implements Comparable<RuleDto> {
 	@Override
 	public int compareTo(RuleDto o) {
 		return getName().compareTo(o.getName());
+	}
+
+	/**
+	 * Consistent with {@link #compareTo(RuleDto)} - both key on {@link #getName()}, since rule
+	 * name is this application's effective unique identifier for a rule (enforced at import time
+	 * via {@code RuleRepository.findByName}, not by a database constraint). Needed so that
+	 * {@code Set<RuleDto>}-based deduplication (e.g. {@link RulesetDto#getAllRules()}) actually
+	 * collapses the same rule reached through more than one ruleset-inheritance path, instead of
+	 * relying on the default identity-based equality.
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof RuleDto)) {
+			return false;
+		}
+		return getName() != null && getName().equals(((RuleDto) o).getName());
+	}
+
+	@Override
+	public int hashCode() {
+		return getName() == null ? 0 : getName().hashCode();
 	}
 
 	@Override

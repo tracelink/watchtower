@@ -1,0 +1,10 @@
+<!-- The AWS Security Agent policy (UAT walkthrough, 2026-10-16): its facts as chips with the detail on
+     hover instead of four paragraphs. -->
+<div class="card-footer" xmlns:th="http://www.thymeleaf.org">
+  <div class="wt-meta-chips">
+    <span th:replace="~{fragments/rulefacts :: fact('tune', ${'Profile: ' + rule.profile}, 'Deployment profile. Rebinding it requires AWS Security Administration.')}"></span>
+    <span th:replace="~{fragments/rulefacts :: fact('source', 'Repository or PR', 'Assesses the pinned repository, or the pull request patch with full source context.')}"></span>
+    <span th:replace="~{fragments/rulefacts :: fact('account_tree', 'Chosen by rulesets', 'Selected through rulesets. Repository permission, an approved deployment profile and readiness checks are also required.')}"></span>
+    <span th:replace="~{fragments/rulefacts :: fact('block', 'No validation or fixes', 'Validation and remediation are disabled. Confidence does not establish exploitation.')}"></span>
+  </div>
+</div>

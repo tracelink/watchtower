@@ -1,10 +1,8 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload;
 
-import java.nio.file.Path;
-
 /**
  * Helper class to hold important information about an incoming Upload Scan Request
- * 
+ *
  * @author csmith
  *
  */
@@ -14,7 +12,7 @@ public class UploadScan {
 
 	private String ruleSet;
 
-	private Path filePath;
+	private String storageKey;
 
 	private String user;
 
@@ -36,12 +34,12 @@ public class UploadScan {
 		this.ruleSet = ruleSet;
 	}
 
-	public Path getFilePath() {
-		return filePath;
+	public String getStorageKey() {
+		return storageKey;
 	}
 
-	public void setFilePath(Path filePath) {
-		this.filePath = filePath;
+	public void setStorageKey(String storageKey) {
+		this.storageKey = storageKey;
 	}
 
 	public String getUser() {

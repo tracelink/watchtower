@@ -55,10 +55,11 @@ public class ImageScanRestController {
 			scanService.doImageScan(scan);
 			return ResponseEntity.ok("Added scan successfully");
 		} catch (ScanRejectedException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
+			LOG.warn("Rejected image scan for api label {}: {}", source, e.getMessage());
+			return ResponseEntity.badRequest().body("Image scan request was rejected");
 		} catch (Exception e) {
 			LOG.error("Error adding the scan", e);
-			return ResponseEntity.badRequest().body("Error adding the scan: " + e.getMessage());
+			return ResponseEntity.badRequest().body("Unable to process image scan request");
 		}
 	}
 

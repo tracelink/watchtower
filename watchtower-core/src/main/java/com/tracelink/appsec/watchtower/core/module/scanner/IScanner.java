@@ -6,6 +6,8 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
 
+import java.util.List;
+
 /**
  * The executor of a scan that returns a report given a config for this scan
  *
@@ -23,11 +25,21 @@ public interface IScanner<C extends AbstractScanConfig, R extends AbstractScanRe
 	 */
 	R scan(C config);
 
+ /** Capture current controls when queued work starts; implementations freeze that invocation. */
+ default void prepareExecution() { }
+ default boolean isDisabled() { return false; }
+ /**
+  * Why an enabled scanner cannot run yet (missing deployment settings, unpassed activation gates),
+  * or null when nothing is known to be missing. Must be cheap: it never contacts a provider.
+  */
+ default String setupIssue() { return null; }
+ default String executionName() { return getClass().getName(); }
+
 	/**
 	 * Get the rule class that this scanner supports
 	 * 
 	 * @return the {@link RuleDto} rule class that this scanner can handle
 	 */
-	Class<? extends RuleDto> getSupportedRuleClass();
+	List<Class<? extends RuleDto>> getSupportedRuleClass();
 
 }

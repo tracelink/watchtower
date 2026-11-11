@@ -73,7 +73,7 @@ public class EsLintModuleTest extends CodeScannerModuleTest {
 
 		testPlan.withMigration("db/eslint").withName("ESLint")
 				.withRuleSupplier(ruleSupplier).withSchemaName("eslint_schema_history")
-				.withSupportedRuleClass(EsLintCustomRuleDto.class)
+				.withSupportedRuleClass(EsLintCustomRuleDto.class, EsLintProvidedRuleDto.class)
 				.withTestScanConfigurationBuilder(
 						new TestScanConfiguration<CodeScanReport, String>()
 								.withScannerTarget("/scan/simple.js")

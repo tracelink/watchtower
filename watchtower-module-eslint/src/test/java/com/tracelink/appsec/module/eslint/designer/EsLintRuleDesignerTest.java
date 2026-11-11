@@ -42,6 +42,21 @@ public class EsLintRuleDesignerTest {
 	}
 
 	@Test
+	public void aFailureOfTheEngineIsShownWithoutItsExitCodesAndTempPaths() {
+		// Dev E2E G02: the designer showed "(exit=1, timeout=false, truncated=false)" and a /tmp path.
+		String raw = "ESLint process failed (exit=1, timeout=false, truncated=false)\n"
+				+ "/tmp/ruleset-null1598.js:16\nfunction(context){ return {{{ \n"
+				+ "                       ^\n\nSyntaxError: Unexpected token '{'\n    at wrapSafe (node:internal)";
+
+		Assertions.assertEquals("ESLint could not run the rule: SyntaxError: Unexpected token '{'",
+				EsLintRuleDesigner.plainProblem(raw));
+		Assertions.assertEquals("ESLint could not run the rule. Check the create function.",
+				EsLintRuleDesigner.plainProblem("ESLint process failed (exit=2, timeout=true, truncated=false)\n"));
+		Assertions.assertEquals("Parsing error: Unexpected token ;",
+				EsLintRuleDesigner.plainProblem("Parsing error: Unexpected token ;"));
+	}
+
+	@Test
 	public void testGetRuleDesignerModelAndView() {
 		RuleDesignerModelAndView mav = ruleDesigner.getDefaultRuleDesignerModelAndView();
 		assertMav(mav);

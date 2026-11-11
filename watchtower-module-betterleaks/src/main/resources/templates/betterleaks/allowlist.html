@@ -1,0 +1,101 @@
+<!-- Secrets allowlist (UAT walkthrough, 2026-10-16): Add entry by the title opens the form in a
+     dialog; an empty list is one picture and one line. Coming from a finding ("Allowlist…") opens
+     the dialog pre-filled (allowlist.js). -->
+<div class="wt-home-head">
+  <div th:replace="~{fragments/pageheader :: header('Secrets allowlist', null)}"></div>
+  <div class="wt-page-actions wt-report-head__status">
+    <span class="wt-mini-chip wt-meta-chip" th:unless="${entries.empty}"
+        th:text="${entries.size() + (entries.size() == 1 ? ' entry' : ' entries')}">0 entries</span>
+    <md-filled-button type="button" data-wt-dialog-target="#allowlistDialog" has-icon>
+      <span class="material-icons" slot="icon" aria-hidden="true">add</span>Add entry
+    </md-filled-button>
+  </div>
+</div>
+
+<div class="wt-empty-picture mb-4" th:if="${entries.empty}" data-allowlist-empty>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">playlist_add_check</span>
+  <strong>No allowlist entries</strong>
+  <span class="text-muted">Add an entry when a secrets finding is a test value, a fixture, or an accepted risk. Betterleaks then skips it in future scans.</span>
+</div>
+
+<div class="wt-table-scroll" tabindex="0" role="region" aria-label="Allowlist entries" th:unless="${entries.empty}">
+  <table class="table mb-0">
+    <caption>Allowlist entries, newest first</caption>
+    <thead><tr><th scope="col">Scope</th><th scope="col">Path</th><th scope="col">Rule</th>
+      <th scope="col">Reason</th><th scope="col">Added by</th><th scope="col">Expires</th>
+      <th scope="col" aria-label="Actions"></th></tr></thead>
+    <tbody>
+      <tr th:each="entry : ${entries}">
+        <td><span class="wt-mini-chip"><span class="material-icons" aria-hidden="true"
+            th:text="${entry.scope.name() == 'GLOBAL' ? 'public' : 'code'}">public</span><span
+            th:text="${entry.scope.name() == 'GLOBAL' ? 'All repositories' : entry.repoName}">All repositories</span></span></td>
+        <td><code th:text="${entry.pathGlob != null ? entry.pathGlob : 'any file'}">any file</code></td>
+        <td th:text="${entry.ruleId != null ? entry.ruleId : 'Every rule'}">Every rule</td>
+        <td th:text="${entry.reason}">reason</td>
+        <td th:text="${entry.createdBy}">user</td>
+        <td>
+          <span th:if="${entry.expiresAt == null}">Never</span>
+          <span th:if="${entry.expiresAt != null}"
+              th:text="${'After ' + entry.lastDay}">date</span>
+          <span th:if="${entry.isExpired(now)}" class="wt-status-chip">Expired</span>
+        </td>
+        <td>
+          <form action="/betterleaks/allowlist/delete" method="POST"
+              th:attr="data-confirm=${'Delete this allowlist entry? Findings it covers block again on the next scan.'}"
+              data-confirm-action="Delete entry">
+            <input type="hidden" name="id" th:value="${entry.id}"/>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="wt-icon-action wt-icon-action--danger" aria-label="Delete entry"
+                data-tip="Delete"><span class="material-icons" aria-hidden="true">delete</span></button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<md-dialog id="allowlistDialog" class="wt-allowlist-dialog" th:attr="data-allowlist-prefill=${prefill != null ? 'true' : null}">
+  <div slot="headline" class="wt-dialog-headline"><span th:text="${prefill != null ? 'Allowlist this finding' : 'Add an allowlist entry'}">Add an allowlist entry</span>
+    <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close" data-tip="Close"><span
+        class="material-icons" aria-hidden="true">close</span></button></div>
+  <form slot="content" id="allowlistForm" class="wt-md-form" action="/betterleaks/allowlist/add" method="POST">
+    <fieldset class="wt-choice-chips mb-0" data-allowlist-scope>
+      <legend>Scope</legend>
+      <label th:each="scope : ${scopes}" class="wt-choice-chip">
+        <input type="radio" name="scope" th:value="${scope}" th:checked="${scope.name() == 'REPO'}"
+            th:aria-label="${scope.name() == 'GLOBAL' ? 'All repositories' : 'One repository'}"/>
+        <span class="material-icons" aria-hidden="true" th:text="${scope.name() == 'GLOBAL' ? 'public' : 'code'}">code</span><span
+            th:text="${scope.name() == 'GLOBAL' ? 'All repositories' : 'One repository'}">One repository</span>
+      </label>
+    </fieldset>
+    <!-- Searchable: suggests the repositories Watchtower knows; any other name can still be typed. -->
+    <div class="wt-combo" data-allowlist-repo-field>
+      <md-outlined-text-field label="Repository" name="repoName" autocomplete="off" placeholder="Search repositories"
+          data-repo-suggest="allowlist-repo-suggestions" data-repo-suggest-url="/betterleaks/allowlist/repositories"
+          aria-haspopup="listbox" th:value="${prefill != null ? prefill.repoName() : null}"></md-outlined-text-field>
+      <div id="allowlist-repo-suggestions" class="wt-combo__list" role="listbox" aria-label="Known repositories" hidden></div>
+    </div>
+    <md-outlined-text-field label="Path pattern" name="pathGlob" data-allowlist-path
+        th:value="${prefill != null ? prefill.pathGlob() : null}"
+        placeholder="e.g. src/test/fixtures/** or *.lock"></md-outlined-text-field>
+    <md-outlined-select label="Rule" name="ruleId" data-allowlist-rule>
+      <md-select-option value=""><div slot="headline">Every rule</div></md-select-option>
+      <md-select-option th:each="ruleId : ${ruleIds}" th:value="${ruleId}"
+          th:selected="${prefill != null and ruleId == prefill.ruleId()}">
+        <div slot="headline" th:text="${ruleId}"></div>
+      </md-select-option>
+    </md-outlined-select>
+    <md-outlined-text-field type="textarea" rows="2" label="Reason" name="reason" required
+        th:autofocus="${prefill != null}"
+        maxlength="500" supporting-text="Why it isn't a real secret, or why it's accepted"></md-outlined-text-field>
+    <md-outlined-text-field type="date" label="Expires (optional)" name="expiresOn"
+        supporting-text="At most one year ahead"></md-outlined-text-field>
+    <span class="wt-mini-chip wt-mini-chip--warn wt-allowlist-warning" data-allowlist-warning hidden><span
+        class="material-icons" aria-hidden="true">info</span><span data-allowlist-warning-text>Every rule and no path hides all secrets findings in this repository</span></span>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancelAllowlistDialog" type="button">Cancel</md-text-button>
+    <md-filled-button form="allowlistForm" type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">add</span>Add entry</md-filled-button>
+  </div>
+</md-dialog>

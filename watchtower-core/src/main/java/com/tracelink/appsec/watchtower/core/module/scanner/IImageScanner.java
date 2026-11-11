@@ -4,6 +4,8 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanConfig;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanReport;
 
+import java.util.List;
+
 /**
  * A Scanner implementation to manage Image Scans
  * 
@@ -24,5 +26,5 @@ public interface IImageScanner extends IScanner<ImageScanConfig, ImageScanReport
 	 * 
 	 * @return the {@link RuleDto} rule class that this scanner can handle
 	 */
-	Class<? extends RuleDto> getSupportedRuleClass();
+	List<Class<? extends RuleDto>> getSupportedRuleClass();
 }

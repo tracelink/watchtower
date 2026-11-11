@@ -1,0 +1,28 @@
+.wt-feature-help-link {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.5rem;
+  min-block-size: 1.5rem;
+  color: var(--wt-accent-strong);
+}
+.wt-feature-help-link .material-icons { font-size: 1rem; }
+.wt-feature-help-link:focus-visible { outline: 2px solid var(--wt-accent); outline-offset: 2px; }
+.wt-action-with-help { display: inline-flex; align-items: center; gap: var(--wt-space-1); }
+.wt-feature-guide { overflow-wrap: anywhere; }
+.wt-feature-guide > details { border-block-end: 1px solid var(--wt-border); padding-block: var(--wt-space-3); scroll-margin-block-start: var(--wt-space-4); }
+.wt-feature-guide > details > summary { min-block-size: 1.5rem; cursor: pointer; font-weight: 600; }
+.wt-feature-guide > details > summary:focus-visible { outline: 2px solid var(--wt-accent); outline-offset: 2px; }
+.wt-feature-guide > details:target { border-inline-start: 2px solid var(--wt-accent); padding-inline-start: var(--wt-space-3); }
+.wt-feature-guide p { margin-block: var(--wt-space-3); }
+.wt-feature-guide li + li { margin-block-start: var(--wt-space-2); }
+
+.wt-feature-help { position:relative; display:inline-block; font-weight:400; }
+/* Text styles of its own: inside a dialog headline it would otherwise inherit the 24px title. */
+.wt-feature-help summary { list-style:none; cursor:pointer; }
+.wt-feature-help summary::-webkit-details-marker { display:none; }
+.wt-feature-help-body { position:absolute; z-index:1050; inset-block-start:100%; inset-inline-end:0; inline-size:min(22rem,80vw); padding:var(--wt-space-3); background:var(--wt-surface); color:var(--wt-text); border:1px solid var(--wt-border); border-radius:var(--wt-radius-sm,4px); box-shadow:0 4px 12px #0002; }
+.wt-feature-help-body p { margin:0 0 var(--wt-space-2); }
+.wt-feature-help-body button { display:block; margin-block-start:var(--wt-space-2); }
+.wt-feature-help-body { font-size:var(--wt-text-sm); font-weight:400; line-height:1.5; letter-spacing:normal; text-transform:none; white-space:normal; }
+/* In a dialog it is placed in viewport coordinates by feature-help.js, so the dialog cannot clip it. */
+.wt-feature-help-body--fixed { position:fixed; z-index:2050; }

@@ -1,6 +1,8 @@
 package com.tracelink.appsec.module.checkov.scanner;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,9 +18,11 @@ import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
 import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.ScanScope;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
@@ -35,6 +39,11 @@ public class CheckovScanner implements ICodeScanner {
 
 	public CheckovScanner(CheckovEngine engine) {
 		this.engine = engine;
+	}
+
+	@Override
+	public EngineExecutionIdentity getExecutionIdentity(CodeScanConfig config) {
+		return engine.getExecutionIdentity(this, config);
 	}
 
 	@Override
@@ -97,6 +106,7 @@ public class CheckovScanner implements ICodeScanner {
 						if (foundRule.isPresent()) {
 							RuleDto rule = foundRule.get();
 							CodeScanViolation violation = new CodeScanViolation();
+							violation.setRuleIdentity(rule.getExecutionIdentity());
 							violation.setFileName(workingDirectory
 									.resolve(fail.get("file_path").getAsString().substring(1))
 									.toString());
@@ -107,6 +117,10 @@ public class CheckovScanner implements ICodeScanner {
 							violation.setSeverity(rule.getPriority());
 							violation.setViolationName(failName);
 							report.addViolation(violation);
+						} else if (failName.startsWith("CKV_SECRET")) {
+							// Checkov's own secrets detection runs whatever checks were chosen. Secrets are
+							// reported by the secrets scanner, so this is dropped on purpose, not a failure.
+							LOGGER.debug("Ignoring Checkov secrets check {}", failName);
 						} else {
 							String error = "Could not find rule for check " + failName;
 							LOGGER.error(error);
@@ -121,8 +135,38 @@ public class CheckovScanner implements ICodeScanner {
 	}
 
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return CheckovProvidedRuleDto.class;
+	public List<String> getDefaultFileTypes() {
+		// Measured with checkov 2.0.257: Terraform, Kubernetes, CloudFormation (yaml, json, .template),
+		// ARM and Serverless files, plus files named exactly Dockerfile. Other Dockerfile spellings
+		// (Dockerfile.prod, app.dockerfile) and .tfvars are not analysed by that version.
+		return List.of(".tf", ".json", ".yaml", ".yml", ".template", "dockerfile");
+	}
+
+	@Override
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Collections.singletonList(CheckovProvidedRuleDto.class);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * {@link #scan(CodeScanConfig)} calls {@code runCheckovDirectoryScan()} - a whole-directory
+	 * scan, not per-file - and Terraform evaluation needs sibling files (e.g.
+	 * {@code variables.tf}, {@code outputs.tf}) to resolve references. Scoping to only the
+	 * files changed in the pull request would produce wrong results, so this needs every
+	 * manifest file regardless of what changed (IMPROVEMENT_PLAN.md item 2.8).
+	 */
+	@Override
+	public ScanScope getRequiredScope() {
+		return ScanScope.MANIFEST_FILES;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<String> getRequiredFilePatterns() {
+		return Arrays.asList("**/*.tf", "**/*.yaml", "**/*.yml", "**/*.json");
 	}
 
 }

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,8 @@ public class LogsService {
 	public static final String APPENDER_NAME = "ROLLING-QUEUE";
 	private static final int DEFAULT_LOGS_NUMBER = 256;
 	private static final String PATTERN_LAYOUT =
-			"%d{yyyy-MM-dd HH:mm:ss.SSS} %logger{36} %-5level - %msg%n";
+			// %xEx named explicitly so the masking rule from logback-spring.xml applies to it.
+			"%d{yyyy-MM-dd HH:mm:ss.SSS} %logger{36} %-5level - %msg%n%xEx";
 
 	private static Logger LOG = (Logger) LoggerFactory.getLogger(LogsService.class);
 

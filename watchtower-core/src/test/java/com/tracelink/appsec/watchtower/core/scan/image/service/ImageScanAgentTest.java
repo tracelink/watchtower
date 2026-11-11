@@ -129,6 +129,8 @@ public class ImageScanAgentTest {
 				.withRuleset(ruleset);
 
 		agent.report(Arrays.asList(report));
+		Assertions.assertEquals("FAILED", agent.scannerOutcome(report));
+		Assertions.assertEquals("RAN", agent.scannerOutcome(new ImageScanReport()));
 
 		ArgumentCaptor<List> vioCapture =
 				ArgumentCaptor.forClass(List.class);

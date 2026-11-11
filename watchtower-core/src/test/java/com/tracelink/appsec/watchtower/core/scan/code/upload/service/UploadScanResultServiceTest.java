@@ -1,11 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.service;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,11 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.tracelink.appsec.watchtower.core.rule.RuleChange;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
@@ -37,16 +38,16 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanRe
 @ExtendWith(SpringExtension.class)
 public class UploadScanResultServiceTest {
 
-	@MockBean
+	@MockitoBean
 	private UploadContainerRepository mockUploadRepo;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanRepository mockScanRepo;
 
-	@MockBean
+	@MockitoBean
 	private UploadViolationRepository mockVioRepo;
 
-	@MockBean
+	@MockitoBean
 	private RuleService mockRuleService;
 
 	private UploadScanResultService scanResultService;
@@ -66,13 +67,13 @@ public class UploadScanResultServiceTest {
 
 		String name = "name";
 		String ruleSet = "ruleSet";
-		Path filePath = Paths.get("some", "path");
+		String s3Key = "uploads/some-key.zip";
 		String user = "user";
 
 		UploadScan scan = new UploadScan();
 		scan.setName(name);
 		scan.setRuleSetName(ruleSet);
-		scan.setFilePath(filePath);
+		scan.setStorageKey(s3Key);
 		scan.setUser(user);
 
 		BDDMockito.when(mockUploadRepo.saveAndFlush(BDDMockito.any()))
@@ -93,7 +94,7 @@ public class UploadScanResultServiceTest {
 
 		Assertions.assertEquals(name, entity.getName());
 		Assertions.assertEquals(ruleSet, entity.getRuleSet());
-		Assertions.assertEquals(filePath.toAbsolutePath(), entity.getZipPath());
+		Assertions.assertEquals(s3Key, entity.getStorageKey());
 		Assertions.assertEquals(user, entity.getSubmitter());
 		Assertions.assertEquals(ticketCaptor.getValue(), entity.getTicket());
 
@@ -222,7 +223,7 @@ public class UploadScanResultServiceTest {
 		Assertions.assertEquals(lineNum, vio1.getLineNumber());
 		Assertions.assertEquals(severity.getName(), vio1.getSeverity());
 		Assertions.assertEquals(fileName, vio1.getFileName());
-		Assertions.assertEquals("Rule guidance not found", vio1.getMessage());
+		Assertions.assertEquals("No guidance written for this rule yet.", vio1.getMessage());
 
 		UploadScanResultViolation vio2 = result.getViolations().get(1);
 		Assertions.assertEquals(vioName, vio2.getViolationName());
@@ -313,6 +314,34 @@ public class UploadScanResultServiceTest {
 	}
 
 	@Test
+	public void testGenerateResultForTicketSortsViolationsBySeverity() {
+		// Severity-first triage (Tier C backlog item): violations must come back ordered
+		// High -> Low regardless of persistence order.
+		LocalDateTime submitDate = LocalDateTime.now().minus(1, ChronoUnit.HOURS);
+		LocalDateTime endDate = LocalDateTime.now();
+
+		UploadViolationEntity low =
+				makeViolationEntity("LowRule", 1, RulePriority.LOW, "a.java");
+		UploadViolationEntity high =
+				makeViolationEntity("HighRule", 2, RulePriority.HIGH, "b.java");
+		UploadViolationEntity medium =
+				makeViolationEntity("MediumRule", 3, RulePriority.MEDIUM, "c.java");
+
+		UploadScanEntity scan =
+				makeScanEntity(submitDate, endDate, ScanStatus.DONE, null, low, high, medium);
+		UploadScanContainerEntity container =
+				makeScanContainer("name", "user", "ticket", "ruleset", scan);
+		BDDMockito.when(scan.getContainer()).thenReturn(container);
+		BDDMockito.when(mockUploadRepo.findByTicket(BDDMockito.anyString())).thenReturn(container);
+
+		UploadScanResult result = this.scanResultService.generateResultForTicket("ticket");
+
+		List<Integer> severityOrder = result.getViolations().stream()
+				.map(UploadScanResultViolation::getSeverityValue).collect(Collectors.toList());
+		Assertions.assertEquals(Arrays.asList(1, 3, 5), severityOrder);
+	}
+
+	@Test
 	public void testGetScanResultsWithFilters() {
 		String name = "name";
 		String user = "user";
@@ -347,11 +376,12 @@ public class UploadScanResultServiceTest {
 
 		for (UploadResultFilter filter : Arrays.asList(UploadResultFilter.ALL,
 				UploadResultFilter.VIOLATIONS, UploadResultFilter.INCOMPLETE)) {
-			List<UploadScanResult> results =
+			PagedResult<UploadScanResult> pagedResult =
 					scanResultService.getScanResultsWithFilters(filter, 10, 0);
 
-			Assertions.assertEquals(1, results.size());
-			UploadScanResult result = results.get(0);
+			Assertions.assertEquals(1, pagedResult.content().size());
+			Assertions.assertFalse(pagedResult.hasNext());
+			UploadScanResult result = pagedResult.content().get(0);
 			Assertions.assertEquals(name, result.getName());
 			Assertions.assertEquals(user, result.getSubmittedBy());
 			Assertions.assertEquals(status.getDisplayName(), result.getStatus());
@@ -366,8 +396,51 @@ public class UploadScanResultServiceTest {
 			Assertions.assertEquals(lineNum, violation.getLineNumber());
 			Assertions.assertEquals(severity.getName(), violation.getSeverity());
 			Assertions.assertEquals(fileName, violation.getFileName());
-			Assertions.assertEquals("Rule guidance not found", violation.getMessage());
+			Assertions.assertEquals("No guidance written for this rule yet.", violation.getMessage());
 		}
+	}
+
+	@Test
+	public void testFindingOfARuleEditedAfterTheScanIsMarkedChanged() {
+		RuleEntity rule = BDDMockito.mock(RuleEntity.class);
+		BDDMockito.when(mockRuleService.getRule("Edited")).thenReturn(rule);
+		BDDMockito.when(mockRuleService.changedAfter(rule, 1_000L)).thenReturn(true);
+
+		UploadScanResultViolation violation = scanWithOneFinding("Edited", 1_000L);
+
+		Assertions.assertEquals(RuleChange.CHANGED, violation.getRuleChange());
+	}
+
+	@Test
+	public void testFindingOfADeletedRuleIsMarkedDeleted() {
+		BDDMockito.when(mockRuleService.getRule("Gone")).thenReturn(null);
+
+		UploadScanResultViolation violation = scanWithOneFinding("Gone", 1_000L);
+
+		Assertions.assertEquals(RuleChange.DELETED, violation.getRuleChange());
+	}
+
+	@Test
+	public void testFindingOfAnUntouchedRuleHasNoRuleChange() {
+		RuleEntity rule = BDDMockito.mock(RuleEntity.class);
+		BDDMockito.when(mockRuleService.getRule("Same")).thenReturn(rule);
+		BDDMockito.when(mockRuleService.changedAfter(rule, 1_000L)).thenReturn(false);
+
+		UploadScanResultViolation violation = scanWithOneFinding("Same", 1_000L);
+
+		Assertions.assertNull(violation.getRuleChange());
+	}
+
+	private UploadScanResultViolation scanWithOneFinding(String ruleName, long scannedAtMillis) {
+		UploadViolationEntity vio = makeViolationEntity(ruleName, 1, RulePriority.HIGH, "a.java");
+		UploadScanEntity scan = makeScanEntity(LocalDateTime.now().minusHours(1),
+				LocalDateTime.now(), ScanStatus.DONE, null, vio);
+		BDDMockito.when(scan.getEndDateMillis()).thenReturn(scannedAtMillis);
+		UploadScanContainerEntity container =
+				makeScanContainer("name", "user", "ticket", "ruleset", scan);
+		BDDMockito.when(scan.getContainer()).thenReturn(container);
+		BDDMockito.when(mockUploadRepo.findByTicket(BDDMockito.anyString())).thenReturn(container);
+		return scanResultService.generateResultForTicket("ticket").getViolations().get(0);
 	}
 
 	private UploadViolationEntity makeViolationEntity(String vioName, int lineNum,

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,15 +25,15 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 public class ApiUserServiceTest {
 
-	@MockBean
+	@MockitoBean
 	private ApiKeyRepository mockApiKeyRepository;
 
-	@MockBean
+	@MockitoBean
 	private UserService mockUserService;
 
 	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-	@MockBean
+	@MockitoBean
 	private ApiIntegrationRepository mockIntegrationRepository;
 
 	private ApiUserService apiUserService;

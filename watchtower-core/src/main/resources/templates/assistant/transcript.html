@@ -1,0 +1,15 @@
+<div th:replace="~{fragments/pageheader :: header('Assistant transcript', 'One conversation, kept until it expires')}"></div>
+<p><a href="/admin/assistant">Back to assistant settings and audit</a></p>
+<p th:if="${expired}" role="status">This transcript has expired and was deleted. Its structured audit record remains in the audit list.</p>
+<p th:if="${denied}" role="status" data-transcript-denied>This transcript can't be shown to you. Reviewing a chat also needs the permissions behind the tools the assistant used in it (for example Assistant Source Read, Repository Settings View and Scan Results View). Ask an administrator for them, or review it with someone who has them.</p>
+<th:block th:unless="${expired or denied}">
+  <p class="wt-page-meta">Session <code th:text="${sessionId}"></code> · deleted after
+    <span class="localizetime" th:text="${expiresAt}"></span>. Opening this page is recorded in the audit.</p>
+  <th:block th:if="${messages.isEmpty()}"><div th:replace="~{fragments/emptystate :: state('This conversation has no messages.')}"></div></th:block>
+  <ol class="list-unstyled wt-transcript" th:unless="${messages.isEmpty()}">
+    <li th:each="m : ${messages}" class="mb-3" th:attr="data-transcript-role=${m.role}">
+      <strong th:text="${m.role == 'assistant' ? 'Assistant' : (m.role == 'user' ? 'Question' : m.role)}">Question</strong>
+      <p class="wt-alert-message" th:text="${m.text}"></p>
+    </li>
+  </ol>
+</th:block>

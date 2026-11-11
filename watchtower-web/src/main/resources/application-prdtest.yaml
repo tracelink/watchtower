@@ -3,6 +3,6 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/watchtower #${JDBC_URL}
-    username: watchtower #${JDBC_USERNAME}
-    password: Watchtower1! #${JDBC_PASSWORD}
+    url: ${JDBC_URL}
+    username: ${JDBC_USERNAME}
+    password: ${JDBC_PASSWORD}

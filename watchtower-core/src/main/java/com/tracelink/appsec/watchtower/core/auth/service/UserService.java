@@ -1,14 +1,17 @@
 package com.tracelink.appsec.watchtower.core.auth.service;
 
 import java.util.Collections;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
@@ -41,28 +44,30 @@ public class UserService implements UserDetailsService {
 	private final RoleService roleService;
 
 	private final UserPasswordRequirementsChecker pwChecker;
+	private final String bootstrapAdminPassword;
 
 	public UserService(@Autowired PasswordEncoder passwordEncoder,
 			@Autowired UserRepository userRepository,
 			@Autowired RoleService roleService,
-			@Autowired UserPasswordRequirementsChecker pwChecker) {
+			@Autowired UserPasswordRequirementsChecker pwChecker,
+			@Value("${watchtower.bootstrap-admin-password:}") String bootstrapAdminPassword) {
 		this.passwordEncoder = passwordEncoder;
 		this.userRepository = userRepository;
 		this.roleService = roleService;
 		this.pwChecker = pwChecker;
+		this.bootstrapAdminPassword = bootstrapAdminPassword;
 	}
 
 	void ensureDefaultUsers(RoleEntity adminRole) {
 		UserEntity adminUser = findByUsername(DEFAULT_ADMIN_USER);
 		// default admin exists
 		if (adminUser != null) {
-			// admin is currently enabled, change the pw
-			if (adminUser.getEnabled() == 1) {
-				String newAdminPassword = UUID.randomUUID().toString();
-				adminUser.setPassword(passwordEncoder.encode(newAdminPassword));
-				LOGGER.info(
-						"\n\nNOTICE: 'admin' user must be disabled or removed after creating new admin users.\n'admin' password has been updated to '"
-								+ newAdminPassword + "'\n");
+			// A configured secret may deliberately rotate the bootstrap account. Never
+			// generate an unrecoverable password or disclose credentials in application logs.
+			if (adminUser.getEnabled() == 1 && !bootstrapAdminPassword.isBlank()) {
+				adminUser.setPassword(passwordEncoder.encode(bootstrapAdminPassword));
+				LOGGER.warn("The bootstrap admin account is enabled; disable it after creating "
+						+ "a named administrator");
 			}
 			// admin does not have the admin role, add it
 			if (!adminUser.getRoles().contains(adminRole)) {
@@ -75,12 +80,13 @@ public class UserService implements UserDetailsService {
 		else {
 			// if there are no other users with the admin role, remake the default admin
 			if (findAllUsers().stream().noneMatch(u -> u.getRoles().contains(adminRole))) {
-				String newAdminPassword = UUID.randomUUID().toString();
-				registerNewUser(DEFAULT_ADMIN_USER, newAdminPassword);
-				LOGGER.info(
-						"NOTICE: No user found with admin role. A new user 'admin' has been created with password '"
-								+ newAdminPassword
-								+ "'. After logging in and creating a new, named user with the admin role, please disable this 'admin' user.");
+				if (bootstrapAdminPassword.isBlank()) {
+					throw new IllegalStateException("No administrator exists. Configure "
+							+ "watchtower.bootstrap-admin-password through a secret before startup");
+				}
+				registerNewUser(DEFAULT_ADMIN_USER, bootstrapAdminPassword);
+				LOGGER.warn("Created the bootstrap admin account from the configured secret; "
+						+ "disable it after creating a named administrator");
 			}
 			// otherwise, there is at least 1 user with the admin role correctly configured
 		}
@@ -97,6 +103,20 @@ public class UserService implements UserDetailsService {
 	 */
 	public List<UserEntity> findAllUsers() {
 		return userRepository.findAll();
+	}
+
+	public Page<UserEntity> findUsers(Pageable pageable) {
+		return userRepository.findAll(pageable);
+	}
+
+	/**
+	 * How many users hold each role.
+	 *
+	 * @return role id to its user count; roles nobody holds are absent
+	 */
+	public Map<Long, Long> countUsersByRole() {
+		return userRepository.countUsersByRole().stream().collect(Collectors.toUnmodifiableMap(
+				UserRepository.RoleUserCount::getRoleId, UserRepository.RoleUserCount::getUsers));
 	}
 
 	/**
@@ -129,7 +149,7 @@ public class UserService implements UserDetailsService {
 
 	private UserEntity createUser(String username, String password) throws BadCredentialsException {
 		UserEntity user = new UserEntity();
-		user.setCreated(new Date());
+		user.setCreated(LocalDateTime.now());
 		user.setUsername(username);
 		checkPasswordAllowed(password);
 		user.setPassword(passwordEncoder.encode(password));
@@ -147,7 +167,7 @@ public class UserService implements UserDetailsService {
 	 * @param user to be updated
 	 */
 	public void updateUser(UserEntity user) {
-		user.setLastModified(new Date());
+		user.setLastModified(LocalDateTime.now());
 		userRepository.save(user);
 	}
 

@@ -19,6 +19,12 @@ public class PullRequest extends AbstractScan {
 	private String repoName;
 	private String commitHash;
 	private long updateTime;
+	private String baseCommitHash;
+	private long executionScanId;
+	public String getBaseCommitHash() { return baseCommitHash; }
+	public void setBaseCommitHash(String hash) { baseCommitHash = hash; }
+	public long getExecutionScanId() { return executionScanId; }
+	public void setExecutionScanId(long id) { executionScanId = id; }
 
 	public PullRequest(String apiLabel) {
 		super(apiLabel);

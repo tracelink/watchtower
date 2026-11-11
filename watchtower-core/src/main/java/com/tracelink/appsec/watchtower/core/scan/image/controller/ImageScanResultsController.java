@@ -36,7 +36,7 @@ public class ImageScanResultsController {
 	@GetMapping
 	public WatchtowerModelAndView getResultsHome() {
 		WatchtowerModelAndView wmav = new WatchtowerModelAndView("image_scan/results");
-		wmav.addObject("filters", ImageResultFilter.values());
+		wmav.setViewName("redirect:/imagescan/results/all");
 		return wmav;
 	}
 
@@ -54,13 +54,20 @@ public class ImageScanResultsController {
 		if (resultFilter == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown Filter");
-			wmav.setViewName("redirect:/imagescan/results");
+			wmav.setViewName("redirect:/imagescan/results/all");
 		} else {
 			wmav.addObject("filters", ImageResultFilter.values());
 			wmav.addObject("activeFilter", filter);
 			wmav.addObject("activePageNum", pageNum);
-			wmav.addObject("results",
-					resultService.getScanResultsWithFilters(resultFilter, 10, pageNum));
+			var pagedResult = resultService.getScanResultsWithFilters(resultFilter, 10, pageNum);
+			if (pagedResult.totalPages() > 0 && pageNum >= pagedResult.totalPages()) {
+				wmav.setViewName("redirect:/imagescan/results/" + filter + "?page="
+						+ (pagedResult.totalPages() - 1));
+				return wmav;
+			}
+			wmav.addObject("results", pagedResult.content());
+			wmav.addObject("hasNext", pagedResult.hasNext());
+			wmav.addObject("pagination", pagedResult);
 		}
 		return wmav;
 	}

@@ -4,11 +4,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -19,7 +20,9 @@ import com.tracelink.appsec.module.regex.RegexModule;
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
 import com.tracelink.appsec.module.regex.scanner.RegexBenchmarking;
 import com.tracelink.appsec.module.regex.scanner.RegexCallable;
+import com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
+import com.tracelink.appsec.watchtower.core.module.designer.RuleDraftData;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
@@ -64,21 +67,29 @@ public class RegexRuleDesigner implements IRuleDesigner {
 		mav.addObject("matches", getMatches(query, source));
 	}
 
-	private List<String> getMatches(String query, String code) {
+	private List<DesignerMatch> getMatches(String query, String code) {
 		if (StringUtils.isBlank(query)) {
-			return Arrays.asList("");
+			return List.of();
+		}
+		try {
+			Pattern.compile(query);
+		} catch (PatternSyntaxException e) {
+			return List.of(DesignerMatch.note(
+					"The regular expression does not compile: " + e.getDescription() + "."));
 		}
 		CodeScanReport report;
 		try {
 			report = getRegexReport(query, code);
 		} catch (IOException e) {
-			return Arrays.asList("Error: Could not query due to IO Error");
+			return List.of(DesignerMatch.note("Could not run the rule: the sample could not be written."));
 		}
-
-		List<String> scanReport =
-				report.getViolations().stream().map(sv -> "Found on line: " + sv.getLineNum())
-						.collect(Collectors.toList());
-		return scanReport;
+		if (!report.getErrors().isEmpty()) {
+			return List.of(DesignerMatch.note(
+					"The pattern did not finish on this sample, so it was stopped. It may take too long to match."));
+		}
+		return report.getViolations().stream()
+				.map(sv -> DesignerMatch.atLine(sv.getLineNum(), "Matched by the pattern"))
+				.collect(Collectors.toList());
 	}
 
 
@@ -109,13 +120,34 @@ public class RegexRuleDesigner implements IRuleDesigner {
 		help.put("regexSource",
 				"The Source Code Section is where Rule Designers should put all source code to be tested.");
 		help.put("regex",
-				"The Regex Rule denotes a violation case to be found. When the regex is found in the Source Code, this is marked as a violation.");
+				"A regular expression. Each line of the sample it matches is a finding.");
 		return help;
 	}
 
 	@Override
 	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		return query(defaultQuery, defaultSrc);
+	}
+
+	/** The drafted pattern, already run on the drafted example, with the save dialog's fields filled in. */
+	@Override
+	public RuleDesignerModelAndView getPrefilledRuleDesignerModelAndView(RuleDraftData draft) {
+		RuleDesignerModelAndView mav = query(draft.definition(), StringUtils.defaultString(draft.vulnerableSnippet()));
+		mav.addObject("ruleName", draft.name());
+		mav.addObject("ruleMessage", draft.message());
+		mav.addObject("rulePriority", draft.priority());
+		mav.addObject("ruleFileExt", StringUtils.defaultString(draft.fileExtension()));
+		return mav;
+	}
+
+	@Override
+	public String validateDraft(RuleDraftData draft) {
+		try {
+			Pattern.compile(draft.definition());
+			return null;
+		} catch (PatternSyntaxException e) {
+			return "The regular expression does not compile: " + e.getDescription() + ".";
+		}
 	}
 
 	@Override

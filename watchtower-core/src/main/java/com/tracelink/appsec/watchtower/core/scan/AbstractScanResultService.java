@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -55,6 +56,17 @@ public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, 
 	 */
 	public long countScans() {
 		return scanRepo.count();
+	}
+
+	/**
+	 * Counts the number of scans that have completed since local midnight.
+	 *
+	 * @return number of scans completed today
+	 */
+	public long countScansToday() {
+		long startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault())
+				.toInstant().toEpochMilli();
+		return scanRepo.countByEndDateBetween(startOfDay, System.currentTimeMillis());
 	}
 
 	/**

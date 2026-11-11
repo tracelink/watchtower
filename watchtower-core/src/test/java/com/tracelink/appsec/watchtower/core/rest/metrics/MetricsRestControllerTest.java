@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.rest.metrics;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -9,9 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,7 +36,7 @@ public class MetricsRestControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private MetricsCacheService mockMetricsCacheService;
 
 	@Test
@@ -123,6 +124,72 @@ public class MetricsRestControllerTest {
 	}
 
 	@Test
+	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME,
+			CorePrivilege.SCAN_ADMIN_NAME})
+	public void testGetPrPerformanceByPeriod() throws Exception {
+		JSONObject json = new JSONObject();
+		json.put("labels", Arrays.asList("Today"));
+		json.put("totalMs", Arrays.asList(1200D));
+		BDDMockito.when(mockMetricsCacheService.getPrPerformanceByPeriod("last-thirty-days"))
+				.thenReturn(json);
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/rest/metrics/pr-performance-by-period")
+				.param("period", "last-thirty-days"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content().json(json.toJSONString()));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME,
+			CorePrivilege.SCAN_ADMIN_NAME})
+	public void repositoryDurationAcceptsPresetAndCustomRanges() throws Exception {
+		JSONObject json = new JSONObject();
+		json.put("labels", Arrays.asList("Today"));
+		json.put("samples", Arrays.asList(2));
+		json.put("totalMs", Arrays.asList(4000D));
+		BDDMockito.when(mockMetricsCacheService.getScanDurationByPeriod(
+				CodeScanType.REPOSITORY, "all-time")).thenReturn(json);
+		mockMvc.perform(MockMvcRequestBuilders.get("/rest/metrics/scan-duration-by-period")
+				.param("type", "repository").param("period", "all-time"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content().json(json.toJSONString()));
+
+		LocalDate today = LocalDate.now();
+		BDDMockito.when(mockMetricsCacheService.getScanDurationByPeriod(
+				CodeScanType.REPOSITORY, today, today)).thenReturn(json);
+		mockMvc.perform(MockMvcRequestBuilders.get("/rest/metrics/scan-duration-by-period")
+				.param("type", "repository").param("period", "custom")
+				.param("start", today.toString()).param("end", today.toString()))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content().json(json.toJSONString()));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
+	public void customScanRangeUsesInclusiveDatesInsteadOfPreset() throws Exception {
+		LocalDate start = LocalDate.of(2026, 9, 1);
+		LocalDate end = LocalDate.of(2026, 9, 23);
+		JSONObject json = new JSONObject();
+		json.put("labels", Arrays.asList("2026-09-01 – 2026-09-23"));
+		json.put("counts", Arrays.asList(42));
+		BDDMockito.when(mockMetricsCacheService.getScansByPeriod(
+				CodeScanType.PULL_REQUEST, start, end)).thenReturn(json);
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/rest/metrics/scans-by-period")
+				.param("type", CodeScanType.PULL_REQUEST.getTypeName())
+				.param("period", "last-week")
+				.param("start", start.toString())
+				.param("end", end.toString()))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content().json(json.toJSONString()));
+
+		BDDMockito.verify(mockMetricsCacheService).getScansByPeriod(
+				CodeScanType.PULL_REQUEST, start, end);
+		BDDMockito.verify(mockMetricsCacheService, BDDMockito.never())
+				.getScansByPeriod(BDDMockito.any(), BDDMockito.anyString());
+	}
+
+	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
 	public void testGetPeriods() throws Exception {
 		String jsonContent = new JSONArray(Arrays.stream(BucketerTimePeriod.values())
@@ -180,6 +247,26 @@ public class MetricsRestControllerTest {
 
 		mockMvc.perform(MockMvcRequestBuilders
 				.get("/rest/metrics/scans-completed/" + CodeScanType.UPLOAD.getTypeName()))
+				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+				.andExpect(MockMvcResultMatchers.content().json(jsonContent.toString()));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
+	public void testGetScansToday() throws Exception {
+		long upload = 4;
+		long pr = 2;
+		BDDMockito.when(mockMetricsCacheService.getScanCountToday(CodeScanType.UPLOAD))
+				.thenReturn(upload);
+		BDDMockito.when(mockMetricsCacheService.getScanCountToday(CodeScanType.PULL_REQUEST))
+				.thenReturn(pr);
+
+		JSONObject jsonContent = new JSONObject();
+		jsonContent.put(CodeScanType.UPLOAD.getDisplayName(), String.valueOf(upload));
+		jsonContent.put(CodeScanType.PULL_REQUEST.getDisplayName(), String.valueOf(pr));
+
+		mockMvc.perform(MockMvcRequestBuilders
+				.get("/rest/metrics/scans-today"))
 				.andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
 				.andExpect(MockMvcResultMatchers.content().json(jsonContent.toString()));
 	}

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort.Direction;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PRScanTimings;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequest;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestState;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestContainerEntity;
@@ -115,7 +116,23 @@ public class PRDevelopmentSetup {
 			for (int j = 0; j < numVios; j++) {
 				vios.add(makePRVio(activeState, random));
 			}
-			prScanResultService.savePullRequestScan(pr, 0, vios, new ArrayList<>());
+			long sourceSizeBytes = 1000L + random.nextInt(500_000);
+			long totalDurationMs = 1000L + random.nextInt(59_001);
+			long sourcePreparationMs = totalDurationMs * 20 / 100;
+			long scannerExecutionMs = totalDurationMs * 55 / 100;
+			long resultProcessingMs = totalDurationMs * 10 / 100;
+			long scmReportingMs = totalDurationMs * 10 / 100;
+			long persistenceMs = totalDurationMs * 3 / 100;
+			long cleanupMs = totalDurationMs - sourcePreparationMs - scannerExecutionMs
+					- resultProcessingMs - scmReportingMs - persistenceMs;
+			PRScanTimings timings = new PRScanTimings(0, totalDurationMs,
+					sourcePreparationMs, scannerExecutionMs, resultProcessingMs,
+					scmReportingMs, persistenceMs, cleanupMs, 1 + random.nextInt(20),
+					"CHANGED_FILES", "INDIVIDUAL_FILES",
+					List.of(new PRScanTimings.ScannerTiming(
+							"DevelopmentScanner", scannerExecutionMs)), true);
+			prScanResultService.savePullRequestScan(pr, 0, vios, new ArrayList<>(),
+					sourceSizeBytes, timings);
 		}
 	}
 

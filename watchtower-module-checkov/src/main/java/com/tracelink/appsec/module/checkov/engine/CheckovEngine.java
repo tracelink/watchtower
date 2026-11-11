@@ -1,8 +1,7 @@
 package com.tracelink.appsec.module.checkov.engine;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,18 +10,25 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.module.checkov.model.CheckovRuleDefinitionDto;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
+import com.tracelink.appsec.watchtower.core.process.ProcessRequest;
+import com.tracelink.appsec.watchtower.core.process.ProcessResult;
+import com.tracelink.appsec.watchtower.core.process.ProcessRunner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
 
 import kong.unirest.Unirest;
 
@@ -45,6 +51,8 @@ public class CheckovEngine {
 	private static final int EXPECTED_PYTHON_VERSION_MINOR = 7;
 
 	private static final String EXPECTED_CHECKOV_VERSION = "2.0.257";
+	static final List<String> SCAN_ARGUMENTS = List.of("--quiet", "--no-guide", "-o", "json");
+	private final ProcessRunner processRunner;
 
 	private Map<String, RulesetDto> coreRulesets;
 
@@ -53,6 +61,11 @@ public class CheckovEngine {
 	private List<CheckovProvidedRuleDto> coreRules;
 
 	public CheckovEngine() {
+		this(new ProcessRunner());
+	}
+
+	CheckovEngine(ProcessRunner processRunner) {
+		this.processRunner = processRunner;
 		gson = new Gson();
 		try {
 			testPythonVersion();
@@ -65,118 +78,70 @@ public class CheckovEngine {
 	}
 
 
-	private void testPythonVersion() throws IOException {
-		ProcessResult pythonMajorVersionNum = runPythonCommand("-c",
-				"import sys; print(sys.version_info.major)");
-		ProcessResult pythonMinorVersionNum = runPythonCommand("-c",
-				"import sys; print(sys.version_info.minor)");
-		if (pythonMajorVersionNum.hasErrors()) {
-			LOG.error("Error during python version command: " + pythonMajorVersionNum.getErrors());
-		}
-		// major and minor should exist,
-		// major is over the minimum expected or
-		// major is the expected and minor is at least the expected
-		if (!pythonMajorVersionNum.hasResults()
-				|| !pythonMinorVersionNum.hasResults()
-				|| Integer.parseInt(
-						pythonMajorVersionNum.getResults()) < EXPECTED_PYTHON_VERSION_MAJOR
-				|| (Integer.parseInt(
-						pythonMajorVersionNum.getResults()) == EXPECTED_PYTHON_VERSION_MAJOR
-						&& Integer.parseInt(pythonMinorVersionNum
-								.getResults()) <= EXPECTED_PYTHON_VERSION_MINOR)) {
-			throw new RuntimeException("Python Version minimum expected: "
-					+ EXPECTED_PYTHON_VERSION_MAJOR + "." + EXPECTED_PYTHON_VERSION_MINOR
-					+ " but got " + pythonMajorVersionNum + "." + pythonMinorVersionNum);
-		}
-
-		ProcessResult pipVersionResults = runPipCommand("-V");
-		if (!pipVersionResults.hasResults()) {
-			throw new RuntimeException("Pip is not installed");
-		}
+	public EngineExecutionIdentity getExecutionIdentity(ICodeScanner scanner, CodeScanConfig config) {
+		return CheckovExecutionIdentity.capture(this, scanner, config);
 	}
 
-	private void installCheckov() throws IOException {
-		LOG.info("Testing for existing Checkov install");
-		ProcessResult checkovVersionNumResult = runCheckovCommand("-v");
-		if (checkovVersionNumResult.hasResults()
-				&& checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
-			LOG.info("Checkov already installed at version " + EXPECTED_CHECKOV_VERSION);
-			return;
-		}
-
-		LOG.info("Installing Checkov for virtual environment");
-		ProcessResult pipResult = runPipCommand("install", "checkov==" + EXPECTED_CHECKOV_VERSION,
-				"--force-reinstall", "--no-cache-dir", "--no-warn-script-location");
-
-		if (pipResult.hasErrors()) {
-			LOG.warn("Error during virtualenv pip install: " + pipResult.getErrors());
-		}
-		checkovVersionNumResult = runCheckovCommand("-v");
-		if (checkovVersionNumResult.hasResults()
-				&& checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
-			// successfully installed in a virtual env or global scope
-			LOG.info("Checkov installed in the virtual environment or global scope");
-			return;
-		}
-
-		LOG.info("Not in virtual environment. Installing Checkov for user environment");
-		pipResult = runPipCommand("install", "checkov==" + EXPECTED_CHECKOV_VERSION,
-				"--force-reinstall", "--user", "--no-cache-dir", "--no-warn-script-location");
-
-		if (pipResult.hasErrors()) {
-			LOG.warn("Error during user dir pip install: " + pipResult.getErrors());
-		}
-
-		checkovVersionNumResult = runCheckovCommand("-v");
-		if (!checkovVersionNumResult.hasResults()
-				|| !checkovVersionNumResult.getResults().startsWith(EXPECTED_CHECKOV_VERSION)) {
-			throw new RuntimeException("Checkov Version Number is incorrect. Expected: "
-					+ EXPECTED_CHECKOV_VERSION + " but received "
-					+ checkovVersionNumResult.getResults());
-		}
-		LOG.info("Checkov installed in the user environment");
-
+	ProcessResult captureRuntime() {
+		return runPythonCommand("-c", "import json, sys; from checkov.version import version; "
+				+ "from checkov.common.util.docs_generator import get_checks; "
+				+ "print(json.dumps({'python': '.'.join(map(str, sys.version_info[:3])), "
+				+ "'checkov': version, 'checks': sorted({row[0] for row in get_checks()})}))");
 	}
 
-	private ProcessResult runPythonCommand(String... command) {
-		List<String> commandString = new ArrayList<>();
-		commandString.add("python3");
-		commandString.addAll(Arrays.asList(command));
-		return runCommand(commandString);
-	}
-
-	private ProcessResult runPipCommand(String... command) throws IOException {
-		List<String> commandString = new ArrayList<>();
-		commandString.add("pip3");
-		commandString.addAll(Arrays.asList(command));
-		return runCommand(commandString);
-	}
-
-	private ProcessResult runCheckovCommand(String... command) {
-		List<String> commandString = new ArrayList<>();
-		commandString
-				.addAll(Arrays.asList("-c", "from checkov import main as checkov; checkov.run();"));
-		commandString.addAll(Arrays.asList(command));
-		return runPythonCommand(commandString.toArray(new String[]{}));
-	}
-
-	private ProcessResult runCommand(List<String> commands) {
-		ProcessBuilder pb = new ProcessBuilder(commands);
-		String results = null;
-		String errors = null;
-		Process p = null;
-		try {
-			p = pb.start();
-			results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
-			errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
-		} catch (IOException e) {
-			LOG.error("Failed to run command '" + String.join(" ", commands), e);
-		} finally {
-			if (p != null) {
-				p.destroy();
-			}
+	private void testPythonVersion() {
+		var major = runPythonCommand("-c", "import sys; print(sys.version_info.major)");
+		var minor = runPythonCommand("-c", "import sys; print(sys.version_info.minor)");
+		if (!isComplete(major) || !isComplete(minor)
+				|| Integer.parseInt(major.stdout().trim()) < EXPECTED_PYTHON_VERSION_MAJOR
+				|| (Integer.parseInt(major.stdout().trim()) == EXPECTED_PYTHON_VERSION_MAJOR
+						&& Integer.parseInt(minor.stdout().trim()) < EXPECTED_PYTHON_VERSION_MINOR)) {
+			throw new IllegalStateException("Cannot verify Python version 3.7 or newer");
 		}
-		return new ProcessResult(String.join(" ", commands), results, errors);
+		if (!isComplete(runPipCommand("-V"))) throw new IllegalStateException("Pip is not installed");
+	}
+
+	private void installCheckov() {
+		if (hasExpectedVersion(runCheckovCommand("-v"))) return;
+		for (boolean user : List.of(false, true)) {
+			var arguments = new ArrayList<>(List.of("install", "checkov==" + EXPECTED_CHECKOV_VERSION,
+					"--force-reinstall", "--no-cache-dir", "--no-warn-script-location"));
+			if (user) arguments.add("--user");
+			var installed = runPipCommand(arguments.toArray(String[]::new));
+			if (!installed.isSuccess()) LOG.warn("Checkov installation failed: exit={}", installed.exitCode());
+			if (hasExpectedVersion(runCheckovCommand("-v"))) return;
+		}
+		throw new IllegalStateException("Cannot verify Checkov version " + EXPECTED_CHECKOV_VERSION);
+	}
+
+	private ProcessResult runPythonCommand(String... arguments) {
+		return runExecutable("python3", arguments);
+	}
+
+	private ProcessResult runPipCommand(String... arguments) {
+		return runExecutable("pip3", arguments);
+	}
+
+	private ProcessResult runExecutable(String executable, String... arguments) {
+		var command = new ArrayList<>(List.of(executable));
+		command.addAll(Arrays.asList(arguments));
+		return processRunner.run(new ProcessRequest(command, null, Duration.ofMinutes(2), 8 * 1024 * 1024));
+	}
+
+	private ProcessResult runCheckovCommand(String... arguments) {
+		var command = new ArrayList<>(List.of("-c",
+				"from checkov import main as checkov; import sys; sys.exit(checkov.run());"));
+		command.addAll(Arrays.asList(arguments));
+		return runPythonCommand(command.toArray(String[]::new));
+	}
+
+	static boolean isComplete(ProcessResult result) {
+		return result.isSuccess() && !result.stdoutTruncated() && !result.stderrTruncated()
+				&& !result.stdout().isBlank() && result.stderr().isBlank();
+	}
+
+	private static boolean hasExpectedVersion(ProcessResult result) {
+		return isComplete(result) && EXPECTED_CHECKOV_VERSION.equals(result.stdout().trim());
 	}
 
 	public Map<String, RulesetDto> getCoreRulesets() {
@@ -194,13 +159,19 @@ public class CheckovEngine {
 	}
 
 	private void populateCoreRulesRulesets() {
-		ProcessResult rulesResult = runCheckovCommand("--list");
-		kong.unirest.json.JSONObject guidelines =
-				Unirest.get(BRIDGECREW_GUIDELINES).asJson()
-						.getBody().getObject().getJSONObject("guidelines");
+		ProcessResult rulesResult = runCheckovCommand("--list", "--no-guide");
+		if (!isComplete(rulesResult)) throw new IllegalStateException("Cannot load Checkov catalog");
+		var guidelines = new kong.unirest.json.JSONObject();
+		try {
+			guidelines = Unirest.get(BRIDGECREW_GUIDELINES).connectTimeout(5000).socketTimeout(5000)
+					.asJson().getBody().getObject().getJSONObject("guidelines");
+		} catch (RuntimeException exception) {
+			LOG.warn("Checkov documentation links unavailable; using catalog definitions");
+		}
+		final var documentation = guidelines;
 		Map<String, RulesetDto> coreRulesets = new TreeMap<>();
 		Map<String, CheckovProvidedRuleDto> coreRules = new TreeMap<>();
-		Stream.of(rulesResult.getResults().split("\\r?\\n")).skip(2).forEachOrdered(r -> {
+		Stream.of(rulesResult.stdout().split("\\r?\\n")).skip(2).forEachOrdered(r -> {
 			String[] ruleLine = r.split("\\|");
 			if (ruleLine.length != 7) {
 				return;
@@ -231,7 +202,7 @@ public class CheckovEngine {
 				rule = new CheckovProvidedRuleDto();
 				rule.setName(name);
 				rule.setMessage(message);
-				String url = guidelines.optString(rule.getName(), "#");
+				String url = documentation.optString(rule.getName(), "#");
 				rule.setExternalUrl(url);
 				rule.setPriority(RulePriority.LOW);
 				coreRules.put(name, rule);
@@ -250,6 +221,7 @@ public class CheckovEngine {
 			}
 			ruleset.getRules().add(rule);
 		});
+		if (coreRules.isEmpty()) throw new IllegalStateException("Checkov returned no catalog definitions");
 		this.coreRulesets = coreRulesets;
 		this.coreRules = coreRules.values().stream().collect(Collectors.toList());
 	}
@@ -267,19 +239,67 @@ public class CheckovEngine {
 	 */
 	public JsonObject runCheckovDirectoryScan(Path targetDirectory,
 			List<CheckovProvidedRuleDto> ruleChecks) {
-		ProcessResult results;
-		JsonObject json = new JsonObject();
 		try {
-			results = runCheckovCommand("-d", targetDirectory.toString(), "--quiet", "--no-guide",
-					"-o", "json", "-c",
-					ruleChecks.stream().map(RuleDto::getName)
-							.collect(Collectors.joining(",")));
-			json = gson.fromJson(results.getResults(), JsonObject.class);
-		} catch (Exception e) {
-			json.addProperty("errors", e.getMessage());
+			if (ruleChecks.isEmpty()) return normalizeReports(new JsonArray());
+			var command = new ArrayList<>(List.of("-d", targetDirectory.toString()));
+			command.addAll(SCAN_ARGUMENTS);
+			command.addAll(List.of("-c", ruleChecks.stream().map(RuleDto::getName).collect(Collectors.joining(","))));
+			var result = runCheckovCommand(command.toArray(String[]::new));
+			if (result.timedOut() || result.stdoutTruncated() || result.stderrTruncated()
+					|| (result.exitCode() != 0 && result.exitCode() != 1)) {
+				return error("Checkov process failed (exit=" + result.exitCode() + ", timeout=" + result.timedOut()
+						+ ", truncated=" + (result.stdoutTruncated() || result.stderrTruncated()) + ")");
+			}
+			var json = normalizeReports(gson.fromJson(result.stdout(), JsonElement.class));
+			if (result.exitCode() == 1 && json.getAsJsonObject("results").getAsJsonArray("failed_checks").isEmpty()) {
+				json.addProperty("errors", "Checkov exited with failure but reported no failed checks");
+			}
+			if (!result.stderr().isBlank()) json.addProperty("errors", "Checkov reported diagnostics on stderr");
+			return json;
+		} catch (RuntimeException exception) {
+			// Process arguments, diagnostic output and JSON exceptions can contain source/secrets.
+			return error("Cannot execute Checkov or decode its report");
 		}
-
-		return json;
 	}
 
+	private static JsonObject error(String message) {
+		var result = new JsonObject();
+		result.addProperty("errors", message);
+		return result;
+	}
+
+	private static JsonObject normalizeReports(JsonElement output) {
+		if (output == null || output.isJsonNull()) throw new IllegalArgumentException("Missing report");
+		var reports = new JsonArray();
+		if (output.isJsonArray()) reports = output.getAsJsonArray();
+		else reports.add(output);
+		var failed = new JsonArray();
+		var normalized = new JsonObject();
+		for (var report : reports) {
+			var object = report.getAsJsonObject();
+			var result = object.getAsJsonObject("results");
+			var checks = result.getAsJsonArray("failed_checks");
+			if (checks == null) throw new IllegalArgumentException("Missing checks");
+			for (var check : checks) {
+				if (!check.isJsonObject()) throw new IllegalArgumentException("Malformed check");
+				failed.add(check);
+			}
+			for (var section : List.of(object, result)) {
+				if (section.has("parsing_errors") && !section.getAsJsonArray("parsing_errors").isEmpty()) {
+					normalized.addProperty("errors", "Checkov reported parsing errors");
+				}
+			}
+			// --quiet omits parsing-error details but retains their count in the summary.
+			if (object.has("summary")) {
+				var summary = object.getAsJsonObject("summary");
+				if (summary.has("parsing_errors") && summary.get("parsing_errors").getAsInt() != 0) {
+					normalized.addProperty("errors", "Checkov reported parsing errors");
+				}
+			}
+		}
+		var results = new JsonObject();
+		results.add("failed_checks", failed);
+		normalized.add("results", results);
+		return normalized;
+	}
 }

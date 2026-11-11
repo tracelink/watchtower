@@ -1,0 +1,168 @@
+<!-- Saved reviews (UAT walkthrough, 2026-10-16): the page is the list. New review opens the form in a
+     dialog (input is kept on a conflict, and the error shows in the dialog); a saved review opens in
+     the same dialog. Status filters are plain words with icons and the search filters as you type.
+     The selected revision and scope are one chip with the hash on hover; an older revision is one
+     amber chip and has no New review button. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority(''Rule Modify'')')},
+    canSeeScans=${#authorization.expression('hasAuthority(''Scan Results View'')')},
+    Words=${T(com.tracelink.appsec.watchtower.core.rule.workflow.RuleDetailPresentation)},
+    rev=${revision ?: 'unknown'},
+    canWrite=${canModify and (canCreate or selectedReview != null)},
+    hasDialog=${(canModify and (canCreate or selectedReview != null)) or selectedReview != null}">
+<section data-rule-review-page th:attr="data-rule-id=${rule.id},data-rule-revision=${revision},data-csrf-token=${_csrf.token},data-csrf-header=${_csrf.headerName},data-review-id=${selectedReview?.id},data-review-version=${selectedReview?.version},data-review-revision=${selectedReview?.revision},data-open-on-load=${openDialog ? 'true' : null}">
+
+<div class="wt-home-head wt-report-head wt-page-bar">
+ <div class="wt-detail-title">
+  <span class="wt-scanner-tile wt-scanner-tile--ran wt-scanner-tile--lg" role="img" tabindex="0"
+      th:attr="data-tip=${scanner.name() + ' rule (' + scanner.purpose() + ')'},aria-label=${scanner.name() + ' rule'}"><span
+      class="material-icons" aria-hidden="true" th:text="${scanner.icon()}">key</span></span>
+  <div th:replace="~{fragments/pageheader :: header(${ruleName + ' · Saved reviews'}, null)}"></div>
+ </div>
+ <div class="wt-meta-chips wt-report-head__status">
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+      data-tip="Assign someone to look into this rule, attach evidence and save a recommendation. A review never hides findings, changes the rule or lets a pull request through."><span
+      class="material-icons" aria-hidden="true">help_outline</span>What is a review?</span>
+  <a th:unless="${canCreate}" class="wt-mini-chip wt-meta-chip wt-mini-chip--warn wt-mini-chip--link" data-review-historical
+      th:href="@{/rules/{id}/reviews(id=${rule.id})}"
+      data-tip="This is an older revision. You can see its saved reviews; new reviews go on the current revision. Click to open the current revision."><span
+      class="material-icons" aria-hidden="true">history</span>Older revision</a>
+ </div>
+ <div class="wt-page-actions wt-report-head__status">
+  <a th:if="${canSeeScans}" class="wt-button-link wt-button-link-secondary" th:href="${'/rules/' + rule.id + '/health' + scope}"><span
+      class="material-icons" aria-hidden="true">monitor_heart</span>Rule health</a>
+  <a th:if="${#authorization.expression('hasAuthority(''Assistant Use'') and hasAuthority(''Scan Results View'')')}" class="wt-button-link wt-button-link-secondary" th:href="@{/rules/{id}/improvements(id=${rule.id})}"><span class="material-icons" aria-hidden="true">auto_awesome</span>Suggest improvement</a>
+  <a th:if="${canModify}" class="wt-icon-action" th:href="@{/rule/edit/{module}/{id}(module=${rule.module},id=${rule.id})}"
+      aria-label="Edit rule and owner" data-tip="Edit rule and owner"><span class="material-icons" aria-hidden="true">edit</span></a>
+  <md-filled-button th:if="${canModify and canCreate and selectedReview == null}" type="button" data-wt-dialog-open="#reviewDialog" data-review-new has-icon><span
+      class="material-icons" slot="icon" aria-hidden="true">add</span>New review</md-filled-button>
+  <md-filled-button th:if="${canModify and canCreate and selectedReview != null}" th:href="${'/rules/' + rule.id + '/reviews' + scope + '&compose=true'}"
+      data-review-new has-icon><span class="material-icons" slot="icon" aria-hidden="true">add</span>New review</md-filled-button>
+ </div>
+</div>
+
+<form method="get" class="wt-meta-chips wt-work-filters mb-3" th:action="${'/rules/' + rule.id + '/reviews'}" data-review-filters>
+ <input type="hidden" name="revision" th:value="${rev}"><input type="hidden" name="days" th:value="${days}"><input type="hidden" name="scanType" th:value="${scanType}">
+ <input type="hidden" name="policy" th:value="${policy}"><input type="hidden" name="state" th:value="${state}"><input type="hidden" name="pageSize" th:value="${rows.pageSize}">
+ <md-outlined-text-field class="wt-search-pill wt-work-search" type="search" name="search" label="Search owner or reason" maxlength="200"
+     th:value="${search}" autocomplete="off" data-review-search><span slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+ <nav class="wt-segmented-filter" aria-label="Status">
+  <a class="wt-segment" th:href="@{/rules/{id}/reviews(id=${rule.id},revision=${rev},days=${days},scanType=${scanType},policy=${policy},state='all',search=${search},pageSize=${rows.pageSize})}"
+     th:classappend="${state == 'all'} ? 'is-active'" th:attr="aria-current=${state == 'all' ? 'true' : null}">All</a>
+  <a th:each="s : ${statuses}" class="wt-segment" th:attr="aria-current=${state == s.value() ? 'true' : null},data-review-status=${s.value()}"
+     th:href="@{/rules/{id}/reviews(id=${rule.id},revision=${rev},days=${days},scanType=${scanType},policy=${policy},state=${s.value()},search=${search},pageSize=${rows.pageSize})}"
+     th:classappend="${state == s.value()} ? 'is-active'"><span class="material-icons" aria-hidden="true" th:text="${s.icon()}">pending</span><span
+     th:text="${s.label()}">In review</span></a>
+ </nav>
+ <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-review-scope th:classappend="${scopeChip.tone().isEmpty() ? '' : ' wt-mini-chip--' + scopeChip.tone()}"
+     th:attr="data-tip=${scopeChip.tip()}"><span class="material-icons" aria-hidden="true">commit</span><span th:text="${scopeChip.text()}">Current revision · 90 d</span></span>
+</form>
+
+<section id="results-region" aria-live="polite">
+ <div th:if="${rows.content.isEmpty()}" class="wt-empty-picture" data-review-empty>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">rate_review</span>
+  <strong th:text="${state == 'all' and search.isEmpty() ? 'No reviews for this rule yet' : 'No reviews match this filter'}">No reviews for this rule yet</strong>
+  <span class="wt-muted" th:if="${canCreate}">Start one when you have a specific question or evidence to look into.</span>
+  <span class="wt-muted" th:unless="${canCreate}">New reviews go on the current revision.</span>
+  <md-outlined-button th:if="${canModify and canCreate and selectedReview == null}" type="button" data-wt-dialog-open="#reviewDialog" has-icon><span
+      class="material-icons" slot="icon" aria-hidden="true">add</span>New review</md-outlined-button>
+ </div>
+ <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Saved reviews" th:unless="${rows.content.isEmpty()}">
+  <table class="table mb-0">
+   <caption class="visually-hidden">Saved reviews for this rule, newest first</caption>
+   <thead><tr><th scope="col">Status</th><th scope="col">Owner</th><th scope="col">Reason</th><th scope="col">Updated</th>
+    <th scope="col"><span class="visually-hidden">Open</span></th></tr></thead>
+   <tbody>
+    <tr th:each="item : ${rows.content}" th:with="s=${Words.reviewStatus(item.status)}" data-review-row
+        th:classappend="${selectedReview != null and selectedReview.id == item.id} ? 'is-selected'">
+     <td><span class="wt-mini-chip" th:classappend="${item.status == 'ACCEPTED' ? ' wt-mini-chip--ok' : item.status == 'REJECTED' ? ' wt-mini-chip--bad' : item.status == 'IN_REVIEW' ? ' wt-mini-chip--info' : ''}"><span
+         class="material-icons" aria-hidden="true" th:text="${s.icon()}">pending</span><span th:text="${s.label()}">In review</span></span></td>
+     <td><span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">person</span><span th:text="${item.owner}">appsec team</span></span></td>
+     <td th:text="${item.reason}">Investigate</td>
+     <td><span class="localizetime" data-time-style="short" th:text="${item.updatedAt}"></span></td>
+     <td class="text-end"><a class="wt-icon-action" th:href="${'/rules/' + rule.id + '/reviews' + scope + '&reviewId=' + item.id}"
+         th:attr="aria-label=${'Open review: ' + item.reason}" data-tip="Open this review and its history"><span class="material-icons"
+         aria-hidden="true">open_in_new</span></a></td>
+    </tr>
+   </tbody>
+  </table>
+ </div>
+ <th:block th:unless="${rows.content.isEmpty()}"><div th:replace="~{fragments/pagination :: pagination(${pageUrl}, ${rows})}"></div></th:block>
+</section>
+
+<!-- New review, or the selected review and its history. -->
+<md-dialog id="reviewDialog" th:if="${hasDialog}" class="wt-dialog-wide" data-review-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span><th:block th:if="${selectedReview == null}">New review · </th:block><th:block th:unless="${selectedReview == null}">Review · </th:block><th:block th:text="${ruleName}">private-key</th:block></span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <div class="wt-meta-chips" th:if="${selectedReview != null}">
+   <a class="wt-mini-chip wt-mini-chip--link" th:if="${canModify and canCreate}" th:href="${'/rules/' + rule.id + '/reviews' + scope}"><span class="material-icons"
+       aria-hidden="true">add</span>Start another review</a>
+   <a th:if="${selectedReview.status == 'ACCEPTED' and canModify}" class="wt-mini-chip wt-mini-chip--link"
+      th:href="@{/rules/knowledge(ruleId=${rule.id},reviewId=${selectedReview.id})}"><span class="material-icons" aria-hidden="true">auto_awesome</span>Propose knowledge</a>
+  </div>
+  <form data-rule-review-form hx-boost="false" class="wt-md-form" id="reviewForm" th:if="${canWrite}">
+   <md-outlined-text-field data-review-owner label="Owner or team" required maxlength="255" supporting-text="Who looks into it"
+       th:value="${selectedReview?.owner ?: rule.stewardship.owner}"></md-outlined-text-field>
+   <md-outlined-text-field data-review-reason label="Reason" required maxlength="64" supporting-text="What question should the review answer?"
+       th:value="${selectedReview?.reason}"></md-outlined-text-field>
+   <fieldset class="wt-choice-chips" data-review-state>
+    <legend>Status</legend>
+    <label th:each="s, i : ${statuses}" class="wt-choice-chip"><input type="radio" name="review-state" th:value="${s.value()}"
+        th:checked="${selectedReview == null ? i.first : selectedReview.status == s.value()}"><span class="material-icons" aria-hidden="true"
+        th:text="${s.icon()}">pending</span><span th:text="${s.label()}">Open</span></label>
+   </fieldset>
+   <md-outlined-text-field data-review-recommendation label="Recommendation (optional)" type="textarea" maxlength="300"
+       supporting-text="What should change, if anything" th:value="${selectedReview?.recommendation}"></md-outlined-text-field>
+   <md-outlined-text-field data-review-outcome label="Outcome (optional)" type="textarea" maxlength="300"
+       supporting-text="What was decided and why" th:value="${selectedReview?.outcome}"></md-outlined-text-field>
+   <fieldset th:if="${selectedReview == null}" data-review-evidence class="wt-review-evidence">
+    <legend>Evidence (optional)</legend>
+    <div class="wt-choice-chips" data-evidence-kind role="radiogroup" aria-label="Evidence type">
+     <label class="wt-choice-chip"><input type="radio" name="review-evidence-kind" value="" checked><span class="material-icons" aria-hidden="true">block</span>None</label>
+     <label class="wt-choice-chip" data-tip="The selected rule revision itself"><input type="radio" name="review-evidence-kind" value="revision"><span class="material-icons" aria-hidden="true">commit</span>This revision</label>
+     <label class="wt-choice-chip" data-tip="A saved, reviewed example reference"><input type="radio" name="review-evidence-kind" value="case"><span class="material-icons" aria-hidden="true">bookmark</span>Reviewed example</label>
+     <th:block th:if="${canSeeScans}">
+      <label class="wt-choice-chip" data-tip="A true / false judgment someone saved on a finding"><input type="radio" name="review-evidence-kind" value="finding"><span class="material-icons" aria-hidden="true">thumbs_up_down</span>Finding feedback</label>
+      <label class="wt-choice-chip" data-tip="A scan's run record for this rule"><input type="radio" name="review-evidence-kind" value="scan"><span class="material-icons" aria-hidden="true">play_circle</span>Run record</label>
+     </th:block>
+    </div>
+    <div class="wt-review-evidence__pick" data-evidence-picker>
+     <label class="wt-review-evidence__search"><span class="visually-hidden">Search evidence</span><input data-evidence-search maxlength="200" type="search"
+         placeholder="Search evidence" aria-label="Search evidence"></label>
+     <div data-evidence-options class="wt-review-options" role="group" aria-label="Evidence records"></div>
+     <p data-evidence-preview class="wt-muted"></p><p data-evidence-status role="status" class="wt-muted"></p>
+     <div class="wt-actions"><md-text-button type="button" data-evidence-previous disabled>Previous</md-text-button><md-text-button type="button" data-evidence-next disabled>Next</md-text-button></div>
+    </div>
+   </fieldset>
+   <span th:if="${selectedReview != null}" class="wt-mini-chip" tabindex="0" data-tip="The original evidence reference and revision stay attached to this review."><span
+       class="material-icons" aria-hidden="true">link</span>Evidence kept as saved</span>
+  </form>
+  <dl th:if="${selectedReview != null and !canModify}" class="wt-facts"><dt>Owner</dt><dd th:text="${selectedReview.owner}"></dd><dt>Status</dt><dd
+      th:text="${Words.reviewStatus(selectedReview.status).label()}"></dd><dt>Reason</dt><dd th:text="${selectedReview.reason}"></dd><dt>Recommendation</dt><dd
+      th:text="${selectedReview.recommendation}"></dd><dt>Outcome</dt><dd th:text="${selectedReview.outcome}"></dd></dl>
+  <p data-rule-review-status role="status" aria-live="polite" class="wt-inline-status"></p>
+  <section th:if="${selectedReview != null}" data-review-history-section><h3 class="h6">Decision history</h3><div data-review-history></div>
+   <p data-review-history-status role="status" class="wt-muted"></p>
+   <div class="wt-actions"><md-text-button type="button" data-history-previous disabled>Previous</md-text-button><md-text-button type="button" data-history-next disabled>Next</md-text-button></div></section>
+  <details class="wt-form-disclosure" th:if="${canCreate and canModify and selectedReview == null}"><summary><span class="material-icons" aria-hidden="true">science</span>Save an example for testing</summary>
+   <form data-review-case-form hx-boost="false" class="wt-md-form">
+    <span class="wt-mini-chip" tabindex="0" data-tip="This stores a reviewed reference only. Register it as an executable example on the Candidates page, which checks its file, hash and expectation before any test runs."><span
+        class="material-icons" aria-hidden="true">info</span>Reference only, not run</span>
+    <label>Case <select data-case-kind><option value="FALSE_POSITIVE">False positive</option><option value="MISSED_VULNERABILITY">Missed vulnerability</option></select></label>
+    <md-outlined-text-field data-case-reference label="Versioned fixture reference" maxlength="255" required></md-outlined-text-field>
+    <md-outlined-text-field data-case-hash label="Fixture SHA-256" maxlength="64" required></md-outlined-text-field>
+    <label>Expectation <select data-case-expected><option value="NO_MATCH">Must stay clean</option><option value="MATCH">Must match</option></select></label>
+    <md-outlined-text-field data-case-engine label="Engine" maxlength="64" required th:value="${rule.module}"></md-outlined-text-field>
+    <md-outlined-text-field data-case-language label="Language" maxlength="64" required></md-outlined-text-field>
+    <md-outlined-button type="submit">Save example reference</md-outlined-button>
+   </form><p data-case-status role="status"></p>
+  </details>
+ </div>
+ <div slot="actions">
+  <md-text-button type="button" data-wt-dialog-close th:text="${canWrite ? 'Cancel' : 'Close'}">Cancel</md-text-button>
+  <md-filled-button th:if="${canWrite}" type="submit" form="reviewForm" data-review-save has-icon><span class="material-icons" slot="icon"
+      aria-hidden="true">save</span>Save review</md-filled-button>
+ </div>
+</md-dialog>
+</section>
+</th:block>

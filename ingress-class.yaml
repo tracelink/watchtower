@@ -1,0 +1,13 @@
+# ingressclass.yaml
+######## To be applied only once for a cluster ########
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: alb # The name of your IngressClass, typically matches the ingress.class annotation value you used before
+spec:
+  # This value 'ingress.k8s.aws/alb' tells Kubernetes that the AWS Load Balancer Controller implements this class.
+  controller: ingress.k8s.aws/alb
+  # Optional: You can mark this as the default IngressClass for the cluster
+  # if you want Ingresses without an explicit ingressClassName to use it.
+  # annotations:
+  #   ingressclass.kubernetes.io/is-default-class: "true"

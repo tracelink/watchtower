@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
@@ -21,7 +21,7 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 @ExtendWith(SpringExtension.class)
 public class JsonRuleServiceTest {
 
-	@MockBean
+	@MockitoBean
 	private JsonRuleRepository ruleRepository;
 
 	private JsonRuleService ruleService;

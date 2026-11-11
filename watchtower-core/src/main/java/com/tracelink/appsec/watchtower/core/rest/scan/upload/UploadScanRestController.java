@@ -7,7 +7,6 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanRe
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.security.Principal;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -60,18 +59,20 @@ public class UploadScanRestController {
 			upload.setRuleSetName(rulesetName);
 			upload.setUser(userPrincipal == null ? "" : userPrincipal.getName());
 
-			Path zipLocation = scanService.copyToLocation(uploadFile);
-			upload.setFilePath(zipLocation);
+			String storageKey = scanService.storeUpload(uploadFile);
+			upload.setStorageKey(storageKey);
 
 			ticket = scanService.doUploadScan(upload);
 		} catch (ScanRejectedException e) {
+			LOG.warn("Rejected upload scan for user {}: {}", upload.getUser(), e.getMessage());
 			return ResponseEntity.badRequest().body(
-					uploadScanResultService.generateFailedUploadResult(upload, e.getMessage()));
+					uploadScanResultService.generateFailedUploadResult(upload,
+							"Upload scan request was rejected"));
 		} catch (IOException e) {
 			LOG.error("Error copying the file", e);
 			return ResponseEntity.badRequest()
 					.body(uploadScanResultService.generateFailedUploadResult(upload,
-							"Error copying the file: " + e.getMessage()));
+							"Unable to store the uploaded file"));
 		}
 
 		return ResponseEntity.ok(uploadScanResultService.generateResultForTicket(ticket));

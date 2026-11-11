@@ -1,0 +1,45 @@
+name: Browser QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed Watchtower URL to audit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: watchtower-core/src/main/frontend/material-web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: watchtower-core/src/main/frontend/material-web/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Audit deployed application
+        run: npm run test:e2e
+        env:
+          WATCHTOWER_E2E_BASE_URL: ${{ inputs.base_url }}
+          WATCHTOWER_E2E_USERNAME: ${{ secrets.WATCHTOWER_E2E_USERNAME }}
+          WATCHTOWER_E2E_PASSWORD: ${{ secrets.WATCHTOWER_E2E_PASSWORD }}
+      - name: Upload browser artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-qa-report
+          path: |
+            watchtower-core/src/main/frontend/material-web/playwright-report/
+            watchtower-core/src/main/frontend/material-web/test-results/
+          if-no-files-found: warn
+          retention-days: 14

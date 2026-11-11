@@ -10,6 +10,8 @@ import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.presentation.HomeActivityItem;
 
 /**
  * Controller for the dashboard and home page of Watchtower
@@ -21,9 +23,12 @@ import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_DASHBOARDS_NAME + "')")
 public class UploadDashboardController {
 	private MetricsCacheService metricsService;
+	private UploadScanResultService scanResultService;
 
-	public UploadDashboardController(@Autowired MetricsCacheService metricsService) {
+	public UploadDashboardController(@Autowired MetricsCacheService metricsService,
+			@Autowired UploadScanResultService scanResultService) {
 		this.metricsService = metricsService;
+		this.scanResultService = scanResultService;
 	}
 
 	/**
@@ -36,22 +41,20 @@ public class UploadDashboardController {
 	public WatchtowerModelAndView dashboard() {
 		WatchtowerModelAndView mv = new WatchtowerModelAndView("upload_scan/dashboard");
 
-		if (!metricsService.isMetricsCacheReady()) {
-			mv.addObject(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
-					MetricsCacheService.METRICS_NOT_READY);
-		}
+		mv.addObject("metricsReady", metricsService.isMetricsCacheReady());
 
 		mv.addObject("numScans",
 				metricsService.getScanCount(CodeScanType.UPLOAD));
 		mv.addObject("numViolations",
 				metricsService.getViolationCount(CodeScanType.UPLOAD));
 		mv.addObject("avgScanTime", metricsService.getAverageScanTimeString(CodeScanType.UPLOAD));
+		mv.addObject("recentScans", scanResultService.getLastScans(5).stream()
+				.map(HomeActivityItem::fromUpload).toList());
 
+		mv.addScriptReference("/webjars/chart.js/4.4.0/dist/chart.umd.js");
 		mv.addScriptReference("/scripts/dashboard/utils.js");
 		mv.addScriptReference("/scripts/dashboard/dashboard-stats-switcher.js");
-		mv.addScriptReference("/scripts/dashboard/scans-vios-line.js");
-		mv.addScriptReference("/scripts/dashboard/violations-pie.js");
-		mv.addScriptReference("/scripts/dashboard/violations-bar.js");
+		mv.addScriptReference("/scripts/dashboard/dashboard-insights.js");
 		mv.addScriptReference("/scripts/dashboard/upload-dashboard.js");
 		return mv;
 	}

@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -132,6 +132,14 @@ public class EcrIntegrationEntity extends ApiIntegrationEntity {
 		setAwsSecretKey(parameters.get("awsSecretKey"));
 		setRejectOption(EcrRejectOption.fromString(parameters.get("rejectOption")));
 		setRegisterState(RegisterState.NOT_REGISTERED);
+	}
+
+	@Override
+	public void preserveConfiguredSecrets(Map<String, String> parameters) {
+		if (StringUtils.isBlank(parameters.get("awsSecretKey"))
+				&& StringUtils.isNotBlank(awsSecretKey)) {
+			parameters.put("awsSecretKey", awsSecretKey);
+		}
 	}
 
 	/**

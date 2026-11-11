@@ -14,7 +14,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -28,20 +33,21 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class AbstractModuleTest {
 	private Flyway flyway;
 
-	@MockBean
+	@MockitoBean
 	private RulesetService mockRulesetService;
 
-	@MockBean
+	@MockitoBean
 	private RuleEditorService mockRuleEditorService;
 
-	@MockBean
+	@MockitoBean
 	private RuleDesignerService mockRuleDesignerService;
 
-	@MockBean
+	@MockitoBean
 	private ScanRegistrationService mockScanRegistrationService;
 
 	@Mock
@@ -77,10 +83,13 @@ public class AbstractModuleTest {
 
 	@BeforeEach
 	public void setup() {
+		// Its own database: clean() below wipes every table, and the shared testdb is what
+		// the cached Spring test contexts (migrated once) keep using afterwards
 		flyway = Flyway.configure()
 				.dataSource(
-						"jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+						"jdbc:h2:mem:moduletest;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
 						"sa", "")
+				.cleanDisabled(false)
 				.load();
 	}
 
@@ -149,8 +158,29 @@ public class AbstractModuleTest {
 				});
 	}
 
+	@Test
+	public void testProvidedRulesAreImportedOnlyForTheModulesOwnContext() throws Exception {
+		// The actuator's management port runs in a child context; its refresh event reaches
+		// the parent's listeners too, and used to import every provided rule a second time.
+		ApplicationContext ownContext = Mockito.mock(ApplicationContext.class);
+		ApplicationContext managementContext = Mockito.mock(ApplicationContext.class);
+		List<RulesetDto> provided = List.of(new RulesetDto());
+		MockModule module = new MockModule();
+		module.providedRulesets = provided;
+		injectMocks(module);
+		ReflectionTestUtils.setField(module, "applicationContext", ownContext);
+
+		module.afterModulesLoaded(new ContextRefreshedEvent(managementContext));
+		BDDMockito.verify(mockRulesetService, Mockito.never())
+				.registerProvidedRulesets(BDDMockito.any(), BDDMockito.any());
+
+		module.afterModulesLoaded(new ContextRefreshedEvent(ownContext));
+		BDDMockito.verify(mockRulesetService).registerProvidedRulesets(moduleName, provided);
+	}
+
 	private class MockModule extends AbstractCodeScanModule {
 		private String name = moduleName;
+		private List<RulesetDto> providedRulesets;
 
 		public MockModule(String name) {
 			this.name = name;
@@ -197,7 +227,7 @@ public class AbstractModuleTest {
 
 		@Override
 		public List<RulesetDto> getProvidedRulesets() {
-			return null;
+			return providedRulesets;
 		}
 	}
 }

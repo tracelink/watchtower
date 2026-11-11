@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.encryption.service.DataEncryptionService;
@@ -12,7 +12,7 @@ import com.tracelink.appsec.watchtower.core.encryption.service.DataEncryptionSer
 @ExtendWith(SpringExtension.class)
 public class StringEncryptedAttributeConverterTest {
 
-	@MockBean
+	@MockitoBean
 	private DataEncryptionService dataEncryptionService;
 
 	@Test

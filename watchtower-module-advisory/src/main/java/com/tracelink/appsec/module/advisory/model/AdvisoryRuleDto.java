@@ -2,6 +2,7 @@ package com.tracelink.appsec.module.advisory.model;
 
 import com.tracelink.appsec.module.advisory.AdvisoryModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageSecurityFinding;
 
 /**
@@ -37,5 +38,16 @@ public class AdvisoryRuleDto extends CustomRuleDto {
 	 */
 	public boolean matches(ImageSecurityFinding finding) {
 		return finding.getFindingName().equalsIgnoreCase(getName());
+	}
+	@Override
+	public String getExternalRuleKey() { return getName(); }
+
+	@Override
+	protected RuleRevision executableDefinition() {
+		// Here the name is the actual case-insensitive advisory matcher, not just a label.
+		return newDefinition().field("findingName", getName() == null ? null
+				: getName().codePoints().map(Character::toUpperCase).map(Character::toLowerCase)
+						.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+						.toString());
 	}
 }

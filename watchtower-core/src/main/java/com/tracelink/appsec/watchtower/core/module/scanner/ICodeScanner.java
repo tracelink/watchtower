@@ -2,7 +2,12 @@ package com.tracelink.appsec.watchtower.core.module.scanner;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The executor of a scan that returns a report given a config for this scan
@@ -10,6 +15,15 @@ import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
  * @author csmith, mcool
  */
 public interface ICodeScanner extends IScanner<CodeScanConfig, CodeScanReport> {
+	default ExecutionCapability getExecutionCapability() { return ExecutionCapability.LOCAL; }
+	default boolean supportsScanType(com.tracelink.appsec.watchtower.core.scan.code.CodeScanType type) {
+		return getExecutionCapability() == ExecutionCapability.LOCAL;
+	}
+	/** Unknown configuration disables repository reuse; adapters must opt in with complete evidence. */
+	default EngineExecutionIdentity getExecutionIdentity(
+			CodeScanConfig config) {
+		return EngineExecutionIdentity.unknown(getClass().getName());
+	}
 	/**
 	 * Return a report of this scan
 	 *
@@ -20,9 +34,86 @@ public interface ICodeScanner extends IScanner<CodeScanConfig, CodeScanReport> {
 
 	/**
 	 * Get the rule class that this scanner supports
-	 * 
+	 *
 	 * @return the {@link RuleDto} rule class that this scanner can handle
 	 */
-	Class<? extends RuleDto> getSupportedRuleClass();
+	List<Class<? extends RuleDto>> getSupportedRuleClass();
+
+	/**
+	 * Declares what source material this scanner requires in order to run. Lets the scan agent
+	 * fetch only what is necessary instead of always downloading the full repository.
+	 * <p>
+	 * Defaults to {@link ScanScope#CHANGED_FILES}, which is correct for every scanner that only
+	 * evaluates the lines a pull request actually touches. Override for a scanner that needs
+	 * more (e.g. manifest files for dependency analysis, or the full repository for cross-file
+	 * analysis).
+	 *
+	 * @return the scope of source material this scanner requires
+	 */
+	default ScanScope getRequiredScope() {
+		return ScanScope.CHANGED_FILES;
+	}
+
+	/**
+	 * For {@link ScanScope#MANIFEST_FILES} only: glob patterns, relative to the repository root,
+	 * of the files this scanner needs regardless of whether they changed in the pull request
+	 * (e.g. {@code ["**&#47;pom.xml", "**&#47;package.json"]}). Ignored for every other scope.
+	 *
+	 * @return the file patterns this scanner needs, or empty if not applicable
+	 */
+	default List<String> getRequiredFilePatterns() {
+		return Collections.emptyList();
+	}
+
+	/**
+	 * The folders excluded from a scan unless a scanner says otherwise: test code and installed
+	 * JavaScript dependencies.
+	 */
+	Set<String> DEFAULT_EXCLUDED_FOLDERS = Set.of("test", "node_modules");
+
+	/**
+	 * Whether this scanner's findings are themselves sensitive - e.g. a secrets scanner, whose
+	 * flagged line is the secret. When true, the PR scan report never renders the flagged line's
+	 * source, only its location.
+	 *
+	 * @return true if the source of a flagged line must not be shown, false by default
+	 */
+	default boolean isSensitive() {
+		return false;
+	}
+
+	/**
+	 * Folder names (matched against any path segment) this scanner never needs to see. A full
+	 * repository download deletes a folder only when <em>every</em> scanner the ruleset runs
+	 * excludes it, so a scanner that needs, say, {@code test/} returns a set without it.
+	 *
+	 * @return the folder names this scanner can skip; {@link #DEFAULT_EXCLUDED_FOLDERS} by default
+	 */
+	default Set<String> getExcludedFolders() {
+		return DEFAULT_EXCLUDED_FOLDERS;
+	}
+
+	/**
+	 * The file types this scanner can analyse when an admin has not chosen others: extensions such
+	 * as {@code .tf} or file names such as {@code dockerfile} (see
+	 * {@link com.tracelink.appsec.watchtower.core.scan.code.ScannerFileTypes}). A scan with no file
+	 * of these types does not start the scanner. Declare a superset of what the engine really
+	 * parses: a type left out hides findings in those files.
+	 *
+	 * @return the default file types; empty means every file
+	 */
+	default List<String> getDefaultFileTypes() {
+		return Collections.emptyList();
+	}
+
+	/**
+	 * The file types this scanner runs on right now: the admin's choice for the module, or the
+	 * default.
+	 *
+	 * @return the file types in effect; empty means every file
+	 */
+	default List<String> getFileTypes() {
+		return getDefaultFileTypes();
+	}
 
 }

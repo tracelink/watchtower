@@ -19,6 +19,15 @@ import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerExceptio
 @Service
 public class JsonRuleService {
 
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
+
 	private final JsonRuleRepository ruleRepository;
 
 	/**
@@ -64,6 +73,7 @@ public class JsonRuleService {
 		rule.setFileExtension(dto.getFileExtension());
 		rule.setQuery(dto.getQuery());
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 
 	/**
@@ -80,6 +90,7 @@ public class JsonRuleService {
 		JsonRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());
 		ruleRepository.saveAndFlush(entity);
+		invalidateRuleCache();
 	}
 
 }

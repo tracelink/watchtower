@@ -4,13 +4,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
@@ -61,7 +61,7 @@ public class CheckovRuleEntity extends RuleEntity {
 					getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
 			dto.setDefinitions(getDefinitions().stream().map(CheckovRuleDefinitionEntity::toDto)
 					.collect(Collectors.toList()));
-			return dto;
+			return withStewardship(dto);
 		} else {
 			throw new IllegalArgumentException("Checkov does not support custom rules");
 		}

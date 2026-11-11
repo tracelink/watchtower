@@ -1,0 +1,19 @@
+<!--/* A rule's read-only facts as chips (UAT walkthrough, 2026-10-16): Author, Category, Language,
+     Rule class and the like show as one chip row with what each is on hover; editable fields stay
+     fields. The Documentation chip opens the link, with the address on hover. */-->
+<span th:fragment="fact(icon, text, tip)" class="wt-mini-chip wt-meta-chip" tabindex="0"
+    th:data-tip="${tip}" th:aria-label="${tip + ': ' + text}"><span class="material-icons" aria-hidden="true"
+    th:text="${icon}">info</span><span th:text="${text}">fact</span></span>
+
+<a th:fragment="doc(url)" class="wt-mini-chip wt-meta-chip wt-mini-chip--link" th:href="${url}" target="_blank"
+    rel="noopener noreferrer" th:data-tip="${url}"><span class="material-icons"
+    aria-hidden="true">menu_book</span>Documentation</a>
+
+<!--/* The severity choice, each option drawn as the same severity chip the reports use. */-->
+<md-outlined-select th:fragment="severity(priorities, selected)" label="Severity" id="priority" name="priority">
+  <md-select-option th:each="priority : ${priorities}" th:value="${priority}"
+      th:selected="${selected != null and priority.getPriority() == selected.getPriority()}">
+    <div slot="headline"><span th:class="${'wt-sev wt-sev-' + priority.getPriority()}"
+        th:text="${priority.getName()}">High</span></div>
+  </md-select-option>
+</md-outlined-select>

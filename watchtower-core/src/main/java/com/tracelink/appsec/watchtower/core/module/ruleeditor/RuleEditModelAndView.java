@@ -15,6 +15,7 @@ public class RuleEditModelAndView extends WatchtowerModelAndView {
 	public RuleEditModelAndView(String ruleEditView) {
 		super("rules/rule-edit");
 		addObject(RULE_VIEW, ruleEditView);
+		addScriptReference("/scripts/workspace-resizer.js");
 		addScriptReference("/scripts/rule-edit.js");
 	}
 

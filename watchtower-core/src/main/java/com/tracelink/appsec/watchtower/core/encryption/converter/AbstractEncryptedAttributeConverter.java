@@ -1,6 +1,6 @@
 package com.tracelink.appsec.watchtower.core.encryption.converter;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 
 import org.springframework.context.annotation.Lazy;
 

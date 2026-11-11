@@ -46,6 +46,11 @@ public class ImageScanAgent extends
 		this.scan = scan;
 	}
 
+	@Override
+	protected String scannerOutcome(ImageScanReport report) {
+		return report.getErrors().isEmpty() ? "RAN" : "FAILED";
+	}
+
 	/**
 	 * Set the {@linkplain IImageApi} for this Agent's configuration
 	 *
@@ -144,7 +149,11 @@ public class ImageScanAgent extends
 
 		reportViaApi(violations, errors);
 
-		scanResultService.saveImageReport(scan, startTime, violations, errors);
+		long savedScanId = scanResultService.saveImageReportWithId(scan, startTime, violations,
+				errors);
+		if (savedScanId > 0) {
+			scanResultService.saveExecutionSummary(savedScanId, getExecutionSummary());
+		}
 	}
 
 	private void reportViaApi(List<ImageViolationEntity> violations, List<ImageScanError> errors) {

@@ -1,0 +1,101 @@
+<!-- Rule health (UAT walkthrough, 2026-10-16): scanner tile, rule name and one plain-word health chip
+     by the title, with Saved reviews / Candidates / Edit on the right; the scope is chips and
+     segmented buttons that apply on click; the calculated health is four tiles and one
+     true/false/unknown bar; "Did the rule run?" is one row of chips with the caveats on hover.
+     The three zero-match states (#16) each keep their own chip and explanation. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority(''Rule Modify'')')},
+    Words=${T(com.tracelink.appsec.watchtower.core.rule.workflow.RuleDetailPresentation)},
+    rev=${revision ?: 'unknown'}">
+<div class="wt-home-head wt-report-head wt-page-bar">
+ <div class="wt-detail-title">
+  <span class="wt-scanner-tile wt-scanner-tile--ran wt-scanner-tile--lg" role="img" tabindex="0"
+      th:attr="data-tip=${scanner.name() + ' rule (' + scanner.purpose() + ')'},aria-label=${scanner.name() + ' rule'}"><span
+      class="material-icons" aria-hidden="true" th:text="${scanner.icon()}">key</span></span>
+  <div th:replace="~{fragments/pageheader :: header(${ruleName}, null)}"></div>
+ </div>
+ <div class="wt-meta-chips wt-report-head__status" data-health-chips>
+  <span th:each="chip : ${healthView.headerChips()}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+      th:classappend="${chip.tone().isEmpty() ? '' : ' wt-mini-chip--' + chip.tone()}" th:attr="data-tip=${chip.tip()}"><span
+      class="material-icons" aria-hidden="true" th:text="${chip.icon()}">hourglass_empty</span><span th:text="${chip.text()}">Too little data to judge</span></span>
+ </div>
+ <div class="wt-page-actions wt-report-head__status">
+  <a class="wt-button-link wt-button-link-secondary" th:href="${'/rules/' + rule.id + '/reviews' + scope}"><span class="material-icons"
+      aria-hidden="true">rate_review</span>Saved reviews<span class="wt-count-badge" th:text="${reviewCount}">0</span></a>
+  <a th:if="${canModify}" class="wt-button-link wt-button-link-secondary" th:href="@{/rules/{id}/candidates(id=${rule.id})}"><span
+      class="material-icons" aria-hidden="true">science</span>Candidates</a>
+  <a th:if="${#authorization.expression('hasAuthority(''Assistant Use'') and hasAuthority(''Scan Results View'') and hasAuthority(''Ruleset View'')')}" class="wt-button-link wt-button-link-secondary" th:href="@{/rules/{id}/improvements(id=${rule.id})}" data-rule-suggest-improvement><span class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span>Suggest improvement</a>
+  <a th:if="${canModify}" class="wt-icon-action" th:href="@{/rule/edit/{module}/{id}(module=${rule.module},id=${rule.id})}"
+      aria-label="Edit rule and owner" data-tip="Edit rule and owner"><span class="material-icons" aria-hidden="true">edit</span></a>
+ </div>
+</div>
+
+<div class="wt-meta-chips wt-health-scope mb-3" data-health-scope>
+ <details class="wt-popover wt-download-menu">
+  <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Revision: ' + (revision == rule.revision ? 'current' : Words.shortRevision(revision)) + '. Change'}"
+      th:attr="data-tip=${'Revision ' + (revision ?: 'not recorded') + '. Pick an older revision to see its numbers.'}"><span class="material-icons"
+      aria-hidden="true">commit</span><span th:text="${revision == rule.revision ? 'Current revision' : revision == null ? 'Unknown revision' : 'Revision ' + Words.shortRevision(revision)}">Current revision</span><span
+      class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+  <div class="wt-popover__body wt-download-menu__body">
+   <a class="wt-menu-item" th:href="@{/rules/{id}/health(id=${rule.id},revision=${rule.revision},days=${days},scanType=${scanType},policy=${policy})}"
+      th:attr="aria-current=${revision == rule.revision ? 'true' : null}">Current revision</a>
+   <a class="wt-menu-item" th:href="@{/rules/{id}/health(id=${rule.id},revision='unknown',days=${days},scanType=${scanType},policy=${policy})}"
+      th:attr="aria-current=${revision == null ? 'true' : null}" data-tip="Findings recorded before revisions were stored">Unknown revision</a>
+   <a th:each="item : ${revisions}" th:if="${item.revision != null and item.revision != rule.revision}" class="wt-menu-item"
+      th:href="@{/rules/{id}/health(id=${rule.id},revision=${item.revision},days=${days},scanType=${scanType},policy=${policy})}"
+      th:attr="aria-current=${revision == item.revision ? 'true' : null},data-tip=${item.revision}"
+      th:text="${'Revision ' + Words.shortRevision(item.revision)}">Revision e7e8619a</a>
+  </div>
+ </details>
+ <nav class="wt-segmented-filter" aria-label="Window">
+  <a th:each="d : ${Words.WINDOWS}" class="wt-segment" th:href="@{/rules/{id}/health(id=${rule.id},revision=${rev},days=${d},scanType=${scanType},policy=${policy})}"
+     th:classappend="${days == d} ? 'is-active'" th:attr="aria-current=${days == d ? 'true' : null}" th:text="${d + ' d'}">30 d</a>
+ </nav>
+ <nav class="wt-segmented-filter" aria-label="Scan scope">
+  <a th:each="c : ${Words.SCAN_SCOPES}" class="wt-segment" th:href="@{/rules/{id}/health(id=${rule.id},revision=${rev},days=${days},scanType=${c.value()},policy=${policy})}"
+     th:classappend="${scanType == c.value()} ? 'is-active'" th:attr="aria-current=${scanType == c.value() ? 'true' : null}"><span class="material-icons"
+     aria-hidden="true" th:text="${c.icon()}">radar</span><span th:text="${c.label()}">All scans</span></a>
+ </nav>
+ <details class="wt-popover wt-download-menu">
+  <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Findings: ' + Words.policy(policy).label() + '. Change'}"><span class="material-icons"
+      aria-hidden="true">policy</span><span th:text="${Words.policy(policy).label()}">All findings</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+  <div class="wt-popover__body wt-download-menu__body">
+   <a th:each="c : ${Words.POLICIES}" class="wt-menu-item" th:href="@{/rules/{id}/health(id=${rule.id},revision=${rev},days=${days},scanType=${scanType},policy=${c.value()})}"
+      th:attr="aria-current=${policy == c.value() ? 'true' : null}"><span class="material-icons" aria-hidden="true" th:text="${c.icon()}">policy</span> <span th:text="${c.label()}">All findings</span></a>
+  </div>
+ </details>
+ <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Days start at 00:00 UTC; times show in your time zone."><span class="material-icons"
+     aria-hidden="true">schedule</span>Calculated&nbsp;<span class="localizetime" data-time-style="short" th:text="${health.computed_at}"></span></span>
+</div>
+
+<h2 class="wt-section-title wt-section-title--icon"><span class="material-icons" aria-hidden="true">monitor_heart</span>Accuracy</h2>
+<div class="wt-stat-tiles wt-stat-tiles--4 mb-3" data-health-tiles>
+ <span th:each="tile : ${healthView.tiles()}" class="wt-stat-tile" tabindex="0" th:attr="data-tip=${tile.tip()}"><span class="material-icons"
+     aria-hidden="true" th:text="${tile.icon()}">bug_report</span><span><strong th:text="${tile.value()}">1</strong><span th:text="${tile.label()}">Finding</span></span></span>
+</div>
+<div class="wt-health-row mb-3" data-health-judgments th:with="j=${healthView.judgments()}">
+ <strong>Human judgments</strong>
+ <span class="wt-judgment-bar" tabindex="0" role="img" th:attr="aria-label=${j.tip()},data-tip=${j.tip()}"><i class="wt-judgment-bar__true"
+     th:style="${'inline-size:' + j.truePercent() + '%'}"></i><i class="wt-judgment-bar__false" th:style="${'inline-size:' + j.falsePercent() + '%'}"></i><i
+     class="wt-judgment-bar__unknown" th:style="${'inline-size:' + j.unknownPercent() + '%'}"></i></span>
+ <span class="wt-mini-chip" th:classappend="${j.truePositives() > 0} ? ' wt-mini-chip--ok'"><span class="material-icons" aria-hidden="true">check</span><span th:text="${j.truePositives() + ' true'}">1 true</span></span>
+ <span class="wt-mini-chip" th:classappend="${j.falsePositives() > 0} ? ' wt-mini-chip--bad'"><span class="material-icons" aria-hidden="true">close</span><span th:text="${j.falsePositives() + ' false'}">0 false</span></span>
+ <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">help</span><span th:text="${j.unknown() + ' unknown'}">0 unknown</span></span>
+ <span class="wt-health-row__end">
+  <span th:if="${health.last_fired != null}" class="wt-mini-chip" tabindex="0" data-tip="The most recent recorded match in this scope"><span
+      class="material-icons" aria-hidden="true">history</span>Last match&nbsp;<span class="localizetime" data-time-style="short" th:text="${health.last_fired}"></span></span>
+  <span th:if="${health.last_fired == null}" class="wt-mini-chip"><span class="material-icons" aria-hidden="true">history</span>No match in this scope</span>
+ </span>
+</div>
+
+<h2 class="wt-section-title wt-section-title--icon"><span class="material-icons" aria-hidden="true">play_circle</span>Did the rule run?</h2>
+<div class="wt-health-row" data-health-runs>
+ <span class="wt-mini-chip" tabindex="0" th:with="state=${healthView.evidenceChip()}" data-health-evidence
+     th:classappend="${state.tone().isEmpty() ? '' : ' wt-mini-chip--' + state.tone()}" th:attr="data-tip=${state.tip()}"><span class="material-icons"
+     aria-hidden="true" th:text="${state.icon()}">help</span><span th:text="${state.text()}">No run records</span></span>
+ <span th:each="chip : ${healthView.runChips()}" class="wt-mini-chip" tabindex="0"
+     th:classappend="${chip.tone().isEmpty() ? '' : ' wt-mini-chip--' + chip.tone()}" th:attr="data-tip=${chip.tip()}"><span class="material-icons"
+     aria-hidden="true" th:text="${chip.icon()}">fact_check</span><span th:text="${chip.text()}">1 eligible scan</span></span>
+ <span class="wt-health-row__end"><span class="wt-mini-chip" tabindex="0" th:attr="data-tip=${Words.howToRead()}"><span class="material-icons"
+     aria-hidden="true">help_outline</span>How to read this</span></span>
+</div>
+</th:block>

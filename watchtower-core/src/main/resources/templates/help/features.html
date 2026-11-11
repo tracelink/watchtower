@@ -1,0 +1,389 @@
+<!-- Feature guide (UAT walkthrough, 2026-10-16): search pill at the top right, the seven sections
+     as one segmented control (picking one shows only that section), Start here as five numbered
+     step cards, and each section's topics as a grid of cards that open to the same text. Topic
+     ids are kept: help links elsewhere point at them. Without scripts every section shows. -->
+<div class="wt-feature-guide" data-feature-guide>
+  <div class="wt-home-head wt-report-head">
+    <div th:replace="~{fragments/pageheader :: header('Feature guide', null)}"></div>
+    <form class="wt-feature-search wt-report-head__status" role="search" data-feature-search-form>
+      <md-outlined-text-field class="wt-search-pill" type="search" maxlength="100" data-feature-search autocomplete="off"
+          label="Search the guide" placeholder="For example bypass or rule health"><span
+          slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+      <span class="wt-count" role="status" aria-live="polite" data-feature-search-status></span>
+    </form>
+  </div>
+  <nav class="wt-segmented-filter" aria-label="Guide sections" data-feature-tabs>
+    <a class="wt-segment" href="#start-here" data-feature-tab="start-here"><span class="material-icons" aria-hidden="true">flag</span>Start here</a>
+    <a class="wt-segment" href="#guide-scan" data-feature-tab="guide-scan"><span class="material-icons" aria-hidden="true">radar</span>Configure and scan</a>
+    <a class="wt-segment" href="#guide-review" data-feature-tab="guide-review"><span class="material-icons" aria-hidden="true">rate_review</span>Review findings</a>
+    <a class="wt-segment" href="#guide-rules" data-feature-tab="guide-rules"><span class="material-icons" aria-hidden="true">rule</span>Improve rules</a>
+    <a class="wt-segment" href="#guide-missed" data-feature-tab="guide-missed"><span class="material-icons" aria-hidden="true">travel_explore</span>Investigate missed issues</a>
+    <a class="wt-segment" href="#guide-ai" data-feature-tab="guide-ai"><span class="material-icons" aria-hidden="true">auto_awesome</span>Use and administer AI</a>
+    <a class="wt-segment" href="#guide-help" data-feature-tab="guide-help"><span class="material-icons" aria-hidden="true">build</span>Troubleshooting</a>
+  </nav>
+
+  <section id="start-here" aria-labelledby="start-here-title" class="card card-small mb-4 wt-start-here" data-feature-pane>
+    <h2 id="start-here-title" class="h5">From a repository to your first reviewed finding</h2>
+    <ol class="wt-step-cards">
+      <li class="wt-step-card"><span class="wt-step-card__num" aria-hidden="true">1</span><span class="material-icons wt-step-card__icon" aria-hidden="true">hub</span>
+        <strong>Connect your source control</strong>
+        <span class="wt-step-card__text">An administrator adds a Bitbucket integration with an API token, tests it and registers its webhook.</span>
+        <span class="wt-step-card__links"><a class="btn btn-secondary btn-sm" th:if="${#authorization.expression('hasAuthority(''API Settings View'')')}" href="/apisettings">Integrations<span class="material-icons" aria-hidden="true">arrow_forward</span></a></span></li>
+      <li class="wt-step-card"><span class="wt-step-card__num" aria-hidden="true">2</span><span class="material-icons wt-step-card__icon" aria-hidden="true">rule</span>
+        <strong>Choose what to look for</strong>
+        <span class="wt-step-card__text">A ruleset groups the rules a repository is scanned with; the Default ruleset is used unless a repository names another.</span>
+        <span class="wt-step-card__links"><a class="btn btn-secondary btn-sm" th:if="${#authorization.expression('hasAuthority(''Ruleset View'')')}" href="/rulesets">Rulesets<span class="material-icons" aria-hidden="true">arrow_forward</span></a></span></li>
+      <li class="wt-step-card"><span class="wt-step-card__num" aria-hidden="true">3</span><span class="material-icons wt-step-card__icon" aria-hidden="true">play_arrow</span>
+        <strong>Run a first scan</strong>
+        <span class="wt-step-card__text">Pull requests are scanned automatically once the webhook is registered. To try one now, start a scan by hand.</span>
+        <span class="wt-step-card__links"><a class="btn btn-secondary btn-sm" th:if="${#authorization.expression('hasAuthority(''Scan Submit'')')}" href="/scan">New PR scan<span class="material-icons" aria-hidden="true">arrow_forward</span></a>
+          <a class="btn btn-secondary btn-sm" th:if="${#authorization.expression('hasAuthority(''Scan Submit'')')}" href="/uploadscan">Upload a scan<span class="material-icons" aria-hidden="true">arrow_forward</span></a></span></li>
+      <li class="wt-step-card"><span class="wt-step-card__num" aria-hidden="true">4</span><span class="material-icons wt-step-card__icon" aria-hidden="true">description</span>
+        <strong>Read the report</strong>
+        <span class="wt-step-card__text">Each report shows what was scanned, whether the assessment was complete, and the findings, most severe first.</span>
+        <span class="wt-step-card__links"><a class="btn btn-secondary btn-sm" th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}" href="/scan/results">PR results<span class="material-icons" aria-hidden="true">arrow_forward</span></a></span></li>
+      <li class="wt-step-card"><span class="wt-step-card__num" aria-hidden="true">5</span><span class="material-icons wt-step-card__icon" aria-hidden="true">monitor_heart</span>
+        <strong>Review findings, keep rules healthy</strong>
+        <span class="wt-step-card__text">Mark findings true or false positive; Rule work then shows which rules need attention.</span>
+        <span class="wt-step-card__links"><a class="btn btn-secondary btn-sm" th:if="${#authorization.expression('hasAuthority(''Rule Modify'') or hasAuthority(''Ruleset View'')')}" href="/rules/work">Rule work<span class="material-icons" aria-hidden="true">arrow_forward</span></a></span></li>
+    </ol>
+  </section>
+
+  <section id="guide-scan" aria-labelledby="guide-scan-title" data-feature-section data-feature-pane>
+    <h2 id="guide-scan-title" class="h5">Configure and scan</h2>
+    <div class="wt-topic-grid">
+
+    <details id="scan-evidence" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">receipt_long</span><span class="wt-topic-card__title">Recorded scan details</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> a report with no findings is only reassuring if the scanners really ran. This shows which scanners ran, were skipped, failed or reused an earlier report.</p>
+      <p><strong>Example:</strong> a pull request shows 0 findings, but the details say the PMD scanner was skipped for an unsupported language, so Java files were not checked.</p>
+      <p><strong>You need:</strong> Scan Results View. Historical scans may say Not recorded.</p>
+      <ol>
+        <li>Open a scan report and expand its execution or performance details.</li>
+        <li>Check each scanner's status and skip reason, and the assessment status at the top of the report.</li>
+        <li>Use the selected rule revision when comparing feedback and health across scans.</li>
+      </ol>
+      <p>Rules selected is not proof that every rule was evaluated; incomplete evidence stays unknown.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}" href="/scan/results">Open pull request results</a>
+      </div>
+    </details>
+
+    <details id="merge-gate" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">call_merge</span><span class="wt-topic-card__title">Merge gate: merges before a scan finished</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> before making Watchtower block merges, you need to know how often code is merged before its scan completes.</p>
+      <p><strong>Example:</strong> commit abc is pushed at 10:00 and merged at 10:02 while its scan is still queued — it counts as “Scan in progress”.</p>
+      <p><strong>You need:</strong> Scan Results View. Scripts can read the same figures as JSON from <code>/rest/scan/result/merge-gate?days=30</code> with an API key.</p>
+      <ol>
+        <li>Pick a window: the last 7, 30 or 90 days.</li>
+        <li>Read the chips: merges in the window, merges with no completed scan of the merged commit (scan in progress, newer commit not scanned, scan failed, never scanned), and merges whose scan blocked (bypassed or not).</li>
+        <li>Open Top repositories to see where to enforce first, then follow a row to the pull request in Bitbucket.</li>
+      </ol>
+      <p>Merges are counted from the release that started recording how pull requests close; older merges show as Resolved.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}" href="/scan/results">Open pull request results</a>
+      </div>
+    </details>
+    </div>
+  </section>
+
+  <section id="guide-review" aria-labelledby="guide-review-title" data-feature-section data-feature-pane>
+    <h2 id="guide-review-title" class="h5">Review findings</h2>
+    <div class="wt-topic-grid">
+
+    <details id="finding-feedback" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">rate_review</span><span class="wt-topic-card__title">Finding feedback</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> a scanner cannot tell whether its own match is right. A person's judgment is the evidence that shows which rules are noisy and which are trustworthy.</p>
+      <p><strong>Example:</strong> a hard-coded password rule fires on a test fixture. You mark it False positive with handling Test code, so the rule's health counts it and the team can scope the rule.</p>
+      <p><strong>You need:</strong> Scan Results View and Finding Feedback, plus a saved finding record.</p>
+      <ol>
+        <li>Open a pull request, upload or repository scan report and select a finding.</li>
+        <li>Choose Review finding. A dialog shows the rule, severity, file and line without leaving the report.</li>
+        <li>Choose True positive for a correct detection, False positive for an incorrect detection, or Unknown when you cannot decide, then how to handle it, such as Action required or Accepted risk, with a short explanation.</li>
+        <li>Save. The report updates the review marker while keeping the same filter and finding; reopen the dialog to edit your decision or see its history.</li>
+      </ol>
+      <p><strong>Ask AI (advisory):</strong> when an Assistant Admin turns on AI finding assessment, people with Assistant Use and source access can ask for a second opinion on one selected finding. It reads the code around the finding at the scanned commit and answers likely true positive, likely false positive, needs review or insufficient evidence, with four named checks and the lines it relied on. Your judgment is what counts; the answer never changes the finding. Findings of rules that detect secrets, lines where a secret was recorded and uploaded code are never sent.</p>
+      <p>Accepting a risk can still mean the detection is correct. Feedback supplies review evidence; it does not bypass a PR, change a rule, or train the AI automatically.</p>
+      <p th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}">
+        Open <a href="/scan/results">PR results</a>, <a href="/uploadscan/results">upload results</a>, or <a href="/reposcan">repository scans</a>.
+      </p>
+      </div>
+    </details>
+
+    <details id="bypass-reasons" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">lock_open</span><span class="wt-topic-card__title">PR bypass reason categories</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> sometimes a pull request must merge despite a blocking finding. A bypass records who allowed it and why, so exceptions stay visible and auditable.</p>
+      <p><strong>Example:</strong> a release fix is blocked by a finding the team accepts until next sprint. They request a bypass with reason Accepted risk; an approver applies it and the pull request can merge.</p>
+      <p><strong>You need:</strong> Scan Results View; request and approval actions depend on your permissions and the PR's state.</p>
+      <ol>
+        <li>On a blocking PR report choose Bypass, select a reason category and explain the request.</li>
+        <li>Send the request, or apply a bypass if you have PR Scan Bypass permission.</li>
+        <li>Record finding feedback separately when the finding itself is wrong: a bypass reason alone does not label findings or change rule health.</li>
+      </ol>
+      <p>An approved bypass affects blocking only for that pull request.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}" href="/scan/bypasses">Open bypass history</a>
+      </div>
+    </details>
+    </div>
+  </section>
+
+  <section id="guide-rules" aria-labelledby="guide-rules-title" data-feature-section data-feature-pane>
+    <h2 id="guide-rules-title" class="h5">Improve rules</h2>
+    <div class="wt-topic-grid">
+
+    <details id="rule-work" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">playlist_add_check</span><span class="wt-topic-card__title">Rule work: what needs a person</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> evidence about rules is spread over findings, reviews, candidates and settings. Rule work lists, in one place, what needs a person and links to where to do it.</p>
+      <p><strong>Example:</strong> Regex rule 31 has 10 reviewed findings and 8 were false positives. It appears under Rule investigations; Investigate rule opens its health, and a candidate fix then appears under Candidates until it is promoted or rejected.</p>
+      <p><strong>You need:</strong> Rule Modify or Ruleset View. Findings to review and Rule investigations also need Scan Results View; candidates and editing need Rule Modify.</p>
+      <ol>
+        <li>Findings to review: rules that matched recently but have too few reviewed findings to judge. Open a recent report from the row and review its matches.</li>
+        <li>Rule investigations: rules whose reviewed findings are mostly false positives.</li>
+        <li>Assigned and overdue reviews, and Candidates waiting for tests or a decision.</li>
+        <li>Setup gaps: missing owner or CWE, or no recent matches although the engine ran. These are kept apart because they are not proof a rule is wrong.</li>
+      </ol>
+      <a th:if="${#authorization.expression('hasAuthority(''Rule Modify'') or hasAuthority(''Ruleset View'')')}" href="/rules/work">Open Rule work</a>
+      </div>
+    </details>
+
+    <details id="rule-health" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">monitor_heart</span><span class="wt-topic-card__title">Rule health</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> to decide whether a rule needs fixing, using how often it matched and what reviewers said about those matches.</p>
+      <p><strong>Example:</strong> 6 of 8 reviewed findings in 90 days were false positives, so health shows Needs review; with only 2 reviewed it shows Insufficient data instead.</p>
+      <p><strong>You need:</strong> Scan Results View, plus Rule Modify or Ruleset View.</p>
+      <ol>
+        <li>Open Rule health from Rule work or from the selected rule in Rule Editing.</li>
+        <li>Choose the rule revision, time window, scan scope and finding policy.</li>
+        <li>Compare findings and reviewed labels, then check the coverage notes. No eligible evidence, unverified zero matches and successful zero matches are explained separately.</li>
+        <li>Start a saved review or test an improvement when the evidence supports it; health never changes enforcement by itself.</li>
+      </ol>
+      <p>The false-positive rate is FP ÷ (TP + FP) among reviewed findings; Unknown labels are separate. Insufficient data/coverage means more evidence is needed, not that the rule is bad. Old findings may have unknown revisions, and reused reports are excluded.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Rule Modify'')')}" href="/rule/edit">Open Rule Editing</a>
+      </div>
+    </details>
+
+    <details id="rule-reviews" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">fact_check</span><span class="wt-topic-card__title">Saved rule reviews</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> to assign someone to investigate a rule and keep their recommendation and decision with the evidence.</p>
+      <p><strong>Example:</strong> the owner is asked to check a noisy rule; they record “scope to src/ only” and accept the review, which can then become approved knowledge or a candidate.</p>
+      <p><strong>You need:</strong> Rule Modify or Ruleset View to read; Rule Modify to save.</p>
+      <ol>
+        <li>Open Saved reviews from the selected rule in Rule Editing or from Rule work.</li>
+        <li>Enter an owner, status and reason, a recommendation and, if available, supporting evidence chosen from the list with its preview.</li>
+        <li>Save; select a saved review later to update its status and outcome and see its history.</li>
+      </ol>
+      <p>Accepting a review records a human decision; it does not edit or activate a rule.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Rule Modify'')')}" href="/rule/edit">Open Rule Editing</a>
+      </div>
+    </details>
+
+    <details id="review-report" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">summarize</span><span class="wt-topic-card__title">Weekly rule review report</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> a saved weekly snapshot of rule attention, repeated feedback themes and CWE coverage, for trends and audits. For today's work use Rule work.</p>
+      <p><strong>Example:</strong> the report for 2026-W42 lists 12 rules with confirmed noise and shows CWE-89 has no Python rule.</p>
+      <p><strong>You need:</strong> Ruleset View to read; Rule Modify to run it now or change the weekly schedule.</p>
+      <ol>
+        <li>Open Review reports and choose a saved report.</li>
+        <li>Use Summary, Attention, Themes, Coverage and Settings. Attention lists every saved row with search, filters and pages.</li>
+        <li>Check Upstream rule updates after a Watchtower upgrade. Rules a scanner module newly provides report findings but do not block pull requests until someone with Rule Modify chooses Let new rules block.</li>
+      </ol>
+      <p>The report only ranks evidence. It does not open reviews, retire rules or change what blocks a pull request.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Ruleset View'')')}" href="/rules/review-reports">Open Review reports</a>
+      </div>
+    </details>
+
+    <details id="owner-status" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">person</span><span class="wt-topic-card__title">Rule owner and status</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> every rule needs someone accountable and a date to look at it again; status decides whether it still runs.</p>
+      <p><strong>Example:</strong> the platform team owns the SQL injection rules with a review every six months; an outdated rule is set to Being phased out while its replacement is tested.</p>
+      <p><strong>You need:</strong> Rule Modify.</p>
+      <ol>
+        <li>In Rule Editing select a rule and choose Owner and status.</li>
+        <li>Enter an owner or team and the next review date, and optionally weakness IDs such as CWE-79.</li>
+        <li>Choose Active, Being phased out (keeps running while a replacement is reviewed) or Retired (excluded from future scans), then save.</li>
+      </ol>
+      <p>A status change affects future scans; past results remain available.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Rule Modify'')')}" href="/rule/edit">Open Rule Editing</a>
+      </div>
+    </details>
+
+    <details id="rule-candidates" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">science</span><span class="wt-topic-card__title">Test rule improvements</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> changing a rule can remove real detections. A candidate is tested against reviewed examples and shadow scans before anyone promotes it.</p>
+      <p><strong>Example:</strong> a candidate excludes test folders. Reviewed tests show it still flags the known vulnerable file and no longer flags the fixture; shadow scans confirm fewer matches before promotion.</p>
+      <p><strong>You need:</strong> Rule Modify; shadow comparisons also need Assistant Source Read and Scan Results View. An administrator must configure the reviewed fixture checkout.</p>
+      <ol>
+        <li>In Rule Editing select a custom rule and choose Test improvements. The page walks through Propose → Prepare examples → Compare → Inspect shadow evidence → Decide.</li>
+        <li>Change the matching fields and give a reason to save a candidate.</li>
+        <li>Register versioned, secret-free fixtures with expected results, then run reviewed tests and compare.</li>
+        <li>Start a shadow comparison, review it, then explicitly promote or reject the candidate. A promoted revision can be rolled back while current.</li>
+      </ol>
+      <p>Testing uses the normal engine adapters in a bounded direct process; sandboxing is deferred. The assistant can suggest changes but cannot run tests or approve them.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Rule Modify'')')}" href="/rule/edit">Open Rule Editing</a>
+      </div>
+    </details>
+
+    <details id="reviewed-cases" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">library_add</span><span class="wt-topic-card__title">Examples for future rule tests</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> a reviewed false positive or missed vulnerability is the best test for the next version of a rule.</p>
+      <p><strong>Example:</strong> save the fixture <code>fixtures/xss/clean-encoder.java</code> with its SHA-256 and “must remain clean”.</p>
+      <p><strong>You need:</strong> Rule Modify.</p>
+      <ol>
+        <li>Keep a small, secret-free fixture in your team's versioned test repository.</li>
+        <li>In Saved reviews choose Save an example reference, then enter its reference, SHA-256, engine, language and expected result.</li>
+        <li>Register it as an executable fixture in Test improvements before running tests.</li>
+      </ol>
+      <p>Saving a reference does not run anything.</p>
+      </div>
+    </details>
+
+    <details id="approved-knowledge" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">library_books</span><span class="wt-topic-card__title">Approved knowledge</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> so reviewed facts, such as which function sanitizes output in one library version, are cited by the assistant instead of re-explained in every chat.</p>
+      <p><strong>Example:</strong> “OWASP Java Encoder 1.2.x: Encode.forHtml escapes HTML output”, scoped to Java and two repositories, with an accepted review as evidence.</p>
+      <p><strong>You need:</strong> Ruleset View to read; Rule Modify to propose, approve, reject or retire.</p>
+      <ol>
+        <li>Open Knowledge from the Rules menu, or Propose knowledge from an accepted review, which fills in its rule and the review as evidence.</li>
+        <li>Choose its kind, write one sentence without code or secret values, and give the language, library and versions.</li>
+        <li>Pick repositories (or all repositories), optional rules and CWEs, and the evidence, by searching names.</li>
+        <li>Another person with Rule Modify approves or rejects it. You cannot approve your own proposal. Retire an entry when it stops being true.</li>
+      </ol>
+      <p>Chat cites approved entries only inside their scope. Knowledge never hides findings, changes rule health or affects what blocks a pull request.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Ruleset View'')')}" href="/rules/knowledge">Open Knowledge</a>
+      </div>
+    </details>
+    </div>
+  </section>
+
+  <section id="guide-missed" aria-labelledby="guide-missed-title" data-feature-section data-feature-pane>
+    <h2 id="guide-missed-title" class="h5">Investigate missed issues</h2>
+    <div class="wt-topic-grid">
+
+    <details id="missed-vulnerabilities" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">report</span><span class="wt-topic-card__title">Record a missed vulnerability</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> a vulnerability the scanners did not flag is direct evidence of a gap. Recording it keeps that evidence for rule tests and searches.</p>
+      <p><strong>Example:</strong> a pentest finds SQL injection in <code>OrderDao.java</code> line 42 that no rule flagged; you record the vulnerable and fixed commits.</p>
+      <p><strong>You need:</strong> Rule Modify, Assistant Source Read, Repository Settings View and Scan Results View. Chat can stay off.</p>
+      <ol>
+        <li>Open a code repository and choose Record missed vulnerability.</li>
+        <li>Enter the vulnerable full commit, affected path and line, weakness ID and evidence reference, and the fixed commit when available.</li>
+        <li>Enter a versioned, secret-free fixture reference and SHA-256, language and framework, then save.</li>
+      </ol>
+      <p>Saving a case does not run tests, change a rule or establish sanitizer behavior globally.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Repository Settings View'')')}" href="/repository/pull_request">Open code repositories</a>
+      </div>
+    </details>
+
+    <details id="find-similar-code" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">manage_search</span><span class="wt-topic-card__title">Find similar code from a missed vulnerability</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> one confirmed miss often means the same mistake exists elsewhere.</p>
+      <p><strong>Example:</strong> after recording the OrderDao case, a draft rule is run across 25 repositories and finds two more files with the same pattern to review.</p>
+      <p><strong>You need:</strong> Assistant Source Read, Repository Settings View and Scan Results View; saving tests and starting a search also need Rule Modify.</p>
+      <ol>
+        <li><strong>Compare commits.</strong> Watchtower reads only the affected file at the vulnerable and fixed commits and shows the lines the fix changed. Nothing is saved.</li>
+        <li><strong>Save as regression tests.</strong> The vulnerable version must be flagged, the fixed version must not.</li>
+        <li><strong>Search other repositories.</strong> Choose up to 25; Watchtower runs the rule (current or a named draft) on each latest default-branch commit and lists matching lines.</li>
+      </ol>
+      <p>Everything here is deterministic and uses no AI. Matches are places to review, not confirmed vulnerabilities, and no source code is stored.</p>
+      </div>
+    </details>
+
+    <details id="source-workspace" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">commit</span><span class="wt-topic-card__title">Understand code at a pinned commit</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> to answer “is this really reachable?” you need to read the code exactly as it was scanned, not today's branch.</p>
+      <p><strong>Example:</strong> ask the assistant to show <code>src/web/Login.java</code> lines 30–60 at commit 9f2c… and list callers of <code>authenticate</code>.</p>
+      <p><strong>You need:</strong> chat enabled, with Assistant Use, Assistant Source Read, Repository Settings View and Scan Results View.</p>
+      <ol>
+        <li>Open the assistant drawer, ask it to list repositories and resolve a branch once.</li>
+        <li>Ask to read a path and line range, search literal text, or outline symbols and approximate references in Java, Python, JavaScript or TypeScript.</li>
+      </ol>
+      <p>Source is downloaded temporarily for each request and deleted afterwards; credential files are excluded and excerpts are redacted. Approximate references can miss dynamic callers.</p>
+      </div>
+    </details>
+    </div>
+  </section>
+
+  <section id="guide-ai" aria-labelledby="guide-ai-title" data-feature-section data-feature-pane>
+    <h2 id="guide-ai-title" class="h5">Use and administer AI</h2>
+    <div class="wt-topic-grid">
+
+    <details id="assistant" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">auto_awesome</span><span class="wt-topic-card__title">AI rule assistant and Explain</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> to understand a rule, compare rules and read recorded feedback and health without collecting it by hand. AI is optional; every workflow above works without it.</p>
+      <p><strong>Example:</strong> ask “Why is this rule noisy, and which reviewed findings show it?” The answer cites the rule's health and feedback.</p>
+      <p><strong>You need:</strong> Assistant Use and enabled chat; Explain also requires Rule Modify, and evidence access uses your current source permissions.</p>
+      <p class="wt-field-help">Assistant and Explain appear for every role with Assistant Use. Until an administrator turns chat on and adds the OpenAI API key, the drawer says what is missing instead of answering.</p>
+      <ol>
+        <li>Open Explain for a rule, or open Assistant and select a model and reasoning effort.</li>
+        <li>Ask what the rule detects, why it needs review, or for matching and clean examples.</li>
+        <li>Use History to continue a conversation, Cancel turn to stop, and Save feedback to rate an answer.</li>
+      </ol>
+      <p>The assistant reads authorized evidence; it cannot edit rules, run scans or promote changes. Examples are illustrative unless execution evidence says otherwise; conversations expire after the configured period, 14 days by default.</p>
+      </div>
+    </details>
+
+    <details id="assistant-settings" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">tune</span><span class="wt-topic-card__title">Assistant settings and audit</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p><strong>Why:</strong> administrators decide whether chat is available, which models it may use, what it may cost and how long conversations are kept.</p>
+      <p><strong>You need:</strong> Assistant Admin for settings; Assistant Audit separately grants audit and transcript access.</p>
+      <ol>
+        <li>Use Manage on the OpenAI row to add and test the write-only API key, then Choose model to validate synthetic compatibility and save verified pricing.</li>
+        <li>Use Limits and budgets to edit conversations, answer limits and daily budgets in their dialogs. After approving a default model, turn Chat on for the initial testing group.</li>
+        <li>Optionally tick AI finding assessment on (advisory second opinions) or AI theme naming on (names repeated-feedback themes in the weekly report with its own weekly budget).</li>
+        <li>An auditor can use the Audit tab to inspect usage, conversation expiry, available transcripts and reported outcomes.</li>
+      </ol>
+      <p>Secrets found by any scanner are never sent to the AI: chat sees “[REDACTED: secret detected by …]” on those lines, and feedback about rules that detect secrets is withheld. Rating an answer measures usefulness; it does not retrain the provider's model.</p>
+      <p><strong>Before turning chat on for everyone:</strong> grant Assistant Use only to the evaluators, turn chat on, then run Answer evaluation. Score every answer from 1 to 5; it shows Ready only when every answer is in, every check passed, the average is at least 4 and none is below 3. Enabling chat for everyone stays your decision.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Assistant Admin'') or hasAuthority(''Assistant Audit'')')}" href="/admin/assistant">Open assistant settings and audit</a>
+      </div>
+    </details>
+<details id="ai-reviewed-workflows" data-feature-topic><summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">auto_awesome</span><span class="wt-topic-card__title">AI proposals and reviewed ruleset changes</span><span class="wt-topic-card__meta">Evidence · drafts · approval</span></summary><div class="wt-topic-card__body">
+ <p>Finding review records your judgment and handling separately. AI finding assessment is an advisory prediction, recorded separately from your judgment. Neither changes a rule or starts tests.</p>
+ <p>Open Suggest improvement from rule health, saved reviews or candidates. Select authorized evidence, generate a proposal, inspect its citations and risks, edit its matching fields, then explicitly save a draft. Illustrative examples are not reviewed fixtures. Continue in the candidate workspace with human-reviewed fixtures and explicit tests, shadowing and promotion.</p>
+ <p>Ask the assistant to manage rulesets or exact repository assignments. It can prepare a server-computed change set. Open its review link, inspect effective rule changes and every affected repository, and use Approve and apply once. Deletions require exact typed names and explicit reference replacements. Changed resources require a refreshed preview and approval. Canceled or expired drafts do not change configuration; receipts survive chat expiry.</p>
+ <p>Both journeys require Chat on, assistant readiness and current permissions. Ruleset actions also need their separate setting enabled by an Assistant Admin. Assignments never enable a scanner. No ruleset approval authorizes tests, rule promotion, future actions or agent import. Source selection and broader evidence navigation are follow-on work; no source inspection is claimed by the MVP proposal workflow.</p>
+</div></details>
+    </div>
+  </section>
+
+  <section id="guide-help" aria-labelledby="guide-help-title" data-feature-section data-feature-pane>
+    <h2 id="guide-help-title" class="h5">Troubleshooting</h2>
+    <div class="wt-topic-grid">
+    <details id="aws-security-setup" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">cloud</span><span class="wt-topic-card__title">AWS Security Agent setup</span><span class="wt-topic-card__meta">Connections · synthetic tests · receipts</span></summary>
+      <div class="wt-topic-card__body">
+        <p>Open AWS Security Agent setup from Configuration. Recheck reads the runtime identity, encrypted input storage, Agent Space, module policy and shared report storage. A connection check is separate from a completed scan.</p>
+        <p>Run setup test explicitly submits one packaged synthetic full, differential or clean review through the existing AWS queue. No repository code is sent. Follow the saved test result, request stop if needed, inspect retained findings and open its JSON receipt. Retries preserve the original identity; source cleanup waits for provider-terminal proof.</p>
+        <p>Use the AWS Security Agent switch under Scanner modules to turn scanning on or off. No deployment approval or scan enablement flag is needed. Include the Security review rule in the repository ruleset; no separate repository AWS settings are needed. AWS reviews and upload folders identify the repository and scan. Review records stay in AWS until manually deleted. Reports have a separate AWS findings section and a link to the AWS review. Sample-code tests are optional checks of the integration. PR enforcement is separate. AWS setup does not require Assistant Chat or its token budgets.</p>
+        <a href="/aws-security/readiness/view" th:if="${#authorization.expression('hasAuthority(''AWS Security Administration'') and hasAuthority(''Repository Settings View'')')}">Open AWS Security Agent setup</a>
+      </div>
+    </details>
+    <details id="missing-controls" data-feature-topic>
+      <summary><span class="material-icons wt-topic-card__icon" aria-hidden="true">help</span><span class="wt-topic-card__title">A feature or button is missing</span><span class="wt-topic-card__meta">Why · example · what you need · steps</span></summary>
+      <div class="wt-topic-card__body">
+      <p>Each topic lists what you need under <strong>You need</strong>. Ask an administrator to review your role under Administration → Roles, then sign in again.</p>
+      <p>Assistant and Explain also need chat to be configured and enabled. Finding feedback needs a saved finding, and health for old results may have unknown revisions.</p>
+      <a th:if="${#authorization.expression('hasAuthority(''Role Management View'')')}" href="/rolemgmt">Open Roles</a>
+      </div>
+    </details>
+    </div>
+
+
+</section>
+  <p class="wt-page-meta" hidden data-feature-no-results>No topics match. Try another word, such as scan, rule or AI.</p>
+</div>

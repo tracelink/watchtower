@@ -12,6 +12,8 @@ import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.image.entity.ImageScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.image.result.ImageScanResult;
+import com.tracelink.appsec.watchtower.core.scan.presentation.FindingPresentationModel;
 
 /**
  * Controller for getting information about image scan reports
@@ -39,8 +41,12 @@ public class ImageScanReportController {
 					"Unknown ID");
 			mav.setViewName("redirect:/imagescan");
 		} else {
-			mav.addObject("result", scanResultService.generateResultForScan(scanEntity));
+			ImageScanResult result = scanResultService.generateResultForScan(scanEntity);
+			mav.addObject("result", result);
+			mav.addObject("findings", FindingPresentationModel.fromImage(result.getViolations()));
 			mav.addScriptReference("/scripts/scan_report.js");
+			mav.addScriptReference("/scripts/workspace-resizer.js");
+			mav.addScriptReference("/scripts/finding-workspace.js");
 		}
 		return mav;
 	}

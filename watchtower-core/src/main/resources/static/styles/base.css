@@ -1,0 +1,78 @@
+/* Watchtower design system - base layer (resets, typography, global behaviour overrides).
+   See tokens.css for the split's overview comment and load order. */
+
+/* Phase 11 Section C: self-hosted Inter, latin subset only, weight range 400-700 (the four
+   weights --wt-font/h1-h6/.btn etc. actually use below and in components.css). Google's variable
+   Inter serves the *entire* weight axis from one physical file, so a single @font-face with a
+   weight range costs no more than a single static weight would, and covers 500/700 for free
+   instead of only the 400/600 originally scoped. font-display: swap avoids invisible text while
+   it loads; the --wt-font fallback stack in tokens.css covers the swap window and total failure. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/Inter-latin-variable.woff2") format("woff2-variations"),
+    url("/fonts/Inter-latin-variable.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Alpine.js convention (IMPROVEMENT_PLAN.md item 9.2): hide x-cloak elements until Alpine
+   has initialized, so a collapsed sidebar section doesn't flash open before Alpine hides it. */
+[x-cloak] {
+  display: none !important;
+}
+
+/* Everything below is rem-based, so it all scales off this root anchor. The old
+   (now-unlinked) shards-dashboards.1.0.0.css pinned this explicitly; this rewrite dropped it,
+   leaving every rem size at the mercy of the browser/OS's own default font-size instead of an
+   intentional value - which is what made fonts render larger than designed. */
+html {
+  font-size: 16px;
+}
+
+html,
+body {
+  background: var(--wt-bg);
+  color: var(--wt-text);
+}
+
+body {
+  font-family: var(--wt-font);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--wt-text);
+}
+
+a {
+  color: var(--wt-accent);
+}
+a:hover {
+  color: var(--wt-accent-strong);
+}
+
+hr {
+  border-color: var(--wt-border);
+}
+
+/* One place that switches every animation in this file off for anyone who has asked the OS for
+   less motion. Kept last so it wins over the rules above regardless of their specificity. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* The collapse still has to end up hidden, just without the animated delay. */
+  .wt-nav-section > * {
+    transition: none !important;
+  }
+}

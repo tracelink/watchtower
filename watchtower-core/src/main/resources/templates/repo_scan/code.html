@@ -1,0 +1,8 @@
+<!--/* One file of a repository scan report's Code section, loaded when the file is opened: fetched
+     from the SCM at the scanned commit for this response only and never stored. Rendered with the
+     pull request report's markup, so flagged lines and masked secrets look the same. */-->
+<th:block th:fragment="file">
+  <th:block th:replace="~{fragments/findings :: codeBody(${file})}"></th:block>
+  <a th:if="${link != null}" class="wt-code-open-link" th:href="${link}" target="_blank"
+      rel="noopener noreferrer">Open in the repository<span class="material-icons" aria-hidden="true">open_in_new</span></a>
+</th:block>

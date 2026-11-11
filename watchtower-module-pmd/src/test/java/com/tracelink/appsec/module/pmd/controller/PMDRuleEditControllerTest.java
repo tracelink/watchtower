@@ -12,9 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -49,22 +49,22 @@ public class PMDRuleEditControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private RuleEditController ruleEditController;
 
-	@MockBean
+	@MockitoBean
 	private RuleService ruleService;
 
-	@MockBean
+	@MockitoBean
 	private PMDRuleService pmdRuleService;
 
-	@MockBean
+	@MockitoBean
 	private UserService userService;
 
-	@MockBean
+	@MockitoBean
 	private RulesetRepository rulesetRepository;
 
-	@MockBean
+	@MockitoBean
 	private RuleRepository ruleRepository;
 
 	@Autowired
@@ -164,7 +164,7 @@ public class PMDRuleEditControllerTest {
 		rule.setExternalUrl(url);
 		rule.setPriority(priority);
 		rule.setParserLanguage("java");
-		rule.setRuleClass("net.sourceforge.pmd.lang.rule.XPathRule");
+		rule.setRuleClass("net.sourceforge.pmd.lang.rule.xpath.XPathRule");
 		PMDPropertyEntity property = new PMDPropertyEntity();
 		property.setName("xpath");
 		property.setValue("//PrimaryPrefix[Name[starts-with(@Image,\"System.out\")]]");

@@ -47,7 +47,7 @@ public class ImageScanResultController {
 				ImageResultFilter.toFilter(filter.orElse(ImageResultFilter.ALL.getName()));
 		int pageNum = page.orElse(0);
 		List<ImageScanResult> results =
-				resultService.getScanResultsWithFilters(resultFilter, pageSize, pageNum);
+				resultService.getScanResultsWithFilters(resultFilter, pageSize, pageNum).content();
 		String next =
 				uriBuilder
 						.replacePath(Paths.get("rest/imagescan/result", resultFilter.getName(),

@@ -4,12 +4,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.scan.IWatchtowerApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudApi;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 
 /**
  * Handles all logic related to the API Integration Entities
@@ -21,11 +27,18 @@ public class ApiIntegrationService {
 
 	private final ApiIntegrationRepository apiRepo;
 	private final PasswordEncoder passwordEncoder;
+	private final String publicUrl;
+	private com.tracelink.appsec.watchtower.core.scan.apiintegration.webhook.BBWebhookManagementService webhooks;
+	@Autowired
+	public void setWebhooks(com.tracelink.appsec.watchtower.core.scan.apiintegration.webhook.BBWebhookManagementService webhooks){this.webhooks=webhooks;}
+	private String actor(){var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();return auth==null?"system":auth.getName();}
 
 	public ApiIntegrationService(@Autowired ApiIntegrationRepository apiRepo,
-			@Autowired PasswordEncoder passwordEncoder) {
+			@Autowired PasswordEncoder passwordEncoder,
+			@Value("${watchtower.publicUrl:#{null}}") String publicUrl) {
 		this.apiRepo = apiRepo;
 		this.passwordEncoder = passwordEncoder;
+		this.publicUrl = publicUrl;
 	}
 
 	/**
@@ -56,6 +69,9 @@ public class ApiIntegrationService {
 						"There is already an API integration with this label");
 			}
 		}
+		if(webhooks!=null && savedEntity instanceof BBCloudIntegrationEntity && apiIntegrationEntity instanceof BBCloudIntegrationEntity incoming) {
+			webhooks.saveSettings(incoming);return;
+		}
 		save(apiIntegrationEntity);
 	}
 
@@ -79,6 +95,7 @@ public class ApiIntegrationService {
 			throw new ApiIntegrationException("API integration cannot be deleted in state "
 					+ integrationEntity.getRegisterState().getDisplayName());
 		}
+		if(webhooks!=null && integrationEntity instanceof BBCloudIntegrationEntity){webhooks.deleteIntegration(integrationEntity.getIntegrationId());return;}
 		apiRepo.delete(integrationEntity);
 		apiRepo.flush();
 	}
@@ -112,6 +129,10 @@ public class ApiIntegrationService {
 		return apiRepo.findAll();
 	}
 
+	public Page<ApiIntegrationEntity> getSettings(Pageable pageable) {
+		return apiRepo.findAll(pageable);
+	}
+
 	/**
 	 * Registers a Watchtower scan webhook with the remote service associated with the given API
 	 * integration label.
@@ -128,11 +149,31 @@ public class ApiIntegrationService {
 		if (integrationEntity == null) {
 			throw new ApiIntegrationException("Unknown API integration label");
 		}
+		if(webhooks!=null && integrationEntity instanceof BBCloudIntegrationEntity) {
+			try {webhooks.enqueue(apiLabel,"UPSERT",com.tracelink.appsec.watchtower.core.scan.apiintegration.webhook.BBWebhookPreset.ALL,true,null,null,actor());}
+			catch(RuntimeException e){throw new ApiIntegrationException(e.getMessage());}
+			return CompletableFuture.completedFuture(null);
+		}
+
 		// Ensure that integration entity is in a valid state
 		if (!integrationEntity.getRegisterState().equals(RegisterState.NOT_REGISTERED)) {
 			throw new ApiIntegrationException("API integration cannot be registered in state "
 					+ integrationEntity.getRegisterState().getDisplayName());
 		}
+		// Behind an internet-facing ALB, Watchtower cannot reliably infer its own externally
+		// reachable url, so this is required configuration rather than something derived from
+		// the request. Checked synchronously so a missing value fails immediately instead of
+		// surfacing as an opaque FAILED state after the async call runs.
+		if (StringUtils.isBlank(publicUrl)) {
+			throw new ApiIntegrationException(
+					"watchtower.publicUrl must be configured before an integration can be registered");
+		}
+		// Persist the signing key BEFORE Bitbucket can deliver a hook, including when a
+		// successful remote creation is followed by a timeout or process restart.
+		if (integrationEntity instanceof BBCloudIntegrationEntity bb) {
+			new BBCloudApi(bb).ensureWebhookSecret();
+		}
+		integrationEntity.setRegisterError(null);
 		// Set register state to in progress
 		integrationEntity.setRegisterState(RegisterState.IN_PROGRESS);
 		apiRepo.saveAndFlush(integrationEntity);
@@ -152,7 +193,7 @@ public class ApiIntegrationService {
 
 	@Async
 	private CompletableFuture<Void> registerAsync(IWatchtowerApi api) {
-		return CompletableFuture.runAsync(() -> api.register(passwordEncoder));
+		return CompletableFuture.runAsync(() -> api.register(passwordEncoder, publicUrl));
 	}
 
 	/**
@@ -160,16 +201,23 @@ public class ApiIntegrationService {
 	 * integration label.
 	 *
 	 * @param apiLabel the apiLabel of the integration entity to unregister a webhook for
+	 * @return {@linkplain CompletableFuture} indicating the status of unregistration, if needed
 	 * @throws ApiIntegrationException if there is no integration entity with the given label or if
 	 *                                 the integration entity is in a state where it cannot be
 	 *                                 registered
 	 */
-	public void unregister(String apiLabel) throws ApiIntegrationException {
+	public CompletableFuture<Void> unregister(String apiLabel) throws ApiIntegrationException {
 		// Get integration entity for given label
 		ApiIntegrationEntity integrationEntity = apiRepo.findByApiLabel(apiLabel);
 		if (integrationEntity == null) {
 			throw new ApiIntegrationException("Unknown API integration label");
 		}
+		if(webhooks!=null && integrationEntity instanceof BBCloudIntegrationEntity bb) {
+			try {webhooks.enqueue(apiLabel,"DELETE",com.tracelink.appsec.watchtower.core.scan.apiintegration.webhook.BBWebhookPreset.ALL,true,null,bb.getWebhookUuid(),actor());}
+			catch(RuntimeException e){throw new ApiIntegrationException(e.getMessage());}
+			return CompletableFuture.completedFuture(null);
+		}
+
 		// Ensure that integration entity is in a valid state
 		if (!Arrays.asList(RegisterState.REGISTERED, RegisterState.FAILED)
 				.contains(integrationEntity.getRegisterState())) {
@@ -183,7 +231,7 @@ public class ApiIntegrationService {
 
 		// Create API and unregister
 		IWatchtowerApi api = integrationEntity.createApi();
-		unregisterAsync(api).whenCompleteAsync((v, e) -> {
+		return unregisterAsync(api).whenCompleteAsync((v, e) -> {
 			if (e == null) {
 				integrationEntity.setRegisterState(RegisterState.NOT_REGISTERED);
 			} else {

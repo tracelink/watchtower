@@ -1,20 +1,17 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.upload;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Random;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -37,10 +34,10 @@ public class UploadScanRestControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanningService mockUploadScanningService;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanResultService mockScanResultService;
 
 	@Test
@@ -54,8 +51,8 @@ public class UploadScanRestControllerTest {
 
 		String ticket = "ticket";
 
-		BDDMockito.when(mockUploadScanningService.copyToLocation(file))
-				.thenReturn(Paths.get("some"));
+		BDDMockito.when(mockUploadScanningService.storeUpload(file))
+				.thenReturn("uploads/some-key.zip");
 		BDDMockito.when(mockUploadScanningService.doUploadScan(BDDMockito.any()))
 				.thenReturn(ticket);
 		BDDMockito.when(mockScanResultService.generateResultForTicket(ticket))
@@ -79,8 +76,8 @@ public class UploadScanRestControllerTest {
 
 		String message = "message";
 
-		BDDMockito.when(mockUploadScanningService.copyToLocation(file))
-				.thenReturn(Paths.get("some"));
+		BDDMockito.when(mockUploadScanningService.storeUpload(file))
+				.thenReturn("uploads/some-key.zip");
 		BDDMockito.when(mockUploadScanningService.doUploadScan(BDDMockito.any()))
 				.thenThrow(new ScanRejectedException(message));
 		mockMvc.perform(MockMvcRequestBuilders.multipart("/rest/uploadscan").file(file)
@@ -89,7 +86,7 @@ public class UploadScanRestControllerTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		BDDMockito.verify(mockScanResultService).generateFailedUploadResult(BDDMockito.any(),
 				captor.capture());
-		Assertions.assertEquals(message, captor.getValue());
+		Assertions.assertEquals("Upload scan request was rejected", captor.getValue());
 	}
 
 	@Test
@@ -103,7 +100,7 @@ public class UploadScanRestControllerTest {
 
 		String message = "message";
 
-		BDDMockito.when(mockUploadScanningService.copyToLocation(file))
+		BDDMockito.when(mockUploadScanningService.storeUpload(file))
 				.thenThrow(new IOException(message));
 		mockMvc.perform(MockMvcRequestBuilders.multipart("/rest/uploadscan").file(file)
 				.with(SecurityMockMvcRequestPostProcessors.csrf()));
@@ -111,7 +108,7 @@ public class UploadScanRestControllerTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		BDDMockito.verify(mockScanResultService).generateFailedUploadResult(BDDMockito.any(),
 				captor.capture());
-		MatcherAssert.assertThat(captor.getValue(), Matchers.containsString(message));
+		Assertions.assertEquals("Unable to store the uploaded file", captor.getValue());
 	}
 
 	@Test

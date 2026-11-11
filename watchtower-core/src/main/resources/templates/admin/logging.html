@@ -1,63 +1,75 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-        <!-- <span class="text-uppercase page-subtitle">Watchtower Logs</span> -->
-        <h3 class="page-title">Logging</h3>
-    </div>
+<!-- Logs (UAT walkthrough, 2026-10-16): the title carries the server level and time as chips,
+     one toolbar (level segments with colour dots, search, lines), then the lines themselves. Each
+     line shows its level as a chip; warnings and errors are tinted; lines wrap. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).LOGGING_MODIFY_NAME+''')')},
+    canDownload=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).LOGGING_DOWNLOAD_NAME+''')')}">
+<div class="wt-home-head wt-report-head">
+  <div th:replace="~{fragments/pageheader :: header('Logs', null)}"></div>
+  <div class="wt-meta-chips wt-report-head__status">
+    <details class="wt-popover wt-download-menu" th:if="${canModify}" data-log-level-menu>
+      <summary class="wt-mini-chip wt-meta-chip" data-log-level th:aria-label="${'Server log level ' + currentLogLevel + '. Change level'}"><span
+          class="material-icons" aria-hidden="true">tune</span><span th:text="${'Level: ' + currentLogLevel}">Level: INFO</span><span
+          class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+      <form class="wt-popover__body wt-download-menu__body" action="/logging/set" method="POST">
+        <span class="wt-meta-label">The level the server records at</span>
+        <button th:each="level : ${logOptions}" type="submit" name="loglevel" th:value="${level}"
+            class="wt-menu-item" th:attr="aria-pressed=${#strings.equals(level, currentLogLevel)}"
+            th:text="${level}">INFO</button>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      </form>
+    </details>
+    <span class="wt-mini-chip wt-meta-chip" tabindex="0" th:unless="${canModify}" data-log-level
+        data-tip="The level the server records at"><span class="material-icons" aria-hidden="true">tune</span><span
+        th:text="${'Level: ' + currentLogLevel}">Level: INFO</span></span>
+    <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+        th:attr="data-tip=${#temporals.format(currentTime, 'yyyy-MM-dd HH:mm:ss') + ' (' + serverZone + ')'}"><span
+        class="material-icons" aria-hidden="true">schedule</span><span
+        th:text="${'Server time ' + #temporals.format(currentTime, 'HH:mm') + ' ' + serverZoneShort}">Server time</span></span>
+  </div>
+  <div class="wt-page-actions wt-report-head__status">
+    <span class="wt-mini-chip wt-mini-chip--ok wt-meta-chip" data-log-status role="status" aria-live="polite" tabindex="0"
+        data-tip="New lines load every 15 seconds"><span class="material-icons" aria-hidden="true">autorenew</span><span data-log-status-text>Live</span></span>
+    <md-outlined-button type="button" data-log-pause aria-pressed="false"><span slot="icon" class="material-icons" aria-hidden="true">pause</span><span data-log-pause-label>Pause</span></md-outlined-button>
+    <!-- A plain link: the GET form with a Material button around it widened the whole page by
+         61px at every desktop width (found in the local visual check, 2026-10-08). -->
+    <a class="btn btn-secondary btn-sm" href="/logging/download" th:if="${canDownload}"><span class="material-icons" aria-hidden="true">download</span>Download</a>
+  </div>
 </div>
-<!-- End Page Header -->
-<!-- Default Light Table -->
-<div class="row border-bottom pb-4 mb-4">
-    <div class="col">
-        <div class="card card-small mb-2">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Change Logging Level</h6>
-            </div>
-            <div class="row p-3">
-                <div class="col">
-                    <div class="row">
-                        <div class="col-md-6 d-flex flex-column">
-                            <h6 class="d-block">Current Level</h6>
-                            <div class="pl-4" th:text="${currentLogLevel}"></div>
-                            <form action="/logging/download" method="GET" class="mt-auto"
-                                  th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).LOGGING_DOWNLOAD_NAME+''')')}">
-                                <button type="submit" class="btn btn-accent">Download Logs</button>
-                            </form>
-                        </div>
-                        <div class="col-md-6">
-                            <form action="/logging/set" method="POST"
-                                  th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).LOGGING_MODIFY_NAME+''')')}">
-                                <h6 class="d-block">Select New Log Level</h6>
-                                <div class="form-group col-md-6">
-                                    <select name="loglevel" class="form-control">
-                                        <option th:each="level : ${logOptions}" th:value="${level}" th:text="${level}" th:selected="${#strings.equals(level, currentLogLevel)}"/>
-                                    </select>
-                                </div>
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                <button type="submit" class="btn btn-accent">Update Log Level</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
+<div class="wt-log-toolbar">
+  <div class="wt-segmented-filter" role="group" aria-label="Show lines" data-log-severity>
+    <button type="button" class="wt-segment" data-log-level-filter="all" aria-pressed="true">All</button>
+    <button type="button" class="wt-segment" data-log-level-filter="error" aria-pressed="false"><span class="wt-dot wt-dot--off" aria-hidden="true"></span>Errors</button>
+    <button type="button" class="wt-segment" data-log-level-filter="warn" aria-pressed="false"><span class="wt-dot wt-dot--setup" aria-hidden="true"></span>Warnings</button>
+    <button type="button" class="wt-segment" data-log-level-filter="info" aria-pressed="false"><span class="wt-dot wt-dot--info" aria-hidden="true"></span>Info</button>
+  </div>
+  <md-outlined-text-field id="logFilter" class="wt-search-pill" type="search" data-log-filter
+      autocomplete="off" label="Filter loaded lines" placeholder="Message or logger"><span
+      slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+  <label class="wt-chip-select">
+    <span class="visually-hidden">Lines to load</span>
+    <select name="lines" aria-label="Lines to load">
+      <option th:each="limit : ${ {200, 500, 1000} }" th:value="${limit}" th:selected="${limit == lineLimit}"
+          th:text="${'Last ' + limit + ' lines'}">Last 200 lines</option>
+    </select>
+  </label>
+  <button type="button" class="wt-copy-button" data-log-refresh aria-label="Refresh now" data-tip="Refresh now">
+    <span class="material-icons" aria-hidden="true">refresh</span></button>
+  <span class="wt-count" data-log-filter-status aria-live="polite"></span>
 </div>
-<div class="row">
-    <div class="col">
-        <div class="card card-small mb-2">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Most Recent Logs</h6>
-                <span th:text="${'Current Server Time: ' + #temporals.format(currentTime, 'yyy-MM-dd HH:mm:ss')}"></span>
-            </div>
-            <div class="row p-3">
-                <div class="col">
-                    <th:block th:each="log : ${logs}">
-                        <span th:text="${log}"> </span><br>
-                    </th:block>
-                </div>
-            </div>
-        </div>
+<section class="card card-small mb-2 wt-log-region" tabindex="0" role="region" data-log-region
+    aria-label="Most recent application logs">
+  <div class="wt-log-output" data-log-lines>
+    <div th:each="log : ${logs}" class="wt-log-line" th:classappend="${' wt-log-line--' + log.levelKey()}"
+        data-log-line th:attr="data-level=${log.levelKey()}">
+      <span class="wt-log-line__time" th:if="${!#strings.isEmpty(log.time())}" th:text="${log.time()}"
+          th:attr="data-tip=${log.date() + ' ' + log.time()}">13:58:36</span>
+      <span class="wt-log-level" th:if="${!#strings.isEmpty(log.level())}"
+          th:classappend="${' wt-log-level--' + log.levelKey()}" th:text="${log.level()}">INFO</span>
+      <span class="wt-log-line__logger" th:if="${!#strings.isEmpty(log.logger())}" tabindex="0"
+          th:attr="data-tip=${log.logger()}" th:text="${log.shortLogger()}">Logger</span>
+      <span class="wt-log-line__msg" th:text="${log.message()}">Message</span>
     </div>
-</div>
-<!-- End Default Light Table -->
+  </div>
+</section>
+</th:block>

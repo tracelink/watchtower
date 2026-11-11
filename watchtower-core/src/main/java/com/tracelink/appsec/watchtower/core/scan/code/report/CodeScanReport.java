@@ -14,7 +14,13 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanReport;
  */
 public class CodeScanReport extends AbstractScanReport {
 	private List<CodeScanError> errors;
+ private String executionStatus;
+ public String getExecutionStatus(){return executionStatus;}
+ public void setExecutionStatus(String status){this.executionStatus=status;}
 	private List<CodeScanViolation> violations;
+	// Rules the scanner could not run (for example a rule that is configured wrongly), by name, with why. The scanner
+	// itself still ran, so these mark only those rules as not run, not the whole scanner.
+	private final java.util.Map<String, String> failedRules = new java.util.LinkedHashMap<>();
 
 	public CodeScanReport() {
 		errors = new ArrayList<CodeScanError>();
@@ -39,6 +45,25 @@ public class CodeScanReport extends AbstractScanReport {
 		violations.add(violation);
 	}
 
+	/**
+	 * Records that one rule could not run in this scan although its scanner did.
+	 *
+	 * @param ruleName the rule's name as the ruleset knows it
+	 * @param reason why it could not run
+	 */
+	public void addFailedRule(String ruleName, String reason) {
+		if (ruleName != null && !ruleName.isBlank()) {
+			failedRules.putIfAbsent(ruleName, reason);
+		}
+	}
+
+	/**
+	 * @return the rules that could not run, by name with the reason
+	 */
+	public java.util.Map<String, String> getFailedRules() {
+		return Collections.unmodifiableMap(failedRules);
+	}
+
 	public List<CodeScanError> getErrors() {
 		return Collections.unmodifiableList(errors);
 	}
@@ -55,5 +80,6 @@ public class CodeScanReport extends AbstractScanReport {
 	public void join(CodeScanReport other) {
 		errors.addAll(other.getErrors());
 		violations.addAll(other.getViolations());
+		other.getFailedRules().forEach(this::addFailedRule);
 	}
 }

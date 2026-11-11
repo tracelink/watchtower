@@ -53,8 +53,13 @@ public class AdvisoryDesignerController {
 	public RuleDesignerModelAndView saveRule(@RequestParam String advisoryName,
 			Authentication auth, RedirectAttributes redirectAttributes) {
 		RuleDesignerModelAndView mav = designerService.getDefaultRuleDesignerModelAndView();
-		AdvisoryRuleDto ruleDto = createRuleDto(advisoryName, auth);
 		try {
+			AdvisoryEntity advisory = imageAdvisoryService.findByName(advisoryName);
+			if (advisory == null) {
+				throw new RuleDesignerException(
+						"There is no advisory named \"" + advisoryName + "\". Pick one from the list.");
+			}
+			AdvisoryRuleDto ruleDto = createRuleDto(advisory, auth);
 			ruleService.saveNewRule(ruleDto);
 			mav.addSuccessMessage("Successfully Saved Rule " + ruleDto.getName());
 		} catch (RuleDesignerException e) {
@@ -64,9 +69,8 @@ public class AdvisoryDesignerController {
 		return mav;
 	}
 
-	private AdvisoryRuleDto createRuleDto(String advisoryName, Authentication auth) {
+	private AdvisoryRuleDto createRuleDto(AdvisoryEntity entity, Authentication auth) {
 		AdvisoryRuleDto dto = new AdvisoryRuleDto();
-		AdvisoryEntity entity = imageAdvisoryService.findByName(advisoryName);
 		dto.setAuthor(auth.getName());
 		dto.setExternalUrl(entity.getUri());
 		dto.setMessage(entity.getDescription());

@@ -1,0 +1,8 @@
+<details th:fragment="info(topic, label, description)" class="wt-feature-help">
+  <summary class="wt-feature-help-link" th:aria-label="|About ${label}|"><span class="material-icons" aria-hidden="true">info</span></summary>
+  <div class="wt-feature-help-body" role="note">
+    <p th:text="${description}"></p>
+    <a th:href="${'/help/features#' + topic}">Instructions and example</a>
+    <button type="button" data-help-dismiss aria-label="Dismiss help">Close</button>
+  </div>
+</details>

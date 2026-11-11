@@ -1,0 +1,147 @@
+<section th:fragment="insights(distributionHeading, performanceEnabled)" class="card card-small wt-dashboard-insights"
+    data-dashboard-insights aria-labelledby="dashboard-insights-heading">
+  <header class="card-header border-bottom wt-dashboard-toolbar">
+    <div class="wt-heading-with-status">
+      <h2 id="dashboard-insights-heading" class="h5 m-0">Scan activity</h2>
+      <!-- A chip, not a banner: the charts still render, just possibly incomplete. -->
+      <span class="wt-status-chip wt-status-chip--warning" role="status" data-metrics-preparing
+          th:unless="${metricsReady}" title="Values and charts may be incomplete until metrics are ready.">Preparing metrics</span>
+      <!-- Scans with impossible dates (e.g. 1989) would stretch the All time axis by decades. -->
+      <span class="wt-status-chip wt-status-chip--warning" tabindex="0" data-dashboard-impossible-dates hidden><span
+          class="material-icons" aria-hidden="true">event_busy</span><span data-dashboard-impossible-label></span></span>
+    </div>
+    <div class="wt-dashboard-controls">
+      <div class="wt-segmented-filter" data-dashboard-tabs role="tablist"
+          aria-label="Dashboard metric view">
+        <button class="wt-segment" type="button" role="tab" aria-selected="true"
+            aria-controls="dashboard-activity-view"><span class="material-icons" aria-hidden="true">bar_chart</span>Activity</button>
+        <button class="wt-segment" type="button" role="tab" aria-selected="false" tabindex="-1"
+            aria-controls="dashboard-performance-view" th:if="${performanceEnabled}"
+            sec:authorize="hasAuthority('Scan Admin')" data-tip="Average completed scan duration over time"><span
+            class="material-icons" aria-hidden="true">timer</span>Speed</button>
+      </div>
+      <!-- Approved range rule: 7 and 30 days are daily bars; 6 months and All time are monthly lines. -->
+      <div class="wt-dashboard-range" data-dashboard-range>
+        <input type="hidden" id="dashboard-period" value="last-thirty-days">
+        <div class="wt-segmented-filter" role="group" aria-label="Date range" data-dashboard-range-options>
+          <button class="wt-segment" type="button" data-period="last-week" aria-pressed="false"><span
+              class="material-icons" aria-hidden="true">calendar_view_week</span>7 days</button>
+          <button class="wt-segment" type="button" data-period="last-thirty-days" aria-pressed="true"><span
+              class="material-icons" aria-hidden="true">calendar_month</span>30 days</button>
+          <button class="wt-segment" type="button" data-period="last-six-months" aria-pressed="false"><span
+              class="material-icons" aria-hidden="true">date_range</span>6 months</button>
+          <button class="wt-segment" type="button" data-period="all-time" aria-pressed="false"
+              data-tip="One point per month since the first scan"><span
+              class="material-icons" aria-hidden="true">all_inclusive</span>All time</button>
+          <button class="wt-segment" type="button" data-period="custom" aria-pressed="false" aria-expanded="false"
+              aria-controls="dashboard-range-picker" data-tip="Pick your own From and To dates"><span
+              class="material-icons" aria-hidden="true">edit_calendar</span><span data-custom-label>Custom</span></button>
+        </div>
+        <!-- Custom range, Kibana style: quick ranges, or From-To dates, then Apply. Days are the
+             smallest step because dashboard numbers are kept per day. -->
+        <div id="dashboard-range-picker" class="wt-range-picker" data-range-picker role="dialog" aria-label="Custom date range" hidden>
+          <div class="wt-range-picker__quick" role="group" aria-label="Quick ranges">
+            <span class="wt-meta-label">Quick ranges</span>
+            <button type="button" class="wt-range-picker__q" data-quick="today">Today</button>
+            <button type="button" class="wt-range-picker__q" data-quick="yesterday">Yesterday</button>
+            <button type="button" class="wt-range-picker__q" data-quick="7">Last 7 days</button>
+            <button type="button" class="wt-range-picker__q" data-quick="14">Last 14 days</button>
+            <button type="button" class="wt-range-picker__q" data-quick="30">Last 30 days</button>
+            <button type="button" class="wt-range-picker__q" data-quick="90">Last 90 days</button>
+            <button type="button" class="wt-range-picker__q" data-quick="6-months">Last 6 months</button>
+            <button type="button" class="wt-range-picker__q" data-quick="this-month">This month</button>
+            <button type="button" class="wt-range-picker__q" data-quick="last-month">Last month</button>
+            <button type="button" class="wt-range-picker__q" data-quick="this-year">This year</button>
+          </div>
+          <fieldset id="dashboard-period-custom-range" class="wt-range-picker__dates">
+            <legend class="wt-meta-label">From – To</legend>
+            <md-outlined-text-field id="dashboard-period-custom-from" type="date" label="From"
+                aria-describedby="dashboard-period-custom-error"></md-outlined-text-field>
+            <md-outlined-text-field id="dashboard-period-custom-to" type="date" label="To"
+                aria-describedby="dashboard-period-custom-error"></md-outlined-text-field>
+            <div id="dashboard-period-custom-error" class="wt-custom-date-error" role="alert" hidden></div>
+            <p class="wt-range-picker__note"><span class="material-icons" aria-hidden="true">info</span>Days are the smallest step: dashboard numbers are kept per day.</p>
+            <div class="wt-range-picker__actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-range-cancel>Cancel</button>
+              <button type="button" class="btn btn-primary btn-sm" data-range-apply>Apply</button>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+  </header>
+  <!-- An empty range is one line, not three blank charts. -->
+  <div class="card-body wt-dashboard-empty" data-dashboard-empty role="status" hidden>
+    <span class="material-icons" aria-hidden="true">event_busy</span>
+    <span><strong>No scans in this range.</strong> <span data-dashboard-last-scan></span></span>
+    <button class="btn btn-secondary btn-sm" type="button" data-dashboard-show-all-time><span
+        class="material-icons" aria-hidden="true">all_inclusive</span>Show all time</button>
+  </div>
+  <div class="card-body wt-dashboard-grid" data-dashboard-charts>
+    <div class="wt-dashboard-metric-views" data-dashboard-chart-frame>
+      <div id="dashboard-activity-view" class="wt-dashboard-metric-view wt-trend-stack"
+          role="tabpanel" aria-label="Activity metrics">
+        <figure class="wt-trend-panel">
+          <figcaption>Scans finished <span class="wt-chart-total" data-dashboard-total="scans" tabindex="0"
+            data-tip="Finished scans only, counted when each scan completed. The results list also shows scans that are queued, running or incomplete, so its total can be higher.">0 total</span></figcaption>
+          <div class="wt-chart-region wt-chart-region-compact" data-chart-region aria-busy="true">
+            <canvas id="scans-trend" role="img" aria-label="Completed scans over time"></canvas>
+            <p id="scans-no-data" data-chart-state role="status" aria-live="polite">Loading scan trend…</p>
+          </div>
+        </figure>
+        <figure class="wt-trend-panel">
+          <figcaption>Findings found <span class="wt-chart-total" data-dashboard-total="findings" tabindex="0"
+            data-tip="Findings of finished scans, as recorded when each scan completed. A scan that was incomplete or has changed since is not recounted, so the results list can differ."></span></figcaption>
+          <div class="wt-chart-region wt-chart-region-compact" data-chart-region aria-busy="true">
+            <canvas id="findings-trend" role="img" aria-label="Findings over time"></canvas>
+            <p id="findings-no-data" data-chart-state role="status" aria-live="polite">Loading finding trend…</p>
+          </div>
+        </figure>
+      </div>
+      <div id="dashboard-performance-view"
+          class="wt-dashboard-metric-view wt-performance-trend" role="tabpanel"
+          aria-label="Performance metrics" hidden th:if="${performanceEnabled}"
+          sec:authorize="hasAuthority('Scan Admin')">
+        <figure class="wt-trend-panel">
+          <figcaption>Average scan duration
+            <span class="wt-chart-total" data-dashboard-total="performance">No samples</span>
+          </figcaption>
+          <div class="wt-chart-region wt-chart-region-performance" data-chart-region aria-busy="true">
+            <canvas id="performance-trend" role="img"
+                aria-label="Average scan duration over time"></canvas>
+            <p id="performance-no-data" data-chart-state role="status" aria-live="polite">
+              Loading performance trend…
+            </p>
+          </div>
+        </figure>
+      </div>
+    </div>
+    <aside class="wt-distribution-panel" data-dashboard-chart-frame
+        aria-labelledby="dashboard-distribution-heading">
+      <h3 id="dashboard-distribution-heading" class="h6"><span th:text="${distributionHeading}">Top rules</span> <span class="wt-chart-total" data-dashboard-ranked-total>0 total</span></h3>
+      <ol class="wt-distribution-list" data-dashboard-distribution tabindex="0"
+          aria-label="Rules ranked by findings"></ol>
+      <button class="btn btn-secondary btn-sm wt-distribution-more" type="button" data-dashboard-show-all
+          aria-expanded="false" hidden><span class="material-icons" aria-hidden="true">expand_more</span><span
+          data-dashboard-show-all-label>All rules</span></button>
+      <p id="distribution-no-data" class="wt-inline-state" role="status" aria-live="polite">
+        Loading finding distribution…
+      </p>
+    </aside>
+  </div>
+</section>
+
+<section th:fragment="recentScans(moduleLabel, resultsUrl)" class="card card-small wt-recent-scans mt-4"
+    aria-labelledby="dashboard-recent-heading">
+  <div class="card-header border-bottom wt-section-heading">
+    <h2 id="dashboard-recent-heading" class="h5 m-0">Recent scans</h2>
+    <a class="wt-entity-link" th:href="${resultsUrl}">View all results</a>
+  </div>
+  <div class="card-body">
+    <p class="wt-inline-state" th:if="${recentScans.empty}">No recent scans are available.</p>
+    <div class="wt-table-scroll wt-table-scroll--wide" role="region" aria-label="Recent scans"
+        tabindex="0" th:unless="${recentScans.empty}">
+      <div th:replace="~{fragments/scanactivity :: table(${recentScans}, ${'Five most recent ' + moduleLabel + ' scans'})}"></div>
+    </div>
+  </div>
+</section>

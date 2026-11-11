@@ -3,7 +3,7 @@ package com.tracelink.appsec.watchtower.core.encryption.service;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
+import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -12,9 +12,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Base64;
 
-import javax.annotation.PostConstruct;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
+import jakarta.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -24,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import com.tracelink.appsec.watchtower.core.encryption.model.EncryptionType;
 import com.tracelink.appsec.watchtower.core.encryption.utils.EncryptionUtils;
+import com.tracelink.appsec.watchtower.core.encryption.utils.EncryptionUtils.CipherInitializationException;
 
 /**
  * Service to handle encryption and decryption of data encryption keys. Loads and stores current and
@@ -123,18 +122,14 @@ public class KeyEncryptionService {
 		if (attribute == null || encryptionType.equals(EncryptionType.NONE)) {
 			return null;
 		}
-		// Get a cipher for the current key in wrap mode
-		Cipher cipher = EncryptionUtils.getCipherForKeyAndMode(currentKey, Cipher.WRAP_MODE);
-		if (cipher == null) {
+		// Wrap with a fresh random IV (v2 format) and log any errors
+		try {
+			return EncryptionUtils.wrapKey(currentKey, attribute);
+		} catch (CipherInitializationException e) {
 			LOGGER.warn(NULL_CIPHER_WRAP + W_CURRENT_KEY);
 			return new String(attribute.getEncoded(), StandardCharsets.UTF_8);
-		}
-		// Try to wrap the key using the cipher and log any errors
-		try {
-			byte[] wrapped = cipher.wrap(attribute);
-			return Base64.getEncoder().encodeToString(wrapped);
-		} catch (IllegalArgumentException | IllegalStateException | IllegalBlockSizeException
-				| InvalidKeyException | UnsupportedOperationException e) {
+		} catch (GeneralSecurityException | IllegalStateException
+				| UnsupportedOperationException e) {
 			LOGGER.error(CANNOT_WRAP + W_CURRENT_KEY, e);
 		}
 		return Base64.getEncoder().encodeToString(attribute.getEncoded());
@@ -189,18 +184,14 @@ public class KeyEncryptionService {
 	 *         {@link EncryptionType#NONE}
 	 */
 	private Key decryptKeyWithKey(String dbData, Key decryptionKey, boolean current) {
-		// Get a cipher for the decryption key in unwrap mode
-		Cipher cipher = EncryptionUtils.getCipherForKeyAndMode(decryptionKey, Cipher.UNWRAP_MODE);
-		if (cipher == null) {
+		// Unwrap (v2 or legacy zero-IV format) and log any errors
+		try {
+			return EncryptionUtils.unwrapKey(decryptionKey, dbData, WRAPPED_KEY_ALGORITHM);
+		} catch (CipherInitializationException e) {
 			LOGGER.warn(NULL_CIPHER_UNWRAP + (current ? W_CURRENT_KEY : W_PREVIOUS_KEY));
 			return null;
-		}
-		// Try to unwrap the key using the cipher and log any errors
-		try {
-			byte[] wrapped = Base64.getDecoder().decode(dbData);
-			return cipher.unwrap(wrapped, WRAPPED_KEY_ALGORITHM, Cipher.SECRET_KEY);
-		} catch (IllegalArgumentException | IllegalStateException | NoSuchAlgorithmException
-				| InvalidKeyException | UnsupportedOperationException e) {
+		} catch (GeneralSecurityException | IllegalStateException
+				| UnsupportedOperationException e) {
 			String message = CANNOT_UNWRAP + (current ? W_CURRENT_KEY : W_PREVIOUS_KEY);
 			if (current) {
 				LOGGER.error(message, e);

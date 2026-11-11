@@ -24,11 +24,14 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
-import net.sourceforge.pmd.Rule;
-import net.sourceforge.pmd.RuleSet;
-import net.sourceforge.pmd.RuleSetLoader;
+import net.sourceforge.pmd.lang.Language;
+import net.sourceforge.pmd.lang.LanguageRegistry;
+import net.sourceforge.pmd.lang.rule.Rule;
+import net.sourceforge.pmd.lang.rule.RuleSet;
+import net.sourceforge.pmd.lang.rule.RuleSetLoader;
+import net.sourceforge.pmd.lang.rule.xpath.XPathRule;
+import net.sourceforge.pmd.lang.rule.xpath.XPathVersion;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
-import net.sourceforge.pmd.rules.RuleBuilder;
 
 /**
  * Handles logic to retrieve and edit PMD rules.
@@ -37,6 +40,15 @@ import net.sourceforge.pmd.rules.RuleBuilder;
  */
 @Service
 public class PMDRuleService {
+
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
 
 	private final PMDRuleRepository ruleRepository;
 	private Map<PMDLanguageSupport, List<RulesetDto>> providedRulesetMap;
@@ -95,7 +107,9 @@ public class PMDRuleService {
 				}
 			}
 		}
+		rule.refreshRevision();
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 
 	/**
@@ -120,6 +134,7 @@ public class PMDRuleService {
 		PMDRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());
 		ruleRepository.saveAndFlush(entity);
+		invalidateRuleCache();
 	}
 
 	public Map<PMDLanguageSupport, List<RulesetDto>> getPMDProvidedRulesetsMap() {
@@ -209,25 +224,68 @@ public class PMDRuleService {
 		} else {
 			PMDCustomRuleDto custom = (PMDCustomRuleDto) ruleDto;
 			try {
-				RuleBuilder ruleBuilder = new RuleBuilder(custom.getName(), custom.getRuleClass(),
-						custom.getParserLanguage());
-				ruleBuilder.priority(custom.getPriority().getPriority());
-				ruleBuilder.message(custom.getMessage());
-				ruleBuilder.externalInfoUrl(custom.getExternalUrl());
-				ruleBuilder.description(custom.getMessage());
-				pmdRule = ruleBuilder.build();
+				// PMD 7 removed net.sourceforge.pmd.rules.RuleBuilder entirely; the equivalent
+				// of building a rule from a class name is now direct reflection plus the Rule
+				// interface's own setters (the same fields RuleBuilder used to configure) -
+				// except for XPathRule, which needs special handling; see instantiateRule.
+				Class<?> ruleImplClass = Class.forName(custom.getRuleClass());
+				pmdRule = instantiateRule(ruleImplClass, custom);
+				pmdRule.setName(custom.getName());
+				Language language = LanguageRegistry.PMD.getLanguageById(custom.getParserLanguage());
+				pmdRule.setLanguage(language);
+				pmdRule.setPriority(
+						net.sourceforge.pmd.lang.rule.RulePriority.valueOf(
+								custom.getPriority().getPriority()));
+				pmdRule.setMessage(custom.getMessage());
+				pmdRule.setExternalInfoUrl(custom.getExternalUrl());
+				pmdRule.setDescription(custom.getMessage());
 				custom.getProperties().stream()
 						.filter(prop -> (pmdRule.getPropertyDescriptor(prop.getName()) != null))
 						.forEach(prop -> {
 							PropertyDescriptor desc =
 									pmdRule.getPropertyDescriptor(prop.getName());
-							pmdRule.setProperty(desc, desc.valueFrom(prop.getValue()));
+							pmdRule.setProperty(desc, desc.serializer().fromString(prop.getValue()));
 						});
-			} catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+			} catch (ReflectiveOperationException e) {
 				throw new RuleException(
 						"Cannot create custom PMD rule " + custom.getName(), e);
 			}
 		}
 		return pmdRule;
+	}
+
+	/**
+	 * Constructs an instance of the given rule class for the given custom rule DTO.
+	 *
+	 * <p>
+	 * Handles one special case: {@link XPathRule} dropped its no-arg constructor and
+	 * {@code setXPath(String)} method in PMD 7 in favor of an immutable
+	 * {@code XPathRule(XPathVersion, String)} constructor - the XPath expression must be
+	 * supplied up front. Since {@link com.tracelink.appsec.module.pmd.controller.PMDDesignerController}
+	 * always creates custom rules as {@code XPathRule} with the expression stored as a property
+	 * named {@code "xpath"}, that property is pulled out here and passed to the constructor
+	 * instead of going through the generic reflection + property-setting path below (which only
+	 * works for rule classes with a plain no-arg constructor, e.g. Watchtower's own bundled
+	 * custom rules like {@code RestrictNodesUnderProject}).
+	 *
+	 * @param ruleImplClass the rule's class, already resolved via {@code Class.forName}
+	 * @param custom        the custom rule DTO, for its properties
+	 * @return a new instance of the rule
+	 * @throws ReflectiveOperationException if the class can't be instantiated
+	 * @throws RuleException                if an {@code XPathRule} is missing its xpath property
+	 */
+	private Rule instantiateRule(Class<?> ruleImplClass, PMDCustomRuleDto custom)
+			throws ReflectiveOperationException, RuleException {
+		if (XPathRule.class.equals(ruleImplClass)) {
+			String xpathExpression = custom.getProperties().stream()
+					.filter(prop -> "xpath".equals(prop.getName()))
+					.map(PMDPropertyDto::getValue)
+					.findFirst()
+					.orElseThrow(() -> new RuleException(
+							"Cannot create custom PMD rule " + custom.getName()
+									+ ": XPathRule is missing its 'xpath' property"));
+			return new XPathRule(XPathVersion.DEFAULT, xpathExpression);
+		}
+		return (Rule) ruleImplClass.getDeclaredConstructor().newInstance();
 	}
 }

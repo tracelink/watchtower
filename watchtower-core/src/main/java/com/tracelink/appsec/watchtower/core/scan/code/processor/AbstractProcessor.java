@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.ScannerFileTypes;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
@@ -22,9 +23,27 @@ public abstract class AbstractProcessor {
 	private CallableCreator processor;
 	private List<CodeScanReport> reports = new ArrayList<CodeScanReport>();
 	private List<String> systemExceptions = new ArrayList<String>();
+	private List<String> fileTypes = List.of();
 
 	public AbstractProcessor(CallableCreator processor) {
 		this.processor = processor;
+	}
+
+	/**
+	 * Hands only files of these types to the scanner. Files of other types are never read or
+	 * passed on, which spares a scanner that starts work for every file.
+	 *
+	 * @param types the file types (see {@link ScannerFileTypes}); null or empty means every file
+	 * @return this processor
+	 */
+	public AbstractProcessor withFileTypes(List<String> types) {
+		this.fileTypes = types == null ? List.of() : List.copyOf(types);
+		return this;
+	}
+
+	private boolean accepts(Path file) {
+		return fileTypes.isEmpty() || (file.getFileName() != null
+				&& ScannerFileTypes.anyMatch(fileTypes, List.of(file.getFileName().toString())));
 	}
 
 	/**
@@ -46,7 +65,7 @@ public abstract class AbstractProcessor {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
 						throws IOException {
-					if (attrs.isRegularFile()) {
+					if (attrs.isRegularFile() && accepts(file)) {
 						try {
 							processFile(processor.createCallable(file, ruleset));
 						} catch (ProcessorSetupException e) {

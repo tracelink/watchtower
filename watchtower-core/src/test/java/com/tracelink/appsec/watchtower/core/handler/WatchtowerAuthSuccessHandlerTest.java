@@ -1,13 +1,13 @@
 package com.tracelink.appsec.watchtower.core.handler;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.context.ActiveProfiles;
@@ -20,10 +20,10 @@ import com.tracelink.appsec.watchtower.core.auth.service.UserService;
 @SpringBootTest
 @ActiveProfiles("dev")
 public class WatchtowerAuthSuccessHandlerTest {
-    @MockBean
+    @MockitoBean
     UserService mockUserService;
 
-    @MockBean
+    @MockitoBean
     Authentication mockAuth;
 
     @Test
@@ -35,9 +35,9 @@ public class WatchtowerAuthSuccessHandlerTest {
         BDDMockito.when(event.getAuthentication().getName()).thenReturn("user1");
         BDDMockito.when(mockUserService.findByUsername("user1")).thenReturn(user);
 
-        Date oldLogin = user.getLastLogin();
+        LocalDateTime oldLogin = user.getLastLogin();
         authSuccessHandler.onApplicationEvent(event);
-        Date newLogin = user.getLastLogin();
+        LocalDateTime newLogin = user.getLastLogin();
 
         Assertions.assertEquals(oldLogin,null);
         Assertions.assertNotEquals(oldLogin,newLogin);

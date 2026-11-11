@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
+import com.tracelink.appsec.watchtower.core.module.designer.RuleDraftData;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
 
 /**
@@ -26,7 +27,20 @@ public class RuleDesignerService {
 	/**
 	 * Map from module name to designer implementation
 	 */
-	private TreeMap<String, IRuleDesigner> designerMap =
+	@org.springframework.beans.factory.annotation.Autowired(required=false)
+ private com.tracelink.appsec.watchtower.core.module.ModuleControlService moduleControls;
+ private boolean enabled(String module){return moduleControls==null||moduleControls.enabled(module);}
+ /**
+  * The file types an admin limited this module's scanner to in Scanner modules; empty when there is no
+  * limit. A designer with a file extension warns when the rule's extension falls outside them.
+  */
+ public java.util.List<String> getFileTypes(String module){
+  if(moduleControls==null)return java.util.List.of();
+  var types=moduleControls.policy(module).fileTypes();
+  return types==null?java.util.List.of():types;
+ }
+
+ private TreeMap<String, IRuleDesigner> designerMap =
 			new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 	/**
@@ -61,7 +75,7 @@ public class RuleDesignerService {
 		 * match
 		 */
 		return designerMap.entrySet().stream()
-				.filter(e -> auth.getAuthorities().stream()
+				.filter(e -> enabled(e.getKey())).filter(e -> auth.getAuthorities().stream()
 						.anyMatch(authority -> e.getValue().hasAuthority(authority.getAuthority())))
 				.map(e -> e.getKey()).collect(Collectors.toList());
 	}
@@ -72,7 +86,7 @@ public class RuleDesignerService {
 	 * @return default designer module name, or null if none exist
 	 */
 	public String getDefaultDesignerModule() {
-		return designerMap.isEmpty() ? null : designerMap.firstKey();
+		return designerMap.keySet().stream().filter(this::enabled).findFirst().orElse(null);
 	}
 
 	/**
@@ -84,10 +98,42 @@ public class RuleDesignerService {
 	 */
 	public RuleDesignerModelAndView getDefaultDesignerModelAndView(String designer)
 			throws ModuleNotFoundException {
-		if (!designerMap.containsKey(designer.toLowerCase())) {
+		if (!enabled(designer) || !designerMap.containsKey(designer.toLowerCase())) {
 			throw new ModuleNotFoundException("No designer exists for the given type: " + designer);
 		}
 		return designerMap.get(designer.toLowerCase()).getDefaultRuleDesignerModelAndView();
+	}
+
+	/**
+	 * The designer for a drafted rule: the same page, with the draft's rule and examples filled in.
+	 *
+	 * @param designer the designer to get a model for
+	 * @param draft    the draft to show
+	 * @throws ModuleNotFoundException if no enabled designer matches the given type
+	 */
+	public RuleDesignerModelAndView getPrefilledDesignerModelAndView(String designer, RuleDraftData draft)
+			throws ModuleNotFoundException {
+		if (!enabled(designer) || !designerMap.containsKey(designer.toLowerCase())) {
+			throw new ModuleNotFoundException("No designer exists for the given type: " + designer);
+		}
+		return designerMap.get(designer.toLowerCase()).getPrefilledRuleDesignerModelAndView(draft);
+	}
+
+	/** The scanners that have a designer and are turned on, lower case. */
+	public java.util.Set<String> enabledDesigners() {
+		return designerMap.keySet().stream().filter(this::enabled).map(String::toLowerCase)
+				.collect(Collectors.toCollection(java.util.TreeSet::new));
+	}
+
+	/**
+	 * What a designer finds wrong with a draft meant for it, or null when it finds nothing. A module with no
+	 * designer, or a disabled one, cannot take a draft.
+	 */
+	public String problemWithDraft(String designer, RuleDraftData draft) {
+		if (designer == null || !enabled(designer) || !designerMap.containsKey(designer.toLowerCase())) {
+			return "There is no designer for " + designer + " that is turned on.";
+		}
+		return designerMap.get(designer.toLowerCase()).validateDraft(draft);
 	}
 
 }

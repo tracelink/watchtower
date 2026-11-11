@@ -26,4 +26,10 @@ public interface IScanRepository<S extends AbstractScanEntity<?, ?>>
 	Page<S> findByStatusIn(List<ScanStatus> status, Pageable pageable);
 
 	Page<S> findAllByEndDateBetween(long start, long end, Pageable pageable);
+
+	List<S> findTop10ByOrderByEndDateDesc();
+
+	long countByStatusInAndSubmitDateBetween(List<ScanStatus> statuses, long start, long end);
+
+	long countByEndDateBetween(long start, long end);
 }

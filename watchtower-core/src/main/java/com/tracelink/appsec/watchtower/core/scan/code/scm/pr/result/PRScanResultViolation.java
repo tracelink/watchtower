@@ -21,6 +21,30 @@ public class PRScanResultViolation {
 
 	private String message;
 
+	private String externalUrl;
+
+	private com.tracelink.appsec.watchtower.core.rule.RuleChange ruleChange;
+
+	/** The saved violation's id; not part of equality, which compares what was found. */
+	private long violationId;
+
+	/** The scanner module and rule that produced it, when recorded; not part of equality. */
+	private String scannerModule;
+	private Long ruleId;
+
+	public String getScannerModule() { return scannerModule; }
+	public void setScannerModule(String scannerModule) { this.scannerModule = scannerModule; }
+	public Long getRuleId() { return ruleId; }
+	public void setRuleId(Long ruleId) { this.ruleId = ruleId; }
+
+	public long getViolationId() {
+		return violationId;
+	}
+
+	public void setViolationId(long violationId) {
+		this.violationId = violationId;
+	}
+
 	public String getViolationName() {
 		return violationName;
 	}
@@ -69,6 +93,23 @@ public class PRScanResultViolation {
 		this.message = message;
 	}
 
+	public String getExternalUrl() {
+		return externalUrl;
+	}
+
+	public void setExternalUrl(String externalUrl) {
+		this.externalUrl = externalUrl;
+	}
+
+	/** @return what happened to the rule after this scan, or null when nothing is known to have */
+	public com.tracelink.appsec.watchtower.core.rule.RuleChange getRuleChange() {
+		return ruleChange;
+	}
+
+	public void setRuleChange(com.tracelink.appsec.watchtower.core.rule.RuleChange ruleChange) {
+		this.ruleChange = ruleChange;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof PRScanResultViolation) {
@@ -78,14 +119,16 @@ public class PRScanResultViolation {
 					this.severity.equals(temp.severity) &&
 					this.severityValue == temp.severityValue &&
 					this.fileName.equals(temp.fileName) &&
-					this.message.equals(temp.message);
+					this.message.equals(temp.message) &&
+					Objects.equals(this.externalUrl, temp.externalUrl);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(violationName, lineNumber, severity, severityValue, fileName, message);
+		return Objects.hash(violationName, lineNumber, severity, severityValue, fileName, message,
+				externalUrl);
 	}
 
 }

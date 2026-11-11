@@ -19,6 +19,15 @@ import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerExceptio
 @Service
 public class AdvisoryRuleService {
 
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
+
 	private final AdvisoryRuleRepository ruleRepository;
 
 	/**
@@ -62,6 +71,7 @@ public class AdvisoryRuleService {
 		rule.setPriority(dto.getPriority());
 		rule.setAuthor(dto.getAuthor());
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 
 	/**
@@ -78,7 +88,9 @@ public class AdvisoryRuleService {
 		}
 		AdvisoryRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());
-		return ruleRepository.saveAndFlush(entity);
+		AdvisoryRuleEntity saved = ruleRepository.saveAndFlush(entity);
+		invalidateRuleCache();
+		return saved;
 	}
 
 }

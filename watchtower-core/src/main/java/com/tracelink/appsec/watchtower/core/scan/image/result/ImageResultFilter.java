@@ -7,8 +7,8 @@ package com.tracelink.appsec.watchtower.core.scan.image.result;
  *
  */
 public enum ImageResultFilter {
-	ALL("all", "All Scans"),
-	VIOLATIONS("violations", "Scans with Violations");
+	ALL("all", "All"),
+	VIOLATIONS("violations", "With findings");
 
 	private final String name;
 

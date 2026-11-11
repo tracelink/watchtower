@@ -11,12 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.tracelink.appsec.watchtower.core.logging.CoreLogWatchExtension;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -43,9 +40,13 @@ import software.amazon.awssdk.services.ecr.model.BatchDeleteImageResponse;
 import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsRequest;
 import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsResponse;
 import software.amazon.awssdk.services.ecr.model.FindingSeverity;
+import software.amazon.awssdk.services.ecr.model.GetRegistryScanningConfigurationRequest;
+import software.amazon.awssdk.services.ecr.model.GetRegistryScanningConfigurationResponse;
 import software.amazon.awssdk.services.ecr.model.ImageFailure;
 import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
 import software.amazon.awssdk.services.ecr.model.ImageScanFindings;
+import software.amazon.awssdk.services.ecr.model.RegistryScanningConfiguration;
+import software.amazon.awssdk.services.ecr.model.ScanType;
 import software.amazon.awssdk.services.ecr.paginators.DescribeImageScanFindingsIterable;
 
 @ExtendWith(SpringExtension.class)
@@ -53,6 +54,8 @@ public class EcrApiTest {
 
 	@RegisterExtension
 	public CoreLogWatchExtension logWatcher = CoreLogWatchExtension.forClass(EcrApi.class);
+
+	private static final String PUBLIC_URL = "https://watchtower.example.com/";
 
 	private EcrIntegrationEntity ecrIntegrationEntity;
 	private PasswordEncoder passwordEncoder;
@@ -66,9 +69,6 @@ public class EcrApiTest {
 		ecrIntegrationEntity.setAwsAccessKey("foo");
 		ecrIntegrationEntity.setAwsSecretKey("bar");
 		ecrIntegrationEntity.setRejectOption(EcrRejectOption.DELETE_IMAGE);
-
-		MockHttpServletRequest request = new MockHttpServletRequest();
-		RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
 		passwordEncoder = BDDMockito.mock(PasswordEncoder.class);
 		BDDMockito.when(passwordEncoder.encode(BDDMockito.anyString()))
@@ -198,13 +198,47 @@ public class EcrApiTest {
 	// Register
 	/////
 	@Test
+	public void theApiIsBuiltWithoutAWebRequest() {
+		// The scheduled connection check runs outside a request; building the API used to fail
+		// with "No current ServletRequestAttributes".
+		EcrApi ecrApi = ecrIntegrationEntity.createApi();
+		MatcherAssert.assertThat(ecrApi.callbackEndpoint(PUBLIC_URL),
+				Matchers.is("https://watchtower.example.com/rest/imagescan/ecrIntegration"));
+	}
+
+	@Test
+	public void registeringWithoutAPublicUrlIsRefused() {
+		EcrApi ecrApi = ecrIntegrationEntity.createApi();
+		org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+				() -> ecrApi.callbackEndpoint(" "));
+	}
+
+	@Test
+	public void registerSendsTheCallbackBuiltFromThePublicUrl() {
+		EcrApi ecrApi = ecrIntegrationEntity.createApi();
+		CloudFormationClient cfClient = getMockCloudFormationClient(200, 400, 200, false,
+				"CREATE_COMPLETE");
+		ReflectionTestUtils.setField(ecrApi, "cfClient", cfClient);
+		ReflectionTestUtils.setField(ecrApi, "ecrClient", getMockEcrClient(400, true, 400, false));
+
+		ecrApi.register(passwordEncoder, PUBLIC_URL);
+		ArgumentCaptor<CreateStackRequest> request = ArgumentCaptor.forClass(CreateStackRequest.class);
+		BDDMockito.verify(cfClient).createStack(request.capture());
+		MatcherAssert.assertThat(request.getValue().parameters().stream()
+				.filter(p -> p.parameterKey().equals("WatchtowerEndpoint")).findFirst()
+				.orElseThrow().parameterValue(),
+				Matchers.is("https://watchtower.example.com/rest/imagescan/ecrIntegration"));
+	}
+
+	@Test
 	public void testRegister() {
 		EcrApi ecrApi = ecrIntegrationEntity.createApi();
 		CloudFormationClient cfClient = getMockCloudFormationClient(200, 400, 200, false,
 				"CREATE_COMPLETE");
 		ReflectionTestUtils.setField(ecrApi, "cfClient", cfClient);
+		ReflectionTestUtils.setField(ecrApi, "ecrClient", getMockEcrClient(400, true, 400, false));
 
-		ecrApi.register(passwordEncoder);
+		ecrApi.register(passwordEncoder, PUBLIC_URL);
 		BDDMockito.verify(passwordEncoder).encode(BDDMockito.any());
 		MatcherAssert
 				.assertThat(ecrIntegrationEntity.getWatchtowerSecret(), Matchers.notNullValue());
@@ -222,9 +256,10 @@ public class EcrApiTest {
 		CloudFormationClient cfClient = getMockCloudFormationClient(200, 400, 400, true,
 				"CREATE_FAILED");
 		ReflectionTestUtils.setField(ecrApi, "cfClient", cfClient);
+		ReflectionTestUtils.setField(ecrApi, "ecrClient", getMockEcrClient(400, true, 400, false));
 
 		try {
-			ecrApi.register(passwordEncoder);
+			ecrApi.register(passwordEncoder, PUBLIC_URL);
 			MatcherAssert.assertThat("Exception should have been thrown", false);
 		} catch (CloudFormationException e) {
 			MatcherAssert.assertThat(e.getMessage(),
@@ -515,6 +550,12 @@ public class EcrApiTest {
 			int deleteImageStatus, boolean deleteImageFailure) {
 		EcrClient ecrClient = BDDMockito.mock(EcrClient.class);
 		BDDMockito.when(ecrClient.serviceName()).thenReturn("ecr");
+		BDDMockito.when(ecrClient.getRegistryScanningConfiguration(
+				BDDMockito.any(GetRegistryScanningConfigurationRequest.class)))
+				.thenReturn(GetRegistryScanningConfigurationResponse.builder()
+						.scanningConfiguration(RegistryScanningConfiguration.builder()
+								.scanType(ScanType.BASIC).build())
+						.build());
 		BDDMockito.when(ecrClient.batchDeleteImage(BDDMockito.any(BatchDeleteImageRequest.class)))
 				.thenReturn((BatchDeleteImageResponse) BatchDeleteImageResponse.builder()
 						.failures(deleteImageFailure ? Collections.singletonList(

@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.encryption.controller;
 
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -12,13 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -29,6 +31,7 @@ import com.tracelink.appsec.watchtower.core.encryption.model.EncryptionMetadata;
 import com.tracelink.appsec.watchtower.core.encryption.service.KeyRotationService;
 import com.tracelink.appsec.watchtower.core.encryption.utils.EncryptionUtils;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.ui.HtmlAssertions;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -38,7 +41,7 @@ public class EncryptionMgmtControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private KeyRotationService keyRotationService;
 
 	private DataEncryptionKey dataEncryptionKey;
@@ -64,7 +67,7 @@ public class EncryptionMgmtControllerTest {
 		BDDMockito.when(keyRotationService.getEncryptionMetadata())
 				.thenReturn(encryptionMetadata);
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/encryption"))
+		MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/encryption"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.model()
 						.attribute("contentViewName", "admin/encryption"))
@@ -72,7 +75,14 @@ public class EncryptionMgmtControllerTest {
 						.attribute("scripts", Matchers.contains("/scripts/encryption.js")))
 				.andExpect(MockMvcResultMatchers.model()
 						.attribute("deks", Matchers.contains(dataEncryptionKey)))
-				.andExpect(MockMvcResultMatchers.model().attribute("metadata", encryptionMetadata));
+				.andExpect(MockMvcResultMatchers.model().attribute("metadata", encryptionMetadata))
+				.andExpect(MockMvcResultMatchers.model().attribute("encryptionOn", false))
+				.andExpect(MockMvcResultMatchers.content()
+						.string(Matchers.containsString("Encryption off")))
+				.andReturn();
+		// admin/encryption.html had form-row, form-inline and close-button conversions in
+		// Phase 11 Section B - guard the result structurally.
+		HtmlAssertions.assertHtmlIntegrity(result);
 	}
 
 	@Test
@@ -86,7 +96,7 @@ public class EncryptionMgmtControllerTest {
 						.attribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 								"Key rotation in progress"));
 
-		BDDMockito.verify(keyRotationService, times(1)).rotateKeys();
+		BDDMockito.verify(keyRotationService, timeout(5000).times(1)).rotateKeys();
 	}
 
 	@Test
@@ -100,7 +110,7 @@ public class EncryptionMgmtControllerTest {
 						.attribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
 								"Key rotation in progress"));
 
-		BDDMockito.verify(keyRotationService, times(1)).rotateKey(1L);
+		BDDMockito.verify(keyRotationService, timeout(5000).times(1)).rotateKey(1L);
 	}
 
 	@Test
@@ -130,6 +140,37 @@ public class EncryptionMgmtControllerTest {
 								"Successfully updated rotation schedule"));
 
 		BDDMockito.verify(keyRotationService, times(1)).enableRotationSchedule(true, 120);
+	}
+
+	@Test
+	@WithMockUser(username = "keyadmin", authorities = {CorePrivilege.ENCRYPTION_MODIFY_NAME})
+	public void testScheduleChangeRecordsWhoMadeIt() throws Exception {
+		ch.qos.logback.classic.Logger controllerLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
+				.getLogger(EncryptionMgmtController.class);
+		ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+				new ch.qos.logback.core.read.ListAppender<>();
+		appender.start();
+		controllerLogger.addAppender(appender);
+		try {
+			mockMvc.perform(MockMvcRequestBuilders.post("/encryption/rotate/schedule")
+					.param("enable", "true").param("rotationPeriod", "45")
+					.with(SecurityMockMvcRequestPostProcessors.csrf()))
+					.andExpect(MockMvcResultMatchers.status().is3xxRedirection());
+			mockMvc.perform(MockMvcRequestBuilders.post("/encryption/rotate")
+					.with(SecurityMockMvcRequestPostProcessors.csrf()))
+					.andExpect(MockMvcResultMatchers.status().is3xxRedirection());
+
+			java.util.List<String> messages = appender.list.stream()
+					.map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage).toList();
+			org.junit.jupiter.api.Assertions.assertTrue(
+					messages.stream().anyMatch(m -> m.contains("keyadmin") && m.contains("45")),
+					"the log must say who set the schedule and its period: " + messages);
+			org.junit.jupiter.api.Assertions.assertTrue(
+					messages.stream().anyMatch(m -> m.contains("keyadmin") && m.contains("rotat")),
+					"the log must say who started a rotation: " + messages);
+		} finally {
+			controllerLogger.detachAppender(appender);
+		}
 	}
 
 	@Test

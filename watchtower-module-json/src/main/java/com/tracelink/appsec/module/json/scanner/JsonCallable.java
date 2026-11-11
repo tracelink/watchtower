@@ -1,6 +1,11 @@
 package com.tracelink.appsec.module.json.scanner;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
+import com.tracelink.appsec.module.json.scanner.provider.YamlDocuments;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
@@ -38,6 +43,7 @@ public class JsonCallable implements Callable<CodeScanReport> {
 	private final RulesetDto ruleset;
 	private final Configuration config;
 	private final CustomJsonNodeFactory factory;
+	private final boolean yaml;
 
 	/**
 	 * The source processor for Json scans.
@@ -48,9 +54,11 @@ public class JsonCallable implements Callable<CodeScanReport> {
 	public JsonCallable(Path file, RulesetDto ruleset) {
 		this.currentFile = file;
 		this.ruleset = ruleset;
+		String name = file.toString().toLowerCase(Locale.ROOT);
+		yaml = name.endsWith(".yaml") || name.endsWith(".yml");
 		CustomParserFactory customParserFactory = new CustomParserFactory();
 		ObjectMapper om = new ObjectMapper(customParserFactory);
-		factory = new CustomJsonNodeFactory(om.getDeserializationConfig().getNodeFactory(),
+		factory = yaml ? new CustomJsonNodeFactory() : new CustomJsonNodeFactory(om.getDeserializationConfig().getNodeFactory(),
 				customParserFactory);
 		om.setConfig(om.getDeserializationConfig().with(factory));
 		config = Configuration.builder()
@@ -64,7 +72,7 @@ public class JsonCallable implements Callable<CodeScanReport> {
 	public CodeScanReport call() {
 		CodeScanReport report = new CodeScanReport();
 
-		DocumentContext parsedDocument = null;
+		List<DocumentContext> parsedDocuments = null;
 
 		for (RuleDto rule : ruleset.getAllRules()) {
 			if (rule instanceof JsonRuleDto) {
@@ -77,18 +85,26 @@ public class JsonCallable implements Callable<CodeScanReport> {
 					 * If any rule wants the file, parse it and set lazily so that subsequent
 					 * JsonPath reads and faster
 					 */
-					if (parsedDocument == null) {
+					if (parsedDocuments == null) {
 						try {
-							parsedDocument = JsonPath.parse(this.currentFile.toFile(), config);
+							if (yaml) {
+								if (Files.size(currentFile) > YamlDocuments.MAX_INPUT_BYTES) throw new IllegalArgumentException("YAML input exceeds limit");
+								try (var reader = Files.newBufferedReader(currentFile, StandardCharsets.UTF_8)) {
+									parsedDocuments = new YamlDocuments(factory).read(reader).stream().map(n -> JsonPath.parse(n, config)).toList();
+								}
+							} else parsedDocuments = List.of(JsonPath.parse(this.currentFile.toFile(), config));
 						} catch (Exception e) {
 							String errorMsg = "Could not parse the file "
-									+ this.currentFile.getFileName() + " as JSON";
+									+ this.currentFile.getFileName() + (yaml ? " as YAML" : " as JSON");
 							report.addError(new CodeScanError(errorMsg));
-							LOG.error(errorMsg, e);
+							LOG.error("Structured file parsing failed ({})", yaml ? "YAML" : "JSON");
 							return report;
 						}
 					}
-					ArrayNode findings = parsedDocument.read(jsonPath);
+					for (int document = 0; document < parsedDocuments.size(); document++) {
+					ArrayNode findings;
+					try { findings = parsedDocuments.get(document).read(jsonPath); }
+					catch (com.jayway.jsonpath.PathNotFoundException absent) { continue; }
 					for (JsonNode finding : findings) {
 						JsonLocation location = this.factory.getLocationForNode(finding);
 						int lineNum = 0;
@@ -98,13 +114,15 @@ public class JsonCallable implements Callable<CodeScanReport> {
 							LOG.error("Could not find location for line");
 						}
 						CodeScanViolation sv = new CodeScanViolation();
+						sv.setRuleIdentity(rule.getExecutionIdentity());
 						sv.setViolationName(rule.getName());
 						sv.setFileName(currentFile.toString());
 						sv.setLineNum(lineNum);
 						sv.setSeverity(rule.getPriority());
-						sv.setMessage(rule.getMessage());
+						sv.setMessage(yaml ? "YAML document " + (document + 1) + ": " + (rule.getMessage() == null ? "" : rule.getMessage()) : rule.getMessage());
 						report.addViolation(sv);
 					}
+				}
 				}
 			}
 		}

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
+import com.tracelink.appsec.watchtower.core.scan.apiintegration.RegisterState;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption;
 
@@ -90,6 +91,42 @@ public class BBCloudIntegrationEntityTest {
 		} catch (ApiIntegrationException e) {
 			MatcherAssert.assertThat(e.getMessage(), Matchers.containsString("workspace"));
 		}
+	}
+
+	@Test
+	public void testDefaultRegisterStateIsNotRegistered() {
+		// IMPROVEMENT_PLAN.md item 8, point 6: Bitbucket supports self-registration, so a
+		// fresh entity should offer the Register button rather than the base class's
+		// NOT_SUPPORTED default.
+		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
+		Assertions.assertEquals(RegisterState.NOT_REGISTERED, entity.getRegisterState());
+	}
+
+	@Test
+	public void testWebhookUuidRoundTrip() {
+		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
+		Assertions.assertNull(entity.getWebhookUuid());
+		entity.setWebhookUuid("a-hook-uuid");
+		Assertions.assertEquals("a-hook-uuid", entity.getWebhookUuid());
+	}
+
+	@Test
+	public void testMakeWorkspaceHooksUrl() {
+		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
+		entity.setWorkspace("myworkspace");
+		Assertions.assertEquals("https://api.bitbucket.org/2.0/workspaces/myworkspace/hooks",
+				entity.makeWorkspaceHooksUrl());
+	}
+
+	@Test
+	public void testMakeFileLinkEncodesThePath() {
+		BBCloudIntegrationEntity entity = new BBCloudIntegrationEntity();
+		entity.setWorkspace("ws");
+		Assertions.assertEquals("https://bitbucket.org/ws/repo/src/abc/src/My%20File.java#lines-7",
+				entity.makeFileLink("repo", "abc", "src/My File.java", 7));
+		// A path cannot add a query or replace the line fragment
+		Assertions.assertEquals("https://bitbucket.org/ws/repo/src/abc/a%3Fx=1%23b",
+				entity.makeFileLink("repo", "abc", "a?x=1#b", 0));
 	}
 
 }

@@ -1,0 +1,5 @@
+Opengrep standalone 1.30.2 is distributed unchanged as an external executable.
+Upstream source: https://github.com/opengrep/opengrep/tree/v1.30.2
+Release and source archives: https://github.com/opengrep/opengrep/releases/tag/v1.30.2
+The bundled LGPL-2.1 license applies to the engine. Original Watchtower starter rules
+are separately licensed under the accompanying MIT license.

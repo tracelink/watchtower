@@ -1,0 +1,125 @@
+<!-- Remote (AWS) assessment on a report (AwsReport board, 2026-10-22): one chip per provider beside
+     the report views - "AWS review complete · 19 imported" - that opens the Details dialog (counts,
+     receipt, operator recovery), and one "Open in AWS" icon. Exports are in the page's Download
+     menu (see "downloads" below). -->
+<div th:fragment="status" th:if="${providerStatuses != null and !providerStatuses.isEmpty()}" class="wt-provider-chips" role="group" aria-label="AWS assessment">
+  <div class="wt-provider-chips__row" th:each="provider, row : ${providerStatuses}">
+    <button type="button" class="wt-status-chip wt-copy-chip" th:classappend="${' wt-tone-' + provider.tone()}"
+        th:attr="data-wt-dialog-open=${'#provider-details-' + row.index},data-tip=${provider.complete
+          ? 'AWS Security Agent finished and ' + (provider.missing == 0 ? 'all ' : '') + provider.imported + ' of its findings were imported. AWS''s own write-up is not copied into Watchtower. Click for details.'
+          : (provider.reasonLabel() == null ? 'The AWS review did not finish, so these results are not an all-scanner pass. Click for details.' : provider.reasonLabel() + ' Click for details.')}"><span
+        class="material-icons" aria-hidden="true" th:text="${provider.complete} ? 'cloud_done' : 'cloud_off'">cloud_off</span><span
+        th:text="${provider.complete ? 'AWS review complete · ' + provider.imported + ' imported' : 'AWS Security Agent · ' + provider.stateLabel()}">AWS Security Agent · Did not run</span></button>
+    <a th:if="${provider.providerUrl() != null}" class="wt-icon-action" th:href="${provider.providerUrl()}" target="_blank" rel="noopener noreferrer"
+        hx-boost="false" aria-label="Open this review in AWS" data-tip="Open this review in AWS"><span class="material-icons" aria-hidden="true">open_in_new</span></a>
+    <!-- The details dialog (redesigned 2026-10-29): three tiles (findings, time, source), severity chips, one note when AWS
+         did not finish, copyable ids, AWS's own progress steps, and the receipt folded away. Operator recovery is four icons. -->
+    <md-dialog th:id="${'provider-details-' + row.index}" class="wt-provider-dialog wt-pd">
+      <div slot="headline"><span class="material-icons" aria-hidden="true">cloud</span>AWS Security Agent<span
+          class="wt-status-chip" th:classappend="${' wt-tone-' + provider.tone()}"><span class="material-icons" aria-hidden="true"
+          th:text="${provider.complete ? 'cloud_done' : (provider.finished() ? 'error' : 'cloud_sync')}">cloud</span><span
+          th:text="${provider.stateLabel()}">Complete</span></span></div>
+      <div slot="content">
+        <dl class="wt-pd__tiles">
+          <div><dt><span class="material-icons" aria-hidden="true">bug_report</span>Findings</dt>
+            <dd><th:block th:text="${(provider.finished() or provider.imported > 0) ? provider.imported : '—'}">0</th:block><small
+              th:text="${!provider.finished() ? 'after AWS finishes' : (provider.missing > 0 ? provider.missing + ' details unavailable' : (provider.imported == 0 ? 'imported' : 'all imported'))}">all imported</small></dd></div>
+          <div th:with="elapsed=${provider.elapsedLabel()}"><dt><span class="material-icons" aria-hidden="true">timer</span>Time</dt>
+            <dd><th:block th:text="${elapsed != null ? elapsed : '—'}">—</th:block><small
+              th:text="${elapsed != null ? (provider.elapsedIsFinal() ? 'start to finish' : 'so far') : (provider.finished() ? 'never started' : 'not started')}">start to finish</small></dd></div>
+          <div><dt><span class="material-icons" aria-hidden="true">folder_zip</span>Source</dt>
+            <dd><th:block th:text="${provider.sourceLabel() != null ? provider.sourceLabel() : '—'}">25 files</th:block><small
+              th:text="${provider.sourceLabel() != null ? provider.patchLabel() : 'not prepared'}">patch 1.8 KB</small></dd></div>
+        </dl>
+        <div class="wt-pd__sev" th:if="${!provider.severityCounts().isEmpty()}" aria-label="AWS findings by severity">
+          <span th:each="sev : ${provider.severityCounts()}" th:attr="data-sev=${sev.name}"><th:block th:text="${sev.label}">High</th:block> <b th:text="${sev.count}">1</b></span>
+        </div>
+        <div class="wt-pd__note wt-pd__note--problem" th:if="${provider.finished() and !provider.complete}">
+          <span class="material-icons" aria-hidden="true">warning</span>
+          <span>AWS did not finish, so this result is not an all-scanner pass.<span th:if="${provider.reasonLabel() != null}" class="wt-pd__reason" th:text="${' ' + provider.reasonLabel()}"></span></span>
+        </div>
+        <div class="wt-pd__note" th:if="${provider.complete and provider.providerCap != null}">
+          <span class="material-icons wt-tone-info" aria-hidden="true">info</span>
+          <span th:text="${'AWS returns at most ' + provider.providerCap + ' prioritized findings for a pull request. AWS''s own write-up is not copied into Watchtower.'}">AWS returns at most 30 prioritized findings.</span>
+        </div>
+        <div class="wt-pd__ids">
+          <span th:if="${provider.commit != null}" class="wt-mini-chip" th:attr="data-tip=${'Commit ' + provider.commit}" th:text="${provider.shortCommit()}">c24f7f6</span>
+          <th:block th:if="${provider.baseCommit != null}"><span class="material-icons wt-pd__arrow" aria-hidden="true">arrow_back</span><span class="wt-mini-chip" th:attr="data-tip=${'Base ' + provider.baseCommit}" th:text="${provider.shortBaseCommit()}">84d065f</span></th:block>
+          <button th:if="${provider.reviewId != null}" type="button" class="wt-mini-chip wt-copy-chip" th:attr="data-copy-text=${provider.reviewId},data-tip=${'Copy review id ' + provider.reviewId}" th:text="${'Review ' + provider.shortReviewId()}">Review cr-f692003f</button>
+          <span th:if="${provider.reviewId == null}" class="wt-mini-chip" data-tip="No AWS review was created">Review —</span>
+          <button th:if="${provider.jobId != null}" type="button" class="wt-mini-chip wt-copy-chip" th:attr="data-copy-text=${provider.jobId},data-tip=${'Copy job id ' + provider.jobId}" th:text="${'Job ' + provider.shortJobId()}">Job cj-c039bc14</button>
+          <span th:if="${provider.jobId == null}" class="wt-mini-chip" data-tip="No AWS job was started">Job —</span>
+          <a th:if="${provider.providerUrl() != null}" class="wt-icon-action" th:href="${provider.providerUrl()}" target="_blank" rel="noopener noreferrer"
+             hx-boost="false" aria-label="Open this review in AWS" data-tip="Open this review in AWS"><span class="material-icons" aria-hidden="true">open_in_new</span></a>
+        </div>
+        <ol class="wt-pd__steps" th:if="${!provider.progress.isEmpty()}" aria-label="AWS progress">
+          <th:block th:each="step, st : ${provider.progress}" th:with="s=${provider.complete ? 'COMPLETED' : (step.status == null ? '' : step.status.toUpperCase())}">
+            <li th:if="${!st.first}" class="sep" aria-hidden="true">—</li>
+            <li th:classappend="${s.startsWith('COMPLETE') ? 'is-done' : (s == 'IN_PROGRESS' ? 'is-now' : (s.startsWith('FAIL') ? 'is-fail' : ''))}"
+                th:attr="data-tip=${step.updatedAt != null ? step.status + ' · ' + step.updatedAt : step.status}"><span class="material-icons" aria-hidden="true"
+                th:text="${s.startsWith('COMPLETE') ? 'check_circle' : (s == 'IN_PROGRESS' ? 'autorenew' : (s.startsWith('FAIL') ? 'error' : 'radio_button_unchecked'))}">check_circle</span><span
+                th:text="${step.name == null ? '' : #strings.capitalize(#strings.toLowerCase(#strings.replace(step.name, '_', ' ')))}">Preparing</span></li>
+          </th:block>
+        </ol>
+        <details><summary><span class="material-icons" aria-hidden="true">receipt_long</span>Receipt</summary>
+          <dl class="wt-metadata-grid"><div th:each="fact : ${provider.receiptFacts}"><dt th:text="${fact.key}"></dt><dd class="wt-mono" style="overflow-wrap:anywhere" th:text="${fact.value}"></dd></div></dl>
+          <p class="wt-field-help">Source, credentials, fix code and unverified AWS prose are not kept. Confidence does not establish exploitation.</p>
+        </details>
+      </div>
+      <div slot="actions">
+        <div class="wt-pd__ops" sec:authorize="hasAuthority('AWS Security Administration') and hasAuthority('Repository Settings View')">
+          <form method="post" th:action="@{/aws-security/runs/{id}/reconcile(id=${provider.id})}"><button class="wt-icon-action" type="submit" aria-label="Reconcile with AWS" data-tip="Reconcile with AWS"><span class="material-icons" aria-hidden="true">sync</span></button></form>
+          <form method="post" th:action="@{/aws-security/runs/{id}/stop(id=${provider.id})}"><button class="wt-icon-action" type="submit" aria-label="Request stop" data-tip="Request stop"><span class="material-icons" aria-hidden="true">stop_circle</span></button></form>
+          <form method="post" th:action="@{/aws-security/runs/{id}/retry-import(id=${provider.id})}"><button class="wt-icon-action" type="submit" aria-label="Retry unpublished import" data-tip="Retry unpublished import"><span class="material-icons" aria-hidden="true">cloud_download</span></button></form>
+          <form method="post" th:action="@{/aws-security/runs/{id}/retry-cleanup(id=${provider.id})}"><button class="wt-icon-action" type="submit" aria-label="Retry cleanup" data-tip="Retry cleanup"><span class="material-icons" aria-hidden="true">cleaning_services</span></button></form>
+        </div>
+        <md-text-button th:if="${!provider.complete}" sec:authorize="hasAuthority('AWS Security Administration') and hasAuthority('Repository Settings View')" href="/aws-security/readiness/view">Open AWS setup</md-text-button><md-text-button th:if="${provider.canDeleteProviderReview()}" sec:authorize="hasAuthority('AWS Security Administration') and hasAuthority('Repository Settings View') and hasAuthority('Scan Results View')" th:attr="data-wt-dialog-open=${'#provider-delete-' + row.index}">Delete AWS review</md-text-button><md-text-button type="button" data-wt-dialog-close>Close</md-text-button>
+      </div>
+    </md-dialog>
+    <md-dialog th:id="${'provider-delete-' + row.index}" th:if="${provider.canDeleteProviderReview()}" sec:authorize="hasAuthority('AWS Security Administration') and hasAuthority('Repository Settings View') and hasAuthority('Scan Results View')" class="wt-dialog-wide">
+      <div slot="headline" class="wt-dialog-headline"><span class="wt-person"><span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">delete_forever</span></span><span class="wt-person__text"><span>Delete AWS review?</span></span></span></div>
+      <form slot="content" method="post" th:action="@{/aws-security/runs/{id}/delete-review(id=${provider.id})}" th:id="${'provider-delete-form-' + row.index}" class="wt-md-form">
+        <p>This deletes the review and its findings from AWS. Saved Watchtower results and scan history stay available. This action cannot be undone.</p>
+        <p>Review: <code th:text="${provider.reviewId}"></code></p><input type="hidden" name="reviewId" th:value="${provider.reviewId}">
+        <md-outlined-text-field label="Type DELETE to confirm" name="confirmation" data-wt-confirm-name="DELETE" autocomplete="off" required pattern="DELETE"></md-outlined-text-field>
+      </form>
+      <div slot="actions"><md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button><md-filled-button type="submit" th:form="${'provider-delete-form-' + row.index}" data-wt-confirm-submit disabled has-icon class="wt-btn-danger"><span slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete AWS review</md-filled-button></div>
+    </md-dialog>
+  </div>
+</div>
+
+<!-- The report's one findings workspace (AwsReport board, 2026-10-22): AWS and local findings in the
+     same list, with a Scanner chip ("All scanners ▾") beside All files when an AWS assessment exists.
+     Without one it is the plain workspace. AWS findings come one bounded page at a time. -->
+<section th:fragment="findings(scanFailed, sourceViewerAvailable)" id="aws-findings"
+    th:with="hasProvider=${providerStatuses != null and !providerStatuses.isEmpty()}"
+    th:attr="data-aws-titles-url=${hasProvider ? providerBase + '/aws/titles?page=' + providerPage : null}">
+  <div th:replace="~{fragments/findings :: workspace('Findings', ${hasProvider and workspaceFindings != null ? workspaceFindings : findings}, ${scanFailed}, ${sourceViewerAvailable})}"></div>
+  <nav th:if="${hasProvider and providerPages > 1}" aria-label="AWS finding pages" class="wt-table-actions mb-4">
+    <md-outlined-button th:if="${providerPage > 0}" th:href="${providerBase + '?providerPage=' + (providerPage - 1) + '#aws-findings'}">Previous AWS page</md-outlined-button>
+    <span class="wt-field-help" th:text="${'AWS page ' + (providerPage + 1) + ' of ' + providerPages}"></span>
+    <md-outlined-button th:if="${providerPage + 1 < providerPages}" th:href="${providerBase + '?providerPage=' + (providerPage + 1) + '#aws-findings'}">Next AWS page</md-outlined-button>
+  </nav>
+</section>
+
+<!-- One Download menu for a report: the local exports the page passes in (may be null) and, when
+     a remote assessment exists, the combined local + AWS evidence. -->
+<details th:fragment="downloads(csvUrl, sarifUrl)" class="wt-popover wt-download-menu"
+    th:if="${csvUrl != null or (providerStatuses != null and !providerStatuses.isEmpty())}">
+  <summary class="btn btn-secondary btn-sm"><span class="material-icons" aria-hidden="true">download</span>Download<span
+      class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+  <div class="wt-popover__body wt-download-menu__body">
+    <th:block th:if="${csvUrl != null}">
+      <span class="wt-meta-label">This scan</span>
+      <a th:href="${csvUrl}">CSV</a>
+      <a th:if="${sarifUrl != null}" th:href="${sarifUrl}">SARIF</a>
+    </th:block>
+    <th:block th:if="${providerStatuses != null and !providerStatuses.isEmpty()}">
+      <span class="wt-meta-label">With AWS evidence</span>
+      <a th:href="${providerBase + '/export?format=json'}">JSON</a>
+      <a th:href="${providerBase + '/export?format=sarif'}">SARIF</a>
+      <a th:href="${providerBase + '/export?format=csv'}">CSV</a>
+      <a th:href="${providerBase + '/export?format=html'}" target="_blank" rel="noopener">Printable report</a>
+    </th:block>
+  </div>
+</details>

@@ -1,15 +1,10 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
@@ -18,10 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanInitializationException;
 import com.tracelink.appsec.watchtower.core.scan.code.AbstractCodeScanAgent;
+import com.tracelink.appsec.watchtower.core.scan.code.SecureZipUtils;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.storage.S3Service;
 
 /**
  * Handles scanning via file upload. Reports on all findings in the zip file
@@ -31,6 +28,8 @@ import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanR
 public class UploadScanAgent extends AbstractCodeScanAgent<UploadScanAgent> {
 	private static Logger LOG = LoggerFactory.getLogger(UploadScanAgent.class);
 
+	private String storageKey;
+	private S3Service s3Service;
 	private Path zipFile;
 	private UploadScanResultService uploadScanResultService;
 	private String uploadTicket;
@@ -38,17 +37,31 @@ public class UploadScanAgent extends AbstractCodeScanAgent<UploadScanAgent> {
 	public UploadScanAgent(UploadScanContainerEntity upload) {
 		super(upload.getName());
 		this.uploadTicket = upload.getTicket();
-		this.zipFile = upload.getZipPath();
+		this.storageKey = upload.getStorageKey();
 	}
 
 	/**
 	 * Set the {@linkplain UploadScanResultService} for this Agent's configuration
-	 * 
+	 *
 	 * @param uploadScanResultService the result Service to use
 	 * @return this agent
 	 */
 	public UploadScanAgent withScanResultService(UploadScanResultService uploadScanResultService) {
 		this.uploadScanResultService = uploadScanResultService;
+		return this;
+	}
+
+	/**
+	 * Set the {@linkplain S3Service} used to fetch (and, in {@link #clean()}, remove)
+	 * the upload's zip when it is S3-backed - item 3.4/3.5's storage. Only required
+	 * when {@code upload}'s storage key is an S3 key; a locally-backed upload (item
+	 * 3.4's fallback) never calls it.
+	 *
+	 * @param s3Service the S3 service to use
+	 * @return this agent
+	 */
+	public UploadScanAgent withS3Service(S3Service s3Service) {
+		this.s3Service = s3Service;
 		return this;
 	}
 
@@ -59,9 +72,23 @@ public class UploadScanAgent extends AbstractCodeScanAgent<UploadScanAgent> {
 			throw new ScanInitializationException(
 					"Result Service must be configured.");
 		}
+		if (UploadStorageLocation.isS3(storageKey) && s3Service == null) {
+			throw new ScanInitializationException("S3 Service must be configured.");
+		}
 		this.uploadScanResultService.markScanInProgress(uploadTicket);
 		try {
-			secureUnzipBlock(new ZipFile(this.zipFile.toFile()), getWorkingDirectory().toFile());
+			if (UploadStorageLocation.isS3(storageKey)) {
+				zipFile = Files.createTempFile(uploadTicket, ".zip");
+				s3Service.downloadRequired(UploadStorageLocation.s3Key(storageKey), zipFile);
+			} else {
+				zipFile = UploadStorageLocation.localPath(storageKey);
+			}
+			SecureZipUtils.secureUnzip(new ZipFile(zipFile.toFile()),
+					getWorkingDirectory().toFile());
+			// A recovered scan reaching this point is the proof that the upload's object
+			// survived recovery; it used to be deleted before the agent could open it.
+			LOG.debug("Unzipped upload " + uploadTicket + " from " + this.storageKey
+					+ " into the working directory");
 		} catch (IOException e) {
 			throw new ScanInitializationException("Failed to unzip", e);
 		}
@@ -76,7 +103,12 @@ public class UploadScanAgent extends AbstractCodeScanAgent<UploadScanAgent> {
 				violations.add(ve);
 			});
 		}
-		this.uploadScanResultService.saveFinalUploadScan(uploadTicket, violations);
+		this.uploadScanResultService.saveFinalUploadScan(uploadTicket, violations, getExecutionSummary());
+		if (shadowComparisonEnabled()) {
+			var saved = uploadScanResultService.findUploadScanByTicket(uploadTicket);
+			if (saved != null && saved.getLatestUploadScan() != null)
+				recordShadowComparison("upload", saved.getLatestUploadScan().getId());
+		}
 	}
 
 	@Override
@@ -84,94 +116,32 @@ public class UploadScanAgent extends AbstractCodeScanAgent<UploadScanAgent> {
 		LOG.error("Exception while scanning. Scan Name: " + getScanName() + " TicketId: "
 				+ uploadTicket, e);
 		this.uploadScanResultService.markScanFailed(uploadTicket, e.getMessage());
+		if (getExecutionSummary().codeSnapshot() != null) {
+			this.uploadScanResultService.saveExecutionSummary(uploadTicket, getExecutionSummary());
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected String getMetricType() {
+		return "upload";
 	}
 
 	@Override
 	protected void clean() {
 		FileUtils.deleteQuietly(getWorkingDirectory().toFile());
-		FileUtils.deleteQuietly(zipFile.toFile());
-	}
-
-	/**
-	 * Unzip a zip file while checking for any Path Traversal vulnerabilities. Writes files to the
-	 * file system at the outputDirectory location. If a Path Traversal is found, unzipping will
-	 * stop and previous files will be attempted to be deleted. There is no guarantee that the
-	 * output will be cleaned completely.
-	 * 
-	 * @param zipFile         the zip file to unzip
-	 * @param outputDirectory the directory into which zip entries will be written
-	 * @throws PathTraversalSecurityException if any entry in the zip file attempts to write to a
-	 *                                        parent or sibling location
-	 * @throws IOException                    if an I/O error occurs when reading, writing, or
-	 *                                        deleting a file. This may cause leftover files to
-	 *                                        exist in the filesystem
-	 */
-	private void secureUnzipBlock(ZipFile zipFile, File outputDirectory)
-			throws IOException {
-		Enumeration<? extends ZipEntry> entries = zipFile.entries();
-
-		try {
-			while (entries.hasMoreElements()) {
-				ZipEntry entry = entries.nextElement();
-				String entryName = entry.getName();
-				File destination = new File(outputDirectory, entryName);
-
-				// if a problem occurs, short-circuit
-				if (!isSubPath(outputDirectory.toPath(), destination.toPath())) {
-					throw new IOException(String.format(
-							"Zip entry %s in zip file %s is attempting to access an illegal location and has been blocked",
-							entryName, zipFile.getName()));
-				}
-
-				if (entry.isDirectory()) {
-					destination.mkdirs();
-				} else {
-					destination.getParentFile().mkdirs();
-					try (InputStream in = zipFile.getInputStream(entry)) {
-						Files.copy(in, destination.toPath());
-					}
-					if (isBinary(destination)) {
-						LOG.debug("Skipping likely binary file " + destination.toString());
-						FileUtils.deleteQuietly(destination);
-					}
-				}
-			}
-		} catch (IOException e) {
-			// There was a vuln found, try to roll-back
-			FileUtils.deleteQuietly(outputDirectory);
-			throw e;
+		// For a local-backed upload, zipFile is the persisted upload itself, and
+		// deleting it here is the same behavior upload storage had before S3 existed.
+		// For an S3-backed upload, zipFile is only the temp download - the persisted
+		// copy is the S3 object, deleted separately below.
+		if (zipFile != null) {
+			FileUtils.deleteQuietly(zipFile.toFile());
 		}
-	}
-
-	private boolean isBinary(File destination) {
-		int countPrintable = 0;
-		int countNotPrintable = 0;
-		int count = 0;
-
-		try (FileInputStream fis = new FileInputStream(destination)) {
-			byte[] bytes = new byte[1000];
-			count = fis.read(bytes);
-			for (int i = 0; i < count; i++) {
-				byte b = bytes[i];
-				if ((b > 31 && b < 127) || b == '\t' || b == '\n' || b == '\r' || b == '\f') {
-					countPrintable++;
-				} else {
-					countNotPrintable++;
-				}
-			}
-		} catch (IOException e) {
-			return true;
+		if (UploadStorageLocation.isS3(storageKey) && s3Service != null) {
+			s3Service.deleteObject(UploadStorageLocation.s3Key(storageKey));
 		}
-		if (count == -1) {
-			return false;
-		}
-		return (countPrintable * 100) / (countPrintable + countNotPrintable) < 95;
-	}
-
-	private boolean isSubPath(Path basePath, Path targetPath) {
-		Path normalizedBase = basePath.normalize();
-		Path normalizedTest = targetPath.normalize();
-		return normalizedTest.startsWith(normalizedBase);
 	}
 
 }

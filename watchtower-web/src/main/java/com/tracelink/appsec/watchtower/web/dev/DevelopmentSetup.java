@@ -111,6 +111,14 @@ public class DevelopmentSetup {
 		if (!environment.acceptsProfiles(Profiles.of(ALLOWED_PROFILE))) {
 			return;
 		}
+		// A standard Spring MVC app refreshes both a root context and a child
+		// (DispatcherServlet) context, each firing this event - without this guard, dev
+		// seeding runs twice per startup, inserting duplicate rows (e.g. two
+		// ApiIntegrationEntity rows sharing a label, tripping a NonUniqueResultException
+		// later). Only the root context's refresh has no parent.
+		if (event.getApplicationContext().getParent() != null) {
+			return;
+		}
 		new Thread(() -> {
 			metricsService.pause();
 			LOG.info("Beginning Dev Setup");

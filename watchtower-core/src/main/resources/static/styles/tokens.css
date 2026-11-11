@@ -1,0 +1,215 @@
+/*
+ * Watchtower design system (IMPROVEMENT_PLAN.md Phase 9, item 9.0; split into tokens/base/
+ * components/layout in Phase 11 Section C - pure reorganization, no rule changed).
+ *
+ * Loaded after bootstrap.min.css. Bootstrap 5's grid/utility classes (col-*, d-flex, mb-*, etc.)
+ * stay exactly as templates already use them - these files only restyle the theme layer:
+ * palette, typography, and the small set of non-Bootstrap classes the old Shards theme
+ * introduced (.main-sidebar, .page-header, .card-small, .stats-small, ...) that templates
+ * still rely on for layout, not just look.
+ *
+ * Load order (see fragments/htmlhead.html): tokens.css (this file) -> base.css -> components.css
+ * -> layout.css. Tokens first because the other three consume its --wt-* custom properties.
+ *
+ * No CDN request: Inter (Phase 11 Section C) is self-hosted from static/fonts/, not loaded from
+ * a font CDN, so an air-gapped/restricted-egress deployment still renders identically to any
+ * other - it costs one same-origin file request that did not exist before, not an external one.
+ */
+
+/* ---------- Design tokens (IMPROVEMENT_PLAN.md item 10.10) ----------
+ *
+ * Two blocks. Light lives in the plain :root block below and is the unconditional default -
+ * it no longer depends on the OS/browser prefers-color-scheme setting (Material Web migration:
+ * "make light mode the default" - light must render even if JS never runs at all, e.g. private
+ * browsing with storage blocked, not just when theme-toggle.js's default happens to resolve to
+ * light). Dark only ever applies via the explicit :root[data-theme="dark"] override below,
+ * which theme-toggle.js sets after an explicit user choice. There used to be a third block here
+ * (a @media (prefers-color-scheme: dark) auto-dark rule, scoped to fire whenever the OS
+ * preferred dark and the page hadn't explicitly pinned light) - removed for the reason above,
+ * not merely simplified: as long as it existed, a dark-OS visitor with JS disabled or storage
+ * blocked still saw dark by default, which contradicts light being the actual default rather
+ * than just the common case.
+ */
+
+:root {
+  /* Tells the browser to render native form controls, scrollbars and the canvas in the
+     matching scheme. Without it a dark page still gets light scrollbars and light selects. */
+  color-scheme: light;
+
+  --wt-bg: #f4f6fb;
+  --wt-surface: #ffffff;
+  --wt-surface-alt: #f7f8fc;
+  --wt-border: #e3e6ef;
+  --wt-text: #1a1f36;
+  /* #6b7280 measured 4.47:1 on --wt-bg - close enough to look fine and still short of 4.5:1,
+     which matters because this token carries the smallest text in the UI (page subtitles at
+     0.6875rem, table headers and stat labels at 0.75rem). #616875 measures 5.19:1 there,
+     5.61:1 on --wt-surface. */
+  --wt-text-muted: #616875;
+  --wt-accent: #4f6df5;
+  --wt-accent-strong: #3b52d1;
+  --wt-accent-soft: #eef1fe;
+  --wt-success: #16a34a;
+  --wt-danger: #e0355b;
+  --wt-warning: #d97706;
+  --wt-info: #0891b2;
+
+  /* Item 10.11. The four tokens above are mid-tone hues chosen to look right as a *fill next
+     to* content; used as a fill *under white text* or as text on their own 10% tint they miss
+     4.5:1 - white on --wt-warning measures 3.18:1, on --wt-success 3.30:1, on --wt-info 3.68:1,
+     on --wt-danger 4.35:1, and .alert-* text on its own tint lands around 2.95-3.5:1.
+     So each semantic colour gets two extra variants, and the base token is left for borders
+     and other non-text uses:
+       *-solid  - a fill dark enough that #fff on it clears 4.5:1 (measured 5.02, 6.28, 5.02, 5.36)
+       *-strong - text dark enough to clear 4.5:1 on that colour's own alert tint
+                  (measured 6.38, 5.71, 6.76, 6.71) */
+  --wt-success-solid: #15803d;
+  --wt-success-strong: #166534;
+  --wt-danger-solid: #be123c;
+  --wt-danger-strong: #b42318;
+  --wt-warning-solid: #b45309;
+  --wt-warning-strong: #93370d;
+  --wt-info-solid: #0e7490;
+  --wt-info-strong: #065986;
+  /* #fff on --wt-accent is only 4.34:1, so solid accent fills use this instead. */
+  --wt-accent-solid: #3b52d1;
+  --wt-accent-solid-hover: #2f42a8;
+  /* Material's primary (focused field labels, filled buttons). The lighter --wt-accent was 4.3:1
+     on white and white on it, under WCAG AA's 4.5:1 for small text (axe in the e2e suite). */
+  --wt-accent-interactive: #3b52d1;
+
+  --wt-sidebar-bg: #12162b;
+  --wt-sidebar-bg-alt: #191d38;
+  --wt-sidebar-fg: #a6adc7;
+  --wt-sidebar-fg-active: #ffffff;
+  --wt-sidebar-border: rgba(255, 255, 255, 0.08);
+  --wt-radius: 0.625rem;
+  --wt-radius-sm: 0.375rem;
+  --wt-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --wt-shadow-md: 0 2px 4px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.08);
+  /* Phase 11 Section C: Inter now prepended ahead of the system-font stack, backed by the
+     self-hosted @font-face in base.css (a single latin-subset variable-weight file covers the
+     400/500/600/700 this stack actually uses). The system fonts remain as fallbacks for the
+     instant before Inter loads, and for any environment where the font file fails to fetch. */
+  --wt-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --wt-font-mono: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* Scales the file previously hardcoded inline at every call site. */
+  --wt-space-1: 0.25rem;
+  --wt-space-2: 0.5rem;
+  --wt-space-3: 0.75rem;
+  --wt-space-4: 1rem;
+  --wt-space-5: 1.5rem;
+  --wt-space-6: 2rem;
+	/* Tables use one shared grid so captions, headers, body values, and actions line up across
+	   every server-rendered screen. */
+	--wt-table-cell-padding-block: var(--wt-space-3);
+	--wt-table-cell-padding-inline: var(--wt-space-4);
+	--wt-table-row-min-height: 3rem;
+	--wt-table-header-bg: linear-gradient(100deg, var(--wt-surface-alt) 0%,
+		var(--wt-accent-soft) 100%);
+  --wt-text-xs: 0.6875rem;
+  --wt-text-sm: 0.75rem;
+  --wt-text-code: 0.8125rem;
+  --wt-text-base: 0.9375rem;
+  --wt-text-lg: 1.125rem;
+  --wt-text-xl: 1.5rem;
+  --wt-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --wt-duration-fast: 120ms;
+  --wt-duration: 180ms;
+  --wt-duration-slow: 280ms;
+  --wt-focus-ring: 0 0 0 3px var(--wt-accent-soft);
+  --wt-z-navbar: 1030;
+  --wt-z-sidebar: 1070;
+  --wt-z-loading: 2000;
+  /* Shared minimum height for persistent sidebar controls. */
+  --wt-navbar-h: 3.5rem;
+  /* Phase 11 Section D: desktop icon-rail widths. .wt-shell's grid-template-columns and
+     .main-sidebar's own width both read these, so the two can never drift out of sync - the
+     sidebar is position:fixed (unaffected by grid item sizing) but rendered at the exact width
+     its grid track reserves for <main>. Mobile has its own fixed drawer width (layout.css),
+     unrelated to either of these. */
+  --wt-rail-w: 4rem;
+  --wt-rail-w-expanded: 16rem;
+
+  /* Code surface. Its own pair rather than a reuse of --wt-surface/--wt-text: the previous rule
+     painted --wt-text (#1a1f36) on --wt-sidebar-bg (#12162b), a 1.10:1 contrast ratio that made
+     every light-mode snippet unreadable. Measured here: fg on bg is 13.98:1, gutter on bg is
+     4.55:1. */
+  --wt-code-bg: #f8fafc;
+  --wt-code-fg: #1e293b;
+  --wt-code-gutter: #64748b;
+  --wt-code-border: #e2e8f0;
+  --wt-code-hit-bg: rgba(217, 45, 32, 0.09);
+  --wt-code-hit-bar: #d92d20;
+  --wt-code-target-bg: rgba(79, 109, 245, 0.16);
+
+  /* Severity pills, indexed by RulePriority.getPriority(): 1 High .. 6 Informational. Tinted
+     background with strong text rather than a saturated fill, which is both the restrained
+     register this UI wants and the only way to clear 4.5:1 - white on a mid-tone red or amber
+     cannot. Measured light-mode ratios: 5.45, 5.18, 6.62, 6.58, 6.83, 6.60. */
+  --wt-sev-1-bg: #fee4e2;
+  --wt-sev-1-fg: #b42318;
+  --wt-sev-2-bg: #fff0e6;
+  --wt-sev-2-fg: #b93815;
+  --wt-sev-3-bg: #fef0c7;
+  --wt-sev-3-fg: #93370d;
+  --wt-sev-4-bg: #e0f2fe;
+  --wt-sev-4-fg: #065986;
+  /* Low is an indigo tint, not grey (Fixes board 2026-10-22: a ruleset of Low rules read as
+     uncoloured); grey stays for Informational. #3538cd on #eef0fc is about 7:1. */
+  --wt-sev-5-bg: #eef0fc;
+  --wt-sev-5-fg: #3538cd;
+  --wt-sev-6-bg: #f2f4f7;
+  --wt-sev-6-fg: #475467;
+}
+
+/* IMPROVEMENT_PLAN.md item 9.5, updated for the Material Web migration's light-by-default
+   change: the only way to get dark now - theme-toggle.js sets [data-theme="dark"] on an
+   explicit user choice, persisted in localStorage. No prefers-color-scheme fallback exists
+   any more, so a visitor who has never toggled anything (or whose storage/JS is unavailable)
+   always gets the plain :root block above, i.e. light. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* On a dark surface the alert tint is nearly the surface itself, so the text has to go light
+     rather than dark - the inverse of the light-mode *-strong values. */
+  --wt-success-strong: #4ade80;
+  --wt-danger-strong: #fda29b;
+  --wt-warning-strong: #fdb022;
+  --wt-info-strong: #7cd4fd;
+  --wt-bg: #0b0d16;
+  --wt-surface: #12162a;
+  --wt-surface-alt: #171b30;
+  --wt-border: #262b47;
+  --wt-text: #e6e8f0;
+  --wt-text-muted: #9aa1b8;
+  --wt-accent: #6b84ff;
+  --wt-accent-strong: #8a9dff;
+  --wt-accent-soft: #1c2247;
+  --wt-accent-interactive: #6b84ff;
+  --wt-sidebar-bg: #05060c;
+  --wt-sidebar-bg-alt: #0a0c18;
+  --wt-sidebar-border: rgba(255, 255, 255, 0.06);
+  --wt-code-bg: #0d1117;
+  --wt-code-fg: #e6edf3;
+  --wt-code-gutter: #8b949e;
+  --wt-code-border: #262b47;
+  --wt-code-hit-bg: rgba(248, 81, 73, 0.16);
+  --wt-code-hit-bar: #f85149;
+  --wt-code-target-bg: rgba(107, 132, 255, 0.22);
+  --wt-sev-1-bg: rgba(240, 68, 56, 0.18);
+  --wt-sev-1-fg: #fda29b;
+  --wt-sev-2-bg: rgba(247, 144, 9, 0.18);
+  --wt-sev-2-fg: #fdb022;
+  --wt-sev-3-bg: rgba(247, 200, 9, 0.16);
+  --wt-sev-3-fg: #fec84b;
+  --wt-sev-4-bg: rgba(14, 165, 233, 0.18);
+  --wt-sev-4-fg: #7cd4fd;
+  --wt-sev-5-bg: rgba(128, 152, 249, 0.18);
+  --wt-sev-5-fg: #a4bcfd;
+  --wt-sev-6-bg: rgba(148, 163, 184, 0.12);
+  --wt-sev-6-fg: #cbd5e1;
+}
+/* No :root[data-theme="light"] block: the media query above is scoped so it never applies when
+   light is pinned, which leaves the plain :root block as the light theme. */

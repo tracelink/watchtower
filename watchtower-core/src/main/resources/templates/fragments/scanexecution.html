@@ -1,0 +1,95 @@
+<section th:fragment="summary(result)" class="card card-small wt-scan-execution mb-4"
+    aria-labelledby="scan-execution-heading">
+  <div class="card-header border-bottom">
+    <h2 id="scan-execution-heading" class="h5 m-0 wt-action-with-help">Scan execution
+      <a th:replace="~{fragments/featurehelp :: info('scan-evidence', 'recorded scan details', 'Check which scanners ran or were skipped; selected rules are not proof of evaluation.')}"></a>
+    </h2>
+  </div>
+  <div class="card-body"
+      th:if="${result.executionSummary != null and result.executionSummary.recorded}">
+    <dl class="wt-execution-totals">
+      <div><dt>Rules selected</dt><dd th:text="${result.executionSummary.rulesEvaluated}">0</dd></div>
+      <div><dt>Scanners ran</dt><dd th:text="${result.executionSummary.ranCount}">0</dd></div>
+      <div><dt>Scanners skipped</dt><dd th:text="${result.executionSummary.skippedCount}">0</dd></div>
+      <div th:if="${result.executionSummary.notApplicableCount > 0}" data-tip="Scanners with no file of their types in this scan; nothing was left unchecked"><dt>Scanners not needed</dt><dd th:text="${result.executionSummary.notApplicableCount}"></dd></div>
+      <div th:if="${result.executionSummary.disabledCount > 0}"><dt>Scanners disabled</dt><dd th:text="${result.executionSummary.disabledCount}"></dd></div>
+      <div th:if="${result.executionSummary.unsupportedCount > 0}"><dt>Scanners unsupported</dt><dd th:text="${result.executionSummary.unsupportedCount}"></dd></div>
+      <div th:if="${result.executionSummary.failedCount > 0}"><dt>Scanners failed</dt><dd th:text="${result.executionSummary.failedCount}">0</dd></div>
+      <div th:if="${result.executionSummary.reusedCount > 0}"><dt>Reports reused</dt><dd th:text="${result.executionSummary.reusedCount}">0</dd></div>
+    </dl>
+    <ul class="wt-execution-list" aria-label="Scanner execution details">
+      <li th:each="scanner : ${result.executionSummary.scanners}">
+        <strong class="wt-scanner-name"><span class="material-icons" aria-hidden="true" th:text="${scanner.icon}">radar</span><span th:text="${scanner.displayName}">Scanner</span></strong>
+        <span class="wt-status-chip"
+            th:classappend="${' wt-tone-' + scanner.tone}"
+            th:text="${scanner.label}">Ran</span>
+        <span th:if="${scanner.ran}" th:text="${scanner.durationMs + ' ms'}">0 ms</span>
+        <span th:unless="${scanner.ran}" class="text-muted" th:text="${scanner.reason}">Reason</span>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body text-muted"
+      th:unless="${result.executionSummary != null and result.executionSummary.recorded}">
+    Execution detail was not recorded for this historical scan.
+  </div>
+</section>
+
+<section th:fragment="performance(result)" class="wt-performance-execution"
+    th:if="${result.executionSummary != null and result.executionSummary.recorded}"
+    aria-labelledby="scanner-execution-heading">
+  <div class="wt-performance-execution__heading">
+    <h3 id="scanner-execution-heading" class="h6 m-0 wt-action-with-help">Scanner execution
+      <a th:replace="~{fragments/featurehelp :: info('scan-evidence', 'recorded scan details', 'Check which scanners ran or were skipped; selected rules are not proof of evaluation.')}"></a>
+    </h3>
+    <div class="wt-scan-execution-inline" aria-label="Scan execution summary">
+      <span><strong th:text="${result.executionSummary.rulesEvaluated}">0</strong> rules selected</span>
+      <span><strong th:text="${result.executionSummary.ranCount}">0</strong> ran</span>
+      <span><strong th:text="${result.executionSummary.skippedCount}">0</strong> skipped</span>
+      <span th:if="${result.executionSummary.notApplicableCount > 0}" data-tip="Scanners with no file of their types in this scan; nothing was left unchecked"><strong th:text="${result.executionSummary.notApplicableCount}"></strong> not needed</span>
+    <span th:if="${result.executionSummary.disabledCount > 0}"><strong th:text="${result.executionSummary.disabledCount}"></strong> disabled</span>
+      <span th:if="${result.executionSummary.unsupportedCount > 0}"><strong th:text="${result.executionSummary.unsupportedCount}"></strong> unsupported</span>
+      <span th:if="${result.executionSummary.failedCount > 0}"><strong th:text="${result.executionSummary.failedCount}">0</strong> failed</span>
+      <span th:if="${result.executionSummary.reusedCount > 0}"><strong th:text="${result.executionSummary.reusedCount}">0</strong> reused</span>
+    </div>
+  </div>
+  <ul class="wt-execution-list" aria-label="Scanner execution details">
+    <li th:each="scanner : ${result.executionSummary.scanners}">
+      <strong class="wt-scanner-name"><span class="material-icons" aria-hidden="true" th:text="${scanner.icon}">radar</span><span th:text="${scanner.displayName}">Scanner</span></strong>
+      <span class="wt-status-chip"
+          th:classappend="${' wt-tone-' + scanner.tone}"
+          th:text="${scanner.label}">Ran</span>
+      <span th:if="${scanner.ran}"
+          th:text="${result.formatDuration(scanner.durationMs)}">0 ms</span>
+      <span th:unless="${scanner.ran}" class="text-muted" th:text="${scanner.reason}">Reason</span>
+    </li>
+  </ul>
+</section>
+
+<div th:fragment="compact(result)" class="wt-scan-execution-inline">
+  <th:block th:if="${result.executionSummary != null and result.executionSummary.recorded}">
+    <span><strong th:text="${result.executionSummary.rulesEvaluated}">0</strong> rules selected</span>
+    <span><strong th:text="${result.executionSummary.ranCount}">0</strong> ran</span>
+    <span class="wt-execution-skipped">
+      <strong th:text="${result.executionSummary.skippedCount}">0</strong> skipped
+      <details class="wt-execution-skip-info" th:if="${result.executionSummary.skippedCount > 0}">
+        <summary aria-label="Show skipped scanner reasons"><span class="material-icons" aria-hidden="true">info</span></summary>
+        <div class="wt-execution-skip-popover">
+          <strong>Skipped scanners</strong>
+          <ul>
+            <li th:each="scanner : ${result.executionSummary.scanners}" th:if="${scanner.status == 'SKIPPED'}">
+              <span th:text="${scanner.displayName}">Scanner</span>
+              <small th:text="${scanner.reason}">Reason</small>
+            </li>
+          </ul>
+        </div>
+      </details>
+    </span>
+    <span th:if="${result.executionSummary.notApplicableCount > 0}" data-tip="Scanners with no file of their types in this scan; nothing was left unchecked"><strong th:text="${result.executionSummary.notApplicableCount}"></strong> not needed</span>
+    <span th:if="${result.executionSummary.disabledCount > 0}"><strong th:text="${result.executionSummary.disabledCount}"></strong> disabled</span>
+      <span th:if="${result.executionSummary.unsupportedCount > 0}"><strong th:text="${result.executionSummary.unsupportedCount}"></strong> unsupported</span>
+      <span th:if="${result.executionSummary.failedCount > 0}"><strong th:text="${result.executionSummary.failedCount}">0</strong> failed</span>
+    <span th:if="${result.executionSummary.reusedCount > 0}"><strong th:text="${result.executionSummary.reusedCount}">0</strong> reused</span>
+  </th:block>
+  <span class="text-muted"
+      th:unless="${result.executionSummary != null and result.executionSummary.recorded}">Not recorded</span>
+</div>

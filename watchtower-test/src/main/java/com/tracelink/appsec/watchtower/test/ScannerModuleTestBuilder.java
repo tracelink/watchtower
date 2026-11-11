@@ -1,6 +1,8 @@
 package com.tracelink.appsec.watchtower.test;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -20,7 +22,7 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, I> {
 	private String name;
 	private String schemaName;
 	private String migration;
-	private Class<? extends RuleDto> supportedRuleClass;
+	private List<Class<? extends RuleDto>> supportedRuleClasses;
 	private Supplier<? extends RuleDto> ruleSupplier;
 	private final Set<ScannerModuleTestOption> ignoredOptions = new HashSet<>();
 	private TestScanConfiguration<R, I> testScanConfig;
@@ -70,19 +72,20 @@ public class ScannerModuleTestBuilder<R extends AbstractScanReport, I> {
 		return this;
 	}
 
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return supportedRuleClass;
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return supportedRuleClasses;
 	}
 
 	/**
-	 * The concrete extension to the RuleDto class that this module uses.
+	 * The concrete extension(s) to the RuleDto class that this module uses.
 	 *
-	 * @param supportedRuleClass the class of Rules this module uses
+	 * @param supportedRuleClasses the class(es) of Rules this module uses
 	 * @return this builder
 	 */
-	public ScannerModuleTestBuilder<R, I> withSupportedRuleClass(
-			Class<? extends RuleDto> supportedRuleClass) {
-		this.supportedRuleClass = supportedRuleClass;
+	@SafeVarargs
+	public final ScannerModuleTestBuilder<R, I> withSupportedRuleClass(
+			Class<? extends RuleDto>... supportedRuleClasses) {
+		this.supportedRuleClasses = Arrays.asList(supportedRuleClasses);
 		return this;
 	}
 

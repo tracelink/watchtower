@@ -1,79 +1,74 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4" xmlns="http://www.w3.org/1999/html">
-  <div class="col-12 col-sm-6 text-center text-sm-left mb-0">
-    <h3 class="page-title" th:text="${apiType.getTypeName() + ' API Integration'}"></h3>
-  </div>
+<!-- An integration (UAT walkthrough, 2026-10-16): the title carries the provider icon and both states
+     as chips (connection, webhook) with their meaning on hover; Test connection, the webhook action
+     and a red Delete icon sit on the right. Unregister asks first (data-confirm,
+     confirm-action.js); Delete opens the shared delete confirm (deleteintegration.html). The only
+     filled button is Save at the bottom of the form. -->
+<div class="wt-home-head" th:if="${entity == null}">
+  <div th:replace="~{fragments/pageheader :: header(${'Add ' + apiType.getTypeName() + ' integration'}, null)}"></div>
 </div>
-<!-- End Page Header -->
-<!-- Integration Details -->
-<div class="row border-bottom">
-  <div class="col">
-    <div class="card card-small">
-      <div class="card-header border-bottom">
-        <div class="d-flex justify-content-between">
-          <h6 class="card-title align-self-center mb-0">Details</h6>
-          <div class="btn-toolbar">
-            <form
-                th:if="${entity?.registerState?.displayName?.equals('Not Registered')}"
-                class="form-inline" method="POST" action="/apisettings/register">
-              <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
-              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-              <button type="submit" class="btn btn-info mr-2">Register</button>
-            </form>
-            <form
-                th:if="${#lists.contains({'Registered', 'Failed'}, entity?.registerState?.displayName)}"
-                class="form-inline" method="POST" action="/apisettings/unregister">
-              <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
-              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-              <button type="submit" class="btn btn-warning mr-2">Unregister</button>
-            </form>
-            <form
-                th:if="${#lists.contains({'Not Supported', 'Not Registered', 'Failed'}, entity?.registerState?.displayName)}"
-                class="form-inline" method="POST" action="/apisettings/delete">
-              <input type="hidden" name="apiLabel" th:value="${entity?.apiLabel}"/>
-              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-              <button type="submit" class="btn btn-danger">Delete</button>
-            </form>
-          </div>
-        </div>
-      </div>
-      <form method="POST" action="/apisettings/update">
-        <div class="card-body border-bottom">
-          <div class="row">
-            <div class="col">
-              <label for="apiLabel" class="col-form-label">API Label</label>
-              <input type="text" id="apiLabel" name="apiLabel"
-                     th:class="${entity != null ? 'form-control-plaintext' : 'form-control'}"
-                     th:value="${entity?.apiLabel}"
-                     placeholder="A unique label for this integration (alphanumeric characters only)"
-                     th:readonly="${entity != null}">
-            </div>
-            <div
-                th:unless="${entity == null || entity?.registerState?.displayName?.equals('Not Supported')}"
-                class="col">
-              <label for="registerState" class="col-form-label">Registration State</label>
-              <input type="text" id="registerState" class="form-control-plaintext"
-                     th:value="${entity?.registerState?.displayName}" readonly>
-            </div>
-          </div>
-          <div th:unless="${entity?.registerError == null}" class="row">
-            <div class="col">
-              <label for="registerError" class="col-form-label">Registration Error</label>
-              <input type="text" id="registerError" class="form-control-plaintext"
-                     th:value="${entity?.registerError}" readonly>
-            </div>
-          </div>
-        </div>
-        <div class="card-body border-bottom">
-          <div th:replace="${template}"></div>
-        </div>
-        <div class="card-footer">
-          <input type="hidden" name="apiId" th:value="${entity?.integrationId}"/>
-          <input type="hidden" name="apiType" th:value="${apiType.typeName}"/>
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-          <button class="btn btn-primary" type="Submit">Update API Setting</button>
-        </div>
-      </form>
-    </div>
+<div class="wt-home-head wt-integration-head" th:if="${entity != null}"
+    th:with="state=${entity.registerState?.displayName},
+             conn=${T(com.tracelink.appsec.watchtower.core.scan.apiintegration.IntegrationPresentation).connection(entity, failing)},
+             hook=${T(com.tracelink.appsec.watchtower.core.scan.apiintegration.IntegrationPresentation).webhook(entity)}">
+  <div class="wt-integration-head__title">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons"
+        th:text="${T(com.tracelink.appsec.watchtower.core.scan.apiintegration.IntegrationPresentation).icon(entity)}">code</span></span>
+    <div th:replace="~{fragments/pageheader :: header(${entity.apiLabel}, null)}"></div>
+    <span class="wt-meta-chips">
+      <span class="wt-mini-chip wt-meta-chip" th:text="${apiType.getTypeName()}">Bitbucket Cloud</span>
+      <span class="wt-status-chip" tabindex="0" data-connection-chip th:classappend="${' wt-tone-' + conn.tone}"
+          th:attr="data-tip=${conn.tip},data-tip-millis=${conn.tipMillis}"><span class="material-icons" aria-hidden="true"
+          th:text="${conn.icon}">check_circle</span><span th:text="${conn.label}">Connected</span></span>
+      <span th:if="${hook != null}" class="wt-status-chip" tabindex="0" data-register-state
+          th:classappend="${' wt-tone-' + hook.tone}" th:attr="data-tip=${hook.tip}"><span class="material-icons"
+          aria-hidden="true" th:text="${hook.icon}">webhook</span><span th:text="${apiType.name() == 'BITBUCKET_CLOUD' ? hook.label : 'Webhook ' + #strings.toLowerCase(hook.label)}">Webhook not set up</span></span>
+    </span>
   </div>
+  <div class="wt-page-actions wt-report-head__status">
+    <md-outlined-button th:if="${apiType.name() == 'BITBUCKET_CLOUD'}" has-icon
+        th:href="@{/apisettings/{label}/webhooks/manage(label=${entity.apiLabel})}"><span slot="icon" class="material-icons" aria-hidden="true">webhook</span>Webhooks</md-outlined-button>
+    <form method="POST" action="/apisettings/testConnection">
+      <input type="hidden" name="apiLabel" th:value="${entity.apiLabel}"/>
+      <input type="hidden" name="returnTo" value="integration"/>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <md-outlined-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">sync</span>Test connection</md-outlined-button>
+    </form>
+    <form th:if="${state == 'Not Registered'}" method="POST" action="/apisettings/register">
+      <input type="hidden" name="apiLabel" th:value="${entity.apiLabel}"/>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <md-outlined-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">webhook</span><span th:text="${apiType.name() == 'BITBUCKET_CLOUD' ? 'Register workspace webhook' : 'Register webhook'}">Register webhook</span></md-outlined-button>
+    </form>
+    <form th:if="${state == 'Registered' or state == 'Failed'}" method="POST" action="/apisettings/unregister"
+        th:attr="data-confirm=${apiType.name() == 'BITBUCKET_CLOUD' ? 'Remove the workspace webhook of ' + entity.apiLabel + '? Repository hooks keep working, and hourly sync continues.' : 'Unregister the webhook of ' + entity.apiLabel + '? Pull requests stop being scanned automatically until it is registered again.'}"
+        data-confirm-action="Unregister">
+      <input type="hidden" name="apiLabel" th:value="${entity.apiLabel}"/>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <md-outlined-button type="submit" th:text="${apiType.name() == 'BITBUCKET_CLOUD' ? 'Remove workspace webhook' : 'Unregister webhook'}">Unregister webhook</md-outlined-button>
+    </form>
+    <button th:if="${state == 'Not Supported' or state == 'Not Registered' or state == 'Failed'}" type="button"
+        class="wt-icon-action wt-icon-action--danger wt-icon-action--bordered" data-tip="Delete integration (asks first)"
+        data-wt-dialog-target="#deleteModal"
+        th:attr="data-label=${entity.apiLabel},data-provider=${apiType.getTypeName()},data-repo-count=${repositoryCount},data-repo-name=${onlyRepository},aria-label=${'Delete ' + entity.apiLabel}"><span
+        class="material-icons" aria-hidden="true">delete</span></button>
+  </div>
+  <p th:if="${entity.registerError != null}" class="wt-tone-danger wt-integration-head__error" th:text="${entity.registerError}"
+      data-register-error></p>
 </div>
+<form method="POST" action="/apisettings/update" class="card card-small">
+  <div class="card-body wt-md-form">
+    <!-- The label names the integration and cannot change once saved, so it is the page title
+         then; the hidden field still carries it. -->
+    <md-outlined-text-field th:if="${entity == null}" id="apiLabel" name="apiLabel" label="API label"
+        supporting-text="Letters and digits only" required></md-outlined-text-field>
+    <input th:unless="${entity == null}" type="hidden" id="apiLabel" name="apiLabel" th:value="${entity.apiLabel}"/>
+    <div th:replace="~{${template}}"></div>
+  </div>
+  <div class="card-footer wt-form-footer-end">
+    <input type="hidden" name="apiId" th:value="${entity?.integrationId}"/>
+    <input type="hidden" name="apiType" th:value="${apiType.typeName}"/>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span><span
+        th:text="${entity == null ? 'Create integration' : 'Save'}">Save</span></md-filled-button>
+  </div>
+</form>
+<th:block th:if="${entity != null}"><md-dialog th:replace="~{configuration/deleteintegration :: dialog}"></md-dialog></th:block>

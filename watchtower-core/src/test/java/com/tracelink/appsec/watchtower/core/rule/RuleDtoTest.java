@@ -65,4 +65,23 @@ public class RuleDtoTest {
 		RuleDto dto = new MockCustomRuleDto();
 		Assertions.assertTrue(dto.getRulesets().isEmpty());
 	}
+
+	@Test
+	public void testEqualsAndHashCodeSameName() {
+		RuleDto r1 = new MockCustomRuleDto();
+		r1.setName("Foo");
+		RuleDto r2 = new MockCustomRuleDto();
+		r2.setName("Foo");
+		Assertions.assertEquals(r1, r2);
+		Assertions.assertEquals(r1.hashCode(), r2.hashCode());
+	}
+
+	@Test
+	public void testEqualsDifferentName() {
+		RuleDto r1 = new MockCustomRuleDto();
+		r1.setName("Foo");
+		RuleDto r2 = new MockCustomRuleDto();
+		r2.setName("Bar");
+		Assertions.assertNotEquals(r1, r2);
+	}
 }

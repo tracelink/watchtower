@@ -1,0 +1,43 @@
+<!--/* The edit dialog for one repository, shared by the inventory (opened by Edit when one repository
+     is selected; its checkbox carries the values in data-edit-* attributes, which repo-scan.js
+     fills in) and the repository's own page (toDetail returns there after saving). The repository
+     and its project are the title; scanning is a switch at the top, always sent, so a switched-off
+     box means paused. Criticality is a row of buttons posting the same level (1-4). */-->
+<md-dialog th:fragment="dialog(scanType, choices, criticalities, source, query, statusKey, labelFilter, toDetail)"
+    id="repoEditDialog" data-edit-dialog>
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person"
+      th:with="tileIcon=${scanType == 'container' ? 'inventory_2' : 'code'}">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons"
+        th:text="${tileIcon}">code</span></span>
+    <span class="wt-person__text"><span data-edit-title>Edit repository</span>
+      <span class="wt-person__meta" data-edit-project hidden></span></span></span>
+    <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <!-- Not boosted: htmx reads a boosted form's action once, but Edit sets it per repository. -->
+  <form slot="content" id="repoEditForm" method="POST" hx-boost="false" th:attr="data-action-base=${'/repository/' + scanType + '/'}"
+      th:action="@{/repository/{t}/0(t=${scanType})}" class="wt-md-form">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" name="source" th:value="${source}"/>
+    <input type="hidden" name="q" th:value="${query}"/>
+    <input type="hidden" name="status" th:value="${statusKey}"/>
+    <input type="hidden" name="label" th:value="${labelFilter}"/>
+    <input type="hidden" name="toDetail" th:value="${toDetail}"/>
+    <label class="wt-switch-row"><input type="checkbox" role="switch" class="wt-switch" name="scanning" value="on" data-edit-field="scanning"
+        th:aria-label="${scanType == 'container' ? 'Image scanning enabled' : 'Pull request and planned scanning enabled'}"/><span
+        th:text="${scanType == 'container' ? 'Scan images in this repository' : 'Pull requests and planned scans'}"></span></label>
+    <div th:replace="~{fragments/rulesetpicker :: picker('repoEditRuleset', ${choices}, 'edit')}"></div>
+    <fieldset class="wt-choice-chips" data-edit-field="criticality">
+      <legend>Criticality</legend>
+      <label th:each="c : ${criticalities}" class="wt-choice-chip"><input type="radio" name="criticality" th:value="${c.level}"
+          th:checked="${c.level == 3}" th:aria-label="${c.displayName}"/><span th:text="${c.displayName}">Normal</span></label>
+    </fieldset>
+    <div class="wt-form-pair">
+      <md-outlined-text-field name="team" label="Team" data-edit-field="team"></md-outlined-text-field>
+      <md-outlined-text-field name="owner" label="Owner" data-edit-field="owner"></md-outlined-text-field>
+    </div>
+    <md-outlined-text-field name="labels" label="Labels" supporting-text="Comma separated" data-edit-field="labels"></md-outlined-text-field>
+  </form>
+  <div slot="actions">
+    <md-text-button type="button" data-dialog-close>Cancel</md-text-button>
+    <md-filled-button type="submit" form="repoEditForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+  </div>
+</md-dialog>

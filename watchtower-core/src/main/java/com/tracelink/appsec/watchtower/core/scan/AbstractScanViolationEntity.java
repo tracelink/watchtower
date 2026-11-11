@@ -1,11 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority.RulePriorityConverter;
@@ -34,6 +34,10 @@ public abstract class AbstractScanViolationEntity<S extends AbstractScanEntity<?
 	public abstract S getScan();
 
 	public abstract void setScan(S scan);
+
+	public long getId() {
+		return id;
+	}
 
 	public String getViolationName() {
 		return violationName;

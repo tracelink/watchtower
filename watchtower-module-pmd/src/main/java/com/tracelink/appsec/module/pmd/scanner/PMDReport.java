@@ -12,11 +12,11 @@ import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
-import net.sourceforge.pmd.Report;
-import net.sourceforge.pmd.Rule;
 import net.sourceforge.pmd.benchmark.TextTimingReportRenderer;
 import net.sourceforge.pmd.benchmark.TimingReport;
 import net.sourceforge.pmd.benchmark.TimingReportRenderer;
+import net.sourceforge.pmd.lang.rule.Rule;
+import net.sourceforge.pmd.reporting.Report;
 
 /**
  * Translation from PMD to {@link CodeScanReport}
@@ -31,31 +31,35 @@ public class PMDReport extends CodeScanReport {
 		super();
 		this.timingReport = timingReport;
 
-		if (report.hasErrors()) {
-			report.errors().forEachRemaining(e -> addError(
-					new CodeScanError("In File '" + e.getFile() + "' Error: " + e.getMsg())));
+		report.getProcessingErrors().forEach(e -> addError(new CodeScanError(
+				"In File '" + e.getFileId().getAbsolutePath() + "' Error: " + e.getMsg())));
+		report.getConfigurationErrors().forEach(e -> {
+			addError(new CodeScanError("Poorly Configured Rule. Reason: " + e.issue()));
+			// PMD dropped just this rule and carried on with the rest, so only this rule did not run.
+			if (e.rule() != null) {
+				addFailedRule(e.rule().getName(), e.issue());
+			}
+		});
+		// When the only problems are rules PMD dropped, the scanner itself ran: say so, and let the rules named above
+		// carry the failure. A file that could not be processed, or a problem with no rule to name, still fails the scanner.
+		if (report.getProcessingErrors().isEmpty() && !report.getConfigurationErrors().isEmpty()
+				&& report.getConfigurationErrors().stream().allMatch(e -> e.rule() != null)) {
+			setExecutionStatus("RAN");
 		}
-		if (report.hasConfigErrors()) {
-			report.configErrors().forEachRemaining(
-					e -> addError(
-							new CodeScanError("Poorly Configured Rule. Reason: " + e.issue())));
-		}
-		if (report.iterator().hasNext()) {
-			report.iterator().forEachRemaining(v -> {
-				Rule pmdRule = v.getRule();
+		report.getViolations().forEach(v -> {
+			Rule pmdRule = v.getRule();
 
-				CodeScanViolation sv = new CodeScanViolation();
-				sv.setViolationName(pmdRule.getName());
-				sv.setFileName(v.getFilename().trim());
-				sv.setLineNum(v.getBeginLine());
-				sv.setSeverity(convertPriority(pmdRule.getPriority()));
-				sv.setMessage(v.getDescription().trim());
-				addViolation(sv);
-			});
-		}
+			CodeScanViolation sv = new CodeScanViolation();
+			sv.setViolationName(pmdRule.getName());
+			sv.setFileName(v.getFileId().getAbsolutePath().trim());
+			sv.setLineNum(v.getBeginLine());
+			sv.setSeverity(convertPriority(pmdRule.getPriority()));
+			sv.setMessage(v.getDescription().trim());
+			addViolation(sv);
+		});
 	}
 
-	private RulePriority convertPriority(net.sourceforge.pmd.RulePriority pmdPriority) {
+	private RulePriority convertPriority(net.sourceforge.pmd.lang.rule.RulePriority pmdPriority) {
 		switch (pmdPriority) {
 			case HIGH:
 				return RulePriority.HIGH;

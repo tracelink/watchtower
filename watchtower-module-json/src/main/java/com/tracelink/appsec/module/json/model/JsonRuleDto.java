@@ -1,12 +1,13 @@
 package com.tracelink.appsec.module.json.model;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import com.jayway.jsonpath.JsonPath;
 import com.tracelink.appsec.module.json.JsonModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Represents a data transfer object for the {@link JsonRuleEntity}. All fields in this object are
@@ -39,8 +40,10 @@ public class JsonRuleDto extends CustomRuleDto {
 
 	public void setQuery(String query) {
 		this.query = query;
+		this.compiledQuery = null;
 	}
 
+	@com.fasterxml.jackson.annotation.JsonIgnore
 	public JsonPath getCompiledQuery() {
 		if (compiledQuery == null) {
 			compiledQuery = JsonPath.compile(query);
@@ -70,4 +73,9 @@ public class JsonRuleDto extends CustomRuleDto {
 	}
 
 
+	@Override
+	protected RuleRevision executableDefinition() {
+		return newDefinition().field("fileExtension", getFileExtension())
+				.field("query", getQuery());
+	}
 }

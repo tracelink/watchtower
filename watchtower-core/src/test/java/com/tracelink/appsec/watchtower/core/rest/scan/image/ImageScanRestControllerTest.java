@@ -16,10 +16,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -34,10 +35,10 @@ public class ImageScanRestControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private ImageScanningService mockImageScanningService;
 
-	@MockBean
+	@MockitoBean
 	private ApiIntegrationService mockApiIntegrationService;
 
 	@Test
@@ -49,6 +50,7 @@ public class ImageScanRestControllerTest {
 		BDDMockito.when(mockApiIntegrationService.findByLabel(BDDMockito.anyString()))
 				.thenReturn(integrationEntity);
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/imagescan/integrationLabel")
+				.with(SecurityMockMvcRequestPostProcessors.csrf())
 				.content("{\"registryId\":\"123\",\"repository\":\"image\",\"tags\":[\"latest\"]}"))
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.content().string("Added scan successfully"));
@@ -67,9 +69,11 @@ public class ImageScanRestControllerTest {
 			CorePrivilege.INTEGRATION_SCAN_SUBMIT}, username = "integrationLabel")
 	public void testScanImageRequestNoEntity() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/imagescan/integrationLabel")
+				.with(SecurityMockMvcRequestPostProcessors.csrf())
 				.content("{\"registryId\":\"123\",\"repository\":\"image\",\"tags\":[\"latest\"]}"))
 				.andExpect(MockMvcResultMatchers.status().isBadRequest())
-				.andExpect(MockMvcResultMatchers.content().string("Unknown api label"));
+				.andExpect(MockMvcResultMatchers.content()
+						.string("Image scan request was rejected"));
 
 		BDDMockito.verify(mockImageScanningService, Mockito.times(0))
 				.doImageScan(BDDMockito.any());
@@ -87,9 +91,11 @@ public class ImageScanRestControllerTest {
 				.doImageScan(BDDMockito.any(ImageScan.class));
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/imagescan/integrationLabel")
+				.with(SecurityMockMvcRequestPostProcessors.csrf())
 				.content("{\"registryId\":\"123\",\"repository\":\"image\",\"tags\":[\"latest\"]}"))
 				.andExpect(MockMvcResultMatchers.status().isBadRequest())
-				.andExpect(MockMvcResultMatchers.content().string("Bad scan"));
+				.andExpect(MockMvcResultMatchers.content()
+						.string("Image scan request was rejected"));
 	}
 
 	@Test
@@ -102,10 +108,11 @@ public class ImageScanRestControllerTest {
 				.thenReturn(integrationEntity);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/imagescan/integrationLabel")
+				.with(SecurityMockMvcRequestPostProcessors.csrf())
 				.content("{\"repository\":\"image\",\"tags\":[\"latest\"]}"))
 				.andExpect(MockMvcResultMatchers.status().isBadRequest())
 				.andExpect(MockMvcResultMatchers.content()
-						.string("Error adding the scan: Required params are 'registryId', 'repository', and a nonempty 'tags' array"));
+						.string("Unable to process image scan request"));
 
 		BDDMockito.verify(mockImageScanningService, Mockito.times(0)).doImageScan(BDDMockito.any());
 	}
@@ -115,19 +122,18 @@ public class ImageScanRestControllerTest {
 			CorePrivilege.INTEGRATION_SCAN_SUBMIT}, username = "integrationLabel")
 	public void testScanImageRequestBadApiType() throws Exception {
 		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
-		ApiType mockApiType = BDDMockito.mock(ApiType.class);
-		BDDMockito.when(integrationEntity.getApiType()).thenReturn(mockApiType);
+		BDDMockito.when(integrationEntity.getApiType()).thenReturn(ApiType.BITBUCKET_CLOUD);
 		BDDMockito.when(mockApiIntegrationService.findByLabel(BDDMockito.anyString()))
 				.thenReturn(integrationEntity);
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/rest/imagescan/integrationLabel")
+				.with(SecurityMockMvcRequestPostProcessors.csrf())
 				.content("{\"repository\":\"image\",\"tags\":[\"latest\"]}"))
 				.andExpect(MockMvcResultMatchers.status().isBadRequest())
 				.andExpect(MockMvcResultMatchers.content()
-						.string("Error adding the scan: No image API for this label."));
+						.string("Unable to process image scan request"));
 
 		BDDMockito.verify(mockImageScanningService, Mockito.times(0)).doImageScan(BDDMockito.any());
 	}
 
 }
-

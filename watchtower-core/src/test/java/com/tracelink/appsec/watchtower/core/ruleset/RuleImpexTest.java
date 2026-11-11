@@ -13,8 +13,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -27,11 +28,11 @@ import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository
 
 @ExtendWith(SpringExtension.class)
 public class RuleImpexTest {
-	@MockBean
+	@MockitoBean
 	private RulesetRepository mockRulesetRepository;
-	@MockBean
+	@MockitoBean
 	private RuleRepository mockRuleRepository;
-	@MockBean
+	@MockitoBean
 	private RepositoryRepository mockRepositoryRepository;
 
 	private MockHttpServletResponse mockResponse;
@@ -376,8 +377,107 @@ public class RuleImpexTest {
 				importedRule.getRuleDesignation());
 	}
 
+	/** A provided ruleset of one rule, with the repository mocks a first import needs. */
+	private RulesetEntity givenProvidedRuleset(String message) {
+		MockRuleEntity rule = makeNewRule("ruleName", "", message, "http://example.com",
+				RulePriority.MEDIUM, true);
+		RulesetEntity ruleset = makeNewRuleset("rulesetName", "Desc", RulesetDesignation.PROVIDED);
+		ruleset.setRules(Collections.singleton(rule));
+		BDDMockito.when(mockRulesetRepository.saveAndFlush(BDDMockito.any()))
+				.then(e -> e.getArgument(0));
+		BDDMockito.when(mockRuleRepository.saveAll(BDDMockito.anyCollection()))
+				.then(e -> new ArrayList<>(e.getArgument(0)));
+		return ruleset;
+	}
+
+	/** Registers once and returns the fingerprint state it saved. */
+	private ProvidedRulesStateEntity firstImport(ProvidedRulesStateRepository stateRepository,
+			RulesetEntity ruleset) throws Exception {
+		rulesetService.registerProvidedRulesets("module", List.of(ruleset.toDto()));
+		ArgumentCaptor<ProvidedRulesStateEntity> saved =
+				ArgumentCaptor.forClass(ProvidedRulesStateEntity.class);
+		BDDMockito.verify(stateRepository).save(saved.capture());
+		return saved.getValue();
+	}
+
+	@Test
+	public void testRegisterProvidedRulesetsRecordsTheModulesFingerprint() throws Exception {
+		ProvidedRulesStateRepository stateRepository =
+				BDDMockito.mock(ProvidedRulesStateRepository.class);
+		rulesetService.setProvidedRulesStateRepository(stateRepository);
+
+		ProvidedRulesStateEntity state = firstImport(stateRepository, givenProvidedRuleset("msg"));
+
+		Assertions.assertEquals("module", state.getModuleName());
+		Assertions.assertEquals(64, state.getFingerprint().length());
+	}
+
+	@Test
+	public void testUnchangedProvidedRulesetsAreNotImportedAgain() throws Exception {
+		ProvidedRulesStateRepository stateRepository =
+				BDDMockito.mock(ProvidedRulesStateRepository.class);
+		rulesetService.setProvidedRulesStateRepository(stateRepository);
+		RulesetEntity ruleset = givenProvidedRuleset("msg");
+		ProvidedRulesStateEntity state = firstImport(stateRepository, ruleset);
+		BDDMockito.when(stateRepository.findById("module")).thenReturn(Optional.of(state));
+		RulesetEntity stored = makeNewRuleset("module - rulesetName", "Desc",
+				RulesetDesignation.PROVIDED);
+		BDDMockito.when(mockRulesetRepository.findByName("module - rulesetName"))
+				.thenReturn(stored);
+		BDDMockito.clearInvocations(mockRuleRepository, mockRulesetRepository, stateRepository);
+
+		// A fresh DTO, as the next boot builds it
+		List<RulesetDto> imported =
+				rulesetService.registerProvidedRulesets("module", List.of(ruleset.toDto()));
+
+		Assertions.assertTrue(imported.isEmpty());
+		BDDMockito.verify(mockRuleRepository, BDDMockito.never())
+				.saveAll(BDDMockito.anyCollection());
+		BDDMockito.verify(mockRulesetRepository, BDDMockito.never()).saveAndFlush(BDDMockito.any());
+		BDDMockito.verify(mockRulesetRepository, BDDMockito.never()).findAll();
+		BDDMockito.verify(stateRepository, BDDMockito.never()).save(BDDMockito.any());
+	}
+
+	@Test
+	public void testChangedProvidedRulesetsAreImported() throws Exception {
+		ProvidedRulesStateRepository stateRepository =
+				BDDMockito.mock(ProvidedRulesStateRepository.class);
+		rulesetService.setProvidedRulesStateRepository(stateRepository);
+		ProvidedRulesStateEntity state = firstImport(stateRepository, givenProvidedRuleset("msg"));
+		BDDMockito.when(stateRepository.findById("module")).thenReturn(Optional.of(state));
+		BDDMockito.when(mockRulesetRepository.findByName("module - rulesetName"))
+				.thenReturn(makeNewRuleset("module - rulesetName", "Desc",
+						RulesetDesignation.PROVIDED));
+		BDDMockito.clearInvocations(mockRuleRepository, stateRepository);
+
+		rulesetService.registerProvidedRulesets("module",
+				List.of(givenProvidedRuleset("a new message").toDto()));
+
+		BDDMockito.verify(mockRuleRepository).saveAll(BDDMockito.anyCollection());
+		BDDMockito.verify(stateRepository).save(BDDMockito.any());
+	}
+
+	@Test
+	public void testAMissingProvidedRulesetIsImportedEvenIfTheFingerprintMatches()
+			throws Exception {
+		ProvidedRulesStateRepository stateRepository =
+				BDDMockito.mock(ProvidedRulesStateRepository.class);
+		rulesetService.setProvidedRulesStateRepository(stateRepository);
+		RulesetEntity ruleset = givenProvidedRuleset("msg");
+		ProvidedRulesStateEntity state = firstImport(stateRepository, ruleset);
+		BDDMockito.when(stateRepository.findById("module")).thenReturn(Optional.of(state));
+		// findByName answers null: someone deleted the ruleset since the last import.
+		BDDMockito.clearInvocations(mockRuleRepository);
+
+		rulesetService.registerProvidedRulesets("module", List.of(ruleset.toDto()));
+
+		BDDMockito.verify(mockRuleRepository).saveAll(BDDMockito.anyCollection());
+	}
+
 	@Test
 	public void testRegisterProvidedRulesetsRemoveDeprecatedRulesetsAndRules() throws Exception {
+		ruleService.setStewardshipHistoryRepository(BDDMockito.mock(
+				com.tracelink.appsec.watchtower.core.rule.RuleStewardshipHistoryRepository.class));
 		String moduleName = "module";
 		// importing rule has no author, will be updated by the import username option
 		MockRuleEntity rule =
@@ -397,6 +497,8 @@ public class RuleImpexTest {
 
 		BDDMockito.when(mockRuleRepository.findById(deprecatedRule.getId()))
 				.thenReturn(Optional.of(deprecatedRule));
+		BDDMockito.when(mockRuleRepository.findAll())
+				.thenReturn(Arrays.asList(deprecatedRule));
 		BDDMockito.when(mockRulesetRepository.findByName(deprecatedRuleset.getName()))
 				.thenReturn(deprecatedRuleset);
 
@@ -431,7 +533,10 @@ public class RuleImpexTest {
 		Assertions.assertEquals(rule.toDto().getRuleDesignation(),
 				importedRule.getRuleDesignation());
 
-		BDDMockito.verify(mockRuleRepository).delete(deprecatedRule);
+		Assertions.assertEquals(com.tracelink.appsec.watchtower.core.rule.RuleState.RETIRED,
+				deprecatedRule.getStewardship().getState());
+		BDDMockito.verify(mockRuleRepository).saveAndFlush(deprecatedRule);
+		BDDMockito.verify(mockRuleRepository, BDDMockito.never()).delete(deprecatedRule);
 		BDDMockito.verify(mockRulesetRepository).delete(deprecatedRuleset);
 	}
 }

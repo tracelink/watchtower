@@ -1,0 +1,127 @@
+<div th:replace="~{fragments/pageheader :: header('PR bypasses', 'Pull request')}"></div>
+<!-- One table, chosen by the segmented filter (docs/design-system.md, "Restraint"): the recent
+     bypasses, only the active ones, bypass counts per repository over the last 90 days, or the
+     bypass requests, which approvers decide from their row. -->
+<nav class="wt-segmented-filter mb-3" aria-label="Bypass views">
+  <a th:href="@{/scan/bypasses}" th:class="${view == 'all'} ? 'wt-segment is-active' : 'wt-segment'"
+     th:attr="aria-current=${view == 'all' ? 'page' : null}">All</a>
+  <a th:href="@{/scan/bypasses(view='active')}" th:class="${view == 'active'} ? 'wt-segment is-active' : 'wt-segment'"
+     th:attr="aria-current=${view == 'active' ? 'page' : null}"
+     th:text="${'Active (' + audit.active().size() + ')'}">Active (0)</a>
+  <a th:href="@{/scan/bypasses(view='requests')}" th:class="${view == 'requests'} ? 'wt-segment is-active' : 'wt-segment'"
+     th:attr="aria-current=${view == 'requests' ? 'page' : null}"
+     th:text="${'Requests (' + pendingRequestCount + ')'}" title="Pending requests">Requests (0)</a>
+  <a th:href="@{/scan/bypasses(view='repos')}" th:class="${view == 'repos'} ? 'wt-segment is-active' : 'wt-segment'"
+     th:attr="aria-current=${view == 'repos' ? 'page' : null}" title="Last 90 days">By repository</a>
+</nav>
+
+<th:block th:if="${view == 'all' or view == 'active'}" th:with="rows=${view == 'active' ? audit.active() : audit.recent()}">
+  <th:block th:if="${rows.empty}">
+    <div th:replace="~{fragments/emptystate :: state(${view == 'active' ? 'No pull request is bypassed right now.' : 'No pull request has been bypassed yet.'})}"></div>
+  </th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Pull request bypasses"
+      th:unless="${rows.empty}">
+    <table class="table mb-0">
+      <caption th:text="${view == 'active' ? 'Active pull request bypasses' : 'The 200 newest pull request bypasses'}">Bypasses</caption>
+      <thead><tr><th scope="col">Pull request</th><th scope="col">Bypassed by</th>
+        <th scope="col">Reason</th><th scope="col">When</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+        <tr th:each="bypass : ${rows}">
+          <td><a class="wt-entity-link" th:href="@{/scan/report/{id}(id=${bypass.scanId})}"
+              th:text="${bypass.repoName + ' #' + bypass.prId}">repo #1</a></td>
+          <td th:text="${bypass.bypassedBy}">alice</td>
+          <td><span th:replace="~{fragments/bypassreason :: chip(${bypass.reasonCode})}"></span> <span th:text="${bypass.reason}"></span></td>
+          <td><span class="localizetime" data-time-style="short" th:text="${bypass.createdAt}"></span></td>
+          <td>
+            <span th:unless="${bypass.revoked}" class="wt-status-chip wt-status-chip--warning"><span class="material-icons" aria-hidden="true">lock_open</span>Active</span>
+            <span th:if="${bypass.revoked}" class="wt-status-chip"
+                th:text="${'Revoked by ' + bypass.revokedBy}">Revoked</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>
+
+<th:block th:if="${view == 'repos'}">
+  <th:block th:if="${audit.perRepo().empty}">
+    <div th:replace="~{fragments/emptystate :: state('No bypasses in the last 90 days.')}"></div>
+  </th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Bypasses per repository"
+      th:unless="${audit.perRepo().empty}">
+    <table class="table mb-0">
+      <caption>Bypasses per repository in the last 90 days, revoked ones included</caption>
+      <thead><tr><th scope="col">Repository</th><th scope="col">Integration</th>
+        <th scope="col">Bypasses</th></tr></thead>
+      <tbody>
+        <tr th:each="repo : ${audit.perRepo()}">
+          <td th:text="${repo.repoName()}">repo</td>
+          <td th:text="${repo.apiLabel()}">bb</td>
+          <td th:attr="data-repo-bypass-count=${repo.count()}" th:text="${repo.count()}">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>
+
+<th:block th:if="${view == 'requests'}">
+  <th:block th:if="${requests.empty}">
+    <div th:replace="~{fragments/emptystate :: state('Nobody has asked for a bypass yet.')}"></div>
+  </th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Bypass requests"
+      th:unless="${requests.empty}">
+    <table class="table mb-0">
+      <caption>The 200 newest bypass requests. Approving one bypasses the pull request's blocking findings under your name.</caption>
+      <thead><tr><th scope="col">Pull request</th><th scope="col">Requested by</th>
+        <th scope="col">Reason</th><th scope="col">When</th><th scope="col">Status</th>
+        <th scope="col">Actions</th></tr></thead>
+      <tbody>
+        <tr th:each="request : ${requests}"
+            th:with="isPending=${request.status.name() == 'PENDING'},
+              isOwn=${viewer != null and #strings.equalsIgnoreCase(viewer, request.requestedBy)},
+              base=${'/scan/report/' + request.scanId + '/bypass/request/'},
+              prName=${request.repoName + ' #' + request.prId}">
+          <td><a class="wt-entity-link" th:href="@{/scan/report/{id}(id=${request.scanId})}"
+              th:text="${prName}">repo #1</a></td>
+          <td><span th:text="${request.requestedBy}">dev</span>
+            <!-- Bitbucket names can't be matched to Watchtower logins (§4.18). -->
+            <span th:if="${request.fromPullRequestComment}" class="wt-meta-label"
+                data-bypass-request-source="pr-comment" title="A Bitbucket name, from a pull request comment">(PR comment)</span></td>
+          <td><span th:replace="~{fragments/bypassreason :: chip(${request.reasonCode})}"></span> <span th:text="${request.reason}"></span></td>
+          <td><span class="localizetime" data-time-style="short" th:text="${request.createdAt}"></span></td>
+          <td><th:block th:switch="${request.status.name()}">
+            <span th:case="'PENDING'" class="wt-status-chip wt-status-chip--warning"><span class="material-icons" aria-hidden="true">hourglass_top</span>Pending</span>
+            <span th:case="'APPROVED'" class="wt-status-chip wt-tone-success"><span class="material-icons" aria-hidden="true">check_circle</span><span th:text="${'Approved by ' + request.decidedBy}">Approved</span></span>
+            <span th:case="'DECLINED'" class="wt-status-chip"><span class="material-icons" aria-hidden="true">cancel</span><span th:text="${'Declined by ' + request.decidedBy}">Declined</span></span>
+            <span th:case="'WITHDRAWN'" class="wt-status-chip"><span class="material-icons" aria-hidden="true">undo</span>Withdrawn</span>
+            <span th:case="'SUPERSEDED'" class="wt-status-chip" title="The pull request was scanned again after the request">Superseded</span>
+            </th:block>
+            <div th:if="${request.decisionNote != null}" class="wt-field-help" th:text="${request.decisionNote}">note</div>
+          </td>
+          <td>
+            <div class="wt-page-actions" th:if="${isPending}">
+              <th:block th:if="${canManageBypass and !isOwn}">
+                <form method="POST" th:action="${base + 'approve?from=requests'}"
+                    th:attr="data-confirm=${'Approve the bypass of ' + prName + '? Its blocking findings stop blocking the pull request, under your name.'}"
+                    data-confirm-action="Approve">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <md-outlined-button class="wt-row-action" has-icon type="submit">
+                    <span slot="icon" class="material-icons" aria-hidden="true">check</span>Approve</md-outlined-button>
+                </form>
+                <form method="POST" th:action="${base + 'decline?from=requests'}">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <md-outlined-button class="wt-row-action" has-icon type="submit">
+                    <span slot="icon" class="material-icons" aria-hidden="true">close</span>Decline</md-outlined-button>
+                </form>
+              </th:block>
+              <form th:if="${isOwn}" method="POST" th:action="${base + 'withdraw?from=requests'}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <md-outlined-button class="wt-row-action" type="submit">Withdraw</md-outlined-button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>

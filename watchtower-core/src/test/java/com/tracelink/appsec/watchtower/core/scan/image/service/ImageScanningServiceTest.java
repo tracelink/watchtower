@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -10,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
@@ -31,19 +35,20 @@ import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryService;
 
 import ch.qos.logback.classic.Level;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class ImageScanningServiceTest {
-	@MockBean
+	@MockitoBean
 	private RepositoryService repoService;
-	@MockBean
+	@MockitoBean
 	private ScanRegistrationService scanRegistrationService;
-	@MockBean
+	@MockitoBean
 	private ApiIntegrationService apiService;
-	@MockBean
+	@MockitoBean
 	private LogsService logService;
-	@MockBean
+	@MockitoBean
 	private ImageScanResultService scanResultService;
-	@MockBean
+	@MockitoBean
 	private ImageAdvisoryService imageAdvisoryService;
 
 	private ImageScanningService scanningService;
@@ -87,6 +92,19 @@ public class ImageScanningServiceTest {
 	}
 
 	@Test
+	public void testDoImageScanOfAPausedRepositoryIsSkipped() throws Exception {
+		RepositoryEntity paused = new RepositoryEntity();
+		paused.setRuleset(new RulesetEntity());
+		paused.setScanningPaused(true);
+		BDDMockito.when(
+				repoService.upsertRepo(BDDMockito.any(), BDDMockito.any(), BDDMockito.any()))
+				.thenReturn(paused);
+
+		scanningService.doImageScan(mockScan);
+		BDDMockito.verify(scanRegistrationService, BDDMockito.never()).hasImageScanners();
+	}
+
+	@Test
 	public void testDoImageScanNoRuleset() throws Exception {
 		BDDMockito.when(
 				repoService.upsertRepo(BDDMockito.any(), BDDMockito.any(), BDDMockito.any()))
@@ -124,7 +142,7 @@ public class ImageScanningServiceTest {
 		}
 
 		@Override
-		public Class<? extends RuleDto> getSupportedRuleClass() {
+		public List<Class<? extends RuleDto>> getSupportedRuleClass() {
 			return null;
 		}
 	}

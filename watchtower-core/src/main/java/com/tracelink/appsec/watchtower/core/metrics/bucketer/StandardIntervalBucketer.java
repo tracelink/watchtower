@@ -46,6 +46,11 @@ public abstract class StandardIntervalBucketer<T> extends AbstractBucketer<T> {
 				bucketIntervals = new WeekIntervals(LocalDate.now().minusDays(27).atStartOfDay(),
 						LocalDate.now().plusDays(1).atStartOfDay());
 				break;
+			case LAST_THIRTY_DAYS:
+				bucketIntervals = new DayIntervals(
+						LocalDate.now().minusDays(29).atStartOfDay(),
+						LocalDate.now().plusDays(1).atStartOfDay());
+				break;
 			case LAST_SIX_MONTHS:
 				bucketIntervals = new MonthIntervals(
 						LocalDate.now().withDayOfMonth(1).minusMonths(5).atStartOfDay(),

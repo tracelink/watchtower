@@ -33,7 +33,7 @@ public class ViolationsByPeriodAndTypeChartGenerator extends
 			List<AbstractScanEntity<?, ?>> items) {
 		items.stream().map(AbstractScanEntity::getViolations)
 				.flatMap(List::stream)
-				.filter(v -> !v.getSeverity().equals(RulePriority.INFORMATIONAL))
+				.filter(v -> !RulePriority.INFORMATIONAL.equals(v.getSeverity()))
 				.map(AbstractScanViolationEntity::getViolationName)
 				.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
 				.forEach((k, v) -> partialResult.merge(k, v, Long::sum));

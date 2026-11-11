@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.io.Files;
@@ -39,7 +39,7 @@ public class LogsServiceTest {
 
 	Logger appLogger;
 
-	@MockBean
+	@MockitoBean
 	CyclicBufferAppender<ILoggingEvent> mockCyclicAppender;
 
 	@BeforeEach

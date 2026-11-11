@@ -1,7 +1,7 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 /**
  * Represents the priority of a rule, regardless of rule type. Each rule is assigned a priority from
@@ -33,6 +33,16 @@ public enum RulePriority {
 
 	public String getName() {
 		return name;
+	}
+
+	/** The short label for buttons ("Med-high", "Info"); the full name stays {@link #getName()}. */
+	public String getShortName() {
+		return switch (this) {
+			case MEDIUM_HIGH -> "Med-high";
+			case MEDIUM_LOW -> "Med-low";
+			case INFORMATIONAL -> "Info";
+			default -> name;
+		};
 	}
 
 	/**
@@ -79,7 +89,7 @@ public enum RulePriority {
 
 		@Override
 		public String convertToDatabaseColumn(RulePriority attribute) {
-			return attribute.getName();
+			return attribute == null ? null : attribute.getName();
 		}
 
 		@Override
@@ -87,5 +97,24 @@ public enum RulePriority {
 			return RulePriority.priorityForName(dbData);
 		}
 
+	}
+
+	/**
+	 * Stores a priority as its number (1 = {@link #HIGH} … 6 = {@link #INFORMATIONAL}) for numeric
+	 * columns; null stays null.
+	 */
+	@Converter
+	public static class RulePriorityNumberConverter
+			implements AttributeConverter<RulePriority, Integer> {
+
+		@Override
+		public Integer convertToDatabaseColumn(RulePriority attribute) {
+			return attribute == null ? null : attribute.getPriority();
+		}
+
+		@Override
+		public RulePriority convertToEntityAttribute(Integer dbData) {
+			return dbData == null ? null : RulePriority.valueOf(dbData.intValue());
+		}
 	}
 }

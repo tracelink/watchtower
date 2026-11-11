@@ -1,68 +1,40 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-        <h3 class="page-title">Scan Results Viewer</h3>
-    </div>
-</div>
-<!-- End Page Header -->
-<div class="row border-bottom pb-1 mb-2">
-    <div class="col">
-        <div class="card card-small mb-2">
-            <div class="card-header border-bottom py-1">
-                <h6 class="d-inline m-0">Select a Filter</h6>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item px-3">
-                    <!-- Button Groups -->
-                    <div class="btn-group btn-group-toggle">
-                        <a th:each="filter, oStat : ${filters}"
-                           th:href="'/imagescan/results/' + ${filter.getName()}"
-                           th:class="${filter.getName().equals(activeFilter) } ? 'btn btn-white active' : 'btn btn-white'"
-                           th:text="${filter.getDisplay()}"></a>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </div>
-</div>
-<div class="row" th:if="${results}">
-	<div class="col">
-        <div class="card card-small mb-2">
-        	<div>
-        	   <div class="card-header border-bottom">
-             	   	<h6 class="d-inline " th:text="${'Page: ' + activePageNum}"/>
-             	   	<div class="d-block float-right">
-             	   		<a th:class="${'btn btn-primary ' + (activePageNum == 0 ? 'disabled' : '')}" th:href="${'/imagescan/results/' + activeFilter + '?page=' + (activePageNum-1)}">Previous</a>
-             	   		<a class="btn btn-primary" th:href="${'/imagescan/results/' + activeFilter + '?page=' + (activePageNum+1)}">Next</a>
-          	   		</div>
-               </div>
-               <div class="card-body pb-3 text-center">
-                   <table class="table mb-0 datatable-clean">
-                       <thead class="bg-light">
-                       <tr>
-                           <th scope="col" class="border-0">Scan End</th>
-                           <th scope="col" class="border-0">Api Label</th>
-                           <th scope="col" class="border-0">Image Name</th>
-                           <th scope="col" class="border-0">Tag Name</th>
-                           <th scope="col" class="border-0">Violations</th>
-                           <th scope="col" class="border-0">View Report</th>
-                       </tr>
-                       </thead>
-                       <tbody>
-                           <tr th:each="result : ${results}">
-                               <td class="py-1 localizetime" th:text="${result.getEndDateMillis()}" th:data-order="${result.getEndDateMillis()}">Scan End</td>
-                               <td class="py-1" th:text="${result.getApiLabel()}">Api Label</td>
-                               <td class="py-1" th:text="${result.getRepositoryName()}">Repository Name</td>
-                               <td class="py-1" th:text="${result.getTagName()}">Tag Name</td>
-                               <td class="py-1" th:text="${result.getViolations() == null ? 0 : result.getViolations().size()}">Violations</td>
-                               <td class="py-1">
-                               		<a class="btn btn-success btn-sm py-1" th:href="${'/imagescan/report/' + result.getId()}">Report</a>
-                               </td>
-                           </tr>
-                       </tbody>
-                   </table>
-               </div>
-           </div>
-        </div>
-    </div>
-</div>
+<div th:replace="~{fragments/pageheader :: header('Image results', null)}"></div>
+<div th:replace="~{fragments/resultfilters :: filters(baseUrl=${'/imagescan/results/'}, filters=${filters}, activeFilter=${activeFilter})}"></div>
+<th:block th:if="${results != null and #lists.isEmpty(results)}"><div th:replace="~{fragments/emptystate :: state('No image scans match this filter.')}"></div></th:block>
+<div class="row" th:if="${results != null and !#lists.isEmpty(results)}"><div class="col">
+	<div id="results-region" class="card card-small mb-2">
+		<div th:replace="~{fragments/pagination(baseUrl=${'/imagescan/results/' + activeFilter}, pagination=${pagination})}"></div>
+		<div class="card-body pb-3 wt-table-scroll" role="region" aria-label="Image scan results" tabindex="0">
+			<table class="table mb-0 datatable-clean wt-results-table">
+				<caption>Image scans in the selected tab</caption>
+				<thead class="bg-light"><tr>
+					<th scope="col" class="border-0">Image</th><th scope="col" class="border-0">Status</th><th scope="col" class="border-0">Findings</th>
+					<th scope="col" class="border-0 wt-result-secondary">Registry</th><th scope="col" class="border-0 wt-result-secondary">Duration</th><th scope="col" class="border-0 wt-result-secondary">Finished</th>
+					<th scope="col" class="border-0"><span class="visually-hidden">Report</span></th>
+				</tr></thead>
+				<tbody><th:block th:each="result : ${results}">
+					<tr class="wt-result-row" th:with="finished=${result.statusPresentation != null and result.statusPresentation.processingCompleted}">
+						<th scope="row" class="py-1 wt-result-identity wt-scan-target"><span th:text="${result.getRepositoryName()}">Image</span><span aria-hidden="true">:</span><span th:text="${result.getTagName()}">tag</span></th>
+						<td class="py-1 wt-result-status"><span class="wt-status-chip" th:replace="~{fragments/status :: chip(status=${result.statusPresentation})}">Status</span></td>
+						<!-- A failed or unfinished scan has no result: "—", never a clean-looking 0. -->
+						<td class="py-1 wt-result-findings"><th:block th:if="${finished}"><div th:replace="~{fragments/severity :: compactSummary(${result.getViolations()})}"></div></th:block>
+							<span th:unless="${finished}" class="wt-muted" tabindex="0" data-tip="No findings: the scan did not finish."
+								aria-label="No findings: the scan did not finish">—</span></td>
+						<td class="py-1 wt-result-secondary"><span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Registry integration"
+							th:aria-label="${'Registry ' + result.getApiLabel()}"><span class="material-icons" aria-hidden="true">inventory_2</span><span
+							th:text="${result.getApiLabel()}">Registry</span></span></td>
+						<td class="py-1 wt-result-secondary wt-num" th:text="${result.durationText}">1.03 mins</td>
+						<td class="py-1 wt-result-secondary" th:data-order="${result.getEndDateMillis()}"><span th:if="${result.getEndDateMillis() > 0}" class="localizetime" data-time-style="short" th:text="${result.getEndDateMillis()}"></span><span th:unless="${result.getEndDateMillis() > 0}" class="wt-muted">Not finished</span></td>
+						<td class="py-1 wt-result-action"><a class="btn btn-secondary btn-sm py-1 wt-report-link" th:href="${'/imagescan/report/' + result.getId()}" th:aria-label="${'View report for ' + result.getRepositoryName() + ':' + result.getTagName()}"><span>View report</span><span class="material-icons" aria-hidden="true">arrow_forward</span></a></td>
+					</tr>
+					<!-- On narrow screens the secondary columns hide and show here as chips. -->
+					<tr class="wt-result-detail-row"><td colspan="7"><span class="wt-meta-chips">
+						<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Registry integration"><span class="material-icons" aria-hidden="true">inventory_2</span><span th:text="${result.getApiLabel()}">Registry</span></span>
+						<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Duration"><span class="material-icons" aria-hidden="true">timer</span><span th:text="${result.durationText}">1.03 mins</span></span>
+						<span class="wt-mini-chip wt-meta-chip" th:if="${result.getEndDateMillis() > 0}"><span class="material-icons" aria-hidden="true">event</span><span class="localizetime" data-time-style="short" th:text="${result.getEndDateMillis()}"></span></span>
+					</span></td></tr>
+				</th:block></tbody>
+			</table>
+		</div>
+	</div>
+</div></div>

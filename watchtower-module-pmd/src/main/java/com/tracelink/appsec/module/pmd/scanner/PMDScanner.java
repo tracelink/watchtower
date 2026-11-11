@@ -1,15 +1,15 @@
 package com.tracelink.appsec.module.pmd.scanner;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
+import com.tracelink.appsec.module.pmd.model.PMDProvidedRuleDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,22 +20,19 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleExecutionIdentity;
 import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
 
-import net.sourceforge.pmd.PMD;
 import net.sourceforge.pmd.PMDConfiguration;
-import net.sourceforge.pmd.Rule;
-import net.sourceforge.pmd.RulePriority;
-import net.sourceforge.pmd.RuleSet;
-import net.sourceforge.pmd.RuleSetWriter;
+import net.sourceforge.pmd.PmdAnalysis;
 import net.sourceforge.pmd.benchmark.TimeTracker;
 import net.sourceforge.pmd.benchmark.TimingReport;
-import net.sourceforge.pmd.lang.Language;
-import net.sourceforge.pmd.lang.LanguageRegistry;
-import net.sourceforge.pmd.lang.LanguageVersion;
-import net.sourceforge.pmd.renderers.Renderer;
+import net.sourceforge.pmd.lang.rule.Rule;
+import net.sourceforge.pmd.lang.rule.RulePriority;
+import net.sourceforge.pmd.lang.rule.RuleSet;
 
 /**
  * {@link ICodeScanner} for PMD. Manages the PMD lifecycle and reporting
@@ -52,51 +49,66 @@ public class PMDScanner implements ICodeScanner {
 		this.ruleService = ruleService;
 	}
 
+	@Override
+	public EngineExecutionIdentity getExecutionIdentity(CodeScanConfig config) {
+		return PMDExecutionIdentity.capture(this, ruleService, config);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public PMDReport scan(CodeScanConfig config) {
-		// Write PMD rules to an XML file
-		Path rulesetPath = null;
+		Map<String, RuleExecutionIdentity> identities = config.getRuleset().getAllRules().stream()
+				.filter(PMDRuleDto.class::isInstance)
+				.collect(Collectors.toMap(RuleDto::getName, RuleDto::getExecutionIdentity));
+		RuleSet ruleset;
 		try {
-			rulesetPath = writeRulesetToFile(config.getRuleset());
-		} catch (Exception e) {
-			LOG.error("Exception writing ruleset to resources", e);
-			if (rulesetPath != null) {
-				FileUtils.deleteQuietly(rulesetPath.toFile());
-			}
+			ruleset = buildRuleSet(config.getRuleset());
+		} catch (RulesetException e) {
+			LOG.error("Exception building ruleset", e);
 			return null;
 		}
+
 		// Create configuration
 		WatchtowerPMDConfiguration pmdConfig =
 				new WatchtowerPMDConfiguration(config.getWorkingDirectory().toString(),
-						rulesetPath.toString(), config.getThreads());
+						config.getThreads());
 		PMDRenderer renderer = new PMDRenderer();
-		pmdConfig.setRenderer(renderer);
 		// Perform scan
 		TimingReport timing;
 		if (config.isBenchmarkEnabled()) {
 			TimeTracker.startGlobalTracking();
 		}
 
-		PMD.runPmd(pmdConfig);
+		try (PmdAnalysis pmd = PmdAnalysis.create(pmdConfig)) {
+			pmd.addRuleSet(ruleset);
+			pmd.addRenderer(renderer);
+			pmd.performAnalysis();
+		}
 
 		if (config.isBenchmarkEnabled()) {
 			timing = TimeTracker.stopGlobalTracking();
 			renderer.addTimingReport(timing);
 		}
-		// Delete ruleset XML file
-		FileUtils.deleteQuietly(rulesetPath.toFile());
-		return renderer.createReport();
+		PMDReport report = renderer.createReport();
+		report.getViolations().forEach(violation -> violation.setRuleIdentity(
+				identities.getOrDefault(violation.getViolationName(),
+						RuleExecutionIdentity.unmanaged("pmd", violation.getViolationName()))));
+		return report;
 	}
 
-	private Path writeRulesetToFile(RulesetDto dto)
-			throws IOException, RulesetException {
-		String uri = "pmd-" + dto.getId() + "-";
-		Path rulesetPath = Files.createTempFile(uri, ".xml").toFile().getCanonicalFile()
-				.getAbsoluteFile().toPath();
-
+	/**
+	 * Builds a {@link RuleSet} directly from the given {@link RulesetDto}'s rules. Unlike PMD 6,
+	 * PMD 7's {@link PmdAnalysis#addRuleSet(RuleSet)} accepts a {@link RuleSet} object directly,
+	 * so there is no need to serialize rules out to a temporary ruleset XML file and reload them
+	 * by path, as this module previously did via {@code RuleSetWriter}.
+	 *
+	 * @param dto the rules to build into a {@link RuleSet}
+	 * @return the built {@link RuleSet}
+	 * @throws RulesetException if a rule could not be constructed
+	 */
+	private RuleSet buildRuleSet(RulesetDto dto) throws RulesetException {
 		List<Rule> rules = new ArrayList<Rule>();
 		try {
 			for (RuleDto ruleDto : dto.getAllRules()) {
@@ -108,16 +120,8 @@ public class PMDScanner implements ICodeScanner {
 			throw new RulesetException("Error while creating ruleset: " + e.getMessage());
 		}
 
-		RuleSet ruleset = RuleSet.create(dto.getName(), dto.getDescription(),
-				rulesetPath.getFileName().toString(),
+		return RuleSet.create(dto.getName(), dto.getDescription(), "watchtower-ruleset",
 				new ArrayList<>(), new ArrayList<>(), rules);
-
-		try (OutputStream os = new FileOutputStream(rulesetPath.toFile())) {
-			RuleSetWriter writer = new RuleSetWriter(os);
-			writer.write(ruleset);
-		}
-
-		return rulesetPath;
 	}
 
 	/**
@@ -126,39 +130,19 @@ public class PMDScanner implements ICodeScanner {
 	 * @author mcool
 	 */
 	static class WatchtowerPMDConfiguration extends PMDConfiguration {
-		private Renderer renderer;
 
 		/**
 		 * set usual defaults
 		 */
 		private WatchtowerPMDConfiguration() {
-			setInputFilePath(null);
-			setInputUri(null);
-			setBenchmark(false);
-			setDebug(false);
 			setMinimumPriority(RulePriority.LOW);
 			setReportProperties(new Properties());
-			setReportShortNames(false);
-			setRuleSetFactoryCompatibilityEnabled(true);
 			setShowSuppressedViolations(false);
-			setSourceEncoding("UTF-8");
-			setStressTest(false);
-			setSuppressMarker(PMD.SUPPRESS_MARKER);
+			setSourceEncoding(StandardCharsets.UTF_8);
+			setSuppressMarker(PMDConfiguration.DEFAULT_SUPPRESS_MARKER);
 			setFailOnViolation(true);
 			setAnalysisCacheLocation(null);
 			setIgnoreIncrementalAnalysis(true);
-
-			Language language = LanguageRegistry.getDefaultLanguage();
-			LanguageVersion languageVersion =
-					getLanguageVersionDiscoverer().getDefaultLanguageVersion(language);
-			if (languageVersion != null) {
-				getLanguageVersionDiscoverer().setDefaultLanguageVersion(languageVersion);
-			}
-			try {
-				prependClasspath(null);
-			} catch (IOException e) {
-				throw new IllegalArgumentException("Invalid auxiliary classpath", e);
-			}
 		}
 
 		/**
@@ -166,42 +150,26 @@ public class PMDScanner implements ICodeScanner {
 		 * overrides
 		 *
 		 * @param inputPath the starting directory/file to scan
-		 * @param ruleSets  the rulesets to use (in resources directory)
 		 * @param threads   the number of threads to use 0 is single threaded, 1 is multi threaded
 		 *                  with 1 worker, etc
 		 */
-		WatchtowerPMDConfiguration(String inputPath, String ruleSets, int threads) {
+		WatchtowerPMDConfiguration(String inputPath, int threads) {
 			this();
-			setInputPaths(inputPath);
-			setRuleSets(ruleSets);
+			addInputPath(Paths.get(inputPath));
 			setThreads(threads);
-			setReportFile("");
-		}
-
-		void setRenderer(Renderer renderer) {
-			this.renderer = renderer;
-		}
-
-		public Renderer getRenderer() {
-			return renderer;
-		}
-
-		/**
-		 * lazy instantiate the renderer, and continue to use the same renderer (don't recreate on
-		 * each call)
-		 */
-		@Override
-		public Renderer createRenderer() {
-			if (renderer == null) {
-				Renderer superRenderer = super.createRenderer();
-				setRenderer(superRenderer);
-			}
-			return renderer;
 		}
 	}
 
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return PMDCustomRuleDto.class;
+	public List<String> getDefaultFileTypes() {
+		// PMD picks files by language, so the types are the extensions of the languages Watchtower enables.
+		return Arrays.stream(com.tracelink.appsec.module.pmd.service.PMDLanguageSupport.values())
+				.flatMap(language -> language.getPMDLanguage().getExtensions().stream())
+				.map(extension -> "." + extension.toLowerCase(java.util.Locale.ROOT)).distinct().toList();
+	}
+
+	@Override
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Arrays.asList(PMDCustomRuleDto.class, PMDProvidedRuleDto.class);
 	}
 }

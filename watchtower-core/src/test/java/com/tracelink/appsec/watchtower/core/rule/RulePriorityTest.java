@@ -24,6 +24,6 @@ public class RulePriorityTest {
 	@Test
 	public void testValueOfInvalid() {
 		Assertions.assertEquals(RulePriority.LOW, RulePriority.valueOf(0));
-		Assertions.assertEquals(RulePriority.LOW, RulePriority.valueOf(6));
+		Assertions.assertEquals(RulePriority.LOW, RulePriority.valueOf(7));
 	}
 }

@@ -1,16 +1,14 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.entity;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanContainerEntity;
 
@@ -36,6 +34,9 @@ public class UploadScanContainerEntity extends AbstractScanContainerEntity<Uploa
 	@Column(name = "ruleset")
 	private String ruleSetName;
 
+	// Column name predates S3 storage (item 3.4); it is a plain String, so no Flyway
+	// migration was needed to store a scheme-prefixed storage key here instead of a
+	// bare local file path - see UploadStorageLocation for the prefix scheme.
 	@Column(name = "file_location")
 	private String fileLocation;
 
@@ -74,12 +75,12 @@ public class UploadScanContainerEntity extends AbstractScanContainerEntity<Uploa
 		return this.ruleSetName;
 	}
 
-	public void setZipPath(Path filePath) {
-		fileLocation = filePath.toAbsolutePath().toString();
+	public void setStorageKey(String storageKey) {
+		fileLocation = storageKey;
 	}
 
-	public Path getZipPath() {
-		return Paths.get(fileLocation);
+	public String getStorageKey() {
+		return fileLocation;
 	}
 
 	public UploadScanEntity getLatestUploadScan() {

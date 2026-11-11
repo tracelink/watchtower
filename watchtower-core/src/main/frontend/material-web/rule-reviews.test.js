@@ -1,0 +1,40 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {JSDOM} = require('jsdom');
+const root = path.resolve(__dirname, '../../resources');
+const dom = new JSDOM(fs.readFileSync(path.join(root, 'templates/rules/reviews.html'), 'utf8'), {runScripts:'outside-only',url:'https://watchtower.test/rules/42/reviews'});
+const page = dom.window.document.querySelector('[data-rule-review-page]');
+Object.assign(page.dataset,{ruleId:'42',ruleRevision:'a'.repeat(64),csrfHeader:'X-CSRF-TOKEN',csrfToken:'fixture'});
+page.querySelector('[data-review-history-section]').remove();
+// Thymeleaf fills the status chips; the raw template has one radio row to stand in for them.
+page.querySelector('[data-review-state]').querySelectorAll('label').forEach((label,i)=>{const radio=label.querySelector('input');radio.value=i===0?'OPEN':'ACCEPTED';radio.checked=i===0;});
+let calls=[], fail=false;
+dom.window.fetch=async (url, options={})=>{
+ calls.push({url,options});
+ if(url.includes('/evidence?'))return {ok:true,json:async()=>({content:[{id:'f'.repeat(64),type:'finding',label:'<img src=x> feedback',preview:'FALSE_POSITIVE · reviewed explanation'}],totalElements:1,totalPages:1})};
+ return {ok:!fail,status:fail?409:200,json:async()=>({id:'review-id'})};
+};
+const script=fs.readFileSync(path.join(root,'static/scripts/rule-reviews.js'),'utf8');
+dom.window.eval(script);dom.window.eval(script);
+const settle=()=>new Promise(resolve=>setTimeout(resolve,10));
+(async()=>{
+ assert.equal(calls.length,0,'opening a new review does not request AI or mutate records');
+  const picker=page.querySelector('[data-evidence-picker]');assert.equal(picker.hidden,true,'the evidence search shows only after a kind is chosen');
+ const kind=page.querySelector('[data-evidence-kind]');const finding=kind.querySelector('input[value="finding"]');finding.checked=true;finding.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await settle();
+ assert.equal(picker.hidden,false);
+ assert.equal(page.querySelector('[data-evidence-options] img'),null);
+ page.querySelector('[data-evidence-options] input').click();
+ assert.match(page.querySelector('[data-evidence-preview]').textContent,/reviewed explanation/);
+ page.querySelector('[data-review-owner]').value='alice';page.querySelector('[data-review-reason]').value='Investigate';page.querySelector('[data-review-outcome]').value='Review evidence first';
+ const form=page.querySelector('[data-rule-review-form]');
+ form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await settle();
+ let posts=calls.filter(c=>c.options.method==='POST');assert.equal(posts.length,1);let body=JSON.parse(posts[0].options.body);
+ assert.equal(body.evidenceId,'f'.repeat(64));assert.equal(body.status,'OPEN','the checked status chip is sent');assert.equal(body.revision,'a'.repeat(64));assert.equal(body.version,0);assert.equal(posts[0].options.headers['X-CSRF-TOKEN'],'fixture');
+ assert.equal(page.querySelector('[data-review-evidence]').disabled,true);
+ fail=true;page.querySelector('[data-review-outcome]').value='Unsaved after concurrent edit';form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await settle();
+ posts=calls.filter(c=>c.options.method==='POST');body=JSON.parse(posts[1].options.body);assert.equal(body.id,'review-id');assert.equal(body.version,1);
+ assert.equal(page.querySelector('[data-review-outcome]').value,'Unsaved after concurrent edit');assert.match(page.querySelector('[data-rule-review-status]').textContent,/input is preserved/);
+ assert.equal(calls.some(c=>c.url.includes('assistant')),false);
+ dom.window.close();console.log('Rule review UI: evidence preview, single submission, versions and conflict preservation passed');
+})().catch(error=>{console.error(error);process.exitCode=1;});

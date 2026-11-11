@@ -1,0 +1,19 @@
+<!-- How a pull request closed, as one chip. Merged and Declined come from the SCM. A resolved pull
+     request without either was closed before Watchtower recorded how (or is an older one that a
+     clean scan used to mark resolved while it was still open). Resolved now only ever means closed.
+     Open pull requests show nothing here; a State column uses "column" below, which also says Open. -->
+<th:block th:fragment="chip(closedState, resolved)">
+  <span th:if="${closedState != null and closedState.name() == 'MERGED'}" class="wt-status-chip wt-tone-info" data-pr-state="merged"
+      tabindex="0" data-tip="Merged in the source control system"><span class="material-icons" aria-hidden="true">call_merge</span>Merged</span>
+  <span th:if="${closedState != null and closedState.name() == 'DECLINED'}" class="wt-status-chip wt-tone-neutral" data-pr-state="declined"
+      tabindex="0" data-tip="Declined in the source control system"><span class="material-icons" aria-hidden="true">cancel</span>Declined</span>
+  <span th:if="${closedState == null and resolved}" class="wt-status-chip wt-tone-neutral" data-pr-state="resolved"
+      tabindex="0" data-tip="Closed before Watchtower recorded how it closed"
+      title="Closed before Watchtower recorded how it closed"><span class="material-icons" aria-hidden="true">task_alt</span>Resolved</span>
+</th:block>
+
+<th:block th:fragment="column(closedState, resolved)">
+  <th:block th:replace="~{fragments/prstate :: chip(${closedState}, ${resolved})}"></th:block>
+  <span th:if="${closedState == null and !resolved}" class="wt-status-chip wt-tone-info" data-pr-state="open"
+      tabindex="0" data-tip="The pull request is still open"><span class="material-icons" aria-hidden="true">radio_button_unchecked</span>Open</span>
+</th:block>

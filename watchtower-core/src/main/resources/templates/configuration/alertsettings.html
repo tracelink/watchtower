@@ -1,0 +1,373 @@
+<!-- Alert settings (UAT walkthrough, 2026-10-16): the one segmented control with an icon and count
+     per tab, and the tab's Add action by the title. Channels, routes and deliveries read as chips;
+     what they mean is on hover. Changes happen in the dialogs below. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ALERT_SETTINGS_MODIFY_NAME+''')')}">
+<div class="wt-home-head" data-assistant-kind="alert_settings">
+  <div th:replace="~{fragments/pageheader :: header('Alert settings', null)}"></div>
+  <div class="wt-page-actions wt-report-head__status">
+    <span class="wt-ai-anchor" data-ai-helper="alerts" hidden
+        th:if="${canModify and activeTab == 'routes' and !channels.empty and #authorization.expression('hasAuthority(''Assistant Use'')')}">
+      <button type="button" class="wt-icon-action wt-icon-action--ai" aria-label="Draft route changes with the assistant"
+          data-tip="Draft route changes: describe what you want in your own words and review the result before anything changes"><span
+          class="material-icons" aria-hidden="true">alt_route</span></button></span>
+    <md-filled-button type="button" th:if="${canModify and activeTab == 'routes' and !channels.empty}"
+        data-wt-dialog-target="#routeDialog" data-route-add has-icon>
+      <span class="material-icons" slot="icon" aria-hidden="true">add</span>Add route
+    </md-filled-button>
+    <md-filled-button type="button" th:if="${canModify and activeTab == 'channels'}"
+        data-wt-dialog-target="#channelDialog" data-channel-add has-icon>
+      <span class="material-icons" slot="icon" aria-hidden="true">add</span>Add channel
+    </md-filled-button>
+  </div>
+</div>
+
+<nav class="wt-segmented-filter" role="tablist" aria-label="Alert settings sections">
+  <a role="tab" class="wt-segment" href="/alertsettings?tab=channels" th:aria-selected="${activeTab == 'channels'}"
+      th:classappend="${activeTab == 'channels'} ? 'is-active'"><span class="material-icons" aria-hidden="true">forum</span>Channels<span
+      class="wt-count-badge" th:text="${channels.size()}">1</span></a>
+  <a role="tab" class="wt-segment" href="/alertsettings?tab=routes" th:aria-selected="${activeTab == 'routes'}"
+      th:classappend="${activeTab == 'routes'} ? 'is-active'"><span class="material-icons" aria-hidden="true">alt_route</span>Routes<span
+      class="wt-count-badge" th:text="${routes.size()}">1</span></a>
+  <a role="tab" class="wt-segment" href="/alertsettings?tab=history" th:aria-selected="${activeTab == 'history'}"
+      th:classappend="${activeTab == 'history'} ? 'is-active'"><span class="material-icons" aria-hidden="true">history</span>History<span
+      class="wt-count-badge" th:text="${#numbers.formatInteger(historyCount, 1, 'COMMA')}">4</span></a>
+</nav>
+
+<!-- ===================== Routes ===================== -->
+<section th:if="${activeTab == 'routes'}" aria-label="Routes">
+  <div class="wt-empty-state" th:if="${channels.empty}">
+    <i class="material-icons" aria-hidden="true">inbox</i>
+    <span>No channels yet, so there is nothing to route alerts to.
+      <a href="/alertsettings?tab=channels">Add a channel first</a>.</span>
+  </div>
+  <th:block th:if="${!channels.empty and routes.empty}">
+    <div th:replace="~{fragments/emptystate :: state('No routes yet. A route sends one kind of alert to a channel.')}"></div>
+  </th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Alert routes" th:unless="${channels.empty or routes.empty}">
+    <table class="table mb-0">
+      <caption class="visually-hidden">Alert routes</caption>
+      <thead><tr><th scope="col">Route</th><th scope="col">Sends</th>
+        <th scope="col">Status</th><th scope="col" th:if="${canModify}"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        <tr th:each="route : ${routes}"
+            th:with="alertName=${T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).name(route.alertType)}">
+          <th scope="row">
+            <span class="wt-route-summary">
+              <span class="wt-mini-chip wt-mini-chip--bad"><span class="material-icons" aria-hidden="true"
+                  th:text="${T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).icon(route.alertType)}">key</span><span
+                  th:text="${alertName}">Secret detected</span></span>
+              <span class="material-icons wt-tone-neutral" aria-label="goes to">arrow_forward</span>
+              <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">forum</span><span th:text="${route.channel.name}">channel</span></span>
+            </span>
+          </th>
+          <td><span class="wt-meta-chips">
+            <span class="wt-mini-chip" tabindex="0"
+                th:attr="data-tip=${route.aggregation.name() == 'PER_SCAN' ? 'One message per scan' : 'One message per finding'}"><span
+                class="material-icons" aria-hidden="true">mark_email_unread</span><span
+                th:text="${route.aggregation.name() == 'PER_SCAN' ? '1 per scan' : '1 per finding'}">1 per scan</span></span>
+            <span class="wt-mini-chip" tabindex="0"
+                th:attr="data-tip=${'The same alert isn''t sent again for ' + route.dedupeWindowHours + (route.dedupeWindowHours == 1 ? ' hour' : ' hours')}"><span
+                class="material-icons" aria-hidden="true">snooze</span><span
+                th:text="${'No repeats for ' + T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).window(route.dedupeWindowHours)}">No repeats for 30 days</span></span>
+            <span class="wt-mini-chip" th:if="${route.minPriority != null}" th:text="${route.minPriority.name + ' and above'}"></span>
+            <span class="wt-mini-chip" th:if="${route.apiLabelFilter != null}" th:text="${'Only ' + route.apiLabelFilter}"></span>
+            <span class="wt-mini-chip" th:if="${route.repoInclude != null}" th:text="${'Only: ' + route.repoInclude}"></span>
+            <span class="wt-mini-chip" th:if="${route.repoExclude != null}" th:text="${'Except: ' + route.repoExclude}"></span>
+            <span class="wt-mini-chip" th:unless="${route.minPriority != null or route.apiLabelFilter != null or route.repoInclude != null or route.repoExclude != null}"><span
+                class="material-icons" aria-hidden="true">filter_alt</span>All alerts</span>
+          </span></td>
+          <td><span class="wt-status-chip" th:classappend="${route.enabled} ? ' wt-tone-success' : ' wt-tone-neutral'"
+              th:text="${route.enabled ? 'Enabled' : 'Paused'}">Enabled</span></td>
+          <td th:if="${canModify}"><div class="wt-table-actions">
+            <button type="button" class="wt-icon-action" data-wt-dialog-target="#routeDialog" data-route-edit
+                aria-label="Edit route" data-tip="Edit"
+                th:attr="data-id=${route.id},data-alert-type=${route.alertType},data-channel-id=${route.channel.id},data-min-priority=${route.minPriority != null ? route.minPriority.name() : ''},data-api-label=${route.apiLabelFilter != null ? route.apiLabelFilter : ''},data-repo-include=${route.repoInclude != null ? route.repoInclude : ''},data-repo-exclude=${route.repoExclude != null ? route.repoExclude : ''},data-aggregation=${route.aggregation.name()},data-dedupe=${route.dedupeWindowHours}"><span
+                class="material-icons" aria-hidden="true">edit</span></button>
+            <!-- Pause and Delete are rarely used, so they sit behind one more-actions menu, not next to Edit. -->
+            <details class="wt-popover wt-download-menu wt-row-menu">
+              <summary class="wt-icon-action" aria-label="More route actions" data-tip="More actions"><span class="material-icons" aria-hidden="true">more_vert</span></summary>
+              <div class="wt-popover__body wt-download-menu__body">
+                <form action="/alertsettings/routes/toggle" method="POST">
+                  <input type="hidden" name="id" th:value="${route.id}"/>
+                  <input type="hidden" name="enabled" th:value="${!route.enabled}"/>
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="submit" class="wt-menu-item"><span class="material-icons" aria-hidden="true"
+                      th:text="${route.enabled ? 'pause' : 'play_arrow'}">pause</span> <th:block th:text="${route.enabled ? 'Pause route' : 'Resume route'}">Pause route</th:block></button>
+                </form>
+                <button type="button" class="wt-menu-item wt-menu-item--danger" data-wt-dialog-target="#confirmDeleteDialog"
+                    data-delete-action="/alertsettings/routes/delete" data-delete-title="Delete route"
+                    th:attr="data-delete-id=${route.id},data-delete-label=${'the route for ' + alertName + ' to ' + route.channel.name}"><span class="material-icons" aria-hidden="true">delete</span> Delete route</button>
+              </div>
+            </details>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== Channels ===================== -->
+<section th:if="${activeTab == 'channels'}" aria-label="Channels">
+  <th:block th:if="${channels.empty}">
+    <div th:replace="~{fragments/emptystate :: state('No channels yet. A channel is a Google Chat space alerts are posted to.')}"></div>
+  </th:block>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Alert channels" th:unless="${channels.empty}">
+    <table class="table mb-0">
+      <caption class="visually-hidden">Alert channels</caption>
+      <thead><tr><th scope="col">Channel</th><th scope="col">Where</th><th scope="col">Status</th>
+        <th scope="col">Last test</th><th scope="col" th:if="${canModify}"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        <tr th:each="channel : ${channels}"
+            th:with="tested=${channel.lastTestStatus != null}, testOk=${channel.lastTestStatus == 'Sent'}">
+          <th scope="row"><span class="wt-integration-name"><span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span
+              class="material-icons">forum</span></span><span th:text="${channel.name}">name</span></span></th>
+          <td><span class="wt-mini-chip" tabindex="0" data-channel-where
+              th:attr="data-tip=${channel.maskedUrl + ' (key hidden)'},aria-label=${'Google Chat: ' + channel.maskedUrl}"><span
+              class="material-icons" aria-hidden="true">chat</span>Google Chat</span></td>
+          <td><span class="wt-status-chip" th:classappend="${channel.enabled} ? ' wt-tone-success' : ' wt-tone-neutral'"
+              th:text="${channel.enabled ? 'Enabled' : 'Disabled'}">Enabled</span></td>
+          <td>
+            <span th:if="${tested}" class="wt-mini-chip" tabindex="0"
+                th:classappend="${testOk ? ' wt-mini-chip--ok' : ' wt-mini-chip--bad'}"
+                th:attr="data-tip=${testOk ? 'Test message delivered: ' : channel.lastTestStatus + ' · '},data-tip-millis=${channel.lastTestAt}"><span
+                class="material-icons" aria-hidden="true" th:text="${testOk ? 'check' : 'error_outline'}">check</span><span
+                th:text="${testOk ? 'Sent' : 'Failed'}">Sent</span></span>
+            <span th:unless="${tested}" class="wt-mini-chip">Never tested</span>
+          </td>
+          <td th:if="${canModify}"><div class="wt-table-actions">
+            <button type="button" class="wt-icon-action" data-wt-dialog-target="#channelDialog" data-channel-edit
+                aria-label="Edit channel" data-tip="Edit"
+                th:attr="data-id=${channel.id},data-name=${channel.name},data-enabled=${channel.enabled}"><span class="material-icons" aria-hidden="true">edit</span></button>
+            <form action="/alertsettings/channels/test" method="POST">
+              <input type="hidden" name="id" th:value="${channel.id}"/>
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="wt-icon-action" aria-label="Send a test alert" data-tip="Send a test message"><span class="material-icons" aria-hidden="true">send</span></button>
+            </form>
+            <button type="button" class="wt-icon-action wt-icon-action--danger" data-wt-dialog-target="#confirmDeleteDialog"
+                data-delete-action="/alertsettings/channels/delete" data-delete-title="Delete channel" aria-label="Delete channel" data-tip="Delete"
+                th:attr="data-delete-id=${channel.id},data-delete-label=${'the channel ' + channel.name}"><span class="material-icons" aria-hidden="true">delete</span></button>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== History ===================== -->
+<section th:if="${activeTab == 'history'}" aria-label="Alert history" id="results-region"
+    th:with="anyRetries=${!history.content.?[failedAttempts > 0].isEmpty()},
+             statusLabel=${historyStatus == 'all' ? 'All' : T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).name(historyStatus)},
+             typeLabel=${historyType == 'all' ? 'All' : T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).name(historyType)}">
+  <div class="wt-meta-chips mb-3" data-history-filters>
+    <details class="wt-popover wt-download-menu">
+      <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Status: ' + statusLabel + '. Change'}"><span
+          th:text="${'Status: ' + statusLabel}">Status: All</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+      <div class="wt-popover__body wt-download-menu__body">
+        <a class="wt-menu-item" th:href="@{/alertsettings(tab='history',status='all',type=${historyType})}"
+            th:attr="aria-current=${historyStatus == 'all' ? 'true' : null}">All</a>
+        <a th:each="s : ${historyStatuses}" class="wt-menu-item"
+            th:href="@{/alertsettings(tab='history',status=${s.name()},type=${historyType})}"
+            th:attr="aria-current=${historyStatus == s.name() ? 'true' : null}"
+            th:text="${T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).name(s.name())}">Sent</a>
+      </div>
+    </details>
+    <details class="wt-popover wt-download-menu">
+      <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Alert: ' + typeLabel + '. Change'}"><span
+          th:text="${'Alert: ' + typeLabel}">Alert: All</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+      <div class="wt-popover__body wt-download-menu__body">
+        <a class="wt-menu-item" th:href="@{/alertsettings(tab='history',status=${historyStatus},type='all')}"
+            th:attr="aria-current=${historyType == 'all' ? 'true' : null}">All</a>
+        <a th:each="t : ${alertTypes}" class="wt-menu-item"
+            th:href="@{/alertsettings(tab='history',status=${historyStatus},type=${t.key()})}"
+            th:attr="aria-current=${historyType == t.key() ? 'true' : null},data-tip=${t.description()}"
+            th:text="${T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).name(t.key())}">Secret detected</a>
+      </div>
+    </details>
+  </div>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Alert history" th:unless="${history.content.isEmpty()}">
+    <table class="table mb-0">
+      <caption>Alert messages, newest first</caption>
+      <thead><tr><th scope="col">Raised</th><th scope="col">Alert</th><th scope="col">Repository</th>
+        <th scope="col">Channel</th><th scope="col">Delivery</th><th scope="col" th:if="${anyRetries}">Failed attempts</th>
+        <th scope="col"><span class="visually-hidden">Details</span></th></tr></thead>
+      <tbody>
+        <tr th:each="row : ${history.content}" data-alert-history-row
+            th:with="lag=${T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).lag(row.createdAt, row.sentAt)}">
+          <td><span class="localizetime" data-time-style="short" th:text="${row.createdAt}"></span></td>
+          <td><span class="wt-mini-chip"><span class="material-icons" aria-hidden="true"
+              th:text="${T(com.tracelink.appsec.watchtower.core.alerting.AlertWording).icon(row.type)}">key</span><span th:text="${row.type}">Secret detected</span></span></td>
+          <td th:text="${row.repository ?: '—'}">payments-api</td>
+          <td><span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">forum</span><span th:text="${row.channel}">channel</span></span></td>
+          <td><span class="wt-mini-chip" tabindex="0" data-alert-delivery
+              th:classappend="${row.status == 'Sent' ? ' wt-mini-chip--ok' : (row.status == 'Failed' ? ' wt-mini-chip--bad' : ' wt-mini-chip--warn')}"
+              th:attr="data-tip=${row.status == 'Sent' ? (row.failedAttempts == 0 ? 'First try. Delivered ' : 'After ' + row.failedAttempts + ' failed attempts. Delivered ') : (row.status == 'Failed' ? 'Not delivered' + (row.lastError != null ? ': ' + row.lastError : '') : 'Waiting to be sent')},data-tip-millis=${row.sentAt}"><span
+              class="material-icons" aria-hidden="true" th:text="${row.status == 'Sent' ? 'check' : (row.status == 'Failed' ? 'error_outline' : 'hourglass_top')}">check</span><span
+              th:text="${row.status + (lag.isEmpty() ? '' : ' · ' + lag)}">Sent · 4 s</span></span></td>
+          <td th:if="${anyRetries}"><span th:if="${row.failedAttempts > 0}" class="wt-mini-chip wt-mini-chip--bad"
+              th:text="${row.failedAttempts + (row.failedAttempts == 1 ? ' retry' : ' retries')}">2 retries</span></td>
+          <td><div class="wt-table-actions">
+            <a th:if="${row.sourceLink != null}" class="wt-icon-action" th:href="${row.sourceLink}"
+                aria-label="Open the scan that raised it" data-tip="Open the scan that raised it"><span class="material-icons" aria-hidden="true">open_in_new</span></a>
+            <details class="wt-popover wt-alert-popover">
+              <summary class="wt-icon-action" aria-label="Show the message that was sent" data-tip="Show the message that was sent"><span
+                  class="material-icons" aria-hidden="true">chat</span></summary>
+              <div class="wt-popover__body"><pre class="wt-alert-message" th:text="${row.message}"></pre>
+                <p th:if="${row.lastError != null}" class="wt-page-meta" th:text="${'Last error: ' + row.lastError}"></p></div>
+            </details>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <th:block th:if="${history.content.isEmpty()}">
+    <div th:replace="~{fragments/emptystate :: state('No alert messages match these filters.')}"></div>
+  </th:block>
+  <div th:replace="~{fragments/pagination :: pagination(${historyUrl}, ${history})}"></div>
+</section>
+
+<th:block th:if="${canModify}">
+  <!-- Add / edit route (UAT walkthrough, 2026-10-16). alert-settings.js switches the action, title
+       and values for editing. Choices are buttons: how long not to repeat (Custom posts hours, as
+       before), and the optional filters (priority, integration) under "Only send when". -->
+  <!-- Draft route changes (alert copilot): a sentence in, a reviewable draft out. Nothing is applied here. -->
+  <md-dialog id="alertCopilotDialog" th:if="${canModify and !channels.empty and #authorization.expression('hasAuthority(''Assistant Use'')')}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+      <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons wt-ai-icon">auto_awesome</span></span>
+      <span class="wt-person__text"><span>Draft route changes</span></span></span>
+      <span class="wt-mini-chip wt-mini-chip--ai" tabindex="0" data-tip="The assistant suggests; you review and apply."><span class="material-icons" aria-hidden="true">lightbulb</span>Suggestion only</span>
+      <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-alert-copilot-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <div slot="content" class="wt-md-form">
+      <md-outlined-text-field type="textarea" rows="3" label="What should change?" maxlength="500" data-alert-copilot-text
+          supporting-text="Describe it in your own words"></md-outlined-text-field>
+      <div class="wt-meta-chips" data-alert-copilot-examples>
+        <span class="wt-meta-label">Try</span>
+        <button type="button" class="wt-mini-chip wt-mini-chip--link" data-alert-copilot-example th:attr="data-text=${'Send secret detections to ' + channels.get(0).name}"><span class="material-icons" aria-hidden="true">key</span>Send secret detections to <span th:text="${channels.get(0).name}">a channel</span></button>
+        <button type="button" class="wt-mini-chip wt-mini-chip--link" data-alert-copilot-example data-text="Only High and above for secret detections"><span class="material-icons" aria-hidden="true">tune</span>Only High and above for secret detections</button>
+        <button type="button" class="wt-mini-chip wt-mini-chip--link" data-alert-copilot-example data-text="Stop alerts about bypass requests"><span class="material-icons" aria-hidden="true">delete</span>Stop alerts about bypass requests</button>
+      </div>
+      <div class="wt-ai-result" data-alert-copilot-result role="status" aria-live="polite"></div>
+      <div class="wt-meta-chips">
+        <span class="wt-mini-chip" tabindex="0" data-tip="The assistant sees channel names, alert types and routes; never a webhook address."><span class="material-icons" aria-hidden="true">visibility_off</span>No webhook URLs are sent</span>
+        <span class="wt-mini-chip wt-mini-chip--warn" tabindex="0" hidden data-alert-copilot-approval data-tip="Nothing changes until you press Approve and apply on the review page. The draft expires in 30 minutes."><span class="material-icons" aria-hidden="true">how_to_reg</span>Needs your approval</span>
+      </div>
+    </div>
+    <div slot="actions">
+      <md-text-button type="button" data-alert-copilot-close>Close</md-text-button>
+      <md-filled-button type="button" data-alert-copilot-draft has-icon><span slot="icon" class="material-icons" aria-hidden="true">auto_awesome</span>Draft changes</md-filled-button>
+      <a class="btn btn-primary" href="#" hidden data-alert-copilot-review><span class="material-icons" aria-hidden="true">fact_check</span>Review change set</a>
+    </div>
+  </md-dialog>
+
+  <md-dialog id="routeDialog" th:if="${!channels.empty}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+      <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">alt_route</span></span>
+      <span class="wt-person__text"><span data-route-dialog-title>Add route</span></span></span>
+      <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="routeForm" method="POST" action="/alertsettings/routes/add" class="wt-md-form" hx-boost="false">
+      <input type="hidden" name="id" data-route-id disabled/>
+      <div class="wt-form-pair">
+        <md-outlined-select label="When" name="alertType" required data-route-field="alertType">
+          <md-select-option th:each="type : ${alertTypes}" th:value="${type.key}">
+            <div slot="headline" th:text="${#strings.capitalize(#strings.toLowerCase(#strings.replace(type.key, '_', ' ')))}"></div>
+            <div slot="supporting-text" th:text="${type.description}"></div>
+          </md-select-option>
+        </md-outlined-select>
+        <md-outlined-select label="Send to" name="channelId" required data-route-field="channelId">
+          <md-select-option th:each="channel : ${channels}" th:value="${channel.id}">
+            <div slot="headline" th:text="${channel.name}"></div>
+          </md-select-option>
+        </md-outlined-select>
+      </div>
+      <fieldset class="wt-choice-chips">
+        <legend>Messages</legend>
+        <label th:each="a : ${aggregations}" class="wt-choice-chip"><input type="radio" name="aggregation" required
+            th:value="${a}" th:checked="${a.name() == 'PER_SCAN'}" data-route-choice="aggregation"
+            th:aria-label="${a.name() == 'PER_SCAN' ? 'One message per scan' : 'One message per finding'}"/><span
+            class="material-icons" aria-hidden="true" th:text="${a.name() == 'PER_SCAN' ? 'inbox' : 'mark_email_unread'}">inbox</span><span
+            th:text="${a.name() == 'PER_SCAN' ? '1 per scan' : '1 per finding'}">1 per scan</span></label>
+      </fieldset>
+      <fieldset class="wt-choice-chips" data-route-repeat>
+        <legend>Don't repeat for</legend>
+        <label class="wt-choice-chip"><input type="radio" name="repeatChoice" value="24" aria-label="1 day"/><span>1 day</span></label>
+        <label class="wt-choice-chip"><input type="radio" name="repeatChoice" value="168" aria-label="7 days"/><span>7 days</span></label>
+        <label class="wt-choice-chip"><input type="radio" name="repeatChoice" value="720" checked aria-label="30 days"/><span>30 days</span></label>
+        <label class="wt-choice-chip"><input type="radio" name="repeatChoice" value="custom" aria-label="Custom"/><span
+            class="material-icons" aria-hidden="true">tune</span><span>Custom</span></label>
+        <span class="wt-setting-pair wt-setting-pair--inline" data-route-repeat-custom hidden>
+          <input type="number" min="1" max="8760" value="720" aria-label="Hours not to repeat" data-route-repeat-hours/>
+          <span class="wt-setting-row__unit">hours</span>
+        </span>
+        <input type="hidden" name="dedupeWindowHours" value="720" data-route-field="dedupeWindowHours"/>
+      </fieldset>
+      <p class="wt-form-group-title"><span class="material-icons" aria-hidden="true">filter_alt</span> Only send when (optional)</p>
+      <fieldset class="wt-choice-chips">
+        <legend>Priority</legend>
+        <label class="wt-choice-chip"><input type="radio" name="minPriority" value="" checked data-route-choice="minPriority"
+            aria-label="Any priority"/><span>Any</span></label>
+        <label th:each="p : ${priorities}" class="wt-choice-chip"><input type="radio" name="minPriority" th:value="${p}"
+            data-route-choice="minPriority" th:aria-label="${p.getName() + ' and above'}"/><span
+            th:text="${p.name() == 'HIGH' ? p.shortName : p.shortName + '+'}">Medium+</span></label>
+      </fieldset>
+      <fieldset class="wt-choice-chips" data-route-integrations>
+        <legend>Integration</legend>
+        <label class="wt-choice-chip"><input type="radio" name="apiLabelFilter" value="" checked data-route-choice="apiLabelFilter"
+            aria-label="All integrations"/><span>All</span></label>
+        <label th:each="label : ${integrationLabels}" class="wt-choice-chip"><input type="radio" name="apiLabelFilter"
+            th:value="${label}" data-route-choice="apiLabelFilter" th:aria-label="${'Only ' + label}"/><span
+            class="material-icons" aria-hidden="true">hub</span><span th:text="${label}">BitBucket</span></label>
+      </fieldset>
+      <div class="wt-form-pair">
+        <md-outlined-text-field label="Only these repositories" name="repoInclude" placeholder="payments-*, …"
+            data-route-field="repoInclude" supporting-text="Comma separated, * wildcard"></md-outlined-text-field>
+        <md-outlined-text-field label="Except" name="repoExclude" placeholder="*-sandbox, …"
+            data-route-field="repoExclude" supporting-text="Comma separated, * wildcard"></md-outlined-text-field>
+      </div>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+      <md-text-button id="cancelRouteDialog" type="button">Cancel</md-text-button>
+      <md-filled-button form="routeForm" type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true" data-route-submit-icon>add</span><span
+          data-route-submit>Add route</span></md-filled-button>
+    </div>
+  </md-dialog>
+
+  <!-- Add / edit channel. On edit the URL is optional: blank keeps the stored one. -->
+  <md-dialog id="channelDialog">
+    <div slot="headline" data-channel-dialog-title>Add channel</div>
+    <form slot="content" id="channelForm" method="POST" action="/alertsettings/channels/add" class="wt-md-form" hx-boost="false">
+      <input type="hidden" name="id" data-channel-id disabled/>
+      <md-outlined-text-field label="Name" name="name" required maxlength="100" data-channel-name
+          supporting-text="For example the team or space name"></md-outlined-text-field>
+      <md-outlined-text-field label="Google Chat webhook URL" name="webhookUrl" type="password"
+          required autocomplete="off" data-channel-url
+          supporting-text="https://chat.googleapis.com/v1/spaces/.../messages?key=...&amp;token=..."></md-outlined-text-field>
+      <p class="wt-field-help" th:text="${credentialsEncrypted ? 'Stored encrypted and never shown again after saving.'
+          : 'Never shown again after saving. Database encryption is off on this server, so it is stored unencrypted.'}">Never shown again after saving.</p>
+      <!-- Editing only: a new channel is always enabled (alert-settings.js). -->
+      <label class="wt-checkbox-row" data-channel-enabled-row hidden>
+        <md-checkbox aria-label="Alert channel enabled" name="enabled" value="true" data-channel-enabled disabled touch-target="wrapper"></md-checkbox>
+        Enabled
+      </label>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+      <md-text-button id="cancelChannelDialog" type="button">Cancel</md-text-button>
+      <md-filled-button form="channelForm" type="submit" data-channel-submit>Add channel</md-filled-button>
+    </div>
+  </md-dialog>
+
+  <!-- Shared delete confirmation for routes and channels. -->
+  <md-dialog id="confirmDeleteDialog">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person"><span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">delete_forever</span></span><span class="wt-person__text"><span><span data-delete-title>Delete</span>?</span></span></span></div>
+    <form slot="content" id="confirmDeleteForm" method="POST" action="/alertsettings/routes/delete" hx-boost="false">
+      <p>Delete <strong data-delete-name>this item</strong>? This cannot be undone.</p>
+      <input type="hidden" name="id" data-delete-id-field/>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+      <md-text-button id="cancelConfirmDeleteDialog" type="button">Cancel</md-text-button>
+      <md-filled-button class="wt-btn-danger" form="confirmDeleteForm" type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">delete</span><span data-delete-title>Delete</span></md-filled-button>
+    </div>
+  </md-dialog>
+</th:block>
+</th:block>

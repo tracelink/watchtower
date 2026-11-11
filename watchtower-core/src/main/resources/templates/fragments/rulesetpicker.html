@@ -1,0 +1,59 @@
+<!--/* The searchable ruleset picker (UAT walkthrough, 2026-10-16), shared by the repository dialogs
+     and the scan dialog. It replaces a flat 40-item dropdown with three groups: Special (what the
+     dialog means by "no choice"), Your rulesets and Scanner rulesets, each scanner under its tile.
+     The chosen id is posted as rulesetId exactly as the dropdown posted it. mode is one of
+     add (blank = the default ruleset), bulk (blank = keep each one's), edit (a ruleset or None)
+     and scan (-1 = each repository's own). ruleset-picker.js opens, filters and fills it. */-->
+<div th:fragment="picker(pickerId, choices, mode)" class="wt-choice-picker" data-ruleset-picker
+    th:with="initial=${mode == 'add' or mode == 'bulk' ? '' : '-1'}">
+  <span class="wt-picker-label" th:id="${pickerId + '-label'}">Ruleset</span>
+  <input type="hidden" name="rulesetId" th:value="${initial}" th:attr="data-initial=${initial},data-edit-field=${mode == 'edit' ? 'ruleset' : null}"
+      data-ruleset-value/>
+  <button type="button" class="wt-picker-field" aria-haspopup="listbox" aria-expanded="false"
+      th:attr="aria-controls=${pickerId + '-panel'},aria-labelledby=${pickerId + '-label ' + pickerId + '-current'}" data-ruleset-toggle>
+    <span class="material-icons" aria-hidden="true" data-ruleset-icon>rule_folder</span>
+    <span class="wt-picker-field__text" th:id="${pickerId + '-current'}" data-ruleset-current></span>
+    <span class="material-icons" aria-hidden="true">arrow_drop_down</span>
+  </button>
+  <div class="wt-picker-panel" th:id="${pickerId + '-panel'}" hidden data-ruleset-panel>
+    <input type="search" class="wt-picker-search" placeholder="Search rulesets" aria-label="Search rulesets"
+        autocomplete="off" data-ruleset-search/>
+    <div role="listbox" class="wt-picker-list" aria-label="Rulesets">
+      <div class="wt-picker-group" role="group" aria-label="Special" data-ruleset-group>
+        <span class="wt-picker-group__title" aria-hidden="true">Special</span>
+        <button th:if="${mode == 'add'}" type="button" role="option" class="wt-picker-option" value=""
+            th:attr="data-label=${choices.defaultRuleset() != null ? 'Default ruleset · ' + choices.defaultRuleset().label() : 'The default ruleset'},data-search=${'default ' + (choices.defaultRuleset() != null ? choices.defaultRuleset().label() : '')}"
+            data-icon="star"><span class="material-icons" aria-hidden="true">star</span><span
+            th:text="${choices.defaultRuleset() != null ? 'Default ruleset · ' + choices.defaultRuleset().label() : 'The default ruleset'}">Default ruleset</span></button>
+        <button th:if="${mode == 'bulk'}" type="button" role="option" class="wt-picker-option" value=""
+            data-label="Keep each one's" data-search="keep" data-icon="sync_lock"><span class="material-icons"
+            aria-hidden="true">sync_lock</span><span>Keep each one's</span></button>
+        <button th:if="${mode == 'scan'}" type="button" role="option" class="wt-picker-option" value="-1"
+            data-label="Each repository's own" data-search="each repository own" data-icon="sync_lock"><span class="material-icons"
+            aria-hidden="true">sync_lock</span><span>Each repository's own</span></button>
+        <button th:if="${mode != 'scan'}" type="button" role="option" class="wt-picker-option" value="-1"
+            data-label="None: pull requests not scanned" data-search="none" data-icon="block"
+            data-tip="Pull requests are skipped until a ruleset is set. Repository scans use the default ruleset."><span
+            class="material-icons" aria-hidden="true">block</span><span>None: pull requests not scanned</span></button>
+      </div>
+      <div th:if="${!choices.own().isEmpty()}" class="wt-picker-group" role="group" aria-label="Your rulesets" data-ruleset-group>
+        <span class="wt-picker-group__title" aria-hidden="true">Your rulesets <span class="wt-count-badge" th:text="${choices.own().size()}">10</span></span>
+        <button th:each="o : ${choices.own()}" type="button" role="option" class="wt-picker-option" th:value="${o.id()}"
+            th:attr="data-label=${o.label()},data-search=${o.search()}" data-icon="folder"><span class="material-icons"
+            aria-hidden="true">folder</span><span th:text="${o.label()}">Ruleset</span></button>
+      </div>
+      <div th:if="${!choices.scanners().isEmpty()}" class="wt-picker-group" role="group" aria-label="Scanner rulesets" data-ruleset-group>
+        <span class="wt-picker-group__title" aria-hidden="true">Scanner rulesets <span class="wt-count-badge"
+            th:text="${choices.scannerRulesetCount()}">31</span></span>
+        <th:block th:each="g : ${choices.scanners()}">
+          <button th:each="o : ${g.rulesets()}" type="button" role="option" class="wt-picker-option" th:value="${o.id()}"
+              th:attr="data-label=${g.scanner().name() + ' · ' + o.label()},data-search=${o.search()},data-icon=${g.scanner().icon()}"><span
+              class="wt-scanner-tile wt-scanner-tile--ran wt-picker-tile" aria-hidden="true"><span class="material-icons"
+              th:text="${g.scanner().icon()}">radar</span></span><span><span th:text="${o.label()}">Ruleset</span> <span
+              class="wt-muted" th:text="${'· ' + g.scanner().name()}">· Scanner</span></span></button>
+        </th:block>
+      </div>
+      <p class="wt-picker-empty" hidden data-ruleset-empty>No rulesets match.</p>
+    </div>
+  </div>
+</div>

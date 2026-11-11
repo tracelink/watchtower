@@ -5,20 +5,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.tracelink.appsec.watchtower.core.WatchtowerTestApplication;
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
+import com.tracelink.appsec.watchtower.core.ui.HtmlAssertions;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -27,8 +30,11 @@ public class ImageScanDashboardControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private MetricsCacheService metricsService;
+
+	@MockitoBean
+	private ImageScanResultService scanResultService;
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.SCAN_DASHBOARDS_NAME})
@@ -48,10 +54,11 @@ public class ImageScanDashboardControllerTest {
 						MockMvcResultMatchers.model().attribute("numViolations", Matchers.is(vios)))
 				.andExpect(
 						MockMvcResultMatchers.model().attribute("avgScanTime", Matchers.is(time)))
-				.andExpect(MockMvcResultMatchers.model().attribute("scripts", Matchers.hasSize(6)))
-				.andExpect(MockMvcResultMatchers.model().attribute(
-						WatchtowerModelAndView.SUCCESS_NOTIFICATION,
-						Matchers.is(MetricsCacheService.METRICS_NOT_READY)));
+				.andExpect(MockMvcResultMatchers.model().attributeExists("recentScans"))
+				.andExpect(MockMvcResultMatchers.model().attribute("scripts", Matchers.hasSize(5)))
+				.andExpect(MockMvcResultMatchers.model().attribute("metricsReady", false))
+				.andExpect(MockMvcResultMatchers.model().attributeDoesNotExist(
+						WatchtowerModelAndView.SUCCESS_NOTIFICATION));
 
 	}
 
@@ -67,15 +74,17 @@ public class ImageScanDashboardControllerTest {
 		BDDMockito.when(metricsService.getAverageScanTimeString(ImageScanType.CONTAINER))
 				.thenReturn(time);
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/imagescan/dashboard"))
+		MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/imagescan/dashboard"))
 				.andExpect(MockMvcResultMatchers.model().attribute("numScans", Matchers.is(scans)))
 				.andExpect(
 						MockMvcResultMatchers.model().attribute("numViolations", Matchers.is(vios)))
 				.andExpect(
 						MockMvcResultMatchers.model().attribute("avgScanTime", Matchers.is(time)))
-				.andExpect(MockMvcResultMatchers.model().attribute("scripts", Matchers.hasSize(6)))
+				.andExpect(MockMvcResultMatchers.model().attribute("scripts", Matchers.hasSize(5)))
 				.andExpect(MockMvcResultMatchers.model().attributeDoesNotExist(
-						WatchtowerModelAndView.SUCCESS_NOTIFICATION));
-
+						WatchtowerModelAndView.SUCCESS_NOTIFICATION))
+				.andReturn();
+		HtmlAssertions.assertHtmlIntegrity(result);
+		BDDMockito.verify(scanResultService).getLastScans(5);
 	}
 }

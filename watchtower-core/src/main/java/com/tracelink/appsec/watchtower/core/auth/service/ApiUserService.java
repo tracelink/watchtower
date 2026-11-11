@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * CRUD operations for Api Keys for users
@@ -102,6 +103,7 @@ public class ApiUserService implements UserDetailsService {
 	 * @param user     the user associated with the given api key
 	 * @throws KeyException if the key id is not found in the user's list of keys
 	 */
+	@Transactional
 	public void deleteUserApiKey(String apiKeyId, UserEntity user) throws KeyException {
 		ApiKeyEntity apiKey = user.getApiKeys().stream()
 				.filter(k -> k.getApiKeyId().equals(apiKeyId)).findFirst()

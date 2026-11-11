@@ -10,6 +10,8 @@ import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+import com.tracelink.appsec.watchtower.core.scan.image.service.ImageScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.presentation.HomeActivityItem;
 
 /**
  * Controller for the main Image Scan Dashboard
@@ -23,9 +25,12 @@ import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
 public class ImageScanDashboardController {
 
 	private MetricsCacheService metricsService;
+	private ImageScanResultService scanResultService;
 
-	public ImageScanDashboardController(@Autowired MetricsCacheService metricsService) {
+	public ImageScanDashboardController(@Autowired MetricsCacheService metricsService,
+			@Autowired ImageScanResultService scanResultService) {
 		this.metricsService = metricsService;
+		this.scanResultService = scanResultService;
 	}
 
 	/**
@@ -38,10 +43,7 @@ public class ImageScanDashboardController {
 	public WatchtowerModelAndView dashboard() {
 		WatchtowerModelAndView mv = new WatchtowerModelAndView("image_scan/dashboard");
 
-		if (!metricsService.isMetricsCacheReady()) {
-			mv.addObject(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
-					MetricsCacheService.METRICS_NOT_READY);
-		}
+		mv.addObject("metricsReady", metricsService.isMetricsCacheReady());
 
 		mv.addObject("numScans",
 				metricsService.getScanCount(ImageScanType.CONTAINER));
@@ -49,12 +51,13 @@ public class ImageScanDashboardController {
 				metricsService.getViolationCount(ImageScanType.CONTAINER));
 		mv.addObject("avgScanTime",
 				metricsService.getAverageScanTimeString(ImageScanType.CONTAINER));
+		mv.addObject("recentScans", scanResultService.getLastScans(5).stream()
+				.map(HomeActivityItem::fromImage).toList());
 
+		mv.addScriptReference("/webjars/chart.js/4.4.0/dist/chart.umd.js");
 		mv.addScriptReference("/scripts/dashboard/utils.js");
 		mv.addScriptReference("/scripts/dashboard/dashboard-stats-switcher.js");
-		mv.addScriptReference("/scripts/dashboard/scans-vios-line.js");
-		mv.addScriptReference("/scripts/dashboard/violations-pie.js");
-		mv.addScriptReference("/scripts/dashboard/violations-bar.js");
+		mv.addScriptReference("/scripts/dashboard/dashboard-insights.js");
 		mv.addScriptReference("/scripts/dashboard/image-dashboard.js");
 		return mv;
 	}

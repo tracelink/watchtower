@@ -1,6 +1,6 @@
 package com.tracelink.appsec.watchtower.core.auth.model;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,10 +11,10 @@ public class UserTest {
 
 	@Test
 	public void testDAO() {
-		Date created = new Date();
+		LocalDateTime created = LocalDateTime.now();
 		int enabled = 1;
-		Date lastLogin = new Date();
-		Date lastModified = new Date();
+		LocalDateTime lastLogin = LocalDateTime.now();
+		LocalDateTime lastModified = LocalDateTime.now();
 		String password = "foobar";
 		String username = "csmith";
 		Set<RoleEntity> roles = new HashSet<RoleEntity>();

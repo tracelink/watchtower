@@ -4,13 +4,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
@@ -84,7 +84,7 @@ public class PMDRuleEntity extends RuleEntity {
 			providedDto.setPriority(getPriority());
 			providedDto.setRulesets(
 					getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
-			return providedDto;
+			return withStewardship(providedDto);
 		} else {
 			PMDCustomRuleDto dto = new PMDCustomRuleDto();
 			// Set inherited fields
@@ -101,7 +101,7 @@ public class PMDRuleEntity extends RuleEntity {
 			dto.setRuleClass(getRuleClass());
 			dto.setProperties(getProperties().stream().map(PMDPropertyEntity::toDto)
 					.collect(Collectors.toList()));
-			return dto;
+			return withStewardship(dto);
 		}
 	}
 }

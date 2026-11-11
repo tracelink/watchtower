@@ -1,0 +1,408 @@
+<!-- Shared report workspace for PR, MCR, upload, and image findings. The optional code fragment
+     below is used by PR/MCR only; the workspace itself stays scan-type neutral. -->
+<section th:fragment="workspace(heading, findings, scanFailed, sourceViewerAvailable)" class="wt-finding-workspace wt-findings mb-4"
+	aria-labelledby="wt-findings-heading" data-finding-workspace
+    th:with="workspacePrefix=${heading == 'AWS Security Agent findings' ? 'aws-' : ''}" th:aria-labelledby="${workspacePrefix + 'wt-findings-heading'}">
+	<header class="wt-workspace-header">
+		<h2 id="wt-findings-heading" th:id="${workspacePrefix + 'wt-findings-heading'}" class="wt-workspace-title" th:text="${heading}"></h2>
+		<span class="wt-count" data-finding-total
+			th:text="${findings.size()} + (${findings.size()} == 1 ? ' finding' : ' findings')"></span>
+		<!-- AI triage (helpers board): shown only where the assistant can triage this scan and the person may use it. -->
+		<th:block th:if="${!findings.isEmpty() and #authorization.expression('hasAuthority(''Assistant Use'')')}">
+			<md-outlined-button type="button" has-icon data-ai-helper="triage" hidden
+				data-tip="Ask the assistant for advice on the most severe findings (up to 40). It runs in the background and judges nothing; you decide each one."><span
+				slot="icon" class="material-icons wt-ai-icon" aria-hidden="true">fact_check</span><span data-ai-triage-label>Triage scan</span></md-outlined-button>
+			<span class="wt-mini-chip wt-ai-triage-chip" data-ai-triage-chip tabindex="0" hidden><span class="material-icons" aria-hidden="true" data-ai-triage-icon>autorenew</span><span data-ai-triage-text></span></span>
+			<span class="wt-mini-chip wt-mini-chip--warn" data-ai-seen-chip tabindex="0" hidden
+				data-tip="Judging a finding after you have seen its AI verdict leaves that judgment out of the blind AI-vs-human number. Use Assess on a finding to collect blind data."><span
+				class="material-icons" aria-hidden="true">visibility</span>AI opinions seen</span>
+		</th:block>
+		<!-- AI review: pick up to 200 files; the assistant lists weaknesses no scanner finding covers. Shown by ai-review.js only for pull request and repository scans. -->
+		<th:block th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}">
+			<md-outlined-button type="button" has-icon data-ai-helper="aiReview" hidden
+				data-tip="Pick up to 200 files and ask the assistant what the scanners may have missed. It runs in the background, saves no code and judges nothing; you decide each point."><span
+				slot="icon" class="material-icons wt-ai-icon" aria-hidden="true">manage_search</span>AI review</md-outlined-button>
+			<button type="button" class="wt-mini-chip wt-mini-chip--link wt-ai-triage-chip" data-ai-review-chip hidden aria-label="AI review results"><span class="material-icons"
+				aria-hidden="true" data-ai-review-icon>autorenew</span><span data-ai-review-text></span></button>
+		</th:block>
+		<!-- Search on the right of the title (UAT walkthrough, 2026-10-15). -->
+		<div th:if="${!findings.isEmpty()}" class="wt-workspace-search" role="search" aria-label="Search loaded findings">
+			<md-outlined-text-field id="wt-finding-search" th:id="${workspacePrefix + 'wt-finding-search'}" type="search"
+				label="Search this report" placeholder="Rule, guidance, file, or package"
+				autocomplete="off" data-finding-search></md-outlined-text-field>
+		</div>
+	</header>
+
+	<!-- Severities as a coloured bar with one toggle chip each. The visible severities are kept,
+	     comma-separated, in the same filter value the old dropdown used (empty = all), so review
+	     return links (reviewSeverity) keep working. -->
+	<div th:if="${!findings.isEmpty()}" class="wt-finding-toolbar"
+		th:with="breakdown=${T(com.tracelink.appsec.watchtower.core.scan.presentation.SeverityBreakdown).of(findings)}">
+		<div class="wt-severity-filter">
+			<div class="wt-severity-bar" aria-hidden="true">
+				<span th:each="b : ${breakdown}" class="wt-severity-bar__seg" th:classappend="' wt-signal-rail-' + ${b.key}"
+					th:style="'width:' + ${b.width}"></span>
+			</div>
+			<div class="wt-severity-chips" role="group" aria-label="Show or hide severities">
+				<button th:each="b : ${breakdown}" type="button" class="wt-sev wt-sev-count wt-severity-chip"
+					th:classappend="' wt-sev-' + ${b.key}" aria-pressed="true"
+					th:attr="data-severity-chip=${b.key},data-tip=${'Show or hide ' + b.label + ' findings'}"
+					th:text="${b.count + ' ' + b.label}"></button>
+			</div>
+			<input type="hidden" id="wt-finding-severity" th:id="${workspacePrefix + 'wt-finding-severity'}" value="" data-finding-severity>
+		</div>
+		<!-- The file (or package) filter is one chip with a count: "All files 3 ▾" opens the list
+		     of the report's files; finding-workspace.js fills it and keeps the choice in the hidden
+		     value review return links (reviewLocation) already use. -->
+		<details class="wt-popover wt-download-menu wt-location-menu" data-finding-location-menu
+			th:with="kind=${findings[0].getLocationType() == 'Package' ? 'packages' : 'files'},
+				kindIcon=${findings[0].getLocationType() == 'Package' ? 'inventory_2' : 'folder_open'}"
+			th:attr="data-all-label=${'All ' + kind}">
+			<summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Filter findings by ' + (kind == 'packages' ? 'package' : 'file')}"><span
+				class="material-icons" aria-hidden="true" th:text="${kindIcon}">folder_open</span><span
+				data-finding-location-label th:text="${'All ' + kind}">All files</span><span class="wt-count-badge"
+				data-finding-location-count>0</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+			<div class="wt-popover__body wt-download-menu__body" role="menu" data-finding-location-options>
+				<button type="button" class="wt-menu-item" role="menuitemradio" aria-checked="true" value=""
+					th:text="${'All ' + kind}">All files</button>
+			</div>
+		</details>
+		<input type="hidden" id="wt-finding-location" th:id="${workspacePrefix + 'wt-finding-location'}" value="" data-finding-location>
+		<!-- Reports with an AWS assessment: which scanner's findings to show (AwsReport board). -->
+		<details th:if="${providerStatuses != null and !providerStatuses.isEmpty()}" class="wt-popover wt-download-menu wt-location-menu"
+			data-finding-scanner-menu th:with="awsCount=${#lists.size(findings.?[scannerGroup == 'aws'])}">
+			<summary class="wt-mini-chip wt-meta-chip" aria-label="Filter findings by scanner"><span class="material-icons"
+				aria-hidden="true">filter_list</span><span data-finding-scanner-label>All scanners</span><span
+				class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+			<div class="wt-popover__body wt-download-menu__body" role="menu" data-finding-scanner-options>
+				<button type="button" class="wt-menu-item" role="menuitemradio" aria-checked="true" value=""><span
+					class="material-icons" aria-hidden="true">select_all</span>All scanners <span class="wt-count-badge"
+					th:text="${findings.size()}">0</span></button>
+				<button type="button" class="wt-menu-item" role="menuitemradio" aria-checked="false" value="aws"><span
+					class="material-icons" aria-hidden="true">cloud</span>AWS Security Agent <span class="wt-count-badge"
+					data-finding-scanner-count="aws" th:text="${awsCount}">0</span></button>
+				<button type="button" class="wt-menu-item" role="menuitemradio" aria-checked="false" value="other"><span
+					class="material-icons" aria-hidden="true">apps</span>Other scanners <span class="wt-count-badge"
+					data-finding-scanner-count="other" th:text="${findings.size() - awsCount}">0</span></button>
+			</div>
+		</details>
+		<input type="hidden" value="" data-finding-scanner>
+		<p class="wt-filter-status" role="status" aria-live="polite" data-finding-status></p>
+	</div>
+
+	<!-- An incomplete scan with no findings is amber, never a reassuring tick (UAT #32). -->
+	<div th:if="${findings.isEmpty()}" class="wt-state wt-state-empty" th:classappend="${scanFailed} ? ' wt-state--warning' : ''">
+		<span class="material-icons" aria-hidden="true"
+			th:text="${scanFailed ? 'warning' : 'verified_user'}">verified_user</span>
+		<div th:unless="${scanFailed}">
+			<h3>No findings</h3>
+			<p>No findings are available in this report. Check assessment coverage and engine states before treating this result as clean.</p>
+		</div>
+		<div th:if="${scanFailed}">
+			<h3>No findings, but this wasn't a full scan</h3>
+			<p>A scanner did not finish, so no findings here is not a clean result. See the scanner details above.</p>
+		</div>
+	</div>
+
+	<!-- "Other scanners" (or AWS) chosen in the Scanner chip when that group has nothing: the usual
+	     No findings state in the same card. -->
+	<div th:if="${!findings.isEmpty() and providerStatuses != null and !providerStatuses.isEmpty()}" class="wt-state wt-state-empty"
+		hidden data-finding-scanner-empty>
+		<span class="material-icons" aria-hidden="true" th:text="${scanFailed ? 'warning' : 'verified_user'}">verified_user</span>
+		<div><h3>No findings</h3><p data-finding-scanner-empty-text>The other scanners reported nothing in this scan.</p></div>
+	</div>
+
+	<div th:if="${!findings.isEmpty()}" class="wt-workspace-grid" data-split-workspace
+		data-split-key="findings-v2" data-split-default="34">
+		<div class="wt-finding-list">
+			<div class="wt-finding-list-viewport" data-finding-list-viewport tabindex="0"
+				role="region" aria-label="Findings list">
+				<button th:each="finding, stat : ${findings}" type="button"
+					th:id="${finding.getId()}" class="wt-finding-item"
+					th:classappend="${stat.first} ? ' is-selected' : ''"
+					th:attr="aria-pressed=${stat.first},data-severity=${finding.getSeverityFilterKey()},data-location=${finding.getFileName() != null ? finding.getFileName() : finding.getLocation()},data-location-label=${finding.getLocation()},data-title=${finding.getTitle()},data-guidance=${finding.getGuidance()},data-original-guidance=${finding.hasUnresolvedMessage() ? finding.originalGuidance : null},data-url=${finding.getExternalUrl()},data-file=${finding.getFileName()},data-line=${finding.getLineNumber()},data-score=${finding.getScore()},data-vector=${finding.getVector()},data-source-action=${finding.hasSourceAction()},data-verify-id=${finding.hasVerification() ? finding.getVerification().violationId() : null},data-verify-status=${finding.hasVerification() ? finding.getVerification().statusKey() : null},data-verify-label=${finding.hasVerification() ? finding.getVerification().statusLabel() : null},data-verify-description=${finding.hasVerification() ? finding.getVerification().statusDescription() : null},data-verify-can-request=${finding.hasVerification() ? finding.getVerification().canRequest() : null},data-action-label=${finding.hasAction() ? finding.getAction().label() : null},data-action-url=${finding.hasAction() ? finding.getAction().url() : null}"
+					data-finding-item th:data-scanner-group="${finding.getScannerGroup()}" th:data-provider-detail-url="${finding.getProviderDetailUrl()}" th:data-feedback-key="${finding.getFeedbackKey()}"
+					th:data-scanner-name="${finding.getScanner() != null ? finding.getScanner().name() : null}"
+					th:data-scanner-icon="${finding.getScanner() != null ? finding.getScanner().icon() : null}"
+					th:data-rule-id="${finding.getRuleId()}" th:data-review-state="${finding.getReviewState()}"
+					th:data-rule-change-label="${finding.getRuleChangeLabel()}"
+					th:data-rule-change-tip="${finding.getRuleChangeTip()}"
+					th:data-review-icon="${finding.getReviewIcon()}" th:data-review-label="${finding.getReviewLabel()}"
+					th:data-url-label="${finding.getExternalUrlLabel()}"
+					th:data-cvss-label="${finding.getCvss() != null ? finding.getCvss().label() : null}"
+					th:data-cvss-key="${finding.getCvss() != null ? finding.getCvss().severityKey() : null}"
+					th:data-cvss-tip="${finding.getCvss() != null ? finding.getCvss().scoreTip() : null}"
+					th:data-vector-text="${finding.getCvss() != null ? finding.getCvss().vectorText() : null}"
+					th:data-vector-tip="${finding.getCvss() != null ? finding.getCvss().vectorTip() : null}">
+					<span class="wt-signal-rail" th:classappend="' wt-signal-rail-' + ${finding.getSeverityFilterKey()}" aria-hidden="true"></span>
+					<span class="wt-finding-item-main">
+						<span class="wt-finding-item-topline">
+							<span th:replace="~{fragments/severity :: pill(${finding.getSeverity()}, ${finding.getSeverityFilterKey()})}"></span>
+							<span th:if="${finding.hasVerification() and finding.getVerification().statusKey() == 'LIVE'}"
+								class="wt-verify-badge">LIVE</span>
+							<strong th:text="${finding.getTitle()}"></strong>
+							<!-- Package (image) findings: the advisory's CVSS score, or "No CVSS". -->
+							<span th:if="${finding.getCvss() != null}" class="wt-sev wt-cvss-chip"
+								th:classappend="' wt-sev-' + ${finding.getCvss().severityKey()}"
+								th:text="${finding.getCvss().shortLabel()}">CVSS 5.0</span>
+						</span>
+						<!-- Scanner icon and short file:line; the full path is the row's hover text. -->
+						<span class="wt-finding-item-meta" th:attr="title=${finding.getLocation()}">
+							<th:block th:if="${finding.getScanner() != null}"><span class="material-icons" aria-hidden="true"
+								th:text="${finding.getScanner().icon()}"></span><span th:text="${finding.getScanner().name()}"></span> ·</th:block>
+							<span th:if="${finding.getCvss() != null}" class="material-icons" aria-hidden="true">category</span>
+							<span class="wt-finding-location" th:text="${finding.getShortLocation()}"></span>
+						</span>
+					</span>
+					<!-- Review marker: not reviewed, or the latest human judgment (UAT walkthrough 2026-10-15). -->
+					<span class="material-icons wt-review-marker" th:classappend="${' wt-review-marker--' + finding.getReviewState()}"
+						th:text="${finding.getReviewIcon()}" th:attr="title=${finding.getReviewLabel()},aria-label=${finding.getReviewLabel()}" role="img"></span>
+				</button>
+				<div class="wt-state wt-state-empty wt-filter-empty" hidden data-finding-empty>
+					<span class="material-icons" aria-hidden="true">filter_list</span>
+					<div><h3>No matches</h3><p>Try changing the search or filters.</p></div>
+				</div>
+			</div>
+			<nav class="wt-finding-pagination" data-finding-pagination aria-label="Findings pages">
+				<span class="wt-finding-range" data-finding-range role="status" aria-live="polite"></span>
+				<div class="wt-finding-pagination-actions">
+					<button type="button" class="wt-page-step" data-finding-previous>
+						<span class="material-icons" aria-hidden="true">chevron_left</span>Previous
+					</button>
+					<button type="button" class="wt-page-step" data-finding-next>
+						Next<span class="material-icons" aria-hidden="true">chevron_right</span>
+					</button>
+				</div>
+			</nav>
+		</div>
+
+		<div class="wt-workspace-resizer" role="separator"
+			aria-label="Resize findings list and details" aria-orientation="vertical"
+			aria-valuemin="30" aria-valuemax="70" aria-valuenow="34" tabindex="0"
+			data-workspace-resizer></div>
+
+		<aside class="wt-finding-detail" aria-live="polite" aria-labelledby="wt-finding-detail-title" th:aria-labelledby="${workspacePrefix + 'wt-finding-detail-title'}">
+			<div class="wt-finding-detail-heading">
+				<span th:replace="~{fragments/severity :: pill(${findings[0].getSeverity()}, ${findings[0].getSeverityFilterKey()})}"></span>
+				<!-- Live secret verification (ILiveVerifier findings only): a status chip whose
+				     popover explains it. The selected finding's state is copied here from its
+				     data-verify-* attributes; "Verify live" is in the action row below. -->
+				<span class="wt-detail-verify" data-detail-verify
+					th:with="verification=${findings[0].getVerification()}"
+					th:hidden="${verification == null}">
+					<span class="wt-verify-status" data-detail-verify-status
+						th:attr="data-status=${verification != null ? verification.statusKey() : ''}"
+						th:text="${verification != null and !verification.statusLabel().isEmpty() ? verification.statusLabel() : 'Not verified yet'}"></span>
+					<details class="wt-popover">
+						<summary aria-label="About live verification"><span class="material-icons" aria-hidden="true">info</span></summary>
+						<div class="wt-popover__body" data-detail-verify-description
+							th:text="${verification != null ? verification.statusDescription() : ''}"></div>
+					</details>
+				</span>
+				<h3 id="wt-finding-detail-title" th:id="${workspacePrefix + 'wt-finding-detail-title'}" data-detail-title th:text="${findings[0].getTitle()}"></h3>
+				<button type="button" class="wt-copy-button" data-copy-finding="title"
+					th:attr="data-copy-value=${findings[0].getTitle()}" aria-label="Copy finding identifier or title"
+				title="Copy finding identifier or title"><span class="material-icons" aria-hidden="true">content_copy</span></button>
+				<span class="wt-mini-chip" data-detail-scanner th:hidden="${findings[0].getScanner() == null}" tabindex="0"
+					th:attr="data-tip=${findings[0].getScanner() != null ? 'Found by ' + findings[0].getScanner().name() : null}"><span
+					class="material-icons" aria-hidden="true" data-detail-scanner-icon th:text="${findings[0].getScanner() != null ? findings[0].getScanner().icon() : 'radar'}"></span><span
+				data-detail-scanner-name th:text="${findings[0].getScanner() != null ? findings[0].getScanner().name() : ''}"></span></span>
+				<span class="wt-mini-chip" data-detail-review th:classappend="${' wt-review-chip--' + findings[0].getReviewState()}"
+					th:hidden="${findings[0].getFeedbackKey() == null}"><span class="material-icons" aria-hidden="true" data-detail-review-icon
+					th:text="${findings[0].getReviewIcon()}"></span><span data-detail-review-label th:text="${findings[0].getReviewLabel()}"></span></span>
+				<!-- The scanner's own wording, when the guidance shown was rewritten: a chip with the
+				message as its hover text (finding-workspace.js keeps it in step). -->
+				<span class="wt-mini-chip wt-meta-chip wt-engine-message" tabindex="0" data-original-message
+				th:hidden="${!findings[0].hasUnresolvedMessage()}"
+				th:attr="data-tip=${findings[0].originalGuidance},aria-label=${'Engine message: ' + findings[0].originalGuidance}"><span
+				class="material-icons" aria-hidden="true">terminal</span>Engine message</span>
+				<!-- Shown when the rule was edited or deleted after this scan: the guidance on screen is
+				the rule as it is now (finding-workspace.js keeps it in step). -->
+				<span class="wt-mini-chip wt-meta-chip wt-rule-change" tabindex="0" data-rule-change
+				th:hidden="${findings[0].getRuleChangeLabel() == null}"
+				th:attr="data-tip=${findings[0].getRuleChangeTip()},aria-label=${findings[0].getRuleChangeLabel() + '. ' + findings[0].getRuleChangeTip()}"><span
+				class="material-icons" aria-hidden="true">history</span><span data-rule-change-text th:text="${findings[0].getRuleChangeLabel()}"></span></span>
+			</div>
+			<!-- Package (image) findings: package, CVSS and vector as chips (UAT walkthrough,
+			     2026-10-16). The vector reads in plain words; the raw code is the hover text and is
+			     what a click copies. -->
+			<div class="wt-meta-chips wt-detail-facts" th:if="${findings[0].getCvss() != null}" th:with="cvss=${findings[0].getCvss()}">
+				<button type="button" class="wt-mini-chip wt-meta-chip wt-copy-chip" data-copy-finding="location"
+					th:attr="data-copy-value=${findings[0].getLocation()}" aria-label="Copy package name" data-tip="Package. Click to copy."><span
+					class="material-icons" aria-hidden="true">category</span><span class="wt-mono" data-detail-location
+					th:text="${findings[0].getLocation()}"></span><span class="material-icons" aria-hidden="true">content_copy</span></button>
+				<span class="wt-sev wt-cvss-chip" tabindex="0" data-detail-cvss data-detail-score
+					th:classappend="' wt-sev-' + ${cvss.severityKey()}" th:attr="data-tip=${cvss.scoreTip()}"
+					th:text="${cvss.label()}">CVSS 5.0 · Medium</span>
+				<button type="button" class="wt-mini-chip wt-meta-chip wt-copy-chip" data-copy-finding="vector" data-detail-vector-row
+					th:hidden="${findings[0].getVector() == null}" th:attr="data-copy-value=${findings[0].getVector()},data-tip=${cvss.vectorTip()}"
+					aria-label="Copy CVSS vector"><span class="material-icons" aria-hidden="true">network_check</span><span
+					data-detail-vector th:text="${cvss.vectorText()}"></span><span class="material-icons" aria-hidden="true">content_copy</span></button>
+			</div>
+			<dl class="wt-metadata-grid" th:if="${findings[0].getCvss() == null}">
+				<div><dt th:text="${findings[0].getLocationType()}"></dt><dd><span data-detail-location th:text="${findings[0].getLocation()}"></span><button type="button" class="wt-copy-button" data-copy-finding="location" th:attr="data-copy-value=${findings[0].getLocation()}" aria-label="Copy finding location" title="Copy finding location"><span class="material-icons" aria-hidden="true">content_copy</span></button></dd></div>
+				<div data-detail-cvss th:hidden="${!findings[0].hasCvss()}"><dt>CVSS</dt><dd data-detail-score th:text="${findings[0].getScore()}"></dd></div>
+				<div data-detail-vector-row th:hidden="${findings[0].getVector() == null}"><dt>Vector</dt><dd class="wt-mono"><span data-detail-vector th:text="${findings[0].getVector()}"></span><button type="button" class="wt-copy-button" data-copy-finding="vector" th:attr="data-copy-value=${findings[0].getVector()}" aria-label="Copy CVSS vector" title="Copy CVSS vector"><span class="material-icons" aria-hidden="true">content_copy</span></button></dd></div>
+			</dl>
+			<div class="wt-guidance">
+				<h4>What it means</h4>
+				<p data-detail-guidance th:text="${findings[0].getGuidance()}"></p>
+			</div>
+			<!-- AWS findings: who found it, how sure AWS is, and whether AWS validated it (filled by finding-workspace.js). -->
+			<div class="wt-meta-chips wt-detail-facts" data-provider-chips hidden></div>
+			<section class="wt-provider-evidence" data-provider-detail hidden aria-label="Provider evidence"></section>
+			<div class="wt-detail-actions">
+    <a class="wt-button-link" data-feedback-open aria-disabled="true" hx-boost="false"
+      th:if="${#authorization.expression('hasAuthority(''Finding Feedback'') and hasAuthority(''Scan Results View'')') and findings[0].getFeedbackKey()!=null}"><span class="material-icons" aria-hidden="true">rate_review</span>Review finding</a>
+    <span data-detail-help><a th:replace="~{fragments/featurehelp :: info('finding-feedback', 'finding feedback', 'Use finding feedback to label detections and record review decisions.')}"></a></span>
+
+				<a th:if="${sourceViewerAvailable}" href="#wt-code-section" class="wt-button-link wt-button-link-secondary wt-loc"
+					th:hidden="${!findings[0].hasSourceAction()}"
+					th:attr="data-file=${findings[0].getFileName()},data-line=${findings[0].getLineNumber()}" data-detail-source>
+					<span class="material-icons" aria-hidden="true">code</span>View source
+				</a>
+				<!-- Live check of a secret's validity; shown only when the viewer may request it. -->
+				<form th:if="${verifyUrl != null}" method="post" th:action="${verifyUrl}"
+					data-detail-verify-form
+					th:with="verification=${findings[0].getVerification()}"
+					th:hidden="${verification == null or !verification.canRequest()}">
+					<input type="hidden" name="violationId" data-detail-verify-id
+						th:value="${verification != null ? verification.violationId() : ''}">
+					<button type="submit" class="wt-button-link wt-button-link-secondary">
+						<span class="material-icons" aria-hidden="true">vpn_key</span>Verify live
+					</button>
+				</form>
+				<a class="wt-button-link wt-button-link-secondary" th:hidden="${!findings[0].hasExternalUrl()}"
+					th:href="${findings[0].getExternalUrl()}" target="_blank" rel="noopener noreferrer" data-detail-url>
+					<span class="material-icons" aria-hidden="true" data-detail-url-icon th:text="${findings[0].getProviderDetails() != null ? 'open_in_new' : 'menu_book'}">menu_book</span><span data-detail-url-label th:text="${findings[0].getExternalUrlLabel()}">Documentation</span>
+				</a>
+				<!-- Ask the AI assistant about the selected finding's rule (Assistant Use only). -->
+				<button type="button" class="wt-button-link wt-button-link-secondary" data-detail-explain
+					th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}"
+					th:hidden="${findings[0].getRuleId() == null}"
+					th:attr="data-assistant-explain=${findings[0].getRuleId()}"><span class="material-icons wt-ai-icon"
+					aria-hidden="true">auto_awesome</span>Explain</button>
+				<!-- A module's action on the finding (IFindingActionProvider), e.g. "Allowlist…". -->
+				<a class="wt-button-link wt-button-link-secondary" data-detail-action
+					th:hidden="${!findings[0].hasAction()}"
+					th:href="${findings[0].hasAction() ? findings[0].getAction().url() : null}">
+					<span class="material-icons" aria-hidden="true">playlist_add</span><span data-detail-action-label
+						th:text="${findings[0].hasAction() ? findings[0].getAction().label() : ''}"></span>
+				</a>
+			</div>
+			<p class="wt-copy-status" role="status" aria-live="polite" data-copy-status></p>
+		</aside>
+	</div>
+
+	<!-- AI review dialogs, drawn by ai-review.js: pick the files and confirm, then read the points. They carry no ids so
+	     a page with two workspaces still works; the script finds them from the button's own workspace. -->
+	<th:block th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}">
+		<md-dialog data-ai-review-pick class="wt-dialog-wide">
+			<div slot="headline" class="wt-dialog-headline"><span>AI review</span>
+				<button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+			<div slot="content" class="wt-md-form">
+				<div class="wt-meta-chips" data-ai-review-limits></div>
+				<div class="wt-meta-chips" data-ai-review-confirm></div>
+				<!-- An optional note about what to look at (mockup "AI review picker", approved 2026-10-27). -->
+				<details class="wt-form-disclosure" data-ai-review-focus-box>
+					<summary>Add a focus<span class="wt-mini-chip" data-ai-review-focus-state><span class="material-icons" aria-hidden="true">edit_note</span><span>Optional</span></span></summary>
+					<md-outlined-text-field type="textarea" rows="2" maxlength="500" label="What should the AI look at?" data-ai-review-focus
+						placeholder="For example: input validation and logging"
+						supporting-text="Optional. It can steer where to look, nothing more: secrets are still never sent, and it only suggests."></md-outlined-text-field>
+				</details>
+				<div class="wt-field-pair wt-field-pair--filter">
+					<md-outlined-text-field type="search" label="Filter files" autocomplete="off" data-ai-review-filter><span slot="leading-icon"
+						class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+					<div class="wt-meta-chips" role="group" aria-label="Select files" data-ai-review-select hidden>
+						<button type="button" class="wt-mini-chip wt-mini-chip--link" data-ai-review-select-action="findings"
+							data-tip="Tick every file that has scanner findings, up to the limit"><span class="material-icons" aria-hidden="true">bug_report</span>With findings<span
+							class="wt-count-badge" data-ai-review-count="findings">0</span></button>
+						<button type="button" class="wt-mini-chip wt-mini-chip--link" data-ai-review-select-action="shown"
+							data-tip="Tick every file the filter is showing, up to the limit"><span class="material-icons" aria-hidden="true">select_all</span>All shown<span
+							class="wt-count-badge" data-ai-review-count="shown">0</span></button>
+						<button type="button" class="wt-mini-chip wt-mini-chip--link" data-ai-review-select-action="clear"
+							data-tip="Untick everything"><span class="material-icons" aria-hidden="true">deselect</span>Clear</button>
+					</div>
+				</div>
+				<div class="wt-table-scroll" data-ai-review-files></div>
+				<span class="wt-field-help" role="status" aria-live="polite" data-ai-review-status></span>
+			</div>
+			<div slot="actions">
+				<md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+				<md-filled-button type="button" data-ai-review-start disabled has-icon><span class="material-icons" slot="icon"
+					aria-hidden="true">manage_search</span><span data-ai-review-start-label>Review</span></md-filled-button>
+			</div>
+		</md-dialog>
+		<md-dialog data-ai-review-results>
+			<div slot="headline" class="wt-dialog-headline"><span>AI review</span>
+				<button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+			<div slot="content" class="wt-md-form">
+				<div class="wt-meta-chips" data-ai-review-summary></div>
+				<div class="wt-table-scroll" data-ai-review-points></div>
+				<span class="wt-field-help" role="status" aria-live="polite" data-ai-review-note></span>
+			</div>
+			<div slot="actions">
+				<md-text-button type="button" data-ai-review-resume hidden>Resume</md-text-button>
+				<md-filled-button type="button" data-wt-dialog-close>Close</md-filled-button>
+			</div>
+		</md-dialog>
+	</th:block>
+</section>
+
+<!-- Code, once per file that has findings - never for a clean file, because the service that
+     builds codeFiles only ever adds an entry for a file a finding landed in. -->
+<div th:fragment="code(codeFiles)" th:if="${!codeFiles.isEmpty()}">
+	<div class="row">
+		<div class="col">
+			<section id="wt-code-section" class="wt-code-section mb-4">
+				<div class="wt-code-section-header">
+					<h2 class="h5 m-0">Code</h2>
+					<details class="wt-popover">
+						<summary aria-label="Where this code comes from"><span class="material-icons" aria-hidden="true">info</span></summary>
+						<div class="wt-popover__body">Fetched at the commit that was scanned, so the lines match
+							the findings even after the branch is merged, deleted or pushed again.</div>
+					</details>
+				</div>
+
+				<!-- The first few files are expanded so the code is visible without a click; the rest
+				     stay collapsed so a report spanning dozens of files is still navigable. <details>
+				     rather than a JS accordion: it is keyboard-accessible and works with no script. -->
+				<details class="wt-code-file" th:each="file : ${codeFiles}"
+					th:attr="data-file=${file.getFileName()}">
+					<summary class="wt-code-file-header">
+						<span class="wt-code-chevron material-icons" aria-hidden="true">chevron_right</span>
+						<span class="wt-code-path" th:text="${file.getFileName()}"></span>
+							<span class="wt-code-sevs" th:with="fileSevs=${T(com.tracelink.appsec.watchtower.core.scan.presentation.SeverityBreakdown).forFile(findings, file.getFileName())}">
+								<span th:each="b : ${fileSevs}" class="wt-sev wt-sev-count" th:classappend="' wt-sev-' + ${b.key}"
+									th:text="${b.count + ' ' + b.label}"></span>
+								<span th:if="${fileSevs.isEmpty()}" class="wt-code-count"
+									th:text="${file.getFindingCount()} + (${file.getFindingCount()} == 1 ? ' finding' : ' findings')"></span>
+							</span>
+					</summary>
+					<div class="wt-code-body">
+						<th:block th:replace="~{fragments/findings :: codeBody(${file})}"></th:block>
+					</div>
+				</details>
+			</section>
+		</div>
+	</div>
+</div>
+
+<!-- One file's code: its blocks with flagged lines marked, a gap between blocks. Shared by the
+     pull request report and the repository scan report (which loads it when a file is opened). -->
+<th:block th:fragment="codeBody(file)">
+	<div th:if="${!file.isSourceAvailable()}" class="wt-code-unavailable">
+		<strong>Source unavailable.</strong> <span data-source-unavailable-reason th:text="${file.getSourceUnavailableReason()}">The source control server did not return the file.</span>
+	</div>
+	<th:block th:each="block, bStat : ${file.getBlocks()}">
+		<div th:if="${!bStat.first}" class="wt-code-gap" aria-hidden="true">&#8943;</div>
+		<div class="wt-code-block">
+			<div th:each="line : ${block.getLines()}"
+				th:class="${line.violationLine} ? 'wt-code-line wt-code-line-violation' : 'wt-code-line'"
+				th:attr="data-file=${file.getFileName()},data-line=${line.getLineNumber()}">
+				<span class="wt-code-lineno" th:text="${line.getLineNumber()}"></span><span
+					class="wt-code-text" th:text="${line.getText()}"></span>
+			</div>
+		</div>
+	</th:block>
+</th:block>

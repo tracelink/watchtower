@@ -1,25 +1,130 @@
 server:
   display-name: Watchtower
+  # A 224-finding report is about 500 KB of HTML; compressed it is a fraction of that. Spring Security
+  # masks the CSRF token per response, so compressing pages that carry it is not a BREACH risk.
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,application/javascript,text/javascript,application/json
+    min-response-size: 2KB
+
+watchtower:
+  aws-security:
+    # Reviewed non-secret risk types; an explicitly empty override suppresses excerpts.
+    source-risk-types: ${WATCHTOWER_AWS_SECURITY_SOURCE_RISK_TYPES:BUSINESS_LOGIC_VULNERABILITIES,UNRESTRICTED_RESOURCE_CONSUMPTION,DENIAL_OF_SERVICE,INSECURE_DIRECT_OBJECT_REFERENCE,DATABASE_MODIFICATION,SERVER_ERROR_500,SECURITY_MISCONFIGURATION}
+    # Copy the Web application domain from AWS Settings (HTTPS origin, no credentials).
+    web-app-url: ${WATCHTOWER_AWS_SECURITY_WEB_APP_URL:}
+    # Scanner modules controls scanning. Repository code access is separately opt-in.
+    # PR enforcement has its own deployment policy.
+    pr-enforcement: ${WATCHTOWER_AWS_SECURITY_PR_ENFORCEMENT:false}
+    failure-policy: ${WATCHTOWER_AWS_SECURITY_FAILURE_POLICY:UNDECIDED}
+    account: ${WATCHTOWER_AWS_SECURITY_ACCOUNT:}
+    region: ${WATCHTOWER_AWS_SECURITY_REGION:}
+    space-id: ${WATCHTOWER_AWS_SECURITY_SPACE_ID:}
+    service-role: ${WATCHTOWER_AWS_SECURITY_SERVICE_ROLE:}
+    input-bucket: ${WATCHTOWER_AWS_SECURITY_INPUT_BUCKET:}
+    # Empty uses S3-managed encryption (SSE-S3/AES256). A full key ARN selects SSE-KMS.
+    # The input bucket's default encryption must match the selected mode and key.
+    kms-key: ${WATCHTOWER_AWS_SECURITY_KMS_KEY:}
+    # Optional override. Empty omits logConfig; AWS may create/use its default execution logs.
+    log-group: ${WATCHTOWER_AWS_SECURITY_LOG_GROUP:}
+    queue-url: ${WATCHTOWER_AWS_SECURITY_QUEUE_URL:}
+    installation: ${WATCHTOWER_AWS_SECURITY_INSTALLATION:watchtower}
+    review-seconds: ${WATCHTOWER_AWS_SECURITY_REVIEW_SECONDS:14400}
+    max-concurrent-reviews: ${WATCHTOWER_AWS_SECURITY_MAX_CONCURRENT_REVIEWS:2}
+  rule-testing:
+    # User-approved direct mode for R3. Filesystem/network sandboxing is deferred.
+    enabled: ${WATCHTOWER_RULE_TESTING_ENABLED:true}
+    direct-enabled: ${WATCHTOWER_RULE_TESTING_DIRECT_ENABLED:true}
+    # Read-only checkout of reviewed, versioned, secret-free fixture assets on each worker.
+    fixture-directory: ${WATCHTOWER_RULE_TESTING_FIXTURE_DIRECTORY:}
+  assistant:
+    # No deployment switch: an Assistant Admin turns chat on in the UI and adds the OpenAI key
+    # under AI integration; until both are in place the drawer explains what is missing.
+    approved-base-url: https://api.openai.com/v1/
+    # Turns run on local workers woken after commit; shared JPA claims and periodic recovery
+    # coordinate pods, so chat needs no queue. Progress reaches the drawer over bounded SSE.
+    workers: 2
+    max-streams: 64
+    transcript-dir: ./assistant-transcripts
+  allowRegistration: false
+  betterleaks:
+    verification:
+      # "Verify live" on secrets findings. Off by default: a check sends the secret to its
+      # provider (GitHub, AWS, ...), so enable only where that egress is allowed.
+      enabled: ${WATCHTOWER_BETTERLEAKS_VERIFICATION_ENABLED:false}
+      # Rules that may be verified (each must have a provider check in the pinned binary; "*" =
+      # all of them). Unset keeps the default: AWS, Azure AD, GCP, GitHub and GitLab tokens.
+      rules: ${WATCHTOWER_BETTERLEAKS_VERIFICATION_RULES:aws-access-token,azure-ad-client-secret,gcp-api-key,github-app-token,github-fine-grained-pat,github-oauth,github-pat,gitlab-pat}
+  # Repository Scan (docs/repository-scan.plan.md). Without a queue url, repository scan work runs
+  # in this process (one pod only); AWS_PROVISIONING.md section 5 creates the shared FIFO queue.
+  reposcan:
+    queue-url: ${WATCHTOWER_REPOSCAN_QUEUEURL:}
+    queue-region: ${WATCHTOWER_REPOSCAN_QUEUEREGION:us-east-1}
+    # Repositories larger than this are skipped rather than downloaded.
+    max-repo-size-mb: ${WATCHTOWER_REPOSCAN_MAXREPOSIZEMB:1024}
+    max-repos-per-run: ${WATCHTOWER_REPOSCAN_MAXREPOSPERRUN:500}
+    max-branches-per-repo: ${WATCHTOWER_REPOSCAN_MAXBRANCHESPERREPO:5}
+    # Findings kept in a report (counts stay exact beyond this).
+    max-stored-findings: ${WATCHTOWER_REPOSCAN_MAXSTOREDFINDINGS:20000}
+    # Where reports go when no S3 bucket is configured (local and development use).
+    report-dir: ${WATCHTOWER_REPOSCAN_REPORTDIR:./reports}
+  cluster:
+    # Set true before running more than one replica: pods then refuse to start without the
+    # repository scan queue and S3, which several pods need to share work and reports.
+    multi-pod: ${WATCHTOWER_CLUSTER_MULTIPOD:false}
+
+# Actuator/Micrometer (IMPROVEMENT_PLAN.md item 6.0). A separate management port, off the
+# main internet-facing ingress (deploy.yaml only exposes the main server.port to the
+# Service/Ingress) - reachable in-cluster only, e.g. `kubectl port-forward
+# deployment/watchtower-deployment 8090:8090 -n watchtower`. Also bound to loopback, same
+# defense-in-depth reasoning as the JDWP debug port in deploy.yaml: port-forward still
+# works because it tunnels into the pod's own network namespace, but nothing on the pod
+# network (were this ever a multi-container pod) could reach it either.
+#
+# 8090, not 8081: application-dev.yaml sets server.port: 8081 for local/test use, and
+# Spring Boot refuses to treat the management port as "separate" (rejecting
+# management.server.address entirely) if it ever collides with server.port - exactly
+# what broke every watchtower-web @SpringBootTest under the dev profile the first time
+# this was set to 8081.
+#
+# Exposure is an explicit allowlist, never "*" - /actuator/env and /actuator/configprops
+# can reveal JDBC settings. Add to this list deliberately as new endpoints are needed
+# (metrics for item 6.6), not by widening it to everything.
+management:
+  server:
+    port: 8090
+    address: 127.0.0.1
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: never
 
 spring:
   profiles:
     active: prd
+  flyway:
+    placeholders:
+      metricsZoneOffsetMillis: 0
   
   thymeleaf:
     cache:  false
     mode: HTML
   
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: none
-  h2:
-    console:
-      enabled: true
-      path: /console
-      settings:
-        web-allow-others: true
-
+  # All @Scheduled jobs share this pool. The default single thread let the hourly PR sync or
+  # key rotation stall the SQS scan poll; later background pollers (secret verification,
+  # alert delivery) need room too.
+  task:
+    scheduling:
+      pool:
+        size: ${WATCHTOWER_SCHEDULER_POOL_SIZE:4}
   servlet:
     multipart:
-      max-file-size: 1GB
-      max-request-size: 1GB
+      max-file-size: ${WATCHTOWER_MAX_UPLOAD_SIZE:250MB}
+      max-request-size: ${WATCHTOWER_MAX_UPLOAD_SIZE:250MB}

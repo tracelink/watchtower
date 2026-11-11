@@ -75,4 +75,35 @@ public class PullRequestEntityTest {
 		Assertions.assertEquals(repoName, round.getRepoName());
 	}
 
+
+	@Test
+	public void aReopenSeenAfterTheCloseForgetsItButAScanThatRacedTheMergeDoesNot() {
+		PullRequestContainerEntity entity = new PullRequestContainerEntity();
+		entity.recordClosed(PullRequestState.DECLINED, 1_000L, null, false);
+
+		// A scan whose state was fetched before the decline also says ACTIVE
+		entity.recordOpen(PullRequestState.ACTIVE, 900L);
+		Assertions.assertEquals(PullRequestState.DECLINED, entity.getClosedState());
+
+		// Reopened after the decline
+		entity.recordOpen(PullRequestState.ACTIVE, 2_000L);
+		Assertions.assertNull(entity.getClosedState());
+		Assertions.assertNull(entity.getClosedAt());
+	}
+
+	@Test
+	public void aMergeReplacesADeclineButNotAnEarlierMerge() {
+		PullRequestContainerEntity entity = new PullRequestContainerEntity();
+		entity.recordClosed(PullRequestState.DECLINED, 1_000L, null, true);
+		entity.recordClosed(PullRequestState.MERGED, 3_000L, "abc", false);
+
+		Assertions.assertEquals(PullRequestState.MERGED, entity.getClosedState());
+		Assertions.assertEquals(3_000L, entity.getClosedAt());
+		Assertions.assertEquals("abc", entity.getMergedCommit());
+		Assertions.assertFalse(entity.isScanPendingAtClose(), "pending belonged to the decline");
+
+		entity.recordClosed(PullRequestState.MERGED, 9_000L, "def", false);
+		Assertions.assertEquals(3_000L, entity.getClosedAt());
+		Assertions.assertEquals("abc", entity.getMergedCommit());
+	}
 }

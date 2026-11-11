@@ -10,7 +10,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.4.5</version>
+		<version>4.1.1</version>
 	</parent>
 
 	<modules>
@@ -20,28 +20,44 @@
 		<module>watchtower-module-eslint</module>
 		<module>watchtower-module-pmd</module>
 		<module>watchtower-module-regex</module>
+		<module>watchtower-module-opengrep</module>
 		<module>watchtower-module-json</module>
 		<module>watchtower-module-checkov</module>
+		<module>watchtower-module-betterleaks</module>
 		<module>watchtower-maven-plugin</module>
 		<module>watchtower-cli</module>
 		<module>watchtower-module-advisory</module>
+		<module>watchtower-module-aws-security-agent</module>
 	</modules>
 
 	<properties>
-		<java.version>8</java.version>
-		<maven.compiler.source>8</maven.compiler.source>
-		<maven.compiler.target>8</maven.compiler.target>
-		<commons.io.version>2.8.0</commons.io.version>
+		<java.version>21</java.version>
+		<surefire.forkCount>4</surefire.forkCount>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<commons.io.version>2.22.0</commons.io.version>
 		<commons.csv.version>1.6</commons.csv.version>
-		<commons.lang3.version>3.8.1</commons.lang3.version>
-		<zip4j.version>2.10.0</zip4j.version>
+		<commons.lang3.version>3.20.0</commons.lang3.version>
+		<zip4j.version>2.11.6</zip4j.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
+		<thymeleaf.version>3.1.5.RELEASE</thymeleaf.version>
+		<thymeleaf-extras-springsecurity.version>3.1.5.RELEASE</thymeleaf-extras-springsecurity.version>
+		<aws.sdk.version>2.46.21</aws.sdk.version>
 	</properties>
 
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- Keep every AWS SDK v2 module on the same binary-compatible release.
+			     Spring Boot's CloudWatch registry also resolves to this SDK line. -->
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${aws.sdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<!-- General -->
 			<dependency>
 				<groupId>commons-io</groupId>
@@ -62,6 +78,29 @@
 				<groupId>net.lingala.zip4j</groupId>
 				<artifactId>zip4j</artifactId>
 				<version>${zip4j.version}</version>
+			</dependency>
+			<!-- Spring Boot 4.1.1's BOM manages the "core" org.eclipse.jetty:jetty-*
+			     artifacts at 12.1.12, but wiremock-jetty12:3.13.2 was built and
+			     tested against Jetty 12.0.30 (its own POM imports jetty-bom:12.0.30 /
+			     jetty-ee10-bom:12.0.30). Jetty 12.1.x removed an internal class
+			     (WriteFlusher$Listener, confirmed via jar inspection) that
+			     wiremock-jetty12's Jetty12HttpServer still depends on, so the two
+			     lines are binary-incompatible. Importing the exact same BOMs
+			     wiremock-jetty12 itself uses keeps every org.eclipse.jetty* artifact
+			     consistently at 12.0.30 for this reactor, overriding Boot's 12.1.12. -->
+			<dependency>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-bom</artifactId>
+				<version>12.0.30</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jetty.ee10</groupId>
+				<artifactId>jetty-ee10-bom</artifactId>
+				<version>12.0.30</version>
+				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -98,7 +137,50 @@
 			<plugins>
 				<plugin>
 					<artifactId>maven-plugin-plugin</artifactId>
-					<version>3.6.1</version>
+					<version>3.9.0</version>
+				</plugin>
+				<!-- Override Spring Boot parent plugin versions to be compatible with Maven 3.5.4 -->
+				<plugin>
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.8.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>3.2.5</version>
+					<configuration>
+						<!-- Test classes are spread over several JVMs (the suite takes about 15 minutes in one).
+						     Nothing in the unit suite binds a fixed port; -Dsurefire.forkCount=1 runs it serially. -->
+						<forkCount>${surefire.forkCount}</forkCount>
+						<reuseForks>true</reuseForks>
+					</configuration>
+				</plugin>
+				<plugin>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.1.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>2.5.2</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.0.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.0.1</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>

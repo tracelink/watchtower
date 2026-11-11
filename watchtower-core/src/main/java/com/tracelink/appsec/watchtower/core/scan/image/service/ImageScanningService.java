@@ -72,6 +72,10 @@ public class ImageScanningService extends AbstractScanningService {
 		}
 		RepositoryEntity registry = repoService
 				.upsertRepo(ImageScanType.CONTAINER, scan.getApiLabel(), scan.getRepository());
+		if (registry.isScanningPaused()) {
+			LOG.info("Image: " + imageName + " skipped as scanning of the repository is paused.");
+			return;
+		}
 		RulesetEntity ruleset = registry.getRuleset();
 
 		// Skip scan if registry is not configured with a ruleset

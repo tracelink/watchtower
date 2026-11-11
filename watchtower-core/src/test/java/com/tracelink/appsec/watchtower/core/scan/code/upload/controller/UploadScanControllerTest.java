@@ -1,8 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload.controller;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -11,14 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -27,6 +26,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.ui.HtmlAssertions;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
@@ -42,13 +42,13 @@ public class UploadScanControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanningService mockScanService;
 
-	@MockBean
+	@MockitoBean
 	private UploadScanResultService mockScanResultService;
 
-	@MockBean
+	@MockitoBean
 	private RulesetService mockRulesetService;
 
 	@Test
@@ -77,7 +77,7 @@ public class UploadScanControllerTest {
 		BDDMockito.when(mockRulesetService.getRulesets()).thenReturn(Arrays.asList(ruleset));
 		BDDMockito.when(mockRulesetService.getDefaultRuleset()).thenReturn(defaultRuleset);
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/uploadscan"))
+		MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/uploadscan"))
 				.andExpect(MockMvcResultMatchers.model().attribute("numScansQueued", queued))
 				.andExpect(MockMvcResultMatchers.model().attribute("numScansInProgress", progress))
 				.andExpect(MockMvcResultMatchers.model().attribute("scanStatePaused", paused))
@@ -87,7 +87,11 @@ public class UploadScanControllerTest {
 				.andExpect(MockMvcResultMatchers.model().attribute("rulesets",
 						Matchers.contains(ruleset)))
 				.andExpect(
-						MockMvcResultMatchers.model().attribute("defaultRuleset", defaultRuleset));
+						MockMvcResultMatchers.model().attribute("defaultRuleset", defaultRuleset))
+				.andExpect(MockMvcResultMatchers.model().attribute("scripts",
+						Matchers.hasItem("/scripts/scan-submission.js")))
+				.andReturn();
+		HtmlAssertions.assertHtmlIntegrity(result);
 	}
 
 	@Test
@@ -97,9 +101,9 @@ public class UploadScanControllerTest {
 		byte[] content = new byte[512];
 		new Random().nextBytes(content);
 
-		Path zipPath = Files.createTempFile(null, "zip");
+		String s3Key = "uploads/some-key.zip";
 		String ticket = "ticket";
-		BDDMockito.when(mockScanService.copyToLocation(BDDMockito.any())).thenReturn(zipPath);
+		BDDMockito.when(mockScanService.storeUpload(BDDMockito.any())).thenReturn(s3Key);
 		BDDMockito.when(mockScanService.doUploadScan(BDDMockito.any())).thenReturn(ticket);
 		MockMultipartFile file =
 				new MockMultipartFile("uploadFile", originalFileName, null, content);
@@ -117,7 +121,7 @@ public class UploadScanControllerTest {
 		byte[] content = new byte[512];
 		new Random().nextBytes(content);
 		String message = "message";
-		BDDMockito.when(mockScanService.copyToLocation(BDDMockito.any()))
+		BDDMockito.when(mockScanService.storeUpload(BDDMockito.any()))
 				.thenThrow(new IOException(message));
 		MockMultipartFile file =
 				new MockMultipartFile("uploadFile", originalFileName, null, content);
@@ -136,8 +140,8 @@ public class UploadScanControllerTest {
 		byte[] content = new byte[512];
 		new Random().nextBytes(content);
 		String message = "message";
-		Path zipPath = Files.createTempFile(null, "zip");
-		BDDMockito.when(mockScanService.copyToLocation(BDDMockito.any())).thenReturn(zipPath);
+		String s3Key = "uploads/some-key.zip";
+		BDDMockito.when(mockScanService.storeUpload(BDDMockito.any())).thenReturn(s3Key);
 		BDDMockito.when(mockScanService.doUploadScan(BDDMockito.any()))
 				.thenThrow(new ScanRejectedException(message));
 		MockMultipartFile file =

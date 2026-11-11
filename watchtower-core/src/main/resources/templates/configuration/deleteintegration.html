@@ -1,0 +1,29 @@
+<!-- Delete an integration (UAT walkthrough, 2026-10-16), shared by the list and an integration's
+     page. modal-delete-api.js fills it from the trigger's data-label / data-provider / data-repo-count /
+     data-repo-name. What deleting does is said as chips; typing the name enables Delete, and the
+     server checks the name too. The red button is the only filled one. -->
+<md-dialog th:fragment="dialog" id="deleteModal" type="alert">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">link_off</span></span>
+    <span class="wt-person__text"><span>Delete <span id="deleteApiConfigName">this integration</span>?</span></span></span></div>
+  <form slot="content" id="deleteApiConfigForm" method="POST" action="/apisettings/delete" class="wt-md-form">
+    <div class="wt-meta-chips">
+      <span class="wt-mini-chip wt-mini-chip--bad"><span class="material-icons" aria-hidden="true">warning</span><span
+          data-delete-provider-chip>Scans stop connecting</span></span>
+      <span class="wt-mini-chip" data-delete-repos hidden><span class="material-icons" aria-hidden="true">code</span><span
+          data-delete-repo-count>0 repositories use it</span></span>
+    </div>
+    <label class="wt-md-checkbox-row" data-delete-repos hidden><md-checkbox name="deleteRepositories" value="true"
+        touch-target="wrapper" aria-label="Also delete its repositories and their repository scans"></md-checkbox><span
+        data-delete-repos-label>Also delete its repositories and their repository scans</span></label>
+    <md-outlined-text-field label="Type the name to confirm" name="confirmName" autocomplete="off" required
+        data-wt-confirm-name=""></md-outlined-text-field>
+    <input type="hidden" id="modalApiLabel" name="apiLabel"/>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancelDeleteModal" type="button">Cancel</md-text-button>
+    <md-filled-button class="wt-btn-danger" form="deleteApiConfigForm" type="submit" has-icon disabled data-wt-confirm-submit><span
+        slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete integration</md-filled-button>
+  </div>
+</md-dialog>

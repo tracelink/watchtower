@@ -2,12 +2,13 @@ package com.tracelink.appsec.watchtower.core.scan.code.upload.entity;
 
 import java.util.List;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 
@@ -22,6 +23,13 @@ import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 @Table(name = "upload_scans")
 public class UploadScanEntity
 		extends AbstractScanEntity<UploadScanContainerEntity, UploadViolationEntity> {
+
+	@Column(name = "execution_snapshot_json", columnDefinition = "LONGTEXT")
+	private String executionSnapshotJson;
+
+	public String getExecutionSnapshotJson() { return executionSnapshotJson; }
+	public void setExecutionSnapshotJson(String json) { executionSnapshotJson = json; }
+
 
 	@OneToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "container_id", nullable = false)

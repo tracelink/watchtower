@@ -30,6 +30,35 @@ public class RegexRuleDesignerTest {
 		MatcherAssert.assertThat(mav.getModel().get("query"), Matchers.is(defaultQuery));
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(defaultSrc));
 		MatcherAssert.assertThat(mav.getModel().get("matches"), Matchers.notNullValue());
+		// Each match is a line the "Line N" chip can jump to.
+		MatcherAssert.assertThat((java.util.List<?>) regexDesigner.query("accessKeys",
+				"Watchtower Regex\nCan help us find accessKeys\nOr other data.").getModel().get("matches"),
+				Matchers.contains(com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch.atLine(2,
+						"Matched by the pattern")));
+	}
+
+	@Test
+	public void testQueryThatNeverFinishesIsStoppedAndSaysSo() {
+		// A backreference defeats the JDK's backtracking memoization, so without the match
+		// timeout this call would not return.
+		RuleDesignerModelAndView mav = regexDesigner.query("(a*)*\\1b", "a".repeat(40));
+
+		MatcherAssert.assertThat((java.util.List<?>) mav.getModel().get("matches"),
+				Matchers.contains(com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch.note(
+						"The pattern did not finish on this sample, so it was stopped. It may take too long to match.")));
+	}
+
+	@Test
+	public void testPatternThatDoesNotCompileIsExplainedNotThrown() {
+		// Dev E2E G02: an unclosed class answered with a bare HTTP 500.
+		RuleDesignerModelAndView mav = regexDesigner.query("([unclosed", defaultSrc);
+
+		assertMav(mav);
+		MatcherAssert.assertThat(mav.getModel().get("query"), Matchers.is("([unclosed"));
+		java.util.List<?> matches = (java.util.List<?>) mav.getModel().get("matches");
+		MatcherAssert.assertThat(matches, Matchers.hasSize(1));
+		MatcherAssert.assertThat(matches.get(0).toString(),
+				Matchers.containsString("The regular expression does not compile"));
 	}
 
 	@Test
@@ -38,7 +67,7 @@ public class RegexRuleDesignerTest {
 		assertMav(mav);
 		MatcherAssert.assertThat(mav.getModel().get("query"), Matchers.is(""));
 		MatcherAssert.assertThat(mav.getModel().get("sourceCode"), Matchers.is(defaultSrc));
-		MatcherAssert.assertThat(mav.getModel().get("matches"), Matchers.notNullValue());
+		MatcherAssert.assertThat((java.util.List<?>) mav.getModel().get("matches"), Matchers.empty());
 	}
 
 

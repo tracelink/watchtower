@@ -1,0 +1,17 @@
+<!--/* IMPROVEMENT_PLAN.md Phase 11 Section B: BS5 draws its own X via .btn-close's background-image,
+     so the BS4 markup (a plain button containing a literal '&times;'/'x' character) rendered two
+     X's once bootstrap.min.css from 5.3.3 loaded. One fragment replaces all call sites instead
+     of hand-editing each, so the next Bootstrap major only has one place to update.
+
+     dismiss: the data-bs-dismiss target - only 'alert' is called anymore (container.html's
+     success/failure banners, the two login pages' error banners). The ~21 modal-header call sites
+     that used to pass 'modal' are gone: IMPROVEMENT_PLAN_MATERIAL_UI.md Section E converted every
+     Bootstrap modal to md-dialog (which has its own dismiss affordance, not this fragment), and
+     Section F deleted fragments/modalshell.html, this fragment's only 'modal' caller. The
+     dismiss parameter stays generic rather than hardcoding 'alert', in case a future alert-style
+     use needs a different target. aria-label='Close' unconditionally, per BS5's own docs, since
+     .btn-close has no visible text for aria-hidden to hide - the BS4 originals were inconsistent
+     (aria-hidden on the modal buttons, aria-label on the alert buttons) but only aria-label is
+     actually correct for a screen reader. */-->
+<button th:fragment="button(dismiss)" type="button" class="btn-close" th:attr="data-bs-dismiss=${dismiss}"
+        aria-label="Close"></button>

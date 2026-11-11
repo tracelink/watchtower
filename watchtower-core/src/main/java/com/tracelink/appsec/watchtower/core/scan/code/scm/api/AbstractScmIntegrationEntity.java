@@ -25,6 +25,18 @@ public abstract class AbstractScmIntegrationEntity extends ApiIntegrationEntity 
 	 */
 	public abstract String makePRLink(String repository, String pullRequestId);
 
+	/**
+	 * Create an HTTP link to view a file at a commit in the SCM, at a line if given
+	 *
+	 * @param repository the repository name
+	 * @param commitHash the commit
+	 * @param filePath   the path relative to the repository root
+	 * @param line       the line to show, 0 for none
+	 * @return an http link to the file, or null, if none could be made
+	 */
+	public abstract String makeFileLink(String repository, String commitHash, String filePath,
+			int line);
+
 	public String getEndpointLink() {
 		return "/rest/scan/" + getApiLabel();
 	}

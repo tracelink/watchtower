@@ -6,6 +6,7 @@ import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.PullRequestMCRStatu
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResult;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanResultViolation;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.presentation.FindingPresentationModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -38,18 +39,22 @@ public class PullRequestMCRReportController {
 			RedirectAttributes redirectAttributes) {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("pull_requests/mcrreport");
 		PRScanResult scanResult = scanResultService.getScanResultForScanId(id);
-		List<PRScanResultViolation> mcrFindings = scanResult.getMcrFindings();
 		if (scanResult == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown ID");
-			mav.setViewName("redirect:/scan/mcr/");
+			mav.setViewName("redirect:/scan/mcr");
 		} else {
+			List<PRScanResultViolation> mcrFindings = scanResult.getMcrFindings();
 			mav.addObject("result", scanResult);
 			mav.addObject("mcrFindings", mcrFindings);
+			mav.addObject("findings", FindingPresentationModel.fromPullRequest(mcrFindings));
 			mav.addScriptReference("/scripts/scan_report.js");
+			mav.addScriptReference("/scripts/workspace-resizer.js");
+			mav.addScriptReference("/scripts/finding-workspace.js");
+			mav.addScriptReference("/scripts/scan-report-code.js");
+			mav.addObject("currentMcrStatus", scanResult.getMcrStatus());
 		}
 		mav.addObject("mcrStatuses", PullRequestMCRStatus.values());
-		mav.addObject("currentMcrStatus", scanResult.getMcrStatus());
 		return mav;
 	}
 

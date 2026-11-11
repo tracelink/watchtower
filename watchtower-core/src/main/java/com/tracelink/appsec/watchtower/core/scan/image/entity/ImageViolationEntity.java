@@ -1,11 +1,11 @@
 package com.tracelink.appsec.watchtower.core.scan.image.entity;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanViolationEntity;
 import com.tracelink.appsec.watchtower.core.scan.image.report.ImageScanViolation;

@@ -1,9 +1,29 @@
-.pydevproject
-**/bin/
-**/upload/
-**/logs/
-.idea/
+/target/
+*/target/
+/logs/
+/.DS_Store
+/.settings/
+/.project
+/.classpath
+/non-blank
+*/non-blank
+/.idea
 *.iml
-**/target/
-**/non-blank
-*/eslint_work
+watchtower-web/upload
+.claude
+.understand-anything
+.vscode
+node_modules/
+playwright-report/
+test-results/
+watchtower-secret.yaml
+
+# macOS / ESLint scanner scratch output
+.DS_Store
+eslint_work/
+
+# Local single-pod assistant transcripts (expiring source exception)
+assistant-transcripts/
+
+# Account-specific provisioning output, loaded by deploy.sh (no credentials)
+/.aws-security/

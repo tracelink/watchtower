@@ -1,11 +1,16 @@
 package com.tracelink.appsec.watchtower.core.auth.controller;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +25,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 import com.tracelink.appsec.watchtower.core.auth.service.RoleService;
 import com.tracelink.appsec.watchtower.core.auth.service.UserService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
 
 /**
  * Controller for all User Management including showing current user roles, editing and and deleting
@@ -43,10 +49,36 @@ public class UserMgmtController {
 
 	private static final String USER_MGMT_REDIRECT = "redirect:/usermgmt";
 
+	/** A last login older than this many days is shown in amber on the Users page. */
+	static final int STALE_LOGIN_DAYS = 90;
+
 	@GetMapping("/usermgmt")
-	public WatchtowerModelAndView usermgmt() {
+	public WatchtowerModelAndView usermgmt(@RequestParam(defaultValue = "0") int page,
+			Principal authenticatedUser) {
 		WatchtowerModelAndView mv = new WatchtowerModelAndView("admin/usermgmt");
-		mv.addObject("users", userService.findAllUsers());
+		if (page < 0) {
+			mv.setViewName(USER_MGMT_REDIRECT + "?page=0");
+			return mv;
+		}
+		PageRequest pageable = PageRequest.of(page, 10, Sort.by("username"));
+		Page<UserEntity> users = userService.findUsers(pageable);
+		if (users == null) {
+			List<UserEntity> allUsers = userService.findAllUsers();
+			users = new PageImpl<>(allUsers, pageable, allUsers.size());
+		}
+		PagedResult<UserEntity> pagination = PagedResult.of(users, user -> user);
+		if (pagination.totalPages() > 0 && page >= pagination.totalPages()) {
+			mv.setViewName(USER_MGMT_REDIRECT + "?page=" + (pagination.totalPages() - 1));
+			return mv;
+		}
+		mv.addObject("users", pagination.content());
+		mv.addObject("hasUsers", !pagination.content().isEmpty());
+		mv.addObject("pagination", pagination);
+		// Your own row shows "You" instead of Delete (deleting yourself is refused anyway), and
+		// logins older than STALE_LOGIN_DAYS are flagged so unused accounts stand out.
+		mv.addObject("currentUsername", authenticatedUser == null ? null : authenticatedUser.getName());
+		mv.addObject("staleLoginBefore", LocalDateTime.now().minusDays(STALE_LOGIN_DAYS));
+		mv.addObject("staleLoginDays", STALE_LOGIN_DAYS);
 		mv.addScriptReference("/scripts/modal-delete-user.js");
 		return mv;
 	}
@@ -66,16 +98,25 @@ public class UserMgmtController {
 
 		modelAndView.addObject("user", user);
 		modelAndView.addObject("roles", roleService.findAllRoles());
+		modelAndView.addObject("selectedRoleIds", user.getRoles().stream().map(RoleEntity::getId).collect(java.util.stream.Collectors.toSet()));
 
 		return modelAndView;
 	}
 
 	@PostMapping("/usermgmt/edit")
 	@PreAuthorize("hasAuthority('" + CorePrivilege.USER_MODIFY_NAME + "')")
-	public String saveUser(@RequestParam long id, @RequestParam long role,
-			@RequestParam int enabled, RedirectAttributes redirect, Principal authenticatedUser) {
+	@org.springframework.transaction.annotation.Transactional
+	public String saveUser(@RequestParam long id, @RequestParam boolean rolesSubmitted,
+			@RequestParam(required = false) java.util.Set<Long> roleIds,
+			@RequestParam(defaultValue = "0") int enabled, RedirectAttributes redirect,
+			Principal authenticatedUser) {
 		UserEntity user = userService.findById(id);
-		RoleEntity roleEntity = roleService.findRoleById(role);
+		java.util.Set<Long> submitted = roleIds == null ? java.util.Set.of() : roleIds;
+		var selectedRoles = new HashSet<RoleEntity>();
+		for (Long roleId : submitted) {
+			RoleEntity role = roleId == null ? null : roleService.findRoleById(roleId);
+			if (role != null) selectedRoles.add(role);
+		}
 		String redirectTarget = USER_MGMT_REDIRECT;
 		// Make sure user exists
 		if (user == null) {
@@ -94,19 +135,12 @@ public class UserMgmtController {
 			redirectTarget = USER_MGMT_REDIRECT + "/edit/" + id;
 		}
 		// Make sure role exists
-		else if (roleEntity == null && role != -1L) {
+		else if (!rolesSubmitted || selectedRoles.size() != submitted.size()) {
 			redirect.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown role selected.");
 			redirectTarget = USER_MGMT_REDIRECT + "/edit/" + id;
 		} else {
-			// unset all roles
-			if (role == -1) {
-				user.setRoles(new HashSet<>());
-			}
-			// or set the correct one
-			else {
-				user.setRoles(new HashSet<>(Arrays.asList(roleEntity)));
-			}
+			user.setRoles(selectedRoles);
 			// Update enabled
 			user.setEnabled(enabled);
 

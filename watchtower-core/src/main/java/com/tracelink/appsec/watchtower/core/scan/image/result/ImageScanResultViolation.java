@@ -9,6 +9,10 @@ package com.tracelink.appsec.watchtower.core.scan.image.result;
 public class ImageScanResultViolation {
 	private String violationName;
 	private String severity;
+	// The numeric RulePriority behind `severity` (1 High .. 6 Informational). The name alone is
+	// enough to print, but not to colour the severity pill or to sort the column by priority
+	// rather than alphabetically - PR and upload violations already carry both.
+	private int severityValue;
 	private String score;
 	private String packageName;
 	private String vector;
@@ -29,6 +33,14 @@ public class ImageScanResultViolation {
 
 	public void setSeverity(String severity) {
 		this.severity = severity;
+	}
+
+	public int getSeverityValue() {
+		return severityValue;
+	}
+
+	public void setSeverityValue(int severityValue) {
+		this.severityValue = severityValue;
 	}
 
 	public String getScore() {

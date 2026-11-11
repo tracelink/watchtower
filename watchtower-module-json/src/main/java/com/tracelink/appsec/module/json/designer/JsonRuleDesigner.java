@@ -1,25 +1,26 @@
 package com.tracelink.appsec.module.json.designer;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+
+import com.jayway.jsonpath.JsonPath;
 
 import com.tracelink.appsec.module.json.JsonModule;
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.module.json.scanner.JsonCallable;
+import com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
+import com.tracelink.appsec.watchtower.core.module.designer.RuleDraftData;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
@@ -57,6 +58,32 @@ public class JsonRuleDesigner implements IRuleDesigner {
 		return query(defaultQuery, defaultJson);
 	}
 
+	/** The drafted JSONPath, already run on the drafted example, with the save dialog's fields filled in. */
+	@Override
+	public RuleDesignerModelAndView getPrefilledRuleDesignerModelAndView(RuleDraftData draft) {
+		RuleDesignerModelAndView mav = query(draft.definition(), StringUtils.defaultString(draft.vulnerableSnippet()), formatOf(draft));
+		mav.addObject("ruleName", draft.name());
+		mav.addObject("ruleMessage", draft.message());
+		mav.addObject("rulePriority", draft.priority());
+		mav.addObject("ruleFileExt", StringUtils.defaultString(draft.fileExtension()));
+		return mav;
+	}
+
+	@Override
+	public String validateDraft(RuleDraftData draft) {
+		try {
+			JsonPath.compile(draft.definition());
+			return null;
+		} catch (RuntimeException e) {
+			return "The JSONPath query is not valid.";
+		}
+	}
+
+	/** YAML when the draft says so; anything else is JSON. */
+	private static String formatOf(RuleDraftData draft) {
+		return "yaml".equalsIgnoreCase(StringUtils.trimToEmpty(draft.language())) ? "yaml" : "json";
+	}
+
 	/**
 	 * Execute a query using the given query and code and return its result
 	 *
@@ -66,8 +93,14 @@ public class JsonRuleDesigner implements IRuleDesigner {
 	 *         the result of this query
 	 */
 	public RuleDesignerModelAndView query(String query, String code) {
-		RuleDesignerModelAndView mav = getBaseMAV();
-		queryInternal(mav, query, code);
+		return query(query, code, "json");
+    }
+
+    public RuleDesignerModelAndView query(String query, String code, String sourceFormat) {
+        if (!java.util.Set.of("json", "yaml").contains(sourceFormat)) throw new IllegalArgumentException("Unsupported source format");
+        RuleDesignerModelAndView mav = getBaseMAV();
+        mav.addObject("sourceFormat", sourceFormat);
+        queryInternal(mav, query, code, sourceFormat);
 		return mav;
 	}
 
@@ -79,32 +112,40 @@ public class JsonRuleDesigner implements IRuleDesigner {
 		return mav;
 	}
 
-	private void queryInternal(RuleDesignerModelAndView mav, String query, String code) {
+	private void queryInternal(RuleDesignerModelAndView mav, String query, String code, String sourceFormat) {
 		mav.addObject("query", query);
 		mav.addObject("code", code);
-		mav.addObject("matches", getMatches(query, code));
+		mav.addObject("matches", getMatches(query, code, sourceFormat));
 	}
 
-	private List<String> getMatches(String query, String code) {
+	private List<DesignerMatch> getMatches(String query, String code, String sourceFormat) {
 		if (StringUtils.isBlank(query)) {
-			return Arrays.asList("");
+			return List.of();
 		}
-		List<String> matches;
 		try {
-			CodeScanReport report = getReport(query, code);
-			matches = report.getViolations().stream().map(sv -> "Found on line: " + sv.getLineNum())
+			JsonPath.compile(query);
+		} catch (RuntimeException e) {
+			return List.of(DesignerMatch.note("The JSONPath query is not valid."));
+		}
+		try {
+			CodeScanReport report = getReport(query, code, sourceFormat);
+			if (!report.getErrors().isEmpty()) {
+				return report.getErrors().stream().map(error -> DesignerMatch.note(error.getErrorMessage())).toList();
+			}
+			// YAML matches say which document they are in ("YAML document 2: "); JSON has one.
+			return report.getViolations().stream().map(sv -> DesignerMatch.atLine(sv.getLineNum(),
+					sourceFormat.equals("yaml") && sv.getMessage() != null
+							? sv.getMessage().replaceAll(":\\s*$", "") : "Selected by the query"))
 					.collect(Collectors.toList());
 		} catch (IOException e) {
-			matches = Arrays.asList(e.getMessage());
+			return List.of(DesignerMatch.note(e.getMessage()));
 		}
-		return matches;
 	}
 
-	private CodeScanReport getReport(String query, String code) throws IOException {
-		Path temp = Files.createTempFile(null, null);
-		try (FileWriter fw = new FileWriter(temp.toFile())) {
-			fw.write(code);
-		}
+	private CodeScanReport getReport(String query, String code, String sourceFormat) throws IOException {
+		Path temp = Files.createTempFile("configuration-", sourceFormat.equals("yaml") ? ".yaml" : ".json");
+		try {
+		Files.writeString(temp, code, java.nio.charset.StandardCharsets.UTF_8);
 
 		JsonRuleDto rule = new JsonRuleDto();
 		rule.setName("Test Rule");
@@ -116,8 +157,8 @@ public class JsonRuleDesigner implements IRuleDesigner {
 
 		JsonCallable json = new JsonCallable(temp, ruleset);
 		CodeScanReport report = json.call();
-		FileUtils.deleteQuietly(temp.toFile());
 		return report;
+		} finally { Files.deleteIfExists(temp); }
 	}
 
 	private static Map<String, String> getHelp() {
@@ -125,9 +166,9 @@ public class JsonRuleDesigner implements IRuleDesigner {
 		help.put("jsonSource",
 				"The Source Code Section is where Rule Designers should put all source code to be tested.");
 		help.put("json",
-				"The JSON Rule is a JSONPath expression used to identify elements within a JSON snippet. When the JSONPath expression is found in the source code, it is marked as a violation.");
+				"A JSONPath query over JSON or YAML documents. Each node it selects is a finding.");
 		help.put("matches",
-				"The Matches section shows the line numbers of any violations that were found in the source code.");
+				"The Matches section shows the line numbers (and YAML document numbers) of any violations that were found in the source code.");
 		return help;
 	}
 

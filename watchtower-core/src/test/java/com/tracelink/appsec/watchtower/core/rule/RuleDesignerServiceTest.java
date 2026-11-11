@@ -12,6 +12,9 @@ import org.mockito.Mock;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
@@ -19,11 +22,37 @@ import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class RuleDesignerServiceTest {
 
 	@Mock
 	private IRuleDesigner mockRuleDesigner;
+
+	@Test
+	public void testFileTypesAreEmptyWithoutAnAdminLimit() {
+		RuleDesignerService rds = new RuleDesignerService();
+		Assertions.assertTrue(rds.getFileTypes("regex").isEmpty(), "no module controls: no limit");
+
+		com.tracelink.appsec.watchtower.core.module.ModuleControlService controls =
+				BDDMockito.mock(com.tracelink.appsec.watchtower.core.module.ModuleControlService.class);
+		BDDMockito.when(controls.policy("regex")).thenReturn(
+				new com.tracelink.appsec.watchtower.core.module.ModuleControlService.Policy("regex", true, 1, null));
+		org.springframework.test.util.ReflectionTestUtils.setField(rds, "moduleControls", controls);
+		Assertions.assertTrue(rds.getFileTypes("regex").isEmpty(), "the scanner's default is not an admin limit");
+	}
+
+	@Test
+	public void testFileTypesAreTheLimitAnAdminSet() {
+		RuleDesignerService rds = new RuleDesignerService();
+		com.tracelink.appsec.watchtower.core.module.ModuleControlService controls =
+				BDDMockito.mock(com.tracelink.appsec.watchtower.core.module.ModuleControlService.class);
+		BDDMockito.when(controls.policy("regex")).thenReturn(new com.tracelink.appsec.watchtower.core.module.ModuleControlService.Policy(
+				"regex", true, 2, java.util.List.of(".java", ".xml")));
+		org.springframework.test.util.ReflectionTestUtils.setField(rds, "moduleControls", controls);
+
+		MatcherAssert.assertThat(rds.getFileTypes("regex"), Matchers.contains(".java", ".xml"));
+	}
 
 	@Test
 	public void testRegisterDesignerNullName() throws Exception {

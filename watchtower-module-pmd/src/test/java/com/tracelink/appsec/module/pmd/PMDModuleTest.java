@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import com.tracelink.appsec.module.pmd.designer.PMDRuleDesigner;
 import com.tracelink.appsec.module.pmd.model.PMDCustomRuleDto;
+import com.tracelink.appsec.module.pmd.model.PMDProvidedRuleDto;
 import com.tracelink.appsec.module.pmd.model.PMDPropertyDto;
 import com.tracelink.appsec.module.pmd.service.PMDRuleService;
 import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
@@ -43,9 +44,10 @@ public class PMDModuleTest extends CodeScannerModuleTest {
 			prop.setName("xpath");
 			prop.setValue("propValue");
 			rule.setProperties(Arrays.asList(prop));
-			rule.setRuleClass("net.sourceforge.pmd.lang.rule.XPathRule");
+			rule.setRuleClass("net.sourceforge.pmd.lang.rule.xpath.XPathRule");
 			return rule;
-		}).withSchemaName("pmd_schema_history").withSupportedRuleClass(PMDCustomRuleDto.class);
+		}).withSchemaName("pmd_schema_history")
+				.withSupportedRuleClass(PMDCustomRuleDto.class, PMDProvidedRuleDto.class);
 	}
 
 }

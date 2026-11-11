@@ -1,189 +1,147 @@
-<div class="col">
-  <div class="row card-group mx-0 my-2">
-    <!-- Source Code -->
-    <div class="card card-small col-5 px-0">
-      <div class="card-body">
-        <h6 class="card-title">
-          Source Code
-          <a href="#" data-toggle="tooltip" th:title="${help.get('sourceCode')}">
-            <i class="material-icons">help_outline</i>
-          </a></h6>
-        <textarea class="form-control" form="run-rule-form" id="sourceCode" name="sourceCode"
-                  th:text="${sourceCode}"></textarea>
+<!-- Two cards (UAT walkthrough, 2026-10-16): the sample on the left with the syntax tree folded
+     behind a "Syntax tree" chip; the rule on the right with its Messages behind a chip, Run rule
+     and Save rule; the matches sit under both as chips that jump to the highlighted line. -->
+<div class="wt-designer-workspace" data-rule-designer>
+  <div class="wt-designer-grid">
+    <section class="card wt-designer-card" data-designer-editor aria-labelledby="eslint-sample-heading">
+      <div class="wt-designer-card__head">
+        <h2 id="eslint-sample-heading" class="h6 m-0">Sample code</h2>
+        <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="The sample is checked as JavaScript"><span
+            class="material-icons" aria-hidden="true">javascript</span>JavaScript</span>
       </div>
-    </div>
-    <!-- End Source Code -->
-    <!-- AST -->
-    <div class="card card-small col-4 px-0">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <h6 class="card-title">
-            Abstract Syntax Tree
-            <a href="#" data-toggle="tooltip" th:title="${help.get('ast')}">
-              <i class="material-icons">help_outline</i>
-            </a></h6>
+      <textarea aria-label="Sample code to test" class="form-control" form="run-rule-form" id="sourceCode" name="sourceCode"
+                data-designer-input
+                th:text="${sourceCode}"></textarea>
+      <details class="wt-designer-tree" data-eslint-tree>
+        <summary class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">account_tree</span>Syntax
+          tree<span class="material-icons" aria-hidden="true">expand_more</span></summary>
+        <div class="wt-designer-tree__body">
+          <textarea aria-label="Syntax tree (read only)" id="ast" name="ast" th:text="${ast}"></textarea>
         </div>
-        <textarea id="ast" name="ast" th:text="${ast}"></textarea>
+      </details>
+    </section>
+    <section class="card wt-designer-card" data-designer-editor aria-labelledby="eslint-rule-heading">
+      <div class="wt-designer-card__head">
+        <h2 id="eslint-rule-heading" class="h6 m-0 wt-designer-card__title"><span
+            class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span
+            class="material-icons">javascript</span></span>ESLint rule</h2>
+        <span th:replace="~{fragments/designer :: howto(${help.get('esLintRule')})}"></span>
       </div>
-    </div>
-    <!-- End AST -->
-    <!-- Matches -->
-    <div class="card card-small col-3 px-0">
-      <div class="card-body border-bottom">
-        <div class="d-flex justify-content-between">
-          <h6 class="card-title">
-            Matches
-            <a href="#" data-toggle="tooltip" th:title="${help.get('matches')}">
-              <i class="material-icons">help_outline</i>
-            </a></h6>
-        </div>
-        <ul th:if="${matches != null}" class="list-group list-group-flush">
-          <li th:each="match: ${matches}" class="list-group-item" th:text="${match}"></li>
-          <li th:if="${matches.isEmpty()}" class="list-group-item">No matches</li>
-        </ul>
+      <div class="rule-tab custom-tab">
+        <textarea aria-label="Rule create function" id="createFunction" name="createFunction" form="run-rule-form"
+                  data-designer-input
+                  th:text="${rule.createFunction}"></textarea>
       </div>
-    </div>
-    <!-- End Matches -->
-  </div>
-  <div class="row card-group mx-0 my-3">
-    <!-- Custom Rule -->
-    <div class="card card-small col-8 px-0">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <h6 class="card-title">
-            ESLint Rule
-            <a href="#" data-toggle="tooltip" th:title="${help.get('esLintRule')}">
-              <i class="material-icons">help_outline</i>
-            </a>
-          </h6>
-          <div class="btn-toolbar">
-            <div class="btn-group mr-1">
-              <form method="POST" class="form-inline" action="/designer/eslint/query"
-                    id="run-rule-form">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <button class="btn btn-small btn-primary" id="runRule" name="Submit" value="Submit"
-                        type="Submit">Run Rule
-                </button>
-              </form>
-            </div>
-            <div class="btn-group form-inline">
-              <button class="btn btn-small btn-success" data-toggle="modal" id="save-rule-btn"
-                      data-target="#save-rule-modal">Save Rule
-              </button>
-            </div>
+      <details class="wt-designer-messages rule-tab custom-tab" data-eslint-messages>
+        <summary class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">chat</span><span
+            data-eslint-messages-label
+            th:text="${rule.messages.isEmpty() ? 'No messages' : (rule.messages.size() == 1 ? '1 message: ' : rule.messages.size() + ' messages: ') + #strings.listJoin(rule.messages.![key], ', ')}">1 message: unexpected</span><span
+            class="material-icons" aria-hidden="true">edit</span></summary>
+        <div class="wt-designer-messages__body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="wt-muted" th:text="${help.get('messages')}">Message IDs the rule reports.</span>
+            <button class="wt-copy-button add-message" type="button"
+                    aria-label="Add message" title="Add message">
+              <span class="material-icons" aria-hidden="true">add</span>
+            </button>
+          </div>
+          <div class="table-responsive messages-table">
+            <table class="table">
+              <caption class="visually-hidden">ESLint message identifiers and values</caption>
+              <thead>
+              <tr>
+                <th scope="col">Message ID</th>
+                <th scope="col">Message</th>
+                <th scope="col"><span class="visually-hidden">Delete</span></th>
+              </tr>
+              </thead>
+              <tbody class="messages-tbody">
+              <tr th:each="message, stat: ${rule.messages}">
+                <td class="px-1">
+                  <input type="text" class="form-control" form="run-rule-form"
+                         aria-label="Message ID" placeholder="Message ID" th:name="|messages[${stat.index}].key|"
+                         th:value="${message.key}"/>
+                </td>
+                <td class="px-1">
+                  <input type="text" class="form-control" form="run-rule-form"
+                         aria-label="Message value" placeholder="Message" th:name="|messages[${stat.index}].value|"
+                         th:value="${message.value}"/>
+                </td>
+                <td class="px-1 text-center">
+                  <button class="wt-copy-button wt-icon-danger delete-message" type="button"
+                          aria-label="Delete message" title="Delete message">
+                    <span class="material-icons" aria-hidden="true">delete</span>
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div class="rule-tab custom-tab mt-2">
-          <textarea id="createFunction" name="createFunction" form="run-rule-form"
-                    th:text="${rule.createFunction}"></textarea>
-        </div>
+      </details>
+      <div class="wt-designer-actions">
+        <form method="POST" action="/designer/eslint/query" id="run-rule-form" data-designer-run-form>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <md-filled-button id="runRule" name="Submit" value="Submit" type="submit" has-icon
+              data-run-rule><span slot="icon" class="material-icons" aria-hidden="true">play_arrow</span>Run rule</md-filled-button>
+        </form>
+        <md-outlined-button id="save-rule-btn" type="button" data-save-rule has-icon
+            data-wt-dialog-target="#save-rule-dialog"><span slot="icon" class="material-icons"
+            aria-hidden="true">save</span>Save rule</md-outlined-button>
       </div>
-    </div>
-    <!-- End Custom Rule -->
-    <!-- Messages -->
-    <div class="card card-small col-4 px-0 rule-tab custom-tab">
-      <div class="card-body">
-        <div class="d-flex justify-content-between mb-2">
-          <h6 class="card-title">
-            Messages
-            <a href="#" data-toggle="tooltip" th:title="${help.get('messages')}">
-              <i class="material-icons">help_outline</i>
-            </a>
-          </h6>
-          <button class="btn btn-small btn-outline-success px-1 py-1 add-message">
-            <i class="material-icons md-24">add</i>
-          </button>
-        </div>
-        <div class="table-responsive messages-table">
-          <table class="table table-striped">
-            <thead>
-            <tr>
-              <th scope="col">Message ID</th>
-              <th scope="col">Message Value</th>
-              <th scope="col">Delete</th>
-            </tr>
-            </thead>
-            <tbody class="messages-tbody">
-            <tr th:each="message, stat: ${rule.messages}">
-              <td class="px-1">
-                <input type="text" class="form-control" form="run-rule-form"
-                       placeholder="Message ID" th:name="|messages[${stat.index}].key|"
-                       th:value="${message.key}"/>
-              </td>
-              <td class="px-1">
-                <input type="text" class="form-control" form="run-rule-form"
-                       placeholder="Message Value" th:name="|messages[${stat.index}].value|"
-                       th:value="${message.value}"/>
-              </td>
-              <td class="px-1 text-center">
-                <button class="btn btn-small btn-outline-danger px-1 py-1 delete-message">
-                  <i class="material-icons md-24">delete</i>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    <!-- End Messages -->
+    </section>
   </div>
+  <section th:replace="~{fragments/designer :: matches(${matches}, ${error})}"></section>
 </div>
 
 <!-- Save Custom Rule Modal -->
-<div class="modal fade" id="save-rule-modal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Save Custom Rule</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<!-- #customCreateFunction stays a plain textarea - eslint-designer.js runs CodeMirror.fromTextArea
+     on it (createFunctionReader), which hides the element and inserts sibling markup into its
+     parent. That only works in the light DOM; md-outlined-text-field's textarea lives inside a
+     shadow root this page doesn't own. The .save-messages clone (populated by
+     configureCustomRuleModal) also stays untouched: it clones the live Messages table's inputs
+     and submits the clones, and cloneNode() only copies attributes, not a Lit element's internal
+     property state - converting those inputs to md-outlined-text-field would silently submit
+     empty message keys/values for anything typed after page load
+     (IMPROVEMENT_PLAN_MATERIAL_UI.md Wave 8). -->
+<!-- Save (UAT walkthrough, 2026-10-16): the ESLint tile in the title, Priority as six buttons, the
+     link as an optional field, and the create function and messages folded away to check. -->
+<md-dialog id="save-rule-dialog"
+    th:with="eslint=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity).of('ESLint')}">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons"
+        th:text="${eslint.icon()}">javascript</span></span>
+    <span class="wt-person__text"><span>Save ESLint rule</span></span></span>
+    <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <form slot="content" method="POST" action="/designer/eslint/save" id="save-rule-form" class="wt-md-form">
+    <md-outlined-text-field label="Name" name="name" id="customName" required placeholder="e.g. no-eval-in-templates"
+        th:value="${rule.name}"></md-outlined-text-field>
+    <md-outlined-text-field label="Description" name="message" id="ruleMessage" placeholder="What it finds"
+        th:value="${rule.message}"></md-outlined-text-field>
+    <fieldset class="wt-choice-chips" id="customPriority">
+      <legend>Priority</legend>
+      <label th:each="priority : ${rulePriorities}" class="wt-choice-chip"><input type="radio" name="priority"
+          th:value="${priority.name()}" th:checked="${rule.priority != null ? priority.equals(rule.priority) : priority.name() == 'MEDIUM'}"
+          th:aria-label="${priority.getName()}"/><span th:text="${priority.shortName}">Medium</span></label>
+    </fieldset>
+    <md-outlined-text-field label="Link (optional)" name="externalUrl" id="ruleUrl" type="url" placeholder="https://…"
+        th:value="${rule.externalUrl}"></md-outlined-text-field>
+    <details class="wt-form-disclosure" data-save-function>
+      <summary><span class="material-icons" aria-hidden="true">tune</span> Create function and messages</summary>
+      <label for="customCreateFunction" class="wt-picker-label">Create function</label>
+      <textarea aria-label="Rule create function" class="form-control" name="createFunction" id="customCreateFunction"
+                form="save-rule-form"></textarea>
+      <div class="save-messages">
+        <span class="wt-picker-label">Messages</span>
       </div>
-      <div class="modal-body p-3">
-        <form method="POST" action="/designer/eslint/save"
-              id="save-rule-form">
-          <div class="form-group">
-            <label for="customName" class="col-form-label">Rule Name</label>
-            <input type="text" class="form-control" name="name" id="customName"
-                   th:value="${rule.name}" placeholder="Rule name"/>
-          </div>
-          <div class="form-group">
-            <label for="ruleMessage" class="col-form-label">Description</label>
-            <input type="text" class="form-control" name="message" id="ruleMessage"
-                   th:value="${rule.message}" placeholder="Description of the rule"/>
-          </div>
-          <div class="form-group">
-            <label for="customPriority" class="col-form-label">Priority</label>
-            <select name="priority" class="form-control" id="customPriority">
-              <option th:each="priority : ${rulePriorities}"
-                      th:value="${priority.name()}" th:text="${priority.getName()}"
-                      th:selected="${priority.equals(rule.priority)}"></option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="ruleUrl" class="col-form-label">External URL</label>
-            <input type="text" class="form-control" name="externalUrl" id="ruleUrl"
-                   th:value="${rule.externalUrl}" placeholder="URL for more information"/>
-          </div>
-          <div class="form-group">
-            <label for="customCreateFunction" class="col-form-label">Create Function</label>
-            <textarea class="form-control" name="createFunction" id="customCreateFunction"
-                      form="save-rule-form"></textarea>
-          </div>
-          <div class="form-group save-messages">
-            <label class="col-form-label">Messages</label>
-          </div>
-          <input type="hidden" name="author" th:value="${#authentication.getPrincipal().getUsername()}"/>
-          <input type="hidden" name="sourceCode" id="customSourceCode"/>
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-success" form="save-rule-form">Save</button>
-      </div>
-    </div>
+    </details>
+    <input type="hidden" name="author" th:value="${#authentication.getPrincipal().getUsername()}"/>
+    <input type="hidden" name="sourceCode" id="customSourceCode"/>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancel-save-rule-dialog" type="button">Cancel</md-text-button>
+    <md-filled-button form="save-rule-form" type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save rule</md-filled-button>
   </div>
-</div>
+</md-dialog>
 <!-- End Save Custom Rule Modal -->

@@ -7,6 +7,10 @@ package com.tracelink.appsec.watchtower.core.scan.code.upload.result;
  *
  */
 public class UploadScanResultViolation {
+ private long violationId;
+ @com.fasterxml.jackson.annotation.JsonIgnore public long getViolationId(){return violationId;}
+ public void setViolationId(long id){violationId=id;}
+
 	private String violationName;
 
 	private int lineNumber;
@@ -20,6 +24,8 @@ public class UploadScanResultViolation {
 	private String message;
 
 	private String externalUrl;
+
+	private com.tracelink.appsec.watchtower.core.rule.RuleChange ruleChange;
 
 	public String getViolationName() {
 		return violationName;
@@ -75,6 +81,15 @@ public class UploadScanResultViolation {
 
 	public void setExternalUrl(String externalUrl) {
 		this.externalUrl = externalUrl;
+	}
+
+	/** @return what happened to the rule after this scan, or null when nothing is known to have */
+	public com.tracelink.appsec.watchtower.core.rule.RuleChange getRuleChange() {
+		return ruleChange;
+	}
+
+	public void setRuleChange(com.tracelink.appsec.watchtower.core.rule.RuleChange ruleChange) {
+		this.ruleChange = ruleChange;
 	}
 
 }

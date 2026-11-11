@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -38,6 +39,8 @@ import ch.qos.logback.classic.Level;
 @PreAuthorize("hasAuthority('" + CorePrivilege.LOGGING_VIEW_NAME + "')")
 public class LoggingController {
 	private static final Logger LOG = LoggerFactory.getLogger(LoggingController.class);
+	private static final int DEFAULT_LINE_LIMIT = 200;
+	private static final Set<Integer> ALLOWED_LINE_LIMITS = Set.of(200, 500, 1000);
 
 	private LogsService logsService;
 
@@ -49,22 +52,33 @@ public class LoggingController {
 			Arrays.asList(Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR);
 
 	@GetMapping("/logging")
-	public WatchtowerModelAndView logging() {
+	public WatchtowerModelAndView logging(
+			@RequestParam(name = "lines", defaultValue = "200") int requestedLineLimit) {
+		int lineLimit = ALLOWED_LINE_LIMITS.contains(requestedLineLimit)
+				? requestedLineLimit : DEFAULT_LINE_LIMIT;
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("admin/logging");
 		mav.addObject("currentLogLevel", logsService.getLogsLevel().levelStr);
 		mav.addObject("logOptions", allowedLevels);
-		mav.addObject("logs", logsService.getLogs());
-		mav.addObject("currentTime", LocalDateTime.now());
+		mav.addObject("logs", logsService.getLogs(lineLimit).stream().map(LogLine::parse).toList());
+		mav.addObject("lineLimit", lineLimit);
+		LocalDateTime now = LocalDateTime.now();
+		mav.addObject("currentTime", now);
+		mav.addObject("serverZone", java.time.ZoneId.systemDefault().getId());
+		mav.addObject("serverZoneShort", java.time.ZoneId.systemDefault()
+				.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH));
+		mav.addScriptReference("/scripts/logging.js");
 		return mav;
 	}
 
 	@PostMapping("/logging/set")
 	@PreAuthorize("hasAuthority('" + CorePrivilege.LOGGING_MODIFY_NAME + "')")
-	public String setLogLevel(@RequestParam String loglevel) {
+	public String setLogLevel(@RequestParam String loglevel, java.security.Principal user) {
 		Level level = Level.toLevel(loglevel, Level.INFO);
 		if (!allowedLevels.contains(level)) {
 			level = Level.INFO;
 		}
+		// WARN so it is recorded whatever level is being switched to
+		LOG.warn("{} set the log level to {}", user.getName(), level);
 		logsService.setLogsLevel(level);
 		return "redirect:/logging";
 	}

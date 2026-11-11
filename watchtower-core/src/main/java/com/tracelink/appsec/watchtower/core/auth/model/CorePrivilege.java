@@ -6,10 +6,16 @@ package com.tracelink.appsec.watchtower.core.auth.model;
  * @author csmith
  */
 public enum CorePrivilege {
+ MODULE_SETTINGS_VIEW(CorePrivilege.MODULE_SETTINGS_VIEW_NAME,CorePrivilege.CONFIG_CATEGORY,"See which scanner modules are on, their status and file types, without changing them."),
+ MODULE_SETTINGS(CorePrivilege.MODULE_SETTINGS_NAME,CorePrivilege.CONFIG_CATEGORY,"Enable or disable execution and designers without deleting rules/history."),
+ FINDING_FEEDBACK(CorePrivilege.FINDING_FEEDBACK_NAME, CorePrivilege.SCAN_CATEGORY, "Review individual findings independently of enforcement."),
+ ASSISTANT_USE(CorePrivilege.ASSISTANT_USE_NAME, CorePrivilege.RULES_CATEGORY, "Use read-only assistance and own history."),
+ ASSISTANT_SOURCE(CorePrivilege.ASSISTANT_SOURCE_NAME, CorePrivilege.RULES_CATEGORY, "Read pinned repository source through bounded assistant tools."),
+ ASSISTANT_AUDIT(CorePrivilege.ASSISTANT_AUDIT_NAME, CorePrivilege.ADMIN_CATEGORY, "Read assistant audit metadata and expiring transcripts."),
+ ASSISTANT_ADMIN(CorePrivilege.ASSISTANT_ADMIN_NAME, CorePrivilege.ADMIN_CATEGORY, "Configure assistant models, retention and limits."),
+
 
 	/* Core Admin */
-	DB_ACCESS(CorePrivilege.DB_ACCESS_NAME, CorePrivilege.ADMIN_CATEGORY,
-			"User may access the DB console in order to make SQL queries against the database (Requires DB Credentials)."),
 	USER_VIEW(CorePrivilege.USER_VIEW_NAME, CorePrivilege.ADMIN_CATEGORY,
 			"User may view other user accounts."),
 	USER_MODIFY(CorePrivilege.USER_MODIFY_NAME, CorePrivilege.ADMIN_CATEGORY,
@@ -39,6 +45,16 @@ public enum CorePrivilege {
 	REPOSITORY_SETTINGS_MODIFY(CorePrivilege.REPO_SETTINGS_MODIFY_NAME,
 			CorePrivilege.CONFIG_CATEGORY,
 			"User may modify the current assignment of rulesets to known repositories in each SCM."),
+	ALERT_SETTINGS_VIEW(CorePrivilege.ALERT_SETTINGS_VIEW_NAME, CorePrivilege.CONFIG_CATEGORY,
+			"User may view alert channels (with masked webhook URLs), routes and recent alerts."),
+	ALERT_SETTINGS_MODIFY(CorePrivilege.ALERT_SETTINGS_MODIFY_NAME,
+			CorePrivilege.CONFIG_CATEGORY,
+			"User may add, change and test alert channels and routes."),
+	PR_SETTINGS_VIEW(CorePrivilege.PR_SETTINGS_VIEW_NAME, CorePrivilege.CONFIG_CATEGORY,
+			"User may view the current PR Settings (Pull Request Data Sync frequency and full-source download threshold)."),
+	PR_SETTINGS_MODIFY(CorePrivilege.PR_SETTINGS_MODIFY_NAME,
+			CorePrivilege.CONFIG_CATEGORY,
+			"User may modify the PR Settings (Pull Request Data Sync frequency and full-source download threshold)."),
 
 	/* Core Rules */
 	RULE_MODIFY(CorePrivilege.RULE_MODIFY_NAME, CorePrivilege.RULES_CATEGORY,
@@ -62,7 +78,10 @@ public enum CorePrivilege {
 	SCAN_RESULTS(CorePrivilege.SCAN_RESULTS_NAME, CorePrivilege.SCAN_CATEGORY,
 			"User may view all scan results for all time."),
 	SCAN_MCR_MODIFY(CorePrivilege.SCAN_MCR_MODIFY_NAME, CorePrivilege.SCAN_CATEGORY,
-			"User may modify the MCR status of a Pull Request Scan.");
+			"User may modify the MCR status of a Pull Request Scan."),
+	PR_SCAN_BYPASS(CorePrivilege.PR_SCAN_BYPASS_NAME, CorePrivilege.SCAN_CATEGORY,
+			"User may bypass Watchtower's blocking of one pull request, with a reason, and revoke"
+					+ " a bypass. Every bypass is commented on the pull request and alerted.");
 
 	private static final String ADMIN_CATEGORY = "Admin";
 	private static final String CONFIG_CATEGORY = "Configuration";
@@ -70,8 +89,12 @@ public enum CorePrivilege {
 	private static final String SCAN_CATEGORY = "Scan";
 
 
-	/* Core Admin Names */
-	public static final String DB_ACCESS_NAME = "Database Access";
+	public static final String FINDING_FEEDBACK_NAME = "Finding Feedback";
+ public static final String ASSISTANT_USE_NAME = "Assistant Use";
+ public static final String ASSISTANT_SOURCE_NAME = "Assistant Source Read";
+ public static final String ASSISTANT_AUDIT_NAME = "Assistant Audit";
+ public static final String ASSISTANT_ADMIN_NAME = "Assistant Admin";
+ /* Core Admin Names */
 	public static final String USER_VIEW_NAME = "User Management View";
 	public static final String USER_MODIFY_NAME = "User Management Modify";
 	public static final String ROLE_VIEW_NAME = "Role Management View";
@@ -83,10 +106,16 @@ public enum CorePrivilege {
 	public static final String LOGGING_DOWNLOAD_NAME = "Logging Download";
 
 	/* Core Config Names */
+ public static final String MODULE_SETTINGS_NAME="Module Settings Modify";
+ public static final String MODULE_SETTINGS_VIEW_NAME="Module Settings View";
 	public static final String API_SETTINGS_VIEW_NAME = "API Settings View";
 	public static final String API_SETTINGS_MODIFY_NAME = "API Settings Modify";
 	public static final String REPO_SETTINGS_VIEW_NAME = "Repository Settings View";
 	public static final String REPO_SETTINGS_MODIFY_NAME = "Repository Settings Modify";
+	public static final String ALERT_SETTINGS_VIEW_NAME = "Alert Settings View";
+	public static final String ALERT_SETTINGS_MODIFY_NAME = "Alert Settings Modify";
+	public static final String PR_SETTINGS_VIEW_NAME = "PR Settings View";
+	public static final String PR_SETTINGS_MODIFY_NAME = "PR Settings Modify";
 
 	/* Core Rules Names */
 	public static final String RULE_MODIFY_NAME = "Rule Modify";
@@ -102,6 +131,7 @@ public enum CorePrivilege {
 	public static final String SCAN_ADMIN_NAME = "Scan Admin";
 	public static final String SCAN_RESULTS_NAME = "Scan Results View";
 	public static final String SCAN_MCR_MODIFY_NAME = "Scan MCR Modify";
+	public static final String PR_SCAN_BYPASS_NAME = "PR Scan Bypass";
 
 	/* API Integration Scan */
 	public static final String INTEGRATION_SCAN_SUBMIT = "Integration Scan Submit";

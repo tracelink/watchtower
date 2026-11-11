@@ -2,10 +2,9 @@ package com.tracelink.appsec.module.json.scanner.provider;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import com.fasterxml.jackson.databind.node.*;
 
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,21 +33,15 @@ public class CustomJsonNodeFactory extends JsonNodeFactory {
 	private final JsonNodeFactory delegate;
 	private final CustomParserFactory parserFactory;
 
-	/*
-	 * "Why isn't this a map?" you might be wondering. Well, when the nodes are created, they're all
-	 * empty and a node's hashCode is based on its children. So if you use a map and put the node
-	 * in, then the node's hashCode is based on no children, then when you lookup your node, it is
-	 * *with* children, so the hashcodes are different. Instead of all of this, you have to iterate
-	 * through a listing and find their matches once the objects have been populated, which is only
-	 * after the document has been completely parsed
-	 */
-	private List<Entry<JsonNode, JsonLocation>> locationMapping;
+	// Node equality is value-based; occurrences (including equal scalars) have distinct identity.
+	private final Map<JsonNode, JsonLocation> locationMapping = new IdentityHashMap<>();
+
+	public CustomJsonNodeFactory() { this(JsonNodeFactory.instance, null); }
 
 	public CustomJsonNodeFactory(JsonNodeFactory nodeFactory,
 			CustomParserFactory parserFactory) {
 		delegate = nodeFactory;
 		this.parserFactory = parserFactory;
-		locationMapping = new ArrayList<>();
 	}
 
 	/**
@@ -58,8 +51,7 @@ public class CustomJsonNodeFactory extends JsonNodeFactory {
 	 * @return the location of the node or null if not found
 	 */
 	public JsonLocation getLocationForNode(JsonNode jsonNode) {
-		return this.locationMapping.stream().filter(e -> e.getKey().equals(jsonNode))
-				.map(e -> e.getValue()).findAny().orElse(null);
+		return locationMapping.get(jsonNode);
 	}
 
 	/**
@@ -70,94 +62,100 @@ public class CustomJsonNodeFactory extends JsonNodeFactory {
 	 * @return the node itself, having marked its location
 	 */
 	private <T extends JsonNode> T markNode(T node) {
-		JsonLocation loc = parserFactory.getParser().getCurrentLocation();
-		locationMapping.add(new SimpleEntry<>(node, loc));
+		if (parserFactory != null) locationMapping.put(node, parserFactory.getParser().getTokenLocation());
 		return node;
 	}
 
+	public <T extends JsonNode> T locate(T node, int line, int column) {
+		locationMapping.put(node, new JsonLocation(null, -1, -1, line, column));
+		return node;
+	}
+	private static final class OccurrenceBoolean extends BooleanNode { OccurrenceBoolean(boolean value) { super(value); } }
+	private static final class OccurrenceNull extends NullNode { OccurrenceNull() { super(); } }
+
 	@Override
 	public BooleanNode booleanNode(boolean v) {
-		return markNode(delegate.booleanNode(v));
+		return markNode(new OccurrenceBoolean(v));
 	}
 
 	@Override
 	public NullNode nullNode() {
-		return markNode(delegate.nullNode());
+		return markNode(new OccurrenceNull());
 	}
 
 	@Override
 	public NumericNode numberNode(byte v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new IntNode(v));
 	}
 
 	@Override
 	public ValueNode numberNode(Byte value) {
-		return markNode(delegate.numberNode(value));
+		return value == null ? nullNode() : numberNode(value.byteValue());
 	}
 
 	@Override
 	public NumericNode numberNode(short v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new ShortNode(v));
 	}
 
 	@Override
 	public ValueNode numberNode(Short value) {
-		return markNode(delegate.numberNode(value));
+		return value == null ? nullNode() : numberNode(value.shortValue());
 	}
 
 	@Override
 	public NumericNode numberNode(int v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new IntNode(v));
 	}
 
 	@Override
 	public ValueNode numberNode(Integer value) {
-		return markNode(delegate.numberNode(value));
+		return value == null ? nullNode() : numberNode(value.intValue());
 	}
 
 	@Override
 	public NumericNode numberNode(long v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new LongNode(v));
 	}
 
 	@Override
 	public ValueNode numberNode(Long value) {
-		return markNode(delegate.numberNode(value));
+		return value == null ? nullNode() : numberNode(value.longValue());
 	}
 
 	@Override
 	public ValueNode numberNode(BigInteger v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new BigIntegerNode(v));
 	}
 
 	@Override
 	public NumericNode numberNode(float v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new FloatNode(v));
 	}
 
 	@Override
 	public ValueNode numberNode(Float value) {
-		return markNode(delegate.numberNode(value));
+		return value == null ? nullNode() : numberNode(value.floatValue());
 	}
 
 	@Override
 	public NumericNode numberNode(double v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new DoubleNode(v));
 	}
 
 	@Override
 	public ValueNode numberNode(Double value) {
-		return markNode(delegate.numberNode(value));
+		return value == null ? nullNode() : numberNode(value.doubleValue());
 	}
 
 	@Override
 	public ValueNode numberNode(BigDecimal v) {
-		return markNode(delegate.numberNode(v));
+		return markNode(new DecimalNode(v));
 	}
 
 	@Override
 	public TextNode textNode(String text) {
-		return markNode(delegate.textNode(text));
+		return markNode(new TextNode(text));
 	}
 
 	@Override

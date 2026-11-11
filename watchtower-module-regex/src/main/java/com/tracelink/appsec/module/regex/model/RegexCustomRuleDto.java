@@ -1,15 +1,18 @@
 package com.tracelink.appsec.module.regex.model;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tracelink.appsec.module.regex.RegexModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Represents a data transfer object for the {@link RegexRuleEntity}. All fields in this object are
@@ -17,7 +20,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  * @author mcool
  */
-public class RegexCustomRuleDto extends CustomRuleDto {
+public class RegexCustomRuleDto extends CustomRuleDto implements RegexRuleDto {
 
 	@NotNull(message = "File extension" + CANNOT_BE_NULL)
 	@Size(max = 255, message = "File extension cannot have a length of more than 256 characters.")
@@ -48,6 +51,25 @@ public class RegexCustomRuleDto extends CustomRuleDto {
 
 	public void setRegexPattern(String regexPattern) {
 		this.regexPattern = regexPattern;
+		this.compiledPattern = null;
+	}
+
+	/**
+	 * A pattern Java cannot compile would fail every scan that uses the rule, so it is refused
+	 * when the rule is saved. An empty or missing pattern is reported by its own rules.
+	 */
+	@JsonIgnore
+	@AssertTrue(message = "Regex pattern is not a valid regular expression.")
+	public boolean isRegexPatternCompilable() {
+		if (regexPattern == null || regexPattern.isEmpty()) {
+			return true;
+		}
+		try {
+			Pattern.compile(regexPattern);
+			return true;
+		} catch (PatternSyntaxException e) {
+			return false;
+		}
 	}
 
 	@JsonIgnore
@@ -83,5 +105,10 @@ public class RegexCustomRuleDto extends CustomRuleDto {
 	 */
 	public boolean isValidExtension(String fileName) {
 		return fileExtension.isEmpty() || fileName.endsWith(fileExtension);
+	}
+	@Override
+	protected RuleRevision executableDefinition() {
+		return newDefinition().field("fileExtension", getFileExtension())
+				.field("regexPattern", getRegexPattern());
 	}
 }

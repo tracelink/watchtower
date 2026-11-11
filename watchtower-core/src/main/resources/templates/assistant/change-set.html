@@ -1,0 +1,13 @@
+<section data-ruleset-change-set th:data-id="${changeSetId}" th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}">
+ <div th:replace="~{fragments/pageheader :: header('Review ruleset changes', null)}"></div>
+ <p>Review this complete change set before applying it. Approval lasts 30 minutes and applies to these exact resources.</p>
+ <p role="status" aria-live="polite" data-action-status>Loading authoritative preview…</p>
+ <div data-action-preview></div>
+ <div data-action-deletions></div>
+ <div class="wt-actions">
+  <md-filled-button data-action-apply disabled>Approve and apply</md-filled-button>
+  <md-outlined-button data-action-cancel disabled>Cancel</md-outlined-button>
+  <md-text-button data-action-refresh disabled>Refresh preview</md-text-button>
+ </div>
+ <div data-action-receipt></div>
+</section>

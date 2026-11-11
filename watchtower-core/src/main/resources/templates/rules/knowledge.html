@@ -1,0 +1,187 @@
+<!-- Knowledge (UAT walkthrough, 2026-10-16): Propose knowledge is a button by the title that opens
+     the form in a dialog; the status tabs are the one segmented control; search is a pill on the
+     right; an empty list is one picture and one line with no pager. The approval rule and what
+     knowledge never does live in the "Cited by the AI assistant" chip. -->
+<th:block th:with="kinds=${T(com.tracelink.appsec.watchtower.core.rule.knowledge.KnowledgeWorkspace)}">
+<section data-knowledge-page th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}">
+ <div class="wt-home-head wt-report-head wt-page-bar">
+  <div th:replace="~{fragments/pageheader :: header('Knowledge', null)}"></div>
+  <div class="wt-meta-chips wt-report-head__status">
+   <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-knowledge-about
+       data-tip="Reviewed facts the AI assistant may cite, each about one library or framework version and only within its scope. A second person must approve each one first. Knowledge never hides findings, changes a rule or trains a model; entries expire at their review-by date."><span
+       class="material-icons" aria-hidden="true">auto_awesome</span>Cited by the AI assistant</span>
+   <!-- The MITRE CWE catalog the AI checks CWEs against: one chip, and one button to update it. -->
+   <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-cwe-catalog th:attr="data-state=${cweCatalog.state},data-tip=${cweCatalog.tip}"
+       th:classappend="${cweCatalog.tone.isEmpty() ? '' : ' wt-mini-chip--' + cweCatalog.tone}"><span class="material-icons"
+       aria-hidden="true" data-cwe-catalog-icon th:text="${cweCatalog.icon}">menu_book</span><span data-cwe-catalog-label
+       th:text="${cweCatalog.label}">CWE catalog</span></span>
+   <button th:if="${canModify}" type="button" class="wt-icon-action" data-cwe-catalog-update aria-label="Update the CWE catalog from MITRE"
+       data-tip="Update from MITRE" th:disabled="${cweCatalog.updating}"><span class="material-icons" aria-hidden="true">sync</span></button>
+  </div>
+  <!-- One filled button per view: when the Approved list is empty its empty state carries the button. -->
+  <div class="wt-page-actions wt-report-head__status" th:if="${canModify and !(entries.content.isEmpty() and status == 'APPROVED')}">
+   <md-filled-button type="button" data-wt-dialog-open="#knowledgeProposeDialog" data-knowledge-propose-open has-icon>
+    <span class="material-icons" slot="icon" aria-hidden="true">add</span>Propose knowledge</md-filled-button>
+  </div>
+ </div>
+
+ <div class="wt-page-bar mb-3">
+  <nav class="wt-segmented-filter" role="tablist" aria-label="Knowledge status">
+   <a th:each="st : ${statuses}" role="tab" class="wt-segment" th:href="@{/rules/knowledge(status=${st},search=${search})}"
+      th:classappend="${status == st} ? 'is-active'" th:aria-selected="${status == st}"><span class="material-icons"
+      aria-hidden="true" th:text="${labels.get(st).icon()}">verified</span><span th:text="${labels.get(st).tab()}">Approved</span><span
+      class="wt-count-badge" th:text="${counts.get(st)}">0</span></a>
+  </nav>
+  <form method="get" class="wt-knowledge-search" action="/rules/knowledge">
+   <input type="hidden" name="status" th:value="${status}">
+   <md-outlined-text-field class="wt-search-pill" type="search" name="search" label="Search statements or libraries"
+       th:value="${search}" autocomplete="off"><span slot="leading-icon" class="material-icons"
+       aria-hidden="true">search</span></md-outlined-text-field>
+  </form>
+ </div>
+
+ <p data-knowledge-status role="status" aria-live="polite" class="wt-filter-status"></p>
+
+ <section id="results-region" th:aria-label="${labels.get(status).tab() + ' knowledge'}">
+  <div th:if="${entries.content.isEmpty()}" class="wt-empty-picture" data-knowledge-empty>
+   <span class="material-icons wt-empty-picture__icon" aria-hidden="true">library_books</span>
+   <strong th:text="${labels.get(status).heading()}">No approved knowledge yet</strong>
+   <span class="wt-muted wt-empty-picture__why" th:text="${labels.get(status).empty()}">Propose a reviewed fact.</span>
+   <md-filled-button th:if="${canModify and status == 'APPROVED'}" type="button"
+       data-wt-dialog-open="#knowledgeProposeDialog" has-icon><span class="material-icons" slot="icon"
+       aria-hidden="true">add</span>Propose knowledge</md-filled-button>
+  </div>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Knowledge entries" th:unless="${entries.content.isEmpty()}">
+   <table class="table mb-0">
+    <caption th:text="${entries.totalElements() + ' entries, newest first'}"></caption>
+    <thead><tr><th scope="col">Fact</th><th scope="col">Scope</th><th scope="col">Evidence</th>
+     <th scope="col">Decision</th><th scope="col" th:if="${canModify}"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>
+     <tr th:each="e : ${entries.content}" data-knowledge-entry>
+      <td><span class="wt-meta-chips"><span class="wt-mini-chip" th:text="${kinds.kindLabel(e.kind)}">Sanitizer</span>
+       <span th:if="${e.status == 'APPROVED'}" class="wt-mini-chip wt-mini-chip--info" tabindex="0"
+           data-tip="The AI assistant may cite this within its scope"><span class="material-icons"
+           aria-hidden="true">auto_awesome</span>Cited</span>
+       <span th:if="${e.stale}" class="wt-mini-chip wt-mini-chip--warn"><span class="material-icons"
+           aria-hidden="true">event_busy</span>Past review date</span></span>
+       <span class="wt-knowledge-statement" th:text="${e.statement}"></span></td>
+      <td><span class="wt-meta-chips">
+       <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">inventory_2</span><span
+           th:text="${e.library + ' ' + e.versionRange}">OWASP Java Encoder 1.2.x</span></span>
+       <span class="wt-mini-chip" th:text="${e.language}">java</span>
+       <span class="wt-mini-chip" tabindex="0"
+           th:attr="data-tip=${e.allRepositories ? 'Every repository' : #strings.listJoin(e.repositories.![label], ', ')}"><span
+           class="material-icons" aria-hidden="true">folder</span><span
+           th:text="${e.allRepositories ? 'All repositories' : #strings.listJoin(e.repositories.![label], ', ')}">payments-api</span></span>
+       <span th:unless="${e.rules.isEmpty()}" class="wt-mini-chip" tabindex="0"
+           th:attr="data-tip=${'Rules: ' + #strings.listJoin(e.rules.![label], ', ')}"><span class="material-icons"
+           aria-hidden="true">rule</span><span th:text="${#strings.listJoin(e.rules.![label], ', ')}">rule</span></span>
+       <span th:each="cwe : ${e.cwes}" class="wt-mini-chip" th:text="${cwe}">CWE-79</span>
+      </span></td>
+      <td><ul class="list-unstyled mb-0"><li th:each="ev : ${e.evidence}"><span th:text="${ev.label}"></span>
+       <th:block th:if="${ev.preview != null and !ev.preview.isBlank()}"><br><span class="wt-page-meta" th:text="${ev.preview}"></span></th:block></li></ul></td>
+      <td><span class="wt-meta-chips">
+       <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">person</span><span
+           th:text="${'Proposed by ' + e.proposedBy}">Proposed by alice</span></span>
+       <span th:if="${e.decidedBy != null}" class="wt-mini-chip" tabindex="0"
+           th:attr="data-tip=${e.decisionNote}"><span class="material-icons" aria-hidden="true">how_to_reg</span><span
+           th:text="${#strings.capitalize(#strings.toLowerCase(e.status)) + ' by ' + e.decidedBy}">Approved by bob</span></span>
+       <span class="wt-mini-chip" th:classappend="${e.stale} ? ' wt-mini-chip--warn'"><span class="material-icons"
+           aria-hidden="true">event</span><span th:text="${'Review by ' + e.reviewBy}">Review by 2027-01-01</span></span>
+      </span></td>
+      <td th:if="${canModify}"><div class="wt-table-actions">
+       <th:block th:if="${e.canApprove}">
+        <md-outlined-button type="button" data-knowledge-decision="approve" th:attr="data-id=${e.id},data-version=${e.version}">Approve</md-outlined-button>
+        <md-text-button type="button" data-knowledge-decision="reject" th:attr="data-id=${e.id},data-version=${e.version}">Reject</md-text-button>
+       </th:block>
+       <span th:if="${e.status == 'PROPOSED' and e.ownProposal}" class="wt-mini-chip" tabindex="0"
+           data-tip="A second person must approve it"><span class="material-icons" aria-hidden="true">group</span>Another person must approve your proposal</span>
+       <span th:if="${e.status == 'PROPOSED' and !e.ownProposal and e.stale}" class="wt-mini-chip wt-mini-chip--warn">Past its review date: propose it again</span>
+       <md-text-button th:if="${e.status == 'APPROVED'}" type="button" data-knowledge-decision="retire" th:attr="data-id=${e.id},data-version=${e.version}">Retire</md-text-button>
+      </div></td>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+  <th:block th:unless="${entries.content.isEmpty()}"><div th:replace="~{fragments/pagination :: pagination(${pageUrl}, ${entries})}"></div></th:block>
+ </section>
+
+ <!-- The proposal form in a dialog (mockup "Propose knowledge", approved 2026-10-27): evidence first, with the
+      AI button and its answer beside it; the fact in Material fields; repositories, rules and CWEs behind one
+      "Limit the scope" line. A prefilled rule or review opens it on load. -->
+ <md-dialog id="knowledgeProposeDialog" class="wt-knowledge-dialog" th:if="${canModify}" data-knowledge-propose
+     th:attr="data-open-on-load=${prefillRule != null or prefillReview != null ? 'true' : null}">
+  <div slot="headline" class="wt-dialog-headline"><span>Propose knowledge</span>
+   <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <form slot="content" data-knowledge-form class="wt-md-form" id="knowledgeProposeForm">
+   <div class="wt-form-block" data-knowledge-picker="evidence">
+    <div class="wt-form-block__head"><span class="wt-picker-label">Evidence · why this is true</span>
+     <span class="wt-ai-anchor" data-ai-helper="knowledgeDraft" hidden>
+      <md-outlined-button type="button" data-knowledge-draft disabled has-icon
+          data-tip="Fills the form from the evidence you chose. You check every field, and a second person approves the proposal."><span
+          class="material-icons" slot="icon" aria-hidden="true">auto_awesome</span>Draft with AI</md-outlined-button>
+     </span></div>
+    <div class="wt-field-pair">
+     <md-outlined-select label="Type" value="review" data-picker-type>
+      <md-select-option value="review" selected><div slot="headline">Accepted rule review</div></md-select-option>
+      <md-select-option value="finding_feedback" th:if="${canSeeScans}"><div slot="headline">Finding judgment</div></md-select-option>
+      <md-select-option value="missed_case"><div slot="headline">Missed vulnerability</div></md-select-option>
+     </md-outlined-select>
+     <md-outlined-text-field type="search" label="Search evidence" maxlength="200" data-picker-search placeholder="Reason, outcome, path or CWE">
+      <span slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+    </div>
+    <ul data-picker-results class="wt-search-results" aria-label="Matches"></ul>
+    <ul data-picker-selected class="wt-meta-chips list-unstyled" aria-label="Chosen evidence (1 to 20)">
+     <li class="wt-mini-chip" th:if="${prefillReview != null}" th:attr="data-picker-value=${prefillReview.id}" data-picker-type="review"><span
+       class="material-icons" aria-hidden="true">rate_review</span><span th:text="${prefillReview.label}"></span>
+      <button type="button" class="wt-chip-remove" data-picker-remove th:aria-label="${'Remove ' + prefillReview.label}"><span
+       class="material-icons" aria-hidden="true">close</span></button></li>
+    </ul>
+    <p data-knowledge-status role="status" aria-live="polite" class="wt-ai-note wt-ai-note--info"></p>
+   </div>
+   <md-outlined-select label="Kind" value="SANITIZER" data-knowledge-kind>
+    <md-select-option value="SANITIZER" selected><div slot="headline">Sanitizer</div><div slot="supporting-text">Makes data safe for a specific use</div></md-select-option>
+    <md-select-option value="SOURCE"><div slot="headline">Source</div><div slot="supporting-text">Where untrusted data enters</div></md-select-option>
+    <md-select-option value="SINK"><div slot="headline">Sink</div><div slot="supporting-text">Where data becomes dangerous</div></md-select-option>
+    <md-select-option value="FRAMEWORK_GUARANTEE"><div slot="headline">Framework guarantee</div><div slot="supporting-text">Protection the framework always applies</div></md-select-option>
+    <md-select-option value="NOTE"><div slot="headline">Note</div></md-select-option>
+   </md-outlined-select>
+   <md-outlined-text-field type="textarea" rows="2" maxlength="300" required label="Statement" data-knowledge-statement
+       supporting-text="One sentence of prose. No code or secret values." placeholder="Encode.forHtml escapes HTML output"></md-outlined-text-field>
+   <div class="wt-field-pair">
+    <md-outlined-text-field label="Language" maxlength="32" required data-knowledge-language placeholder="java"></md-outlined-text-field>
+    <md-outlined-text-field label="Library or framework" maxlength="128" required data-knowledge-library placeholder="OWASP Java Encoder"></md-outlined-text-field>
+    <md-outlined-text-field label="Versions it applies to" maxlength="64" required data-knowledge-versions placeholder="1.2.x"
+        supporting-text="For example 1.2.x or &gt;=2.0 &lt;3"></md-outlined-text-field>
+    <md-outlined-text-field type="date" label="Review by" data-knowledge-review-by supporting-text="Default: in 12 months"></md-outlined-text-field>
+   </div>
+   <details class="wt-form-disclosure" data-knowledge-scope th:attr="open=${prefillRule != null ? 'open' : null}">
+    <summary>Limit the scope<span class="wt-mini-chip wt-tone-warning" data-knowledge-scope-summary>Choose repositories</span></summary>
+    <label class="wt-md-checkbox-row"><md-checkbox touch-target="wrapper" data-knowledge-all-repositories></md-checkbox>Applies to all repositories</label>
+    <div class="wt-form-block" data-knowledge-picker="repositories">
+     <md-outlined-text-field type="search" label="Repositories" maxlength="200" data-picker-search placeholder="Search by repository name">
+      <span slot="leading-icon" class="material-icons" aria-hidden="true">folder</span></md-outlined-text-field>
+     <ul data-picker-results class="wt-search-results" aria-label="Matching repositories"></ul>
+     <ul data-picker-selected class="wt-meta-chips list-unstyled" aria-label="Chosen repositories"></ul>
+    </div>
+    <div class="wt-form-block" data-knowledge-picker="rules">
+     <md-outlined-text-field type="search" label="Only these rules (optional)" maxlength="200" data-picker-search placeholder="Search by rule name">
+      <span slot="leading-icon" class="material-icons" aria-hidden="true">rule</span></md-outlined-text-field>
+     <ul data-picker-results class="wt-search-results" aria-label="Matching rules"></ul>
+     <ul data-picker-selected class="wt-meta-chips list-unstyled" aria-label="Chosen rules">
+      <li class="wt-mini-chip" th:if="${prefillRule != null}" th:attr="data-picker-value=${prefillRule.id}"><span
+        class="material-icons" aria-hidden="true">rule</span><span th:text="${prefillRule.label}"></span>
+       <button type="button" class="wt-chip-remove" data-picker-remove th:aria-label="${'Remove ' + prefillRule.label}"><span
+        class="material-icons" aria-hidden="true">close</span></button></li>
+     </ul>
+    </div>
+    <md-outlined-text-field label="CWEs (optional)" maxlength="200" data-knowledge-cwes placeholder="CWE-79" supporting-text="Comma separated"></md-outlined-text-field>
+   </details>
+  </form>
+  <div slot="actions">
+   <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+   <md-filled-button type="submit" form="knowledgeProposeForm" has-icon><span class="material-icons" slot="icon" aria-hidden="true">send</span>Propose</md-filled-button>
+  </div>
+ </md-dialog>
+</section>
+</th:block>

@@ -1,5 +1,6 @@
 package com.tracelink.appsec.module.advisory.scanner;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,8 +48,8 @@ public class AdvisoryScanner implements IImageScanner {
 	}
 
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return AdvisoryRuleDto.class;
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Collections.singletonList(AdvisoryRuleDto.class);
 	}
 
 }

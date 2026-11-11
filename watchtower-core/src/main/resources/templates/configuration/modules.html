@@ -1,0 +1,108 @@
+<!-- Scanner modules (UAT walkthrough, 2026-10-16): the table is the page. Each module shows its
+     scanner tile, readable name and what it checks, the same Ready / Needs setup / Off status Home
+     shows (reason on hover), a link to its rules and an On/Off switch that asks first
+     (module-controls.js). The explanation of turning one off is a chip's hover text. -->
+<div class="wt-home-head wt-report-head" data-assistant-kind="scanner_modules">
+  <div th:replace="~{fragments/pageheader :: header('Scanner modules', null)}"></div>
+  <div class="wt-meta-chips wt-report-head__status" data-module-summary>
+    <span class="wt-mini-chip wt-mini-chip--ok" th:if="${readyCount > 0}"><span class="wt-dot wt-dot--ready" aria-hidden="true"></span><span th:text="${readyCount + ' ready'}">7 ready</span></span>
+    <span class="wt-mini-chip wt-mini-chip--warn" th:if="${setupCount > 0}"><span class="wt-dot wt-dot--setup" aria-hidden="true"></span><span th:text="${setupCount + ' needs setup'}">1 needs setup</span></span>
+    <span class="wt-mini-chip" th:if="${offCount > 0}"><span class="wt-dot" aria-hidden="true"></span><span th:text="${offCount + ' off'}">1 off</span></span>
+    <span class="wt-mini-chip" tabindex="0"
+        data-tip="An off module keeps its rules, rulesets, imports, exports and history; its designer and tests are unavailable. Queued work rechecks the setting when it starts, and incomplete or off runs can't reuse earlier reports."><span
+        class="material-icons" aria-hidden="true">help_outline</span>Turning one off</span>
+    <span class="wt-mini-chip" tabindex="0"
+        data-tip="A scanner starts only when a scan has at least one file of its types. Click a type to change them for every repository. All files means no limit."><span
+        class="material-icons" aria-hidden="true">help_outline</span>Runs on</span>
+  </div>
+</div>
+<div class="card card-small mb-4">
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Scanner modules">
+    <table class="table mb-0">
+      <caption class="visually-hidden">Scanner modules, their status, rules and whether they run</caption>
+      <thead><tr><th scope="col">Scanner</th><th scope="col">Runs on</th><th scope="col">Status</th><th scope="col">Rules</th><th scope="col" class="text-end">On</th></tr></thead>
+      <tbody><tr th:each="row : ${modules}" th:with="status=${row.status()}">
+        <th scope="row"><div class="wt-person">
+          <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons" th:text="${status.icon()}">radar</span></span>
+          <span class="wt-person__text"><span th:text="${status.name()}">Scanner</span>
+            <span class="wt-person__meta" th:text="${status.purpose()}">What it checks</span></span>
+        </div></th>
+        <td><div class="wt-meta-chips wt-file-types"
+            th:with="types=${row.fileTypes()}, joined=${#strings.listJoin(row.fileTypes(), ',')}, defaults=${#strings.listJoin(row.defaultFileTypes(), ',')}">
+          <button type="button" class="wt-mini-chip wt-mini-chip--type" data-module-types th:disabled="${!canModify}"
+              th:each="type, iter : ${types}" th:if="${iter.index < 3}"
+              th:text="${type}"
+              th:attr="data-module=${row.module()},data-version=${row.version()},data-name=${status.name()},data-purpose=${status.purpose()},data-icon=${status.icon()},data-types=${joined},data-defaults=${defaults},data-custom=${row.fileTypesCustomized()},aria-label=${'Change the file types for ' + status.name()}">.tf</button>
+          <button type="button" class="wt-mini-chip wt-mini-chip--type" data-module-types th:disabled="${!canModify}" th:if="${types.size() > 3}"
+              th:text="${'+' + (types.size() - 3)}"
+              th:attr="data-tip=${#strings.listJoin(types.subList(3, types.size()), '  ')},data-module=${row.module()},data-version=${row.version()},data-name=${status.name()},data-purpose=${status.purpose()},data-icon=${status.icon()},data-types=${joined},data-defaults=${defaults},data-custom=${row.fileTypesCustomized()},aria-label=${'Change the file types for ' + status.name()}">+3</button>
+          <button type="button" class="wt-mini-chip wt-mini-chip--all" data-module-types th:disabled="${!canModify}" th:if="${types.isEmpty()}"
+              th:attr="data-tip='No limit: the scanner looks at every file in a scan.',data-module=${row.module()},data-version=${row.version()},data-name=${status.name()},data-purpose=${status.purpose()},data-icon=${status.icon()},data-types='',data-defaults=${defaults},data-custom=${row.fileTypesCustomized()},aria-label=${'Change the file types for ' + status.name()}"><span
+              class="material-icons" aria-hidden="true">select_all</span>All files</button>
+          <span class="wt-mini-chip" tabindex="0" th:if="${row.fileTypesCustomized()}"
+              th:attr="data-tip='Chosen by an admin. The scanner\'s own default is: ' + (${#lists.isEmpty(row.defaultFileTypes())} ? 'every file' : ${#strings.listJoin(row.defaultFileTypes(), ', ')})"><span
+              class="material-icons" aria-hidden="true">tune</span></span>
+        </div></td>
+        <td><span class="wt-mini-chip" tabindex="0"
+            th:classappend="${status.state() == 'ready' ? ' wt-mini-chip--ok' : (status.state() == 'setup' ? ' wt-mini-chip--warn' : '')}"
+            th:attr="data-tip=${status.reason()}"
+            th:aria-label="${status.stateLabel + '. ' + status.reason()}"><span class="wt-dot" aria-hidden="true"
+            th:classappend="${status.state() != 'off' ? ' wt-dot--' + status.state() : ''}"></span><span th:text="${status.stateLabel}">Ready</span></span></td>
+        <td><a class="wt-entity-link" th:if="${row.rulesUrl() != null}" th:href="${row.rulesUrl()}" th:text="${row.rulesLabel}">340 rules</a>
+          <span th:unless="${row.rulesUrl() != null}" th:text="${row.rulesLabel}">0 rules</span>
+          <th:block th:if="${row.module() == 'AwsSecurityAgent' and #authorization.expression('hasAuthority(''AWS Security Administration'') and hasAuthority(''Repository Settings View'')')}"> ·
+          <a class="wt-entity-link wt-aws-setup-link" href="/aws-security/readiness/view" data-tip="Connections, settings and sample tests"><span class="material-icons" aria-hidden="true">settings</span>Setup</a></th:block></td>
+        <td class="text-end"><button type="button" class="wt-switch" role="switch" data-module-toggle th:disabled="${!canModify}"
+            th:attr="aria-checked=${row.enabled()},data-module=${row.module()},data-name=${status.name()},data-purpose=${status.purpose()},data-icon=${status.icon()},data-enabled=${!row.enabled()},data-version=${row.version()},data-tip=${row.enabled() ? 'On: turn off' : 'Off: turn on'}"
+            th:aria-label="${status.name() + ' runs in scans'}"></button></td>
+      </tr></tbody>
+    </table>
+  </div>
+</div>
+<!-- Confirm before changing whether a module runs. module-controls.js fills the name, state and button. -->
+<md-dialog id="module-policy-dialog" type="alert">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons" data-module-policy-icon>radar</span></span>
+    <span class="wt-person__text"><span id="module-policy-title">Turn on scanner?</span>
+      <span class="wt-person__meta" id="module-policy-description"></span></span></span></div>
+  <form slot="content" id="module-policy-form" method="post" action="/configuration/modules">
+    <div class="wt-meta-chips">
+      <span class="wt-mini-chip wt-mini-chip--ok"><span class="material-icons" aria-hidden="true">history</span>Rules and history kept</span>
+      <span class="wt-mini-chip" tabindex="0" data-tip="Queued work rechecks the setting when it starts."><span class="material-icons" aria-hidden="true">schedule</span>Applies to the next scans</span>
+    </div>
+    <input type="hidden" name="module"><input type="hidden" name="enabled"><input type="hidden" name="version">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+  </form>
+  <div slot="actions">
+    <md-text-button type="button" id="module-policy-cancel">Cancel</md-text-button>
+    <md-filled-button type="submit" form="module-policy-form" has-icon><span slot="icon" class="material-icons" aria-hidden="true">power_settings_new</span><span id="module-policy-submit">Turn on</span></md-filled-button>
+  </div>
+</md-dialog>
+<!-- File types a scanner runs on (design canvas, board ScannerTypes). module-controls.js fills it from the
+     clicked chip and keeps the hidden fileTypes field in step with the chips. -->
+<md-dialog id="module-types-dialog">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons" data-module-types-icon>radar</span></span>
+    <span class="wt-person__text"><span id="module-types-title">Runs on</span>
+      <span class="wt-person__meta" id="module-types-description"></span></span></span></div>
+  <form slot="content" id="module-types-form" method="post" action="/configuration/modules/file-types">
+    <div class="wt-types-box" data-types-list aria-label="File types"></div>
+    <div class="wt-types-add">
+      <md-outlined-text-field id="module-types-input" autofocus label="Add a type" placeholder=".tf or Dockerfile" maxlength="64"></md-outlined-text-field>
+      <button type="button" class="wt-mini-chip wt-mini-chip--warn" data-types-hint hidden></button>
+      <md-text-button type="button" data-types-add has-icon><span slot="icon" class="material-icons" aria-hidden="true">add</span>Add</md-text-button>
+    </div>
+    <p class="wt-field-error" data-types-error role="alert" hidden></p>
+    <div class="wt-meta-chips">
+      <span class="wt-mini-chip" tabindex="0" data-types-state data-tip="">Default</span>
+      <span class="wt-mini-chip" tabindex="0" data-tip="Applies to the next scans. Older results of this scanner are not reused."><span class="material-icons" aria-hidden="true">schedule</span>Applies to the next scans</span>
+    </div>
+    <input type="hidden" name="module"><input type="hidden" name="version"><input type="hidden" name="fileTypes"><input type="hidden" name="useDefault" value="false">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+  </form>
+  <div slot="actions">
+    <md-text-button type="button" data-types-default has-icon><span slot="icon" class="material-icons" aria-hidden="true">restart_alt</span>Use default</md-text-button>
+    <md-text-button type="button" id="module-types-cancel">Cancel</md-text-button>
+    <md-filled-button type="submit" form="module-types-form" has-icon><span slot="icon" class="material-icons" aria-hidden="true">check</span>Save</md-filled-button>
+  </div>
+</md-dialog>

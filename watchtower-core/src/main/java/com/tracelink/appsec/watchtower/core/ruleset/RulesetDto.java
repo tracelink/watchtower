@@ -7,9 +7,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
@@ -188,7 +188,8 @@ public class RulesetDto implements Comparable<RulesetDto> {
 	 */
 	@JsonIgnore
 	public Set<RuleDto> getAllRules() {
-		Set<RuleDto> allRules = new HashSet<>(rules);
+		Set<RuleDto> allRules = rules.stream().filter(rule -> !rule.isRetired())
+				.collect(Collectors.toCollection(HashSet::new));
 		for (RulesetDto ruleset : rulesets) {
 			allRules.addAll(ruleset.getAllRules());
 		}

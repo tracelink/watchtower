@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
@@ -17,7 +17,7 @@ import com.tracelink.appsec.watchtower.core.auth.repository.RoleRepository;
 public class RoleServiceTest {
 	private RoleService roleService;
 
-	@MockBean
+	@MockitoBean
 	private RoleRepository mockRoleRepository;
 
 	

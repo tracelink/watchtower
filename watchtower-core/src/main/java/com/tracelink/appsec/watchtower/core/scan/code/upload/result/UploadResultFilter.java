@@ -7,11 +7,11 @@ package com.tracelink.appsec.watchtower.core.scan.code.upload.result;
  *
  */
 public enum UploadResultFilter {
-	ALL("all", "All Scans"),
+	ALL("all", "All"),
 	//
-	VIOLATIONS("violations", "Scans with Violations"),
+	VIOLATIONS("violations", "With findings"),
 	//
-	INCOMPLETE("incomplete", "Incomplete Scans");
+	INCOMPLETE("incomplete", "Incomplete");
 
 	private final String name;
 

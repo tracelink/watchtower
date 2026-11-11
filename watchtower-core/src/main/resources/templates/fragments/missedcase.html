@@ -1,0 +1,125 @@
+<!--/* Record a missed vulnerability (UAT walkthrough, 2026-10-16): the fields are grouped into
+     Where, What and Test example, and the explanations are two chips. missed-case.js posts the
+     same fields as before. */-->
+<md-dialog th:fragment="dialog(repo)" id="missedCaseDialog" data-missed-dialog
+    th:attr="data-repo-id=${repo.id},data-csrf-header=${_csrf.headerName},data-csrf-token=${_csrf.token}">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">report</span></span>
+    <span class="wt-person__text"><span>Record a missed vulnerability</span>
+      <span class="wt-person__meta" th:text="${repo.repoName}">payments-api</span></span></span>
+    <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-missed-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <div slot="content" class="wt-md-form wt-missed-form">
+    <div class="wt-meta-chips">
+      <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+          data-tip="Record a security fix or pentest finding a person confirmed and the scanners missed. It saves references for future tests only; scan enforcement doesn't change."><span
+          class="material-icons" aria-hidden="true">help_outline</span>What is this?</span>
+      <span class="wt-mini-chip wt-mini-chip--ok" tabindex="0"
+          data-tip="Keep a small, secret-free example in your versioned test repository; Watchtower stores only its reference and hash."><span
+          class="material-icons" aria-hidden="true">lock</span>No source or secrets stored</span>
+    </div>
+    <h3 class="wt-form-group-title">Where</h3>
+    <div class="wt-form-pair">
+      <md-outlined-text-field label="Vulnerable commit" supporting-text="Full hash" data-missed-field="commit" maxlength="40"></md-outlined-text-field>
+      <md-outlined-text-field label="Fixed commit (optional)" supporting-text="Full hash" data-missed-field="fixedCommit" maxlength="40"></md-outlined-text-field>
+    </div>
+    <div class="wt-form-pair wt-form-pair--wide">
+      <md-outlined-text-field label="File" supporting-text="Path in the repository" data-missed-field="affectedPath" maxlength="255"></md-outlined-text-field>
+      <md-outlined-text-field label="Line" type="number" min="1" value="1" data-missed-field="firstLine"></md-outlined-text-field>
+    </div>
+    <h3 class="wt-form-group-title">What</h3>
+    <fieldset class="wt-choice-chips" data-missed-field="evidenceType">
+      <legend>Evidence</legend>
+      <label class="wt-choice-chip"><input type="radio" name="missed-evidence-type" value="SECURITY_FIX" checked aria-label="Confirmed security fix"/><span
+          class="material-icons" aria-hidden="true">build</span>Security fix</label>
+      <label class="wt-choice-chip"><input type="radio" name="missed-evidence-type" value="PENTEST" aria-label="Pentest"/><span
+          class="material-icons" aria-hidden="true">bug_report</span>Pentest</label>
+      <label class="wt-choice-chip"><input type="radio" name="missed-evidence-type" value="MANUAL" aria-label="Other confirmed miss"/><span
+          class="material-icons" aria-hidden="true">more_horiz</span>Other</label>
+    </fieldset>
+    <div class="wt-form-pair">
+      <md-outlined-text-field label="Weakness" supporting-text="e.g. CWE-79" data-missed-field="cwe" maxlength="24"></md-outlined-text-field>
+      <md-outlined-text-field label="Evidence reference" supporting-text="e.g. pentest/report-42" data-missed-field="evidenceRef" maxlength="255"></md-outlined-text-field>
+    </div>
+    <div class="wt-form-triple">
+      <md-outlined-text-field label="Language" supporting-text="e.g. Java" data-missed-field="language" maxlength="64"></md-outlined-text-field>
+      <md-outlined-text-field label="Framework" value="unknown" data-missed-field="framework" maxlength="64"></md-outlined-text-field>
+      <md-outlined-text-field label="Version" value="unknown" data-missed-field="frameworkVersion" maxlength="64"
+          data-tip="Leave unknown when the framework or version isn't known. One case says nothing about other projects."></md-outlined-text-field>
+    </div>
+    <!-- Required by the server (a case without a reviewed example can't become a test), so it
+         stays visible rather than in an optional fold. -->
+    <h3 class="wt-form-group-title">Test example</h3>
+    <div class="wt-form-pair">
+      <md-outlined-text-field label="Example reference" supporting-text="e.g. fixtures/xss-v1.java" data-missed-field="fixtureRef" maxlength="255"></md-outlined-text-field>
+      <md-outlined-text-field label="Example SHA-256" supporting-text="64 hex characters" data-missed-field="fixtureHash" maxlength="64"></md-outlined-text-field>
+    </div>
+    <p class="wt-field-help" data-missed-status role="status" aria-live="polite"></p>
+    <h3 class="wt-form-group-title">Recorded cases</h3>
+    <div class="wt-missed-list" data-missed-list></div>
+    <div class="wt-pager-inline">
+      <button type="button" class="wt-icon-action" aria-label="Previous cases" title="Previous cases" data-missed-previous><span
+          class="material-icons" aria-hidden="true">chevron_left</span></button>
+      <button type="button" class="wt-icon-action" aria-label="More cases" title="More cases" data-missed-next><span
+          class="material-icons" aria-hidden="true">chevron_right</span></button>
+    </div>
+  </div>
+  <div slot="actions">
+    <md-text-button type="button" data-missed-close>Cancel</md-text-button>
+    <md-filled-button type="button" data-missed-save has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save confirmed case</md-filled-button>
+  </div>
+</md-dialog>
+
+<!-- R5.3: one recorded miss → regression tests → similar code elsewhere. Deterministic; no AI.
+     Three numbered steps, each one line with its button; nothing runs until a button is pressed. -->
+<md-dialog th:fragment="variant" id="variantSearchDialog" data-variant-dialog
+    th:attr="data-csrf-header=${_csrf.headerName},data-csrf-token=${_csrf.token}">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">manage_search</span></span>
+    <span class="wt-person__text"><span>Find similar code</span>
+      <span class="wt-person__meta" data-variant-case></span></span></span>
+    <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-variant-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <div slot="content" class="wt-md-form wt-variant">
+    <ol class="wt-variant-steps">
+      <li class="wt-variant-step">
+        <span class="wt-step-number" aria-hidden="true">1</span>
+        <span class="wt-variant-step__text"><strong>Compare the commits</strong>
+          <span class="wt-field-help">Reads only the affected file at both commits; nothing is saved</span></span>
+        <span class="wt-variant-step__actions">
+          <button type="button" class="btn btn-secondary btn-sm" data-variant-compare data-tip="Shows what the fix changed."><span
+              class="material-icons" aria-hidden="true">difference</span>Compare</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-ai-helper="fixture" hidden
+              data-tip="Ask the assistant to write a small example that shows the miss. It is only shown here; nothing is saved."><span
+              class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span>Draft fixture</button>
+        </span>
+        <div class="wt-variant-step__result" data-variant-proposal></div>
+        <div class="wt-variant-step__result" data-ai-fixture-result role="status" aria-live="polite"></div>
+      </li>
+      <li class="wt-variant-step">
+        <span class="wt-step-number" aria-hidden="true">2</span>
+        <span class="wt-variant-step__text"><strong>Save as regression tests</strong>
+          <span class="wt-field-help">Vulnerable version must be flagged, fixed version must not</span></span>
+        <button type="button" class="btn btn-secondary btn-sm" data-variant-save-tests
+            data-tip="Records two tests for the rule below. Copy both files into the reviewed example folder so the tests can run."><span
+            class="material-icons" aria-hidden="true">science</span>Save tests</button>
+      </li>
+      <li class="wt-variant-step">
+        <span class="wt-step-number" aria-hidden="true">3</span>
+        <span class="wt-variant-step__text"><strong>Search other repositories</strong>
+          <span class="wt-field-help">Runs the rule (or a draft) on up to 25 repositories you pick</span></span>
+        <button type="button" class="btn btn-secondary btn-sm" data-variant-start
+            data-tip="Each at the latest commit of its default branch. The same rule and commits always give the same results. Matches are places to review, not confirmed vulnerabilities; scans and pull requests don't change."><span
+            class="material-icons" aria-hidden="true">travel_explore</span>Start search</button>
+      </li>
+    </ol>
+    <div class="wt-form-pair">
+      <md-outlined-text-field label="Rule" type="number" supporting-text="Rule ID" data-variant-rule></md-outlined-text-field>
+      <md-outlined-text-field label="Draft (optional)" supporting-text="Draft ID" data-variant-candidate maxlength="36"></md-outlined-text-field>
+    </div>
+    <md-outlined-text-field label="Find repositories" type="search" data-variant-query maxlength="100"></md-outlined-text-field>
+    <div class="wt-variant-repos" data-variant-repositories></div>
+    <p class="wt-field-help" data-variant-selected></p>
+    <div data-variant-searches></div>
+    <p class="wt-field-help" data-variant-status role="status" aria-live="polite"></p>
+  </div>
+  <div slot="actions"><md-text-button type="button" data-variant-close>Close</md-text-button></div>
+</md-dialog>

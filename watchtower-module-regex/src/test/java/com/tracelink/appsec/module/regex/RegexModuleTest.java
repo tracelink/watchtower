@@ -2,6 +2,7 @@ package com.tracelink.appsec.module.regex;
 
 import com.tracelink.appsec.module.regex.designer.RegexRuleDesigner;
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto;
 import com.tracelink.appsec.module.regex.service.RegexRuleService;
 import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -29,7 +30,8 @@ public class RegexModuleTest extends CodeScannerModuleTest {
 			rule.setPriority(RulePriority.MEDIUM_HIGH);
 			rule.setRegexPattern(".*");
 			return rule;
-		}).withSchemaName("regex_schema_history").withSupportedRuleClass(RegexCustomRuleDto.class);
+		}).withSchemaName("regex_schema_history")
+				.withSupportedRuleClass(RegexCustomRuleDto.class, RegexProvidedRuleDto.class);
 	}
 
 }

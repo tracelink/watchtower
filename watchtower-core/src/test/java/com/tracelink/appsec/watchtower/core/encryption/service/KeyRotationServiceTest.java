@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.persistence.Convert;
-import javax.persistence.EntityManagerFactory;
+import jakarta.persistence.Convert;
+import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -42,8 +42,9 @@ import org.springframework.data.repository.core.CrudMethods;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.support.RepositoryFactoryInformation;
-import org.springframework.data.util.Streamable;
-import org.springframework.data.util.TypeInformation;
+import org.springframework.data.core.TypeInformation;
+import org.springframework.data.repository.core.support.RepositoryComposition;
+import org.springframework.data.repository.core.support.RepositoryFragment;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.context.WebApplicationContext;
@@ -65,22 +66,22 @@ public class KeyRotationServiceTest {
 	public final CoreLogWatchExtension logWatcher =
 			CoreLogWatchExtension.forClass(DataEncryptionService.class);
 
-	@MockBean
+	@MockitoBean
 	private DataEncryptionKeyRepository dataEncryptionKeyRepository;
 
-	@MockBean
+	@MockitoBean
 	private KeyEncryptionService keyEncryptionService;
 
-	@MockBean
+	@MockitoBean
 	private EncryptionMetadataRepository encryptionMetadataRepository;
 
-	@MockBean
+	@MockitoBean
 	private WebApplicationContext webApplicationContext;
 
-	@MockBean
+	@MockitoBean
 	private EntityManagerFactory entityManagerFactory;
 
-	@MockBean
+	@MockitoBean
 	private EncryptionFlushEntityEventListener encryptionFlushEntityEventListener;
 
 	private DataEncryptionKey dataEncryptionKey;
@@ -738,6 +739,36 @@ public class KeyRotationServiceTest {
 	}
 
 	@Test
+	public void testEnableRotationScheduleTooLongPeriod() {
+		KeyRotationService keyRotationService = new KeyRotationService(EncryptionType.ENVIRONMENT,
+				false, dataEncryptionKeyRepository, keyEncryptionService,
+				encryptionMetadataRepository, webApplicationContext, entityManagerFactory,
+				encryptionFlushEntityEventListener);
+		configureEventListenerGroup();
+
+		EncryptionMetadata encryptionMetadata = new EncryptionMetadata();
+		BDDMockito.when(encryptionMetadataRepository.findAll())
+				.thenReturn(Collections.emptyList());
+		BDDMockito.when(encryptionMetadataRepository
+				.saveAndFlush(BDDMockito.any(EncryptionMetadata.class)))
+				.thenReturn(encryptionMetadata);
+
+		keyRotationService.postConstruct();
+
+		// 99999 days is about 274 years: accepted before the limit, which made the schedule useless
+		IllegalArgumentException thrown = Assertions.assertThrows(
+				IllegalArgumentException.class,
+				() -> keyRotationService.enableRotationSchedule(true, 99999));
+		Assertions.assertEquals(
+				"Please provide a rotation period of at most 3650 days (10 years)",
+				thrown.getMessage());
+
+		// the limit itself is still allowed
+		keyRotationService.enableRotationSchedule(true, 3650);
+		Assertions.assertEquals(3650, encryptionMetadata.getRotationPeriod());
+	}
+
+	@Test
 	public void testEnableRotationSchedule() {
 		KeyRotationService keyRotationService = new KeyRotationService(EncryptionType.ENVIRONMENT,
 				false, dataEncryptionKeyRepository, keyEncryptionService,
@@ -943,8 +974,18 @@ public class KeyRotationServiceTest {
 		}
 
 		@Override
-		public Streamable<Method> getQueryMethods() {
+		public List<Method> getQueryMethods() {
 			return null;
+		}
+
+		@Override
+		public RepositoryComposition getRepositoryComposition() {
+			return null;
+		}
+
+		@Override
+		public Set<RepositoryFragment<?>> getFragments() {
+			return new HashSet<>();
 		}
 
 		@Override
@@ -958,8 +999,18 @@ public class KeyRotationServiceTest {
 		}
 
 		@Override
+		public TypeInformation<?> getIdTypeInformation() {
+			return TypeInformation.of(Long.class);
+		}
+
+		@Override
 		public Class<?> getDomainType() {
 			return TestEntity.class;
+		}
+
+		@Override
+		public TypeInformation<?> getDomainTypeInformation() {
+			return TypeInformation.of(TestEntity.class);
 		}
 
 		@Override

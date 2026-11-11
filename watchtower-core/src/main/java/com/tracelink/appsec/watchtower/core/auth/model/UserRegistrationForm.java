@@ -1,6 +1,6 @@
 package com.tracelink.appsec.watchtower.core.auth.model;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Data object for new user registration
@@ -8,6 +8,7 @@ import javax.validation.constraints.NotBlank;
  * @author csmith
  */
 public class UserRegistrationForm {
+    @NotBlank(message = "Please provide a username")
     private String username;
     @NotBlank(message = "Please provide a password")
     private String password;

@@ -34,6 +34,94 @@ public class BBPullRequestTest {
 		Assertions.assertEquals(PullRequestState.ACTIVE, bbpr.getState());
 	}
 
+	@Test
+	public void theRepositoryIsNamedByItsSlugNotItsDisplayName() throws JSONException {
+		// "Payments API" cannot go in a Bitbucket API path or an SQS group id
+		JSONObject json = buildJSON();
+		json.getJSONObject("repository").put("name", "Payments API")
+				.put("full_name", "myworkspace/payments-api");
+		BBPullRequest bbpr = new BBPullRequest("");
+		bbpr.populateFromRequest(json.toString());
+		Assertions.assertEquals("payments-api", bbpr.getRepoName());
+	}
+
+	@Test
+	public void testMergedStateIsRecognised() throws JSONException {
+		// Bitbucket reports a merged pull request as state MERGED. Mapping it onto
+		// ACTIVE leaves the PR permanently unresolved, so the synchronizer re-fetches it
+		// from Bitbucket every few hours forever.
+		Assertions.assertEquals(PullRequestState.MERGED, stateFromBitbucket("MERGED"));
+	}
+
+	@Test
+	public void testDeclinedStateIsRecognised() throws JSONException {
+		Assertions.assertEquals(PullRequestState.DECLINED, stateFromBitbucket("DECLINED"));
+	}
+
+	@Test
+	public void testOpenStateIsActive() throws JSONException {
+		Assertions.assertEquals(PullRequestState.ACTIVE, stateFromBitbucket("OPEN"));
+	}
+
+	@Test
+	public void testUnknownStateFallsBackToActive() throws JSONException {
+		// A state Bitbucket adds in future must not break parsing.
+		Assertions.assertEquals(PullRequestState.ACTIVE, stateFromBitbucket("SOMETHING_NEW"));
+	}
+
+	@Test
+	public void testMergedAndDeclinedCountAsResolvedButActiveDoesNot() {
+		Assertions.assertTrue(PullRequestState.MERGED.isResolved());
+		Assertions.assertTrue(PullRequestState.DECLINED.isResolved());
+		Assertions.assertFalse(PullRequestState.ACTIVE.isResolved());
+	}
+
+	@Test
+	public void theFullCommitHashIsTakenFromTheCommitLinkWhenThePayloadAbbreviatesIt()
+			throws JSONException {
+		String full = "0123456789abcdef0123456789abcdef01234567";
+		String shortHash = full.substring(0, 12);
+		JSONObject pr = buildJSON().getJSONObject("pullrequest");
+		pr.getJSONObject("source").put("commit", new JSONObject().put("hash", shortHash)
+				.put("links", new JSONObject().put("self", new JSONObject().put("href",
+						"https://api.bitbucket.org/2.0/repositories/ws/repo/commit/" + full))));
+		BBPullRequest bbpr = new BBPullRequest("");
+
+		bbpr.parsePullRequestJson(pr.toString());
+
+		Assertions.assertEquals(full, bbpr.getCommitHash());
+	}
+
+	@Test
+	public void anAbbreviatedHashWithoutAUsableLinkIsKeptAsIs() throws JSONException {
+		JSONObject pr = buildJSON().getJSONObject("pullrequest");
+		BBPullRequest bbpr = new BBPullRequest("");
+
+		bbpr.parsePullRequestJson(pr.toString());
+
+		Assertions.assertEquals(sourceHash, bbpr.getCommitHash());
+	}
+
+	@Test
+	public void aFullHashFromThePayloadIsNotReplaced() throws JSONException {
+		String full = "fedcba9876543210fedcba9876543210fedcba98";
+		JSONObject pr = buildJSON().getJSONObject("pullrequest");
+		pr.getJSONObject("source").put("commit", new JSONObject().put("hash", full));
+		BBPullRequest bbpr = new BBPullRequest("");
+
+		bbpr.parsePullRequestJson(pr.toString());
+
+		Assertions.assertEquals(full, bbpr.getCommitHash());
+	}
+
+	private PullRequestState stateFromBitbucket(String state) throws JSONException {
+		JSONObject json = buildJSON();
+		json.getJSONObject("pullrequest").put("state", state);
+		BBPullRequest bbpr = new BBPullRequest("");
+		bbpr.populateFromRequest(json.toString());
+		return bbpr.getState();
+	}
+
 	public static JSONObject buildJSON() throws JSONException {
 		JSONObject authr = new JSONObject().put("display_name", author);
 		JSONObject src = new JSONObject()

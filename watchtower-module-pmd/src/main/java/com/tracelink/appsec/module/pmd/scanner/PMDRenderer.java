@@ -5,6 +5,7 @@ import java.io.Writer;
 
 import net.sourceforge.pmd.benchmark.TimingReport;
 import net.sourceforge.pmd.renderers.AbstractAccumulatingRenderer;
+import net.sourceforge.pmd.reporting.Report;
 
 /**
  * PMD Reporter that collects the reports for use within the {@link PMDReport} scheme
@@ -15,14 +16,13 @@ public class PMDRenderer extends AbstractAccumulatingRenderer {
 
 	private TimingReport timing;
 
+	// Defaults to an empty (but non-null) Report so createReport() is always safe to call, even
+	// if outputReport(Report) is never invoked (e.g. a scan with zero source files).
+	private Report finalReport = Report.buildReport(listener -> {
+	});
+
 	public PMDRenderer() {
 		super("PMDRenderer", "Renderer for the PMD WatchtowerModule");
-	}
-
-	@Override
-	public void start() throws IOException {
-		super.start();
-		report.start();
 	}
 
 	/**
@@ -44,17 +44,21 @@ public class PMDRenderer extends AbstractAccumulatingRenderer {
 		return null;
 	}
 
+	/**
+	 * Called once with the fully accumulated {@link Report} for the whole analysis. Replaces the
+	 * PMD 6 {@code start()}/{@code end()} lifecycle, which no longer exists on
+	 * {@link AbstractAccumulatingRenderer} in PMD 7.
+	 */
 	@Override
-	public void end() throws IOException {
-		report.end();
-		// do nothing else. use createReport to get the report object
+	protected void outputReport(Report report) throws IOException {
+		this.finalReport = report;
 	}
 
 	/**
 	 * @return a report using this report's data and the PMD benchmark, if used
 	 */
 	public PMDReport createReport() {
-		return new PMDReport(report, timing);
+		return new PMDReport(finalReport, timing);
 	}
 
 	/**

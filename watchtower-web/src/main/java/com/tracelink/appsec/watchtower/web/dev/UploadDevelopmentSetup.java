@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort.Direction;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadStorageLocation;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanContainerEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadScanEntity;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.entity.UploadViolationEntity;
@@ -55,7 +56,7 @@ class UploadDevelopmentSetup {
 	private void saveUpload(boolean state, Random random) {
 		UploadScan upload = new UploadScan();
 		String name = "foo" + random.nextInt();
-		upload.setFilePath(Paths.get(name + ".zip"));
+		upload.setStorageKey(UploadStorageLocation.forLocalPath(Paths.get(name + ".zip")));
 		upload.setName(name);
 		upload.setRuleSetName("Fake Ruleset");
 		upload.setUser("fake user");

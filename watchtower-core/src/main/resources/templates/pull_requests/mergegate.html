@@ -1,0 +1,86 @@
+<div th:replace="~{fragments/pageheader :: header('Pull request results', null)}"></div>
+<!-- Merge gate: merges Watchtower had not finished scanning, or whose scan blocked. The counts are
+     chips; their breakdowns and the top repositories open as popovers so the list starts near the
+     top. Counted from the release that records how pull requests close. -->
+<div class="wt-page-bar mb-3">
+  <div th:replace="~{fragments/resultfilters :: filters(baseUrl=${'/scan/results/'}, filters=${filters}, activeFilter=${activeFilter})}"></div>
+  <div class="wt-result-period">
+    <nav class="wt-segmented-filter" aria-label="Window" data-merge-gate-window>
+      <a th:each="d : ${dayOptions}" th:href="@{/scan/results/merge-gate(days=${d})}"
+         th:class="${d == report.days()} ? 'wt-segment is-active' : 'wt-segment'"
+         th:attr="aria-current=${d == report.days() ? 'page' : null}" th:text="${'Last ' + d + ' days'}">Last 30 days</a>
+    </nav>
+  </div>
+</div>
+<div class="wt-capability-group mb-3" data-merge-gate-summary>
+  <span class="wt-status-chip wt-tone-neutral" data-merge-gate-merges><span class="material-icons" aria-hidden="true">call_merge</span><span
+      th:text="${report.merges() + (report.merges() == 1 ? ' merge' : ' merges')}">120 merges</span></span>
+  <details class="wt-popover" data-merge-gate-before-scan>
+    <summary th:aria-label="${report.mergedBeforeScan().total() + ' merged before scan. Why?'}"><span class="wt-status-chip"
+        th:classappend="${report.mergedBeforeScan().total() > 0 ? ' wt-tone-warning' : ' wt-tone-success'}"><span class="material-icons" aria-hidden="true">schedule</span><span
+        th:text="${report.mergedBeforeScan().total() + ' merged before scan'}">14 merged before scan</span></span></summary>
+    <div class="wt-popover__body">
+      <p class="mb-2">Merged with no completed scan of the merged commit.</p>
+      <dl class="wt-result-detail-list">
+        <div><dt>Scan in progress</dt><dd th:text="${report.mergedBeforeScan().scanInProgress()}">6</dd></div>
+        <div><dt>Newer commit not scanned</dt><dd th:text="${report.mergedBeforeScan().newerCommitNotScanned()}">4</dd></div>
+        <div><dt>Scan failed</dt><dd th:text="${report.mergedBeforeScan().scanFailed()}">1</dd></div>
+        <div><dt>Never scanned</dt><dd th:text="${report.mergedBeforeScan().neverScanned()}">3</dd></div>
+      </dl>
+    </div>
+  </details>
+  <details class="wt-popover" data-merge-gate-blocking>
+    <summary th:aria-label="${report.mergedWithBlockingFindings().total() + ' merged with blocking findings. Bypassed?'}"><span class="wt-status-chip"
+        th:classappend="${report.mergedWithBlockingFindings().notBypassed() > 0 ? ' wt-tone-danger' : ' wt-tone-neutral'}"><span class="material-icons" aria-hidden="true">block</span><span
+        th:text="${report.mergedWithBlockingFindings().total() + ' with blocking findings'}">6 with blocking findings</span></span></summary>
+    <div class="wt-popover__body">
+      <p class="mb-2">The merged commit's scan blocked the pull request.</p>
+      <dl class="wt-result-detail-list">
+        <div><dt>Bypass approved</dt><dd th:text="${report.mergedWithBlockingFindings().bypassed()}">2</dd></div>
+        <div><dt>Not bypassed</dt><dd th:text="${report.mergedWithBlockingFindings().notBypassed()}">4</dd></div>
+      </dl>
+    </div>
+  </details>
+  <details class="wt-popover" th:if="${!#lists.isEmpty(report.topRepositories())}" data-merge-gate-top>
+    <summary aria-label="Repositories with the most ungated merges"><span class="wt-status-chip wt-tone-neutral">Top repositories</span></summary>
+    <div class="wt-popover__body">
+      <p class="mb-2">Most merges before a scan or with unbypassed blocking findings.</p>
+      <dl class="wt-result-detail-list">
+        <div th:each="r : ${report.topRepositories()}"><dt th:text="${r.repository()}">payments-api</dt>
+          <dd th:text="${r.ungated() + ' of ' + r.merges()}">5 of 12</dd></div>
+      </dl>
+    </div>
+  </details>
+  <span th:if="${report.truncated()}" class="wt-status-chip wt-tone-warning"
+      title="The window holds more merges than are read; the figures cover the newest of them.">Newest merges only</span>
+</div>
+<th:block th:if="${#lists.isEmpty(report.pullRequests())}"><div th:replace="~{fragments/emptystate :: state(${report.merges() == 0 ? 'No merges recorded in this window. Merges are recorded from the release that added this view.' : 'Every merge in this window had a clean scan of the merged commit.'})}"></div></th:block>
+<div class="row" th:if="${!#lists.isEmpty(report.pullRequests())}">
+  <div class="col"><div class="card card-small mb-2">
+    <div class="card-body pb-3 wt-table-scroll" role="region" aria-label="Merges not scanned clean" tabindex="0">
+      <table class="table mb-0 datatable-clean wt-results-table" data-merge-gate-table>
+        <caption>Merges without a clean scan of the merged commit, newest first</caption>
+        <thead class="bg-light"><tr>
+          <th scope="col" class="border-0">Pull request</th><th scope="col" class="border-0">Merged</th>
+          <th scope="col" class="border-0">Why</th><th scope="col" class="border-0 wt-result-secondary">Commit</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="pr : ${report.pullRequests()}">
+            <th scope="row" class="py-1 wt-result-identity">
+              <a th:if="${pr.link() != null}" class="wt-entity-link" th:href="${pr.link()}" target="_blank" rel="noopener noreferrer"
+                  th:text="${pr.repository() + ' #' + pr.prId()}">payments-api #12</a>
+              <span th:if="${pr.link() == null}" th:text="${pr.repository() + ' #' + pr.prId()}">payments-api #12</span>
+            </th>
+            <td class="py-1"><span class="localizetime" data-time-style="short" th:text="${pr.mergedAt()}">1700000000000</span></td>
+            <td class="py-1"><span class="wt-status-chip"
+                th:classappend="${pr.outcome().isUngated() ? ' wt-tone-warning' : ' wt-tone-neutral'}"
+                th:text="${pr.reason()}">Scan in progress</span></td>
+            <td class="py-1 wt-result-secondary"><code th:if="${pr.mergedCommit() != null}"
+                th:title="${pr.mergedCommit()}"
+                th:text="${#strings.length(pr.mergedCommit()) > 12 ? #strings.substring(pr.mergedCommit(), 0, 12) : pr.mergedCommit()}">abc123def456</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+</div>

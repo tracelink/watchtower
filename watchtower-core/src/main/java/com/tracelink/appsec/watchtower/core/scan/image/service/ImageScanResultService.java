@@ -1,5 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan.image.service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -12,8 +13,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
+import com.tracelink.appsec.watchtower.core.metrics.MetricsProjectionWriter;
 import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummary;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummaryCodec;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationService;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiType;
 import com.tracelink.appsec.watchtower.core.scan.image.ImageScan;
@@ -47,6 +52,12 @@ public class ImageScanResultService
 	private final ImageScanRepository scanRepo;
 	private final ImageViolationRepository vioRepo;
 	private final ApiIntegrationService apiService;
+	private MetricsProjectionWriter metricsProjectionWriter;
+
+	@Autowired(required = false)
+	void setMetricsProjectionWriter(MetricsProjectionWriter writer) {
+		this.metricsProjectionWriter = writer;
+	}
 
 	public ImageScanResultService(@Autowired ImageContainerRepository containerRepo,
 			@Autowired RepositoryRepository imageRepo, @Autowired ImageScanRepository scanRepo,
@@ -87,10 +98,15 @@ public class ImageScanResultService
 	 * @param errors     the errors found in this scan
 	 */
 	public void saveImageReport(ImageScan scan, long startTime,
+			List<ImageViolationEntity> violations, List<ImageScanError> errors) {
+		saveImageReportWithId(scan, startTime, violations, errors);
+	}
+
+	public long saveImageReportWithId(ImageScan scan, long startTime,
 			List<ImageViolationEntity> violations,
 			List<ImageScanError> errors) {
 		if (violations == null) {
-			return;
+			return 0;
 		}
 		long now = System.currentTimeMillis();
 		ImageScanContainerEntity imageEntity =
@@ -121,31 +137,42 @@ public class ImageScanResultService
 			vioRepo.save(v);
 		});
 		vioRepo.flush();
+		if (metricsProjectionWriter != null) {
+			try {
+				metricsProjectionWriter.record("container", savedScanEntity, violations);
+			} catch (RuntimeException e) {
+				metricsProjectionWriter.recordFailure("container", e);
+			}
+		}
+		return savedScanEntity.getId();
 	}
 
-	public List<ImageScanResult> getScanResultsWithFilters(ImageResultFilter resultFilter,
+	public void saveExecutionSummary(long scanId, ScanExecutionSummary summary) {
+		ImageScanEntity entity = scanRepo.findById(scanId);
+		if (entity == null || summary == null) return;
+		entity.setRulesEvaluated(summary.rulesEvaluated());
+		entity.setScannerExecutionsJson(ScanExecutionSummaryCodec.encode(summary.scanners()));
+		scanRepo.saveAndFlush(entity);
+	}
+
+	public PagedResult<ImageScanResult> getScanResultsWithFilters(ImageResultFilter resultFilter,
 			int pageSize, int pageNum) {
-		List<ImageScanResult> results;
 		switch (resultFilter) {
 			case ALL:
-				results = scanRepo.findAll(
-						PageRequest.of(pageNum, pageSize,
-								Sort.by(Direction.DESC, "endDate")))
-						.stream().map(this::generateResultForScan)
-						.collect(Collectors.toList());
-				break;
+				return PagedResult.of(
+						scanRepo.findAll(
+								PageRequest.of(pageNum, pageSize,
+										Sort.by(Direction.DESC, "endDate"))),
+						this::generateResultForScan);
 			case VIOLATIONS:
-				results = vioRepo
-						.findAllGroupByScan(
-								PageRequest.of(pageNum, pageSize, Sort.by(Direction.DESC, "scan")))
-						.stream().map(this::generateResultForScan)
-						.collect(Collectors.toList());
-				break;
+				return PagedResult.of(
+						vioRepo.findAllGroupByScan(
+								PageRequest.of(pageNum, pageSize, Sort.by(Direction.DESC, "scan"))),
+						this::generateResultForScan);
 			default:
 				LOG.error("Filter is not configured to get Images");
 				throw new IllegalArgumentException("Filter is not configured to get Images");
 		}
-		return results;
 	}
 
 	/**
@@ -165,10 +192,13 @@ public class ImageScanResultService
 		result.setSubmitDate(scanEntity.getSubmitDate());
 		result.setStatus(scanEntity.getStatus().getDisplayName());
 		result.setErrorMessage(scanEntity.getError());
+		result.setExecutionSummary(new ScanExecutionSummary(scanEntity.getRulesEvaluated(),
+				ScanExecutionSummaryCodec.decode(scanEntity.getScannerExecutionsJson())));
 		if (scanEntity.getStatus() == ScanStatus.DONE) {
 			result.setEndDate(scanEntity.getEndDate());
 			result.setViolations(scanEntity.getViolations().stream()
 					.map(this::generateResultForViolation)
+					.sorted(Comparator.comparingInt(ImageScanResultViolation::getSeverityValue))
 					.collect(Collectors.toList()));
 		}
 		return result;
@@ -180,6 +210,7 @@ public class ImageScanResultService
 
 		irv.setViolationName(violation.getViolationName());
 		irv.setSeverity(violation.getSeverity().getName());
+		irv.setSeverityValue(violation.getSeverity().getPriority());
 		irv.setScore(advisory.getScore());
 		irv.setPackageName(advisory.getPackageName());
 		irv.setVector(advisory.getVector());

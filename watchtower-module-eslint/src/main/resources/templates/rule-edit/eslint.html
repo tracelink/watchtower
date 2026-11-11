@@ -1,69 +1,38 @@
-<!-- Card Footer -->
+<!-- A custom ESLint rule. The author is a fact (text plus the hidden input the POST needs);
+     the messages sit behind a disclosure (docs/design-system.md, "Restraint"). -->
 <div class="card-footer">
-  <form class="d-inline" action="/rule/edit/eslint/custom" method="POST" th:object="${rule}">
-    <div class="form-row mb-2">
-      <div class="col-md-5">
-        <label for="name">Name</label>
-        <input type="text" class="form-control" id="name" th:value="${rule.name}" name="name">
-      </div>
-      <div class="col-md-5">
-        <label for="author">Author</label>
-        <input type="text" readonly class="form-control" id="author" th:value="${rule.author}"
-               name="author"/>
-      </div>
-      <div class="col-md-2">
-        <label for="priority">Priority</label>
-        <select class="form-control" id="priority" name="priority">
-          <option th:each="priority : ${priorities}" th:value="${priority}"
-                  th:text="${priority.getName()}"
-                  th:selected="${priority.getPriority()==rule.priority.getPriority()}"></option>
-        </select>
-      </div>
+  <form class="wt-md-form" action="/rule/edit/eslint/custom" method="POST" th:object="${rule}">
+    <div class="wt-meta-chips">
+      <span th:replace="~{fragments/rulefacts :: fact('person', ${rule.author}, 'Author')}"></span>
     </div>
-    <div class="form-row mb-2">
-      <div class="col-md-6">
-        <label for="message">Description</label>
-        <input class="form-control" type="text" id="message" th:value="${rule.message}"
-               name="message"/>
-      </div>
-      <div class="col-md-6">
-        <label for="externalUrl">External URL</label>
-        <input type="text" class="form-control" id="externalUrl"
-               th:value="${rule.externalUrl}" name="externalUrl"/>
-      </div>
-    </div>
-    <div th:each="message, stat : ${rule.messages}">
-      <div class="form-row mb-2">
-        <div class="col-md-2">
-          <label for="messageKey">Message Key</label>
-          <input type="hidden" th:name="|messages[${stat.index}].id|" th:value="${message.id}"/>
-          <input type="text" class="form-control" id="messageKey"
-                 th:name="|messages[${stat.index}].key|" th:value="${message.key}"/>
-        </div>
-        <div class="col-md-10">
-          <label for="messageValue">Message Value</label>
-          <textarea class="form-control" rows="1" id="messageValue"
-                    th:name="|messages[${stat.index}].value|" th:text="${message.value}"></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="form-row mb-2">
-      <div class="col-sm-10">
-        <label for="createFunction">Create Function</label>
-        <textarea class="form-control-sm" id="createFunction" name="createFunction" rows="12"
-                  th:text="${rule.createFunction}"></textarea>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-sm-2">
-        <button class="btn btn-warning" type="submit">
-          Save Rule Details
-        </button>
-      </div>
-      <input type="hidden" th:name="id" th:value="${rule.id}">
-      <input type="hidden" th:name="${_csrf.parameterName}"
-             th:value="${_csrf.token}"/>
-    </div>
+    <input type="hidden" id="author" name="author" th:value="${rule.author}">
+    <md-outlined-text-field label="Name" id="name" th:value="${rule.name}"
+        name="name"></md-outlined-text-field>
+    <md-outlined-select th:replace="~{fragments/rulefacts :: severity(${priorities}, ${rule.priority})}"></md-outlined-select>
+    <md-outlined-text-field label="Description" id="message" th:value="${rule.message}"
+        name="message"></md-outlined-text-field>
+    <md-outlined-text-field label="External URL" id="externalUrl"
+        th:value="${rule.externalUrl}" name="externalUrl"></md-outlined-text-field>
+    <details class="wt-form-disclosure" th:unless="${rule.messages.isEmpty()}">
+      <summary th:text="${'Messages (' + rule.messages.size() + ')'}">Messages</summary>
+    <th:block th:each="message, stat : ${rule.messages}">
+      <input type="hidden" th:name="|messages[${stat.index}].id|" th:value="${message.id}"/>
+      <md-outlined-text-field label="Message Key" id="messageKey"
+          th:name="|messages[${stat.index}].key|" th:value="${message.key}"></md-outlined-text-field>
+      <md-outlined-text-field type="textarea" rows="1" label="Message Value" id="messageValue"
+          th:name="|messages[${stat.index}].value|" th:value="${message.value}"></md-outlined-text-field>
+    </th:block>
+    </details>
+    <!-- #createFunction stays a plain textarea - eslint-editor.js runs CodeMirror.fromTextArea
+         on it, which hides the element and inserts sibling markup into its parent. That only
+         works in the light DOM; md-outlined-text-field's textarea lives inside a shadow root
+         this page doesn't own (IMPROVEMENT_PLAN_MATERIAL_UI.md Wave 8). -->
+    <label for="createFunction">Create function</label>
+    <textarea aria-label="Rule create function" class="form-control-sm" id="createFunction" name="createFunction" rows="12"
+              th:text="${rule.createFunction}"></textarea>
+    <input type="hidden" th:name="id" th:value="${rule.id}">
+    <input type="hidden" th:name="${_csrf.parameterName}"
+           th:value="${_csrf.token}"/>
+    <md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
   </form>
 </div>
-<!-- End Card Footer -->

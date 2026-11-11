@@ -1,28 +1,75 @@
-<div class="form-row">
-  <div class="form-group col">
-    <label for="workspace">Workspace</label>
-    <input type="text" class="form-control" placeholder="Workspace" id="workspace" name="workspace"
-           th:value="${entity?.workspace}"/>
-  </div>
-  <div class="form-group col">
-    <label for="user">Username</label>
-    <input type="text" class="form-control" placeholder="Username" id="user" name="user"
-           th:value="${entity?.user}"/>
-  </div>
-  <div class="form-group col">
-    <label for="auth">Authentication</label>
-    <input type="password" class="form-control"
-           th:placeholder="${entity==null ? 'Authentication' : 'Hidden For Security'}" id="auth"
-           name="auth"/>
+<!-- Bitbucket Cloud fields, inside apiconfigure.html's form (UAT walkthrough, 2026-10-16). Two per
+     row; a stored API token shows as "Saved" with Replace (configuration/secretfield.html) and is never
+     sent to the page, and the webhook secret is a read-only "Managed by Watchtower" chip; what happens when a scan blocks a PR is four choice chips; the setup steps
+     open from one Setup guide button as a numbered checklist. -->
+<div class="wt-form-grid">
+  <md-outlined-text-field label="Workspace" id="workspace" name="workspace"
+      th:value="${entity?.workspace}"></md-outlined-text-field>
+  <md-outlined-text-field label="Username" id="user" name="user"
+      supporting-text="Your Atlassian account email, used with an API token"
+      th:value="${entity?.user}"></md-outlined-text-field>
+  <div th:replace="~{configuration/secretfield :: field('auth', 'auth', 'API token', ${entity != null and entity.auth != null},
+      'A Bitbucket API token with the scopes in the Setup guide')}"></div>
+  <!-- The signing secret is Watchtower's: it is created when the webhook is registered and rotated from the Webhooks page, which keeps
+       every registered hook valid. Pasting a value here would break them, so it is shown as a state and never entered. -->
+  <div class="wt-secret-field">
+    <span class="wt-secret-field__label" id="webhookSecret-label">Webhook secret</span>
+    <div class="wt-secret-field__saved">
+      <span th:if="${entity != null and entity.webhookSecret != null}" class="wt-mini-chip wt-mini-chip--ok" tabindex="0"
+          data-tip="Created and rotated by Watchtower. It is never shown."><span class="material-icons" aria-hidden="true">key</span>Managed by Watchtower</span>
+      <span th:unless="${entity != null and entity.webhookSecret != null}" class="wt-mini-chip" tabindex="0"
+          data-tip="Watchtower creates the secret when it registers the webhook."><span class="material-icons" aria-hidden="true">key_off</span>Set when the webhook is registered</span>
+      <a th:if="${entity != null and entity.webhookSecret != null}" class="wt-icon-action wt-icon-action--bordered"
+          th:href="@{/apisettings/{label}/webhooks/manage(label=${entity.apiLabel})}" data-tip="Rotate the signing secret (opens Webhooks)"
+          aria-label="Rotate the signing secret"><span class="material-icons" aria-hidden="true">autorenew</span></a>
+    </div>
   </div>
 </div>
-<div class="form-row">
-  <div class="form-group col-auto">
-    <label for="rejectOption" class="col-form-label">Action on Rejection</label>
-   	<select class="selectpicker w-100" data-style="rounded border"
-	           id="enable" name="rejectOption">
-     <option th:each="rejectOpt : ${T(com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudRejectOption).values()}" th:value="${rejectOpt.getName()}" th:text="${rejectOpt.getName()}" 
-     th:selected="${entity != null && #strings.equals(rejectOpt.getName(), entity?.rejectOption.getName)}"/>
-    </select>
+<fieldset class="wt-choice-chips" data-block-choice>
+  <legend>When a scan blocks a PR <span class="wt-field-help">applies once the webhook is registered</span></legend>
+  <label th:each="c, it : ${T(com.tracelink.appsec.watchtower.core.scan.apiintegration.IntegrationPresentation).blockChoices(apiType)}"
+      class="wt-choice-chip" th:attr="data-tip=${c.tip}">
+    <input type="radio" name="rejectOption" th:value="${c.value}" th:aria-label="${c.label}"
+        th:checked="${entity == null ? it.first : #strings.equals(c.value, entity.rejectOption?.getName())}"/>
+    <span class="material-icons" aria-hidden="true" th:text="${c.icon}">comment</span><span th:text="${c.label}">Comment</span>
+  </label>
+</fieldset>
+<details class="wt-setup-guide" data-setup-guide>
+  <summary class="btn btn-secondary btn-sm"><span class="material-icons" aria-hidden="true">checklist</span>Setup guide<span
+      class="material-icons wt-setup-guide__chevron" aria-hidden="true">expand_more</span></summary>
+  <div class="wt-setup-guide__body">
+    <strong class="wt-setup-guide__title"><span class="material-icons" aria-hidden="true">checklist</span>Set up Bitbucket for Watchtower</strong>
+    <ol class="wt-setup-steps">
+      <li>
+        <strong>Create an API token in Bitbucket</strong>
+        <span>Personal settings → Atlassian account settings → Security → API tokens. App passwords no longer work. Give it these scopes:</span>
+        <span class="wt-meta-chips">
+          <code class="wt-mini-chip">read:repository:bitbucket</code><code class="wt-mini-chip">read:pullrequest:bitbucket</code>
+          <code class="wt-mini-chip">write:pullrequest:bitbucket</code><code class="wt-mini-chip">read:webhook:bitbucket</code>
+          <code class="wt-mini-chip">write:webhook:bitbucket</code><code class="wt-mini-chip">delete:webhook:bitbucket</code>
+        </span>
+      </li>
+      <li>
+        <strong>Enter workspace, email and token</strong>
+        <span>Your Atlassian account email is the username. The account must read the workspace's repositories, and be a workspace admin to register the webhook.</span>
+      </li>
+      <li>
+        <strong>Save</strong>
+        <span>Saving stores the settings only; nothing is called in Bitbucket yet.</span>
+      </li>
+      <li>
+        <strong>Test the connection</strong>
+        <span>Test connection, at the top of this page, checks the credential.</span>
+      </li>
+      <li>
+        <strong>Register the webhook</strong>
+        <span>So pull requests are scanned automatically. Registering also sets the webhook secret.</span>
+      </li>
+      <li>
+        <strong>Choose what happens when a scan blocks a PR</strong>
+        <span>Applies only after the webhook is registered.</span>
+      </li>
+    </ol>
+    <span class="wt-mini-chip wt-mini-chip--ok wt-setup-guide__promise"><span class="material-icons" aria-hidden="true">verified_user</span>Watchtower lists repositories, reads PR diffs and changed files, comments, approves / requests changes / declines, and manages the workspace webhook. It never pushes code.</span>
   </div>
-</div>
+</details>

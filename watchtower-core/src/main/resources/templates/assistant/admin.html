@@ -1,0 +1,264 @@
+<!-- Desktop assistant administration (approved board AiSettings2, 2026-10-22): Ready chip, three
+     matching buttons, an integration chip row, icon tabs, feature switches, every limit as an outlined
+     field with ONE Save, and the audit with repeats grouped. Existing services and authorization remain authoritative. -->
+<th:block th:with="isAdmin=${#authorization.expression('hasAuthority(''Assistant Admin'')')},isAudit=${#authorization.expression('hasAuthority(''Assistant Audit'')')}">
+<div data-assistant-admin th:attr="data-csrf-token=${_csrf.token},data-csrf-header=${_csrf.headerName}">
+ <div class="wt-home-head wt-report-head">
+  <div class="wt-integration-head__title">
+   <div th:replace="~{fragments/pageheader :: header('AI assistant settings', null)}"></div>
+   <span class="wt-mini-chip" tabindex="0" data-assistant-ready-chip hidden><span class="material-icons" aria-hidden="true" data-assistant-ready-icon>pending</span><span data-assistant-ready-label>Not ready</span></span>
+   <span class="wt-mini-chip wt-mini-chip--bad" tabindex="0" data-assistant-retention-chip hidden th:if="${isAudit}"><span class="material-icons" aria-hidden="true">delete_forever</span>Transcript cleanup failing</span>
+  </div>
+  <div class="wt-table-actions wt-report-head__status">
+   <md-outlined-button type="button" data-ai-integration-open has-icon th:if="${isAdmin}"><span slot="icon" class="material-icons" aria-hidden="true">key</span>AI integration</md-outlined-button>
+   <md-outlined-button href="/admin/assistant/evaluation" has-icon th:if="${isAdmin}"><span slot="icon" class="material-icons" aria-hidden="true">fact_check</span>Answer evaluation</md-outlined-button>
+   <md-outlined-button type="button" data-assessment-agreement-open has-icon><span slot="icon" class="material-icons" aria-hidden="true">compare_arrows</span>AI vs human</md-outlined-button>
+  </div>
+ </div>
+ <th:block th:if="${isAdmin}">
+ <div class="wt-meta-chips mb-3" aria-label="AI integration">
+  <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">hub</span>OpenAI</span>
+  <span class="wt-mini-chip" tabindex="0" data-assistant-key-chip><span class="material-icons" aria-hidden="true">key</span><span data-assistant-key-label>Checking key…</span></span>
+  <span class="wt-mini-chip" tabindex="0" data-assistant-connection-chip hidden><span class="material-icons" aria-hidden="true">wifi</span><span data-assistant-connection-label></span></span>
+  <button type="button" class="wt-mini-chip wt-chip-button" data-assistant-model-chip data-tip="Default model and effort. Click to change; only approved models are listed."><span class="material-icons" aria-hidden="true">memory</span><span data-assistant-model-summary>No default model</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></button>
+  <ol data-assistant-checklist hidden></ol>
+ </div>
+ <nav class="wt-segmented-filter mb-3" role="tablist" aria-label="Assistant settings sections">
+  <button class="wt-segment is-active" id="assistant-features-tab" role="tab" aria-selected="true" aria-controls="assistant-features-panel" data-assistant-admin-tab="features" type="button"><span class="material-icons" aria-hidden="true">toggle_on</span>Features</button>
+  <button class="wt-segment" id="assistant-limits-tab" role="tab" aria-selected="false" aria-controls="assistant-limits-panel" data-assistant-admin-tab="limits" type="button"><span class="material-icons" aria-hidden="true">straighten</span>Limits</button>
+  <button class="wt-segment" id="assistant-audit-tab" role="tab" aria-selected="false" aria-controls="assistant-audit-panel" data-assistant-admin-tab="audit" type="button" th:if="${isAudit}"><span class="material-icons" aria-hidden="true">receipt_long</span>Audit</button>
+ </nav>
+ <div id="assistant-features-panel" role="tabpanel" aria-labelledby="assistant-features-tab" data-assistant-admin-panel="features">
+ <section class="card card-small mb-3" aria-label="AI features">
+  <div class="wt-setting-rows">
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">chat</span></span>
+    <span class="wt-setting-row__text"><strong>Chat</strong><span class="wt-field-help">People ask the AI assistant about rules and findings.</span></span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" aria-label="Chat on" data-assistant-enabled data-tip="Needs a connected API key and an approved default model."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">visibility</span></span>
+    <span class="wt-setting-row__text"><strong>AI page context</strong><span class="wt-field-help">Chat knows which finding, repository or pull request you are on. Uses the chat budget.</span></span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" aria-label="AI page context on" data-assistant-feature="contextCards" data-tip="Off by default. The page sends ids only; the server rebuilds what you may read. Secret findings are never shared."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">menu_book</span></span>
+    <span class="wt-setting-row__text"><strong>CWE reference</strong><span class="wt-field-help">Chat can look up and check CWEs in the MITRE catalog stored here. No model call of its own, so no share.</span></span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" aria-label="CWE reference on" data-assistant-feature="cweReference" data-tip="Off by default. Load the catalog first from the Knowledge page. Nothing leaves Watchtower."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">fact_check</span></span>
+    <span class="wt-setting-row__text"><strong>AI batch triage</strong><span class="wt-field-help">Advice on up to 40 findings of a scan, run in the background. It never records a judgment.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="5" min="0.01" step="0.01" data-assistant-feature-share="batchTriage" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI batch triage on" data-assistant-feature="batchTriage" data-tip="Off by default. Needs the key and default model; uses its own daily share."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">rate_review</span></span>
+    <span class="wt-setting-row__text"><strong>AI bypass request summary</strong><span class="wt-field-help">A short advisory summary for the person deciding a bypass request. It never decides.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="bypassSummary" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI bypass request summary on" data-assistant-feature="bypassSummary" data-tip="Off by default. Needs the key and default model; uses its own daily share."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">troubleshoot</span></span>
+    <span class="wt-setting-row__text"><strong>AI failure diagnosis</strong><span class="wt-field-help">Explains a failed background job in two sentences. Text only.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="jobDiagnosis" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI failure diagnosis on" data-assistant-feature="jobDiagnosis" data-tip="Off by default. Needs the key and default model; uses its own daily share."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">rule</span></span>
+    <span class="wt-setting-row__text"><strong>AI ruleset suggestion</strong><span class="wt-field-help">Suggests a ruleset for a repository and prepares the change for a person to review. Needs Ruleset actions.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="onboarding" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI ruleset suggestion on" data-assistant-feature="onboarding" data-tip="Off by default. Needs the key and default model; uses its own daily share. Only language and ruleset names are sent, never code."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">edit_note</span></span>
+    <span class="wt-setting-row__text"><strong>AI fixture draft</strong><span class="wt-field-help">Drafts a small example of a missed vulnerability to read and copy. Nothing is saved.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="missedCase" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI fixture draft on" data-assistant-feature="missedCase" data-tip="Off by default. Sends a few lines of code around the recorded line, with secrets masked; a case near a secret is never sent."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">alt_route</span></span>
+    <span class="wt-setting-row__text"><strong>AI alert-route copilot</strong><span class="wt-field-help">Turns a sentence into drafted alert-route changes for a person to review and apply. Never touches channels.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="alertCopilot" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI alert-route copilot on" data-assistant-feature="alertCopilot" data-tip="Off by default. Needs the key and default model; uses its own daily share. Channel names and routes are sent, never webhook addresses."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">summarize</span></span>
+    <span class="wt-setting-row__text"><strong>AI weekly Home digest</strong><span class="wt-field-help">A few short lines about the last 7 days' counts, written once a week. Counts only; names no finding or person.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="homeDigest" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI weekly Home digest on" data-assistant-feature="homeDigest" data-tip="Off by default. Needs the key and default model; uses its own daily share. Only aggregate counts are sent."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">label</span></span>
+    <span class="wt-setting-row__text"><strong>AI CWE suggestions</strong><span class="wt-field-help">Suggests a CWE for rules that have none. A person reviews and applies it.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="cweSuggest" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI CWE suggestions on" data-assistant-feature="cweSuggest" data-tip="Off by default. Needs the key and default model; uses its own daily share. Only a rule's name, message, priority and scanner are sent; rules that detect secrets never are."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">build</span></span>
+    <span class="wt-setting-row__text"><strong>AI rule drafts</strong><span class="wt-field-help">Drafts a rule for a coverage gap and opens it, unsaved, in a designer. A person reviews and saves it.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="1" min="0.01" step="0.01" data-assistant-feature-share="ruleDraft" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI rule drafts on" data-assistant-feature="ruleDraft" data-tip="Off by default. Needs the key and default model; uses its own daily share. Only the weakness, the language and the names of rules that already cover it are sent; never findings, code or secrets."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">manage_search</span></span>
+    <span class="wt-setting-row__text"><strong>AI code review</strong><span class="wt-field-help">Reads up to 200 files you pick from a scan and lists weaknesses no scanner finding covers. A person decides every point.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="2" min="0.01" step="0.01" data-assistant-feature-share="aiCodeReview" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI code review on" data-assistant-feature="aiCodeReview" data-tip="Off by default. Needs the key and default model; uses its own daily share. Whole files you pick are sent one at a time with recorded secret lines removed; the code is not kept. Only paths, line numbers and short notes are stored, for 30 days."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">library_books</span></span>
+    <span class="wt-setting-row__text"><strong>AI knowledge drafts</strong><span class="wt-field-help">Drafts the fields of a Knowledge proposal from the evidence a person chose. A second person still approves it.</span></span>
+    <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Daily share" suffix-text="USD / day" value="0.5" min="0.01" step="0.01" data-assistant-feature-share="knowledgeDraft" data-tip="The most this feature may use in a day, out of the organization's daily AI budget. A full share stops only this feature."></md-outlined-text-field>
+     <input type="checkbox" role="switch" class="wt-switch" aria-label="AI knowledge drafts on" data-assistant-feature="knowledgeDraft" data-tip="Off by default. Needs the key and default model; uses its own daily share. Only the evidence you chose is sent, as short text: no repository names, paths, commits or code, and nothing about rules that detect secrets. Nothing is proposed until you press Propose."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">label</span></span>
+    <span class="wt-setting-row__text"><strong>AI theme naming</strong><span class="wt-field-help">Names feedback themes in weekly review reports. Uses its own weekly budget.</span></span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" aria-label="AI theme naming on" data-assistant-theme-naming data-tip="Uses its own weekly budget under Limits."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">rate_review</span></span>
+    <span class="wt-setting-row__text"><strong>AI finding assessment</strong><span class="wt-field-help">Gives an advisory opinion on one finding when an engineer asks.</span></span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" aria-label="AI finding assessment on" data-assistant-finding-assessment data-tip="Uses the default model and the daily budgets."></span>
+   </label>
+   <label class="wt-setting-row">
+    <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">rule</span></span>
+    <span class="wt-setting-row__text"><strong>Ruleset actions <span class="wt-mini-chip wt-mini-chip--info">New</span></strong><span class="wt-field-help">Chat can prepare ruleset and repository changes. Each change set needs explicit approval.</span></span>
+    <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" aria-label="Ruleset actions on" data-assistant-ruleset-actions data-tip="Off by default. When on, nothing changes until a person approves each change set."></span>
+   </label>
+  </div>
+ </section>
+ </div>
+ <div id="assistant-limits-panel" role="tabpanel" aria-labelledby="assistant-limits-tab" data-assistant-admin-panel="limits" hidden>
+ <!-- The fields read from and write into the JSON under Advanced; the one Save sends it. -->
+ <div data-assistant-typed-settings>
+  <section class="card card-small mb-3 wt-assistant-group" aria-labelledby="assistant-group-forum">
+   <h2 class="wt-assistant-group__head" id="assistant-group-forum"><span class="material-icons" aria-hidden="true">forum</span>Conversations<span class="wt-count-badge">3</span></h2>
+   <div class="wt-assistant-fields">
+    <md-outlined-select label="Default model" data-setting-model data-tip="Default model for new chats. Only approved models are listed; approve another under Advanced." aria-label="Default model"></md-outlined-select>
+    <md-outlined-select label="Reasoning effort" data-setting-effort data-tip="How hard the model thinks by default; more effort costs more tokens." aria-label="Reasoning effort"></md-outlined-select>
+    <md-outlined-text-field type="number" label="Keep conversations" suffix-text="days" min="1" step="1" data-setting="retentionDays" data-scale="1" data-tip="How long conversations are kept after the last message." aria-label="Keep conversations, days"></md-outlined-text-field>
+   </div>
+  </section>
+  <section class="card card-small mb-3 wt-assistant-group" aria-labelledby="assistant-group-straighten">
+   <h2 class="wt-assistant-group__head" id="assistant-group-straighten"><span class="material-icons" aria-hidden="true">straighten</span>Limits for one answer<span class="wt-count-badge">10</span></h2>
+   <div class="wt-assistant-fields">
+    <md-outlined-text-field type="number" label="Tool steps" suffix-text="steps" min="1" step="1" data-setting="maxIterations" data-scale="1" data-tip="Most tool calls the assistant makes for one answer." aria-label="Tool steps, steps"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Model requests" suffix-text="requests" min="1" step="1" data-setting="maxRequests" data-scale="1" data-tip="Most model calls for one answer." aria-label="Model requests, requests"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Question + evidence" suffix-text="KB" min="0" step="1" data-setting="maxInputBytes" data-scale="1024" data-tip="Largest question plus evidence sent to the model." aria-label="Question + evidence, KB"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Evidence from one tool" suffix-text="KB" min="0" step="1" data-setting="maxToolBytes" data-scale="1024" data-tip="Largest evidence one tool may return." aria-label="Evidence from one tool, KB"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Conversation per turn" suffix-text="KB" min="0" step="1" data-setting="maxTranscriptBytes" data-scale="1024" data-tip="How much of the conversation is kept for each turn." aria-label="Conversation per turn, KB"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Answer length" suffix-text="tokens" min="1" step="1" data-setting="maxOutputTokens" data-scale="1" data-tip="Longest answer the model may write." aria-label="Answer length, tokens"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Tokens for one answer" suffix-text="tokens" min="0" step="1" data-setting="turnTokenCap" data-scale="1" data-tip="Most tokens one answer may use in total." aria-label="Tokens for one answer, tokens"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Cost of one answer" suffix-text="USD" min="0" step="0.01" data-setting="turnCostMicros" data-scale="1000000" data-tip="Most one answer may cost." aria-label="Cost of one answer, USD"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Time limit" suffix-text="s" min="1" step="1" data-setting="deadlineSeconds" data-scale="1" data-tip="Longest time one answer may take." aria-label="Time limit, s"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Provider timeout" suffix-text="s" min="1" step="1" data-setting="providerTimeoutSeconds" data-scale="1" data-tip="How long to wait for the provider on each request." aria-label="Provider timeout, s"></md-outlined-text-field>
+   </div>
+  </section>
+  <section class="card card-small mb-3 wt-assistant-group" aria-labelledby="assistant-group-savings">
+   <h2 class="wt-assistant-group__head" id="assistant-group-savings"><span class="material-icons" aria-hidden="true">savings</span>Daily budgets<span class="wt-count-badge">6</span><span class="wt-mini-chip" tabindex="0" data-assistant-usage-today hidden></span></h2>
+   <div class="wt-assistant-fields">
+    <md-outlined-text-field type="number" label="Tokens per person" suffix-text="/ day" min="0" step="1" data-setting="userDailyTokens" data-scale="1" data-tip="Tokens one person may use per day." aria-label="Tokens per person, / day"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Tokens for everyone" suffix-text="/ day" min="0" step="1" data-setting="orgDailyTokens" data-scale="1" data-tip="Tokens everyone together may use per day." aria-label="Tokens for everyone, / day"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Cost per person" suffix-text="USD / day" min="0" step="0.01" data-setting="userDailyCostMicros" data-scale="1000000" data-tip="Most one person may spend per day." aria-label="Cost per person, USD / day"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Cost for everyone" suffix-text="USD / day" min="0" step="0.01" data-setting="orgDailyCostMicros" data-scale="1000000" data-tip="Most everyone together may spend per day." aria-label="Cost for everyone, USD / day"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Answers waiting" suffix-text="at once" min="1" step="1" data-setting="queueLimit" data-scale="1" data-tip="Most answers that may wait in line at once." aria-label="Answers waiting, at once"></md-outlined-text-field>
+    <md-outlined-text-field type="number" label="Theme naming budget" suffix-text="USD / week" min="0" step="0.01" data-setting="themeNaming.weeklyCostMicros" data-scale="1000000" data-tip="Weekly budget for AI theme naming." aria-label="Theme naming budget, USD / week"></md-outlined-text-field>
+   </div>
+  </section>
+ </div>
+ <div class="wt-assistant-save">
+  <button type="button" class="wt-mini-chip wt-chip-button" data-assistant-advanced-toggle aria-expanded="false" aria-controls="assistant-advanced" data-tip="Approve model IDs, discover accessible models and edit every setting as JSON."><span class="material-icons" aria-hidden="true">tune</span>Advanced: approved models, JSON</button>
+  <md-filled-button type="button" data-assistant-settings-save has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+ </div>
+ <section id="assistant-advanced" class="card card-small mb-3 wt-assistant-advanced" aria-label="Advanced settings" hidden>
+  <div class="wt-table-actions mb-2">
+   <md-outlined-button type="button" data-wt-dialog-open="#assistant-model-dialog" has-icon><span slot="icon" class="material-icons" aria-hidden="true">verified</span>Approve a model</md-outlined-button>
+   <md-outlined-button type="button" data-assistant-discover has-icon data-tip="Lists the model IDs the key can reach. It doesn't approve or price any model."><span slot="icon" class="material-icons" aria-hidden="true">travel_explore</span>Discover accessible model IDs</md-outlined-button>
+  </div>
+  <label for="assistant-settings-json" class="wt-field-help" data-tip="Each approved model needs efforts, input and output token limits, prices in microdollars per million tokens, a validation date and a reviewed evidence reference. Generated chat cannot change these settings.">Every setting as JSON</label>
+  <textarea id="assistant-settings-json" data-assistant-settings rows="18" class="wt-control-wide" aria-label="Assistant shared settings"></textarea>
+ </section>
+ </div>
+ </th:block>
+ <p role="status" aria-live="polite" class="wt-field-help" data-assistant-admin-status></p>
+ <div id="assistant-audit-panel" role="tabpanel" data-assistant-admin-panel="audit" th:hidden="${isAdmin}" th:if="${isAudit}" aria-label="Audit">
+  <div data-assistant-audit></div>
+ </div>
+ <md-dialog id="assistant-model-dialog" class="wt-dialog-wide" data-model-setup th:if="${isAdmin}">
+  <div slot="headline" class="wt-dialog-headline"><span>Approve a model</span><button class="wt-icon-action" data-wt-dialog-close type="button" aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <form id="assistant-model-form" class="wt-md-form" slot="content" data-model-setup-form hx-boost="false">
+   <p class="wt-field-help">Uses up to three budgeted requests with synthetic text to check tool calls, replay and structured output.</p>
+   <div class="wt-setup-form-grid">
+    <md-outlined-select label="Model ID" name="model" required aria-label="Model ID"><md-select-option value="" selected><div slot="headline">Discover models to choose</div></md-select-option></md-outlined-select>
+    <md-outlined-select label="Effort" name="effort" aria-label="Model effort"><md-select-option value="low" selected><div slot="headline">low</div></md-select-option><md-select-option value="none"><div slot="headline">none</div></md-select-option><md-select-option value="medium"><div slot="headline">medium</div></md-select-option><md-select-option value="high"><div slot="headline">high</div></md-select-option><md-select-option value=""><div slot="headline">Omit reasoning (non-reasoning model)</div></md-select-option></md-outlined-select>
+    <md-outlined-text-field label="Application input allowance (tokens)" name="inputTokens" type="number" required min="1024" max="1000000" value="24000" aria-label="Model input allowance"></md-outlined-text-field>
+    <md-outlined-text-field label="Application output allowance (tokens)" name="outputTokens" type="number" required min="128" max="65536" value="8192" aria-label="Model output allowance"></md-outlined-text-field>
+    <md-outlined-text-field label="Input USD per million tokens" name="inputRate" type="number" required min="0" step="0.000001" aria-label="Model input price"></md-outlined-text-field>
+    <md-outlined-text-field label="Output USD per million tokens" name="outputRate" type="number" required min="0" step="0.000001" aria-label="Model output price"></md-outlined-text-field>
+   </div>
+   <p class="wt-field-help">Prices are required for Watchtower's budget estimates. They do not change OpenAI's billing rates. Approved models reuse their saved prices; model discovery does not fetch pricing. Use the current standard rates from <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener noreferrer">official pricing</a>. Token allowances are application limits. Approval covers the selected effort and leaves Chat at its current setting.</p>
+   <p role="status" aria-live="polite" data-model-setup-status></p>
+  </form>
+  <div slot="actions" class="wt-table-actions"><md-outlined-button type="button" data-model-setup-discover>Discover models</md-outlined-button><md-filled-button type="button" data-model-setup-submit>Validate and approve model</md-filled-button></div>
+ </md-dialog>
+ <!-- Provider key, managed like SCM integration credentials: write-only, audited, encrypted when database encryption is on. -->
+ <md-dialog data-ai-integration-dialog th:if="${isAdmin}">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+   <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">auto_awesome</span></span>
+   <span class="wt-person__text"><span>AI integration</span><span class="wt-person__meta">OpenAI</span></span></span>
+   <button type="button" class="wt-icon-action" data-ai-integration-close aria-label="Close" data-tip="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <form slot="content" method="dialog" class="wt-md-form" data-ai-integration-form>
+   <div class="wt-meta-chips" data-ai-integration-state></div>
+   <md-outlined-text-field type="password" label="API key" autocomplete="new-password" data-ai-integration-key
+       supporting-text="Never shown again after saving" hidden></md-outlined-text-field>
+   <p role="status" aria-live="polite" class="wt-field-help" data-ai-integration-status></p>
+  </form>
+  <div slot="actions" class="wt-dialog-actions-split">
+   <button type="button" class="wt-icon-action wt-icon-action--danger wt-icon-action--bordered" data-ai-integration-remove hidden aria-label="Remove key" data-tip="Remove key (asks to confirm)"><span class="material-icons" aria-hidden="true">delete</span></button>
+   <span class="wt-table-actions">
+    <md-outlined-button type="button" data-ai-integration-test has-icon hidden><span slot="icon" class="material-icons" aria-hidden="true">network_check</span>Test connection</md-outlined-button>
+    <md-outlined-button type="button" data-ai-integration-replace has-icon hidden><span slot="icon" class="material-icons" aria-hidden="true">sync_alt</span>Replace key</md-outlined-button>
+    <md-filled-button type="button" data-ai-integration-save has-icon hidden><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save key</md-filled-button>
+   </span>
+  </div>
+ </md-dialog>
+ <!-- Plan R6: how often advisory verdicts agree with human judgments made without seeing them. -->
+ <md-dialog data-assessment-agreement-dialog>
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+   <span class="material-icons wt-nav-ai" aria-hidden="true">compare_arrows</span><span>AI vs human</span>
+   <span class="wt-mini-chip" tabindex="0" data-assessment-agreement-note
+       data-tip="Only judgments a person made without seeing the AI's assessment count. Agreement on reviewed findings is not rule precision, and nothing is routed by these verdicts."><span
+       class="material-icons" aria-hidden="true">help_outline</span>How it's counted</span></span>
+   <button type="button" class="wt-icon-action" data-assessment-agreement-close aria-label="Close" data-tip="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <div slot="content" class="wt-md-form wt-agreement">
+   <p class="visually-hidden" aria-live="polite" data-assessment-agreement-summary></p>
+   <div class="wt-stat-tiles">
+    <span class="wt-stat-tile" tabindex="0" data-tip="Findings with an AI assessment and a human judgment made without seeing it."><span class="material-icons" aria-hidden="true">balance</span><span><strong data-agreement-blind>0</strong><span>Blind cases</span></span></span>
+    <span class="wt-stat-tile" tabindex="0" data-tip="Blind cases where the AI and the person agree."><span class="material-icons" aria-hidden="true">handshake</span><span><strong data-agreement-agreed>0</strong><span>Agreed</span></span></span>
+    <span class="wt-stat-tile" tabindex="0" data-tip="Shown once there is at least one blind case."><span class="material-icons" aria-hidden="true">percent</span><span><strong data-agreement-rate>—</strong><span>Agreement</span></span></span>
+   </div>
+   <div class="wt-empty-picture" data-assessment-agreement-empty>
+    <span class="material-icons wt-empty-picture__icon" aria-hidden="true">balance</span>
+    <strong>No blind cases yet</strong>
+    <span class="wt-field-help">A finding needs an AI assessment and a human judgment made without seeing it. The agree / disagree grid appears here once there is one.</span>
+   </div>
+   <table class="wt-results-table" data-assessment-agreement-table hidden>
+    <caption class="visually-hidden">AI verdicts against human judgments made without seeing them</caption>
+    <thead><tr><th scope="col">AI said</th><th scope="col">Human: true positive</th><th scope="col">Human: false positive</th></tr></thead>
+    <tbody></tbody>
+   </table>
+   <div class="wt-meta-chips">
+    <span class="wt-mini-chip" tabindex="0" data-tip="Left out: the person saw the AI answer first."><span class="material-icons" aria-hidden="true">visibility</span><span data-agreement-seen>0 judged after seeing AI</span></span>
+    <span class="wt-mini-chip" tabindex="0" data-tip="Left out: no human judgment yet."><span class="material-icons" aria-hidden="true">person_off</span><span data-agreement-nohuman>0 without a human</span></span>
+    <span class="wt-mini-chip" tabindex="0" data-tip="Left out: the AI said it needs review or had too little evidence."><span class="material-icons" aria-hidden="true">help</span><span data-agreement-review>0 needs review</span></span>
+   </div>
+   <section th:if="${isAudit}" aria-labelledby="assistant-outcomes-title">
+    <h3 class="wt-section-title" id="assistant-outcomes-title">Reported outcomes</h3>
+    <div data-assistant-outcomes></div>
+   </section>
+  </div>
+ </md-dialog>
+</div>
+</th:block>

@@ -1,0 +1,50 @@
+<section th:fragment="performance(result)" class="card card-small wt-report-performance"
+		aria-labelledby="scan-performance-heading">
+	<div class="card-header border-bottom">
+		<h2 id="scan-performance-heading" class="h5 m-0">Scan performance</h2>
+	</div>
+	<div class="card-body" th:if="${result.hasPerformanceTimings()}">
+		<dl class="wt-performance-primary">
+			<div>
+				<dt>Total</dt><dd th:text="${result.totalDurationDisplay}"></dd>
+				<dd class="wt-metric-note"><small>Start through cleanup</small></dd>
+			</div>
+			<div>
+				<dt>Prepare source</dt><dd th:text="${result.sourcePreparationDurationDisplay}"></dd>
+				<dd class="wt-metric-note"><small>Fetch and workspace setup</small></dd>
+			</div>
+			<div>
+				<dt>Security analysis</dt><dd th:text="${result.scannerExecutionDurationDisplay}"></dd>
+				<dd class="wt-metric-note"><small>Configured scanner execution</small></dd>
+			</div>
+			<div>
+				<dt>Deliver results</dt><dd th:text="${result.deliveryDurationDisplay}"></dd>
+				<dd class="wt-metric-note"><small>Process, report, and persist</small></dd>
+			</div>
+		</dl>
+		<div th:replace="~{fragments/scanexecution :: performance(${result})}"></div>
+	</div>
+	<div class="card-body" th:unless="${result.hasPerformanceTimings()}">
+		<p class="text-muted">Performance detail was not recorded for this historical scan.</p>
+		<div th:replace="~{fragments/scanexecution :: performance(${result})}"></div>
+	</div>
+</section>
+
+<!-- The PR report's scan diagnostics: one "Scan details" toggle in the report's meta line instead
+     of a card (docs/design-system.md, "Restraint"). Opening it shows the stage timings and each
+     scanner's run. -->
+<details th:fragment="details(result)" class="wt-report-details">
+	<summary><span class="material-icons" aria-hidden="true">assessment</span>Scan details<th:block
+		th:if="${result.executionSummary != null and result.executionSummary.recorded}"><span class="wt-page-meta"
+		th:text="${' · ' + result.executionSummary.ranCount + ' ran, ' + result.executionSummary.skippedCount + ' skipped'
+			+ (result.executionSummary.failedCount > 0 ? ', ' + result.executionSummary.failedCount + ' failed' : '')}"></span></th:block></summary>
+	<div class="wt-report-details__body">
+		<dl class="wt-report-timings" th:if="${result.hasPerformanceTimings()}">
+			<div><dt>Prepare source</dt><dd th:text="${result.sourcePreparationDurationDisplay}"></dd></div>
+			<div><dt>Security analysis</dt><dd th:text="${result.scannerExecutionDurationDisplay}"></dd></div>
+			<div><dt>Deliver results</dt><dd th:text="${result.deliveryDurationDisplay}"></dd></div>
+		</dl>
+		<p th:unless="${result.hasPerformanceTimings()}" class="wt-field-help">Timings were not recorded for this scan.</p>
+		<div th:replace="~{fragments/scanexecution :: performance(${result})}"></div>
+	</div>
+</details>

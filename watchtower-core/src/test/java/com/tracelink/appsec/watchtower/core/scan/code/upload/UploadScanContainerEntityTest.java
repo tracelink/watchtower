@@ -1,8 +1,5 @@
 package com.tracelink.appsec.watchtower.core.scan.code.upload;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,19 +14,19 @@ public class UploadScanContainerEntityTest {
 		String submitter = "submitter";
 		String ticket = "ticket";
 		String ruleSet = "ruleSet";
-		Path filePath = Paths.get("path");
+		String s3Key = "uploads/some-key.zip";
 
 		UploadScanContainerEntity container = new UploadScanContainerEntity();
 		container.setName(name);
 		container.setSubmitter(submitter);
 		container.setTicket(ticket);
 		container.setRuleSet(ruleSet);
-		container.setZipPath(filePath);
+		container.setStorageKey(s3Key);
 
 		Assertions.assertEquals(name, container.getName());
 		Assertions.assertEquals(submitter, container.getSubmitter());
 		Assertions.assertEquals(ticket, container.getTicket());
 		Assertions.assertEquals(ruleSet, container.getRuleSet());
-		Assertions.assertEquals(filePath.toAbsolutePath(), container.getZipPath());
+		Assertions.assertEquals(s3Key, container.getStorageKey());
 	}
 }

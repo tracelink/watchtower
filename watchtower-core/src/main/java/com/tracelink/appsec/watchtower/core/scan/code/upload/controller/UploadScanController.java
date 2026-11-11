@@ -2,13 +2,14 @@ package com.tracelink.appsec.watchtower.core.scan.code.upload.controller;
 
 import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
 import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.metrics.HomeDashboardService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetService;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
+import com.tracelink.appsec.watchtower.core.scan.presentation.HomeActivityItem;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.security.Principal;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -34,10 +35,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class UploadScanController {
 
 	private static final Logger LOG = LoggerFactory.getLogger(UploadScanController.class);
+	private static final int RECENT_SCANS = 5;
 
 	private final UploadScanningService scanService;
 	private final UploadScanResultService scanResultService;
 	private final RulesetService rulesetService;
+	@Autowired(required=false) private jakarta.servlet.MultipartConfigElement multipartConfig;
+	@Autowired(required=false) private HomeDashboardService homeDashboard;
 
 	public UploadScanController(@Autowired UploadScanningService scanService,
 			@Autowired UploadScanResultService scanResultService,
@@ -51,13 +55,27 @@ public class UploadScanController {
 	public WatchtowerModelAndView scan() {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("upload_scan/submitscan");
 
-		mav.addObject("numScansQueued", scanService.getTaskNumInQueue());
+		if (multipartConfig != null) {
+			UploadLimit limit = new UploadLimit(multipartConfig.getMaxFileSize(), multipartConfig.getMaxRequestSize());
+			mav.addObject("uploadLimitShort", limit.summary());
+			mav.addObject("uploadLimit", limit.detail());
+		} else {
+			mav.addObject("uploadLimit", "Upload limits are unavailable; ask an administrator to check upload configuration.");
+		}
+		if (homeDashboard != null) {
+			// Which scanners can run, shown as one chip by the ruleset; no provider is contacted.
+			mav.addObject("scannerModules", homeDashboard.getModuleStatuses());
+		}
+        mav.addObject("numScansQueued", scanService.getTaskNumInQueue());
 		mav.addObject("numScansInProgress", scanService.getTaskNumActive());
 		mav.addObject("scanStatePaused", scanService.isPaused());
 		mav.addObject("scanStateQuiesced", scanService.isQuiesced());
-		mav.addObject("lastScans", scanResultService.getLastScans(100));
+		var lastScans = scanResultService.getLastScans(RECENT_SCANS);
+		mav.addObject("lastScans", lastScans);
+		mav.addObject("recentActivity", lastScans.stream().map(HomeActivityItem::fromUpload).toList());
 		mav.addObject("rulesets", rulesetService.getRulesets());
 		mav.addObject("defaultRuleset", rulesetService.getDefaultRuleset());
+		mav.addScriptReference("/scripts/scan-submission.js");
 		return mav;
 	}
 
@@ -69,12 +87,12 @@ public class UploadScanController {
 		String rulesetName = ruleset.orElse(null);
 
 		try {
-			Path zipLocation = scanService.copyToLocation(uploadFile);
+			String storageKey = scanService.storeUpload(uploadFile);
 
 			UploadScan upload = new UploadScan();
 			upload.setName(uploadName);
 			upload.setRuleSetName(rulesetName);
-			upload.setFilePath(zipLocation);
+			upload.setStorageKey(storageKey);
 			upload.setUser(userPrincipal.getName());
 			String ticket = scanService.doUploadScan(upload);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,

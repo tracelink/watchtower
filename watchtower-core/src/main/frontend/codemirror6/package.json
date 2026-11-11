@@ -1,0 +1,22 @@
+{
+  "name": "watchtower-codemirror6-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Builds a single self-contained CodeMirror 6 bundle for Watchtower's rule designer editors, exposing a small CodeMirror.fromTextArea() shim so the existing designer JS files (pmd-designer.js, eslint-designer.js, etc.) don't need to change.",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --format=iife --outfile=../../resources/static/scripts/codemirror-bundle.js",
+    "test": "node smoketest.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^29.1.1"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.11.0",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.9"
+  }
+}

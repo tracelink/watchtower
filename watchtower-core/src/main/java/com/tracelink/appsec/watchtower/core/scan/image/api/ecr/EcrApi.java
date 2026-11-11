@@ -16,7 +16,8 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.scan.apiintegration.ApiIntegrationException;
@@ -61,8 +62,7 @@ public class EcrApi implements IImageApi {
 	private final EcrIntegrationEntity ecrIntegrationEntity;
 	private final CloudFormationClient cfClient;
 	private final EcrClient ecrClient;
-	private final String watchtowerEndpoint;
-	private final String STACK_TEMPLATE;
+	private String stackTemplate;
 
 	public EcrApi(EcrIntegrationEntity ecrIntegrationEntity) {
 		this.ecrIntegrationEntity = ecrIntegrationEntity;
@@ -74,17 +74,43 @@ public class EcrApi implements IImageApi {
 				.credentialsProvider(credentialsProvider).build();
 		this.ecrClient = EcrClient.builder().region(region)
 				.credentialsProvider(credentialsProvider).build();
-		this.watchtowerEndpoint = ServletUriComponentsBuilder.fromCurrentContextPath()
-				.pathSegment("rest", "imagescan", ecrIntegrationEntity.getApiLabel()).build()
-				.toString();
-		// Determine if enhanced or basic scanning is configured in AWS
-		// Assign STACK_TEMPLATE based on scan type
-		GetRegistryScanningConfigurationRequest getRegistryScanningConfigurationRequest = GetRegistryScanningConfigurationRequest.builder().build();
-		if (this.ecrClient.getRegistryScanningConfiguration(getRegistryScanningConfigurationRequest).scanningConfiguration().scanTypeAsString().equals("ENHANCED")) {
-			this.STACK_TEMPLATE = "static/enhanced-ecr-watchtower-webhook-template.json";
-		} else {
-			this.STACK_TEMPLATE = "static/ecr-watchtower-webhook-template.json";
+	}
+
+	/**
+	 * The url ECR scan results are sent to: {@code <base>/rest/imagescan/<label>}.
+	 *
+	 * @param callbackBaseUrl Watchtower's externally reachable base url
+	 * @return the callback endpoint
+	 */
+	String callbackEndpoint(String callbackBaseUrl) {
+		if (StringUtils.isBlank(callbackBaseUrl)) {
+			throw new IllegalStateException(
+					"watchtower.publicUrl must be configured before ECR can be registered");
 		}
+		return UriComponentsBuilder.fromUriString(StringUtils.stripEnd(callbackBaseUrl, "/"))
+				.pathSegment("rest", "imagescan", ecrIntegrationEntity.getApiLabel()).build()
+				.toUriString();
+	}
+
+	/**
+	 * Determine if enhanced or basic scanning is configured in AWS and return the matching stack
+	 * template. Resolved lazily (and cached) on first use, rather than at construction time, so
+	 * that constructing an {@link EcrApi} never performs an AWS call.
+	 *
+	 * @return the classpath location of the CloudFormation stack template to use
+	 */
+	private String getStackTemplate() {
+		if (this.stackTemplate == null) {
+			GetRegistryScanningConfigurationRequest getRegistryScanningConfigurationRequest =
+					GetRegistryScanningConfigurationRequest.builder().build();
+			if (this.ecrClient.getRegistryScanningConfiguration(getRegistryScanningConfigurationRequest)
+					.scanningConfiguration().scanTypeAsString().equals("ENHANCED")) {
+				this.stackTemplate = "static/enhanced-ecr-watchtower-webhook-template.json";
+			} else {
+				this.stackTemplate = "static/ecr-watchtower-webhook-template.json";
+			}
+		}
+		return this.stackTemplate;
 	}
 
 	/**
@@ -121,9 +147,13 @@ public class EcrApi implements IImageApi {
 
 	/**
 	 * {@inheritDoc}
+	 * <p>
+	 * The callback endpoint is built from {@code callbackBaseUrl} (Watchtower's configured public
+	 * url), never from the current web request: connection checks and registration run outside a
+	 * request (a scheduled health check failed with "No current ServletRequestAttributes").
 	 */
 	@Override
-	public void register(PasswordEncoder passwordEncoder) {
+	public void register(PasswordEncoder passwordEncoder, String callbackBaseUrl) {
 		// Generate secret for access to Watchtower
 		String secretKey = UUID.randomUUID().toString();
 		ecrIntegrationEntity.setWatchtowerSecret(passwordEncoder.encode(secretKey));
@@ -131,7 +161,7 @@ public class EcrApi implements IImageApi {
 		// Configure CloudFormation template parameters for request
 		List<Parameter> templateParameters = new ArrayList<>();
 		templateParameters.add(Parameter.builder().parameterKey("WatchtowerEndpoint")
-				.parameterValue(watchtowerEndpoint).build());
+				.parameterValue(callbackEndpoint(callbackBaseUrl)).build());
 		templateParameters.add(Parameter.builder().parameterKey("WatchtowerApiKeyId")
 				.parameterValue(ecrIntegrationEntity.getApiLabel()).build());
 		templateParameters.add(Parameter.builder().parameterKey("WatchtowerSecret")
@@ -139,7 +169,7 @@ public class EcrApi implements IImageApi {
 
 		// Create CloudFormation stack
 		CreateStackRequest request;
-		try (InputStream is = getClass().getClassLoader().getResourceAsStream(STACK_TEMPLATE)) {
+		try (InputStream is = getClass().getClassLoader().getResourceAsStream(getStackTemplate())) {
 			String template = IOUtils.toString(is, StandardCharsets.UTF_8);
 			request = CreateStackRequest.builder()
 					.stackName(STACK_NAME)

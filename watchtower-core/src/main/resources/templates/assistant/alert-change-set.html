@@ -1,0 +1,23 @@
+<!-- Review alert route changes (alert copilot board, approved 2026-10-24): one table of what each drafted change
+     does, chips instead of paragraphs. alert-change-set.js fills it from /assistant/alert-changes/{id}. -->
+<section data-alert-change-set th:data-id="${changeSetId}" th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}">
+ <div th:replace="~{fragments/pageheader :: header('Review route changes', 'Alert settings')}"></div>
+ <div class="wt-meta-chips" data-ac-chips>
+  <span class="wt-mini-chip wt-mini-chip--ai"><span class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span>Drafted by the assistant</span>
+ </div>
+ <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Drafted alert route changes">
+  <table class="table mb-0">
+   <caption>Drafted alert route changes</caption>
+   <thead><tr><th scope="col">Change</th><th scope="col">Route</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+   <tbody data-ac-rows></tbody>
+  </table>
+ </div>
+ <p class="wt-field-help" role="status" aria-live="polite" data-ac-status>Loading the draft…</p>
+ <div class="wt-page-actions">
+  <button type="button" class="btn btn-primary" data-ac-apply disabled><span class="material-icons" aria-hidden="true">done_all</span>Approve and apply</button>
+  <button type="button" class="btn btn-secondary" data-ac-cancel disabled>Cancel</button>
+  <button type="button" class="btn btn-secondary" data-ac-refresh disabled><span class="material-icons" aria-hidden="true">refresh</span>Refresh preview</button>
+  <a class="btn btn-primary" href="/alertsettings?tab=routes" data-ac-back hidden><span class="material-icons" aria-hidden="true">alt_route</span>Back to routes</a>
+  <span class="wt-mini-chip" tabindex="0" data-tip="Applying needs the Alert Settings Modify grant."><span class="material-icons" aria-hidden="true">lock_person</span>Needs Alert Settings Modify</span>
+ </div>
+</section>

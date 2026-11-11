@@ -1,33 +1,52 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-  <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-    <h3 class="page-title">Rule Designer</h3>
-  </div>
+<div th:replace="~{fragments/pageheader :: header('Rule Designer', null)}"></div>
+<div class="wt-designer-page">
+<!-- One segmented control with each scanner's icon (UAT walkthrough, 2026-10-16); names and icons
+     come from ScannerIdentity so they match the rest of the app. -->
+<nav class="wt-segmented-filter wt-designer-modules mb-3" aria-label="Rule designer modules"
+     role="tablist" th:if="${knownModules != null && !knownModules.isEmpty()}">
+  <a th:each="optionKey : ${knownModules}"
+     th:with="scanner=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity).of(optionKey)}"
+     th:href="'/designer/' + ${optionKey.toLowerCase()}"
+     role="tab"
+     class="wt-segment"
+     aria-selected="false"
+     th:aria-selected="${optionKey.toLowerCase() == currentDesigner}"
+     th:classappend="${optionKey.toLowerCase() == currentDesigner} ? 'is-active'"><span class="material-icons"
+     aria-hidden="true" th:text="${scanner.icon()}">coffee</span><span th:text="${scanner.name()}">PMD</span></a>
+</nav>
+<div th:if="${knownModules == null || knownModules.isEmpty()}">
+  <div th:replace="~{fragments/emptystate :: state('No rule designers configured.')}"></div>
 </div>
-<!-- End Page Header -->
-<div class="row border-bottom pb-1 mb-2">
-  <div class="col">
-    <div class="card card-small mb-2">
-      <div class="card-header border-bottom py-1">
-        <h6 class="d-inline m-0">Select a Designer</h6>
-      </div>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item px-3">
-          <!-- Button Groups -->
-          <div th:if="${knownModules == null}">
-            No rule designers configured.
-          </div>
-          <div th:if="${knownModules != null}" class="btn-group btn-group-toggle">
-            <a th:each="optionKey, oStat : ${knownModules}"
-               th:href="'/designer/' + ${optionKey.toLowerCase()}"
-               th:class="${#httpServletRequest.getRequestURI().contains(optionKey.toLowerCase()) } ? 'btn btn-white active' : 'btn btn-white'"
-               th:text="${optionKey}"></a>
-          </div>
-        </li>
-      </ul>
+<!-- A rule drafted by the assistant for a coverage gap: one chip row, nothing is saved until the person saves it. -->
+<div class="wt-meta-chips mb-3" th:if="${draftBanner != null}" data-draft-banner th:data-draft-id="${draftBanner.id}">
+  <span class="wt-mini-chip wt-ai-chip" tabindex="0" th:data-tip="${draftBanner.tip}"><span class="material-icons wt-ai-icon"
+      aria-hidden="true">auto_awesome</span>AI draft · nothing saved</span>
+  <span class="wt-mini-chip" tabindex="0" th:if="${draftBanner.cwe != null}" th:data-tip="${draftBanner.cweTip}"><span
+      class="material-icons" aria-hidden="true">shield</span><span th:text="${draftBanner.cwe}">CWE-89</span></span>
+  <details class="wt-popover" th:if="${draftBanner.vulnerable != null or draftBanner.safe != null}">
+    <summary class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">science</span>Examples</summary>
+    <div class="wt-popover__body">
+      <strong th:if="${draftBanner.vulnerable != null}">Should be flagged</strong>
+      <pre th:if="${draftBanner.vulnerable != null}" th:text="${draftBanner.vulnerable}"></pre>
+      <strong th:if="${draftBanner.safe != null}">Should not be flagged</strong>
+      <pre th:if="${draftBanner.safe != null}" th:text="${draftBanner.safe}"></pre>
     </div>
-  </div>
+  </details>
+  <form method="post" th:action="${draftBanner.discardUrl}" class="d-inline">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <button type="submit" class="wt-mini-chip wt-mini-chip--link" data-tip="Throw this draft away and open the plain designer"><span
+        class="material-icons" aria-hidden="true">delete</span>Discard</button>
+  </form>
 </div>
-<div class="row" th:if="${designerView != null}">
-  <div th:replace="${designerView}"></div>
+<!-- Ask the assistant, and share the text being typed with it for one question (helpers board). -->
+<div class="wt-page-actions mb-3" th:if="${designerView != null and #authorization.expression('hasAuthority(''Assistant Use'')')}">
+  <button type="button" class="wt-icon-action wt-icon-action--ai" data-assistant-open data-assistant-subject="Rule designer"
+      aria-label="Ask the assistant about this rule" data-tip="Ask the assistant about this rule"><span class="material-icons" aria-hidden="true">auto_awesome</span></button>
+  <button type="button" class="wt-icon-action" data-ai-helper="draft" hidden aria-pressed="false" aria-label="Share my draft with the assistant"
+      data-tip="Share the text you are typing with the assistant for your next question only. It is checked for secrets first, limited to 8,000 characters, and not kept after the answer."><span
+      class="material-icons" aria-hidden="true">edit_note</span></button>
+</div>
+<div th:if="${designerView != null}" data-ai-draft-scope>
+  <div th:replace="~{${designerView}}"></div>
+</div>
 </div>

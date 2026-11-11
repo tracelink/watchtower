@@ -11,6 +11,8 @@ import com.tracelink.appsec.watchtower.core.metrics.MetricsCacheService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
 import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
 import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PRScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.presentation.HomeActivityItem;
+import com.tracelink.appsec.watchtower.core.scan.queue.PRScanWorkloadService;
 
 /**
  * Controller for the dashboard and home page of Watchtower
@@ -25,11 +27,14 @@ public class PRDashboardController {
 	private PRScanResultService prScanResultService;
 
 	private MetricsCacheService metricsService;
+	private final PRScanWorkloadService scanWorkloadService;
 
 	public PRDashboardController(@Autowired PRScanResultService prScanResultService,
-			@Autowired MetricsCacheService metricsService) {
+			@Autowired MetricsCacheService metricsService,
+			PRScanWorkloadService scanWorkloadService) {
 		this.prScanResultService = prScanResultService;
 		this.metricsService = metricsService;
+		this.scanWorkloadService = scanWorkloadService;
 	}
 
 	/**
@@ -42,22 +47,23 @@ public class PRDashboardController {
 	public WatchtowerModelAndView dashboard() {
 		WatchtowerModelAndView mv = new WatchtowerModelAndView("pull_requests/dashboard");
 
-		if (!metricsService.isMetricsCacheReady()) {
-			mv.addObject(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
-					MetricsCacheService.METRICS_NOT_READY);
-		}
+		mv.addObject("metricsReady", metricsService.isMetricsCacheReady());
 		mv.addObject("numScans",
 				metricsService.getScanCount(CodeScanType.PULL_REQUEST));
 		mv.addObject("numViolations",
 				metricsService.getViolationCount(CodeScanType.PULL_REQUEST));
-		mv.addObject("numPrs", prScanResultService.countPrs());
-		mv.addObject("numRepos", prScanResultService.countRepos());
+		mv.addObject("numPrs", metricsService.getPullRequestCount());
+		mv.addObject("numRepos", metricsService.getRepositoryCount());
+		mv.addObject("avgScanTime",
+				metricsService.getAverageScanTimeString(CodeScanType.PULL_REQUEST));
+		mv.addObject("recentScans", prScanResultService.getLastScans(5).stream()
+				.map(HomeActivityItem::fromPullRequest).toList());
+		mv.addObject("scanWorkload", scanWorkloadService.getWorkload());
 
+		mv.addScriptReference("/webjars/chart.js/4.4.0/dist/chart.umd.js");
 		mv.addScriptReference("/scripts/dashboard/utils.js");
 		mv.addScriptReference("/scripts/dashboard/dashboard-stats-switcher.js");
-		mv.addScriptReference("/scripts/dashboard/scans-vios-line.js");
-		mv.addScriptReference("/scripts/dashboard/violations-pie.js");
-		mv.addScriptReference("/scripts/dashboard/violations-bar.js");
+		mv.addScriptReference("/scripts/dashboard/dashboard-insights.js");
 		mv.addScriptReference("/scripts/dashboard/pr-dashboard.js");
 		return mv;
 	}

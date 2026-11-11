@@ -1,0 +1,147 @@
+<!--/* AWS Security Agent setup page (approved AwsSetup board, 2026-10-22): one status card that answers
+     "can AWS scan?" with the next step as the only filled button, then Status / Settings / Sample
+     tests tabs. Connection checks fold into one line; account and role details sit behind
+     Connection details; the test result dialog shows the result first. aws-security-setup.js
+     fills the live parts. */-->
+<section data-aws-setup th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}" th:data-resources-ready="${readiness.ready()}"
+    th:data-scanner-enabled="${awsScannerEnabled}" th:data-active-tab="${awsActiveTab}">
+ <div class="wt-home-head wt-report-head">
+  <div class="wt-integration-head__title"><div th:replace="~{fragments/pageheader :: header('AWS Security Agent', null)}"></div>
+   <span class="wt-mini-chip" data-aws-overall th:classappend="${awsActivationConfigured ? 'wt-mini-chip--ok' : 'wt-mini-chip--warn'}"><span class="material-icons" aria-hidden="true" data-aws-overall-icon th:text="${awsActivationConfigured ? 'check_circle' : 'error_outline'}">error_outline</span><span data-aws-overall-label th:text="${awsActivationConfigured ? 'Ready' : 'Setup required'}">Setup required</span></span></div>
+ </div>
+ <section class="card wt-aws-hero mb-3" aria-label="AWS scan status">
+  <span class="wt-aws-hero__icon" data-aws-hero-icon th:classappend="${awsActivationConfigured ? 'is-ok' : 'is-warn'}" aria-hidden="true"><span class="material-icons" data-aws-hero-symbol th:text="${awsActivationConfigured ? 'check' : 'priority_high'}">priority_high</span></span>
+  <div class="wt-aws-hero__text">
+   <h2 class="wt-aws-hero__title" data-aws-next-title th:text="${awsActivationConfigured ? 'AWS scans are ready' : 'Finish setup before scanning'}">Finish setup before scanning</h2>
+   <p class="wt-field-help mb-0" data-aws-next-help>Repositories whose ruleset includes Security review get an AWS review on their next scan.</p>
+  </div>
+  <div class="wt-aws-hero__side">
+   <md-filled-button type="button" data-aws-next-action has-icon><span slot="icon" class="material-icons" aria-hidden="true">arrow_forward</span><span data-aws-test-label>Open repositories</span></md-filled-button>
+   <span class="wt-aws-hero__checked">Checked <span class="localizetime" data-time-style="short" data-aws-checked th:text="${readiness.verifiedAt()}"></span>
+    <button type="button" class="wt-icon-action" data-aws-recheck aria-label="Recheck connections" data-tip="Recheck connections"><span class="material-icons" aria-hidden="true">refresh</span></button></span>
+  </div>
+ </section>
+ <div class="wt-segmented-filter" role="tablist" aria-label="AWS setup sections">
+  <button type="button" class="wt-segment" role="tab" data-aws-tab="status" aria-controls="aws-panel-status" aria-selected="true"><span class="material-icons" aria-hidden="true">monitor_heart</span>Status</button>
+  <button type="button" class="wt-segment" role="tab" data-aws-tab="settings" aria-controls="aws-panel-settings" aria-selected="false"><span class="material-icons" aria-hidden="true">tune</span>Settings</button>
+  <button type="button" class="wt-segment" role="tab" data-aws-tab="tests" aria-controls="aws-panel-tests" aria-selected="false"><span class="material-icons" aria-hidden="true">science</span>Sample tests</button>
+ </div>
+
+ <section class="card mb-3" id="aws-panel-status" role="tabpanel" data-aws-panel="status" aria-label="Status">
+  <div class="wt-card-head"><h2 class="wt-section-title mb-0">How it works</h2></div>
+  <ol class="wt-aws-steps" id="aws-setup-steps">
+   <li class="wt-aws-step"><span class="wt-aws-step__n" aria-hidden="true">1</span><span class="material-icons" aria-hidden="true">lan</span>
+    <span class="wt-aws-step__text"><span class="wt-aws-step__title">Connections work</span><span class="wt-field-help" data-aws-connections-sub>Recheck after any AWS change</span></span>
+    <span class="wt-aws-step__state" data-aws-connections-state th:classappend="${readiness.ready() ? 'is-ok' : 'is-warn'}"><span class="material-icons" aria-hidden="true" th:text="${readiness.ready() ? 'check_circle' : 'error'}" th:aria-label="${readiness.ready() ? 'Done' : 'Needs attention'}">error</span></span>
+    <button type="button" class="wt-link-button" data-aws-step-recheck>Recheck<span class="material-icons" aria-hidden="true">chevron_right</span></button></li>
+   <li class="wt-aws-step"><span class="wt-aws-step__n" aria-hidden="true">2</span><span class="material-icons" aria-hidden="true">power_settings_new</span>
+    <span class="wt-aws-step__text"><span class="wt-aws-step__title">Scanner turned on</span><span class="wt-field-help">In Scanner modules</span></span>
+    <span class="wt-aws-step__state" data-aws-scanner-state th:classappend="${awsScannerEnabled ? 'is-ok' : 'is-warn'}"><span class="material-icons" aria-hidden="true" th:text="${awsScannerEnabled ? 'check_circle' : 'radio_button_unchecked'}">radio_button_unchecked</span></span>
+    <a class="wt-link-button" href="/configuration/modules">Scanner modules<span class="material-icons" aria-hidden="true">chevron_right</span></a></li>
+   <li class="wt-aws-step"><span class="wt-aws-step__n" aria-hidden="true">3</span><span class="material-icons" aria-hidden="true">assignment</span>
+    <span class="wt-aws-step__text"><span class="wt-aws-step__title">Security review in a ruleset</span><span class="wt-field-help">Add "AWS Security Agent — security review" to a repository's ruleset</span></span>
+    <span class="wt-aws-step__state" th:classappend="${awsReviewInRuleset ? 'is-ok' : 'is-warn'}"><span class="material-icons" aria-hidden="true" th:text="${awsReviewInRuleset ? 'check_circle' : 'radio_button_unchecked'}">radio_button_unchecked</span></span>
+    <a class="wt-link-button" href="/rulesets">Rulesets<span class="material-icons" aria-hidden="true">chevron_right</span></a></li>
+   <li class="wt-aws-step"><span class="wt-aws-step__n" aria-hidden="true">4</span><span class="material-icons" aria-hidden="true">play_arrow</span>
+    <span class="wt-aws-step__text"><span class="wt-aws-step__title">Run a scan</span><span class="wt-field-help">Open a repository and press Scan</span></span>
+    <span class="wt-aws-step__state" th:classappend="${awsHasScanRun ? 'is-ok' : 'is-warn'}"><span class="material-icons" aria-hidden="true" th:text="${awsHasScanRun ? 'check_circle' : 'radio_button_unchecked'}">radio_button_unchecked</span></span>
+    <a class="wt-link-button" href="/repositories">Open repositories<span class="material-icons" aria-hidden="true">chevron_right</span></a></li>
+  </ol>
+  <div class="wt-aws-checks" id="aws-connection-checks" th:with="failing=${#lists.size(readiness.checks().?[state() == 'FAILED' or state() == 'REQUIRED' or state() == 'NOT_CHECKED' or state() == 'DISABLED'])},total=${#lists.size(readiness.checks())}">
+   <span class="material-icons" aria-hidden="true" data-aws-checks-icon th:classappend="${failing == 0 ? 'is-ok' : 'is-warn'}" th:text="${failing == 0 ? 'check_circle' : 'error'}">check_circle</span>
+   <span data-aws-checks-summary th:text="${failing == 0 ? 'All ' + total + ' connection checks passed' : failing + ' of ' + total + ' connection checks need attention'}">All connection checks passed</span>
+   <button type="button" class="wt-link-button" data-aws-checks-toggle aria-expanded="false" aria-controls="aws-check-grid"><span data-aws-checks-toggle-label>Show checks</span><span class="material-icons" aria-hidden="true">expand_more</span></button>
+  </div>
+  <ul class="wt-aws-check-grid" id="aws-check-grid" hidden>
+   <li th:each="check : ${readiness.checks()}" th:data-aws-check="${check.name()}"
+       th:with="ok=${check.state() == 'VERIFIED' or check.state() == 'APPROVED' or check.state() == 'CONFIGURED' or check.state() == 'ENABLED'}">
+    <span class="wt-mini-chip" tabindex="0" data-aws-check-status th:classappend="${ok ? 'wt-mini-chip--ok' : 'wt-mini-chip--warn'}" th:attr="data-tip=${check.detail()}"
+     th:aria-label="${check.label() + ': ' + check.detail()}"><span class="wt-dot" aria-hidden="true" th:classappend="${ok ? 'wt-dot--ready' : 'wt-dot--setup'}"></span><span th:text="${check.label()}">Check</span></span>
+   </li>
+   <li data-aws-check="Sample code access"><span class="wt-mini-chip" tabindex="0" data-aws-role-state data-tip="A completed sample test shows AWS could read the uploaded code."><span class="wt-dot" aria-hidden="true"></span><span>Can read sample code</span></span></li>
+  </ul>
+ </section>
+
+ <section class="card mb-3" id="aws-panel-settings" role="tabpanel" data-aws-panel="settings" aria-label="Settings" hidden>
+  <form method="post" th:action="@{/aws-security/settings}" data-aws-settings-form>
+   <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+   <div class="wt-setting-rows">
+    <div class="wt-setting-row wt-setting-row--plain">
+     <span class="wt-setting-row__text"><strong>Reviews at once</strong><span class="wt-field-help">Up to 5. Extra reviews wait in the queue; running ones carry on.</span></span>
+     <span class="wt-setting-row__value"><md-outlined-text-field type="number" label="Reviews at once" name="limit" min="1" max="5" step="1" required suffix-text="of 5"
+       th:value="${awsCapacity.limit()}" th:attr="supporting-text=${awsCapacityUsed + ' running now'}"></md-outlined-text-field></span>
+    </div>
+    <div class="wt-setting-row wt-setting-row--plain">
+     <span class="wt-setting-row__text"><strong id="aws-source-label">Show source for AWS findings</strong><span class="wt-field-help">View source on AWS findings, the same as PR scans. Read at the scanned commit when opened, never stored; secret lines are always masked.</span></span>
+     <span class="wt-setting-row__value"><span class="wt-mini-chip wt-mini-chip--ok" tabindex="0" data-tip="Secret and credential findings never show code."><span class="material-icons" aria-hidden="true">key_off</span>Secrets masked</span>
+      <input type="hidden" name="showSource" data-aws-source-value th:value="${awsSourcePolicy.shown()}">
+      <button type="button" class="wt-switch" role="switch" data-aws-source-switch aria-labelledby="aws-source-label" th:aria-checked="${awsSourcePolicy.shown()}"></button></span>
+    </div>
+    <div class="wt-setting-row wt-setting-row--plain">
+     <span class="wt-setting-row__text"><strong id="aws-bypass-label">Let pull requests through when AWS can't finish</strong><span class="wt-field-help">If a review fails, times out or can't start, Watchtower still approves the pull request. Findings from Watchtower's own scanners still block. Off: the pull request stays marked incomplete.</span></span>
+     <span class="wt-setting-row__value"><span class="wt-mini-chip" tabindex="0" data-tip="Applies to the next review that ends without a result"><span class="material-icons" aria-hidden="true">skip_next</span><span data-aws-bypass-chip th:text="${awsPassOnError} ? 'Bypass on error' : 'Keep incomplete'">Bypass on error</span></span>
+      <input type="hidden" name="bypassOnError" data-aws-bypass-value th:value="${awsPassOnError}">
+      <button type="button" class="wt-switch" role="switch" data-aws-bypass-switch aria-labelledby="aws-bypass-label" th:aria-checked="${awsPassOnError}"></button></span>
+    </div>
+   </div>
+   <div class="wt-aws-settings-foot"><span class="wt-field-help" role="status" th:if="${success}" th:text="${success}"></span>
+    <md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button></div>
+  </form>
+ </section>
+
+ <section class="card mb-3" id="aws-panel-tests" role="tabpanel" data-aws-panel="tests" aria-label="Sample tests" hidden>
+  <p class="wt-field-help wt-aws-tests-intro">Optional checks that scan packaged sample code. They never touch repository code.</p>
+  <ul class="wt-aws-tests" data-aws-test-checklist aria-label="Sample tests"><li class="wt-field-help">Loading test results…</li></ul>
+  <div class="wt-aws-tests-foot"><a class="wt-link-button" href="/aws-security/setup/canary-kit" hx-boost="false"><span class="material-icons" aria-hidden="true">download</span>Download sample code</a>
+   <span class="wt-mini-chip" data-aws-tests-summary hidden></span></div>
+ </section>
+
+ <button type="button" class="wt-link-button" data-wt-dialog-open="#aws-connection-dialog"><span class="material-icons" aria-hidden="true">info</span>Connection details</button>
+ <p class="wt-field-help" role="status" aria-live="polite" data-aws-status></p>
+
+ <md-dialog id="aws-connection-dialog">
+  <div slot="headline" class="wt-dialog-headline"><span>Connection details</span><button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <div slot="content">
+   <dl class="wt-aws-kv">
+    <dt>AWS account</dt><dd><code th:text="${awsProfile.account()}">123456789012</code></dd><dd></dd>
+    <dt>Region</dt><dd><code th:text="${awsProfile.region()}">us-east-1</code></dd><dd></dd>
+    <dt>Code bucket</dt><dd><code th:text="${awsProfile.bucket()}">bucket</code></dd><dd></dd>
+    <dt>Watchtower role</dt><dd><code data-aws-runtime th:text="${readiness.runtimeArn() == null ? 'Unavailable' : readiness.runtimeArn()}">Unavailable</code></dd>
+     <dd><button type="button" class="wt-icon-action" data-aws-runtime-copy th:if="${readiness.runtimeArn() != null}" th:attr="data-copy-text=${readiness.runtimeArn()}" aria-label="Copy Watchtower role" data-tip="Copy"><span class="material-icons" aria-hidden="true">content_copy</span></button></dd>
+    <dt>Service role</dt><dd><code th:text="${awsProfile.serviceRole()}">role</code></dd>
+     <dd><button type="button" class="wt-icon-action" th:attr="data-copy-text=${awsProfile.serviceRole()}" aria-label="Copy service role" data-tip="Copy"><span class="material-icons" aria-hidden="true">content_copy</span></button></dd>
+   </dl>
+   <p class="wt-field-help mb-0">Set when Watchtower is installed. Change them only if a connection check fails.</p>
+  </div>
+  <div slot="actions"><md-text-button type="button" data-wt-dialog-close>Close</md-text-button></div>
+ </md-dialog>
+
+ <md-dialog id="aws-setup-test-dialog">
+  <div slot="headline" class="wt-dialog-headline"><span>Run <span data-aws-mode-name>Full-code review</span>?</span><button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <div slot="content">
+   <input type="hidden" data-aws-mode value="FULL">
+   <div class="wt-meta-chips"><span class="wt-mini-chip wt-mini-chip--ok"><span class="material-icons" aria-hidden="true">inventory_2</span>Sample code only</span>
+    <span class="wt-mini-chip" tabindex="0" data-tip="The configured AWS time limit applies. You can request a stop from the result."><span class="material-icons" aria-hidden="true">timer</span>Time limit applies</span></div>
+   <p class="wt-field-help mb-0" data-aws-submit-status role="status" aria-live="polite"></p>
+  </div>
+  <div slot="actions"><md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button><md-filled-button type="button" data-aws-test-start>Run test</md-filled-button></div>
+ </md-dialog>
+
+ <md-dialog id="aws-setup-result-dialog" class="wt-aws-result-dialog">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-aws-result-head"><span class="wt-aws-result-head__icon" data-aws-result-icon aria-hidden="true"><span class="material-icons">check</span></span>
+   <span class="wt-person__text"><span data-aws-result-title>Sample test result</span><span class="wt-person__meta" data-aws-result-sub></span></span></span>
+   <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <div slot="content" class="wt-aws-result">
+   <div class="wt-meta-chips" data-aws-result-state></div>
+   <div class="wt-aws-stats" data-aws-result-stats></div>
+   <section><h3 class="wt-aws-result__heading">What it found</h3><ul class="wt-aws-found" data-aws-findings></ul>
+    <div class="wt-table-actions" data-aws-pager hidden><md-text-button type="button" data-aws-page-prev>Previous</md-text-button><span class="wt-field-help" data-aws-page-label></span><md-text-button type="button" data-aws-page-next>Next</md-text-button></div></section>
+   <details class="wt-form-disclosure"><summary>Show steps</summary><ul class="wt-aws-ticks" data-aws-progress></ul></details>
+   <details class="wt-form-disclosure"><summary>Technical details</summary><dl class="wt-aws-kv" data-aws-result-facts></dl></details>
+  </div>
+  <div slot="actions" class="wt-table-actions"><md-text-button data-aws-review-link hidden target="_blank" rel="noopener noreferrer" hx-boost="false">Open in AWS</md-text-button><md-text-button type="button" data-aws-delete-review hidden data-wt-dialog-open="#aws-delete-review-dialog" sec:authorize="hasAuthority('Scan Results View')">Delete AWS review</md-text-button><md-text-button type="button" data-aws-test-recover hidden>Retry recovery</md-text-button><md-outlined-button type="button" data-aws-test-stop hidden>Request stop</md-outlined-button><md-text-button type="button" data-wt-dialog-close>Close</md-text-button></div>
+ </md-dialog>
+ <md-dialog id="aws-delete-review-dialog" class="wt-dialog-wide" sec:authorize="hasAuthority('Scan Results View')">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person"><span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">delete_forever</span></span><span class="wt-person__text"><span>Delete AWS review?</span></span></span></div><form id="aws-delete-review-form" slot="content" class="wt-md-form" method="post" hx-boost="false" th:action="@{/aws-security/runs/selected/delete-review}"><p>This deletes the review and its findings from AWS. Saved Watchtower results and test history stay available. This action cannot be undone.</p><input name="reviewId" type="hidden"><md-outlined-text-field label="Type DELETE to confirm" name="confirmation" data-wt-confirm-name="DELETE" autocomplete="off" required pattern="DELETE"></md-outlined-text-field></form><div slot="actions"><md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button><md-filled-button type="submit" form="aws-delete-review-form" data-wt-confirm-submit disabled has-icon class="wt-btn-danger"><span slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete AWS review</md-filled-button></div>
+ </md-dialog>
+</section>

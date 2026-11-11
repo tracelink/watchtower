@@ -1,0 +1,49 @@
+<!-- Repository results header and tabs (Fixes + RepoQueue boards, 2026-10-22), shared by
+     /scans/results and /reposcan so Plans and Queue read as tabs of one page. The caller provides
+     paused, queuedCount, runningCount, plansCount and resultCounts. -->
+
+<!-- Title, scanner state chips, the pause icon and New scan (the one filled button). newScanDialog:
+     the page has the New scan dialog; otherwise the button opens it on the Plans tab. -->
+<div th:fragment="head(view, newScanDialog)" class="wt-home-head wt-report-head wt-results-head">
+  <div th:replace="~{fragments/pageheader :: header('Repository results', null)}"></div>
+  <span class="wt-meta-chips" aria-label="Scanner state">
+    <span th:replace="~{fragments/scannerstate :: chips(${paused}, false, ${queuedCount}, ${runningCount})}"></span>
+  </span>
+  <div class="wt-page-actions">
+    <!-- Pause or resume, on every tab: an icon button whose hover text says what it does. -->
+    <form method="POST" action="/reposcan/pause" class="m-0"
+        th:if="${#authorization.expression('hasAuthority(''Scan Admin'')')}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="paused" th:value="${!paused}"/>
+      <input type="hidden" name="view" th:value="${view}"/>
+      <button type="submit" class="wt-icon-action"
+          th:attr="aria-label=${paused ? 'Resume scans' : 'Pause scans'},
+                   data-tip=${paused ? 'Resume scans: queued scans start again' : 'Pause scans: scans still queue but do not start until resumed'}"><span
+          class="material-icons" aria-hidden="true" th:text="${paused ? 'play_arrow' : 'pause'}">pause</span></button>
+    </form>
+    <th:block sec:authorize="hasAuthority('Scan Submit')">
+      <md-filled-button th:if="${newScanDialog}" type="button" data-wt-dialog-target="#repoScanDialog" has-icon>
+        <span class="material-icons" slot="icon" aria-hidden="true">add</span>New scan
+      </md-filled-button>
+      <a th:unless="${newScanDialog}" class="btn btn-primary btn-sm" href="/reposcan?view=plans&amp;new=true"><span
+          class="material-icons" aria-hidden="true">add</span>New scan</a>
+    </th:block>
+  </div>
+</div>
+
+<!-- One segmented row with icons and counts: All · Pull requests · Full repository · Plans · Queue. -->
+<nav th:fragment="tabs(active)" class="wt-segmented-filter mb-3" aria-label="Repository results views"
+     th:with="c=${resultCounts}">
+  <a th:replace="~{fragments/resultstabs :: tab(${active}, 'all', 'All', 'list', '/scans/results?type=all', ${c == null ? null : c.all()})}"></a>
+  <a th:replace="~{fragments/resultstabs :: tab(${active}, 'pr', 'Pull requests', 'merge', '/scans/results?type=pr', ${c == null ? null : c.pullRequests()})}"></a>
+  <a th:replace="~{fragments/resultstabs :: tab(${active}, 'repository', 'Full repository', 'code', '/scans/results?type=repository', ${c == null ? null : c.repository()})}"></a>
+  <a th:replace="~{fragments/resultstabs :: tab(${active}, 'plans', 'Plans', 'event_repeat', '/reposcan?view=plans', ${plansCount})}"></a>
+  <a th:replace="~{fragments/resultstabs :: tab(${active}, 'queue', 'Queue', 'hourglass_top', '/reposcan?view=queue', ${queuedCount + runningCount})}"></a>
+</nav>
+
+<a th:fragment="tab(active, key, label, icon, href, count)" th:href="${href}"
+   th:class="${active == key} ? 'wt-segment is-active' : 'wt-segment'"
+   th:attr="aria-current=${active == key ? 'page' : null}"><span class="material-icons" aria-hidden="true"
+   th:text="${icon}">list</span><span th:text="${label}">All</span><span th:if="${count != null}" class="wt-count-badge"
+   data-tip="Scans of this kind, whatever their status. Home and the dashboards count finished scans only."
+   th:text="${#numbers.formatInteger(count, 1, 'COMMA')}">0</span></a>

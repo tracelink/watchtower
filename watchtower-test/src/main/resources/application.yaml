@@ -3,8 +3,10 @@ spring:
     active: test
   main:
     allow-bean-definition-overriding: true
+  flyway:
+    placeholders:
+      metricsZoneOffsetMillis: 0
   jpa:
     show-sql: true
   datasource:
     url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    

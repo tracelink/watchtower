@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -21,14 +21,43 @@ public class ApiIntegrationServiceTest {
 
 	private ApiIntegrationService apiService;
 
-	@MockBean
+	@MockitoBean
 	private ApiIntegrationRepository apiRepo;
-	@MockBean
+	@MockitoBean
 	private PasswordEncoder passwordEncoder;
+
+	private static final String PUBLIC_URL = "https://watchtower.example.com";
 
 	@BeforeEach
 	public void setup() {
-		this.apiService = new ApiIntegrationService(apiRepo, passwordEncoder);
+		this.apiService = new ApiIntegrationService(apiRepo, passwordEncoder, PUBLIC_URL);
+	}
+
+	@Test
+	public void signingSecretIsPersistedBeforeRemoteRegistrationAndReused() throws Exception {
+		var entity = Mockito.spy(new com.tracelink.appsec.watchtower.core.scan.code.scm.api.bb.BBCloudIntegrationEntity());
+		entity.setApiLabel("bb");
+		IWatchtowerApi remote = Mockito.mock(com.tracelink.appsec.watchtower.core.scan.code.scm.api.IScmApi.class);
+		Mockito.doReturn(remote).when(entity).createApi();
+		BDDMockito.when(apiRepo.findByApiLabel("bb")).thenReturn(entity);
+		var savedSecret = new java.util.concurrent.atomic.AtomicReference<String>();
+		Mockito.doAnswer(call -> {
+			if (entity.getRegisterState() == RegisterState.IN_PROGRESS) {
+				Assertions.assertNotNull(entity.getWebhookSecret());
+				savedSecret.set(entity.getWebhookSecret());
+			}
+			return entity;
+		}).when(apiRepo).saveAndFlush(entity);
+		Mockito.doAnswer(call -> {
+			Assertions.assertEquals(savedSecret.get(), entity.getWebhookSecret());
+			Assertions.assertNotNull(savedSecret.get());
+			return null;
+		}).when(remote).register(passwordEncoder, PUBLIC_URL);
+		apiService.register("bb").join();
+		String first = savedSecret.get();
+		entity.setRegisterState(RegisterState.NOT_REGISTERED);
+		apiService.register("bb").join();
+		Assertions.assertEquals(first, savedSecret.get());
 	}
 
 	@Test
@@ -163,14 +192,14 @@ public class ApiIntegrationServiceTest {
 
 		BDDMockito.verify(integrationEntity).setRegisterState(RegisterState.IN_PROGRESS);
 		BDDMockito.verify(apiRepo, BDDMockito.times(2)).saveAndFlush(integrationEntity);
-		BDDMockito.verify(api).register(passwordEncoder);
+		BDDMockito.verify(api).register(passwordEncoder, PUBLIC_URL);
 	}
 
 	@Test
 	public void testRegisterFailure() throws Exception {
 		IWatchtowerApi api = BDDMockito.mock(IWatchtowerApi.class);
 		BDDMockito.doThrow(new IllegalArgumentException("Bad registration")).when(api)
-				.register(passwordEncoder);
+				.register(passwordEncoder, PUBLIC_URL);
 		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
 		BDDMockito.when(integrationEntity.getApiLabel()).thenReturn("myIntegration");
 		BDDMockito.when(integrationEntity.getIntegrationId()).thenReturn(1L);
@@ -180,11 +209,31 @@ public class ApiIntegrationServiceTest {
 
 		BDDMockito.when(apiRepo.findByApiLabel("myIntegration")).thenReturn(integrationEntity);
 
-		apiService.register("myIntegration");
+		apiService.register("myIntegration").exceptionally(e -> null).get();
 
 		BDDMockito.verify(integrationEntity).setRegisterState(RegisterState.IN_PROGRESS);
-		BDDMockito.verify(apiRepo).saveAndFlush(integrationEntity);
-		BDDMockito.verify(api).register(passwordEncoder);
+		BDDMockito.verify(apiRepo, BDDMockito.times(2)).saveAndFlush(integrationEntity);
+		BDDMockito.verify(api).register(passwordEncoder, PUBLIC_URL);
+	}
+
+	@Test
+	public void testRegisterNoPublicUrl() throws Exception {
+		ApiIntegrationService serviceWithoutUrl =
+				new ApiIntegrationService(apiRepo, passwordEncoder, "  ");
+		ApiIntegrationEntity integrationEntity = BDDMockito.mock(ApiIntegrationEntity.class);
+		BDDMockito.when(integrationEntity.getApiLabel()).thenReturn("myIntegration");
+		BDDMockito.when(integrationEntity.getRegisterState())
+				.thenReturn(RegisterState.NOT_REGISTERED);
+		BDDMockito.when(apiRepo.findByApiLabel("myIntegration")).thenReturn(integrationEntity);
+
+		try {
+			serviceWithoutUrl.register("myIntegration");
+			MatcherAssert.assertThat("Exception not thrown", false);
+		} catch (ApiIntegrationException e) {
+			MatcherAssert.assertThat(e.getMessage(),
+					Matchers.containsString("watchtower.publicUrl"));
+		}
+		BDDMockito.verify(apiRepo, Mockito.times(0)).saveAndFlush(integrationEntity);
 	}
 
 	@Test
@@ -232,7 +281,7 @@ public class ApiIntegrationServiceTest {
 
 		BDDMockito.when(apiRepo.findByApiLabel("myIntegration")).thenReturn(integrationEntity);
 
-		apiService.unregister("myIntegration");
+		apiService.unregister("myIntegration").get();
 
 		BDDMockito.verify(integrationEntity).setRegisterState(RegisterState.IN_PROGRESS);
 		BDDMockito.verify(integrationEntity).setRegisterError(null);
@@ -253,7 +302,7 @@ public class ApiIntegrationServiceTest {
 
 		BDDMockito.when(apiRepo.findByApiLabel("myIntegration")).thenReturn(integrationEntity);
 
-		apiService.unregister("myIntegration");
+		apiService.unregister("myIntegration").exceptionally(e -> null).get();
 
 		BDDMockito.verify(integrationEntity).setRegisterState(RegisterState.IN_PROGRESS);
 		BDDMockito.verify(integrationEntity).setRegisterError(null);

@@ -35,7 +35,7 @@ public class UploadScanResultsController {
 	@GetMapping
 	public WatchtowerModelAndView getResultsHome() {
 		WatchtowerModelAndView wmav = new WatchtowerModelAndView("upload_scan/results");
-		wmav.addObject("filters", UploadResultFilter.values());
+		wmav.setViewName("redirect:/uploadscan/results/all");
 		return wmav;
 	}
 
@@ -55,10 +55,17 @@ public class UploadScanResultsController {
 		if (resultFilter == null) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Unknown Filter");
-			wmav.setViewName("redirect:/uploadscan/results");
+			wmav.setViewName("redirect:/uploadscan/results/all");
 		} else {
-			wmav.addObject("results",
-					resultService.getScanResultsWithFilters(resultFilter, 10, pageNum));
+			var pagedResult = resultService.getScanResultsWithFilters(resultFilter, 10, pageNum);
+			if (pagedResult.totalPages() > 0 && pageNum >= pagedResult.totalPages()) {
+				wmav.setViewName("redirect:/uploadscan/results/" + filter + "?page="
+						+ (pagedResult.totalPages() - 1));
+				return wmav;
+			}
+			wmav.addObject("results", pagedResult.content());
+			wmav.addObject("hasNext", pagedResult.hasNext());
+			wmav.addObject("pagination", pagedResult);
 		}
 		return wmav;
 	}

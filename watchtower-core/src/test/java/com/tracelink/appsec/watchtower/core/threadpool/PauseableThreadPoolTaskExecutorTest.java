@@ -106,7 +106,7 @@ public class PauseableThreadPoolTaskExecutorTest {
 
 		};
 
-		ptp.submitListenable(runSubmit).get();
+		ptp.submitCompletable(runSubmit).get();
 		Assertions.assertTrue(hasRun.get());
 	}
 
@@ -125,7 +125,7 @@ public class PauseableThreadPoolTaskExecutorTest {
 
 		};
 
-		ptp.submitListenable(caller).get();
+		ptp.submitCompletable(caller).get();
 		Assertions.assertTrue(hasRun.get());
 	}
 
@@ -165,7 +165,7 @@ public class PauseableThreadPoolTaskExecutorTest {
 		}
 
 		try {
-			ptp.submitListenable(runner);
+			ptp.submitCompletable(runner);
 		} catch (TaskRejectedException ex) {
 			// correct
 		} catch (Exception e) {
@@ -173,7 +173,7 @@ public class PauseableThreadPoolTaskExecutorTest {
 		}
 
 		try {
-			ptp.submitListenable(caller);
+			ptp.submitCompletable(caller);
 		} catch (TaskRejectedException ex) {
 			// correct
 		} catch (Exception e) {
@@ -181,4 +181,42 @@ public class PauseableThreadPoolTaskExecutorTest {
 		}
 	}
 
+	@Test
+	public void testQueueIsBoundedAndRejectsWhenFull() {
+		// One thread, capacity one: the first task occupies the worker, the second fills
+		// the queue, the third has nowhere to go. Before this the queue was unbounded, so
+		// a webhook flood could queue agents until the heap ran out.
+		PauseableThreadPoolTaskExecutor ptp = new PauseableThreadPoolTaskExecutor(1, 1);
+		ptp.initialize();
+		Assertions.assertEquals(1, ptp.getQueueCapacity());
+		ptp.pause();
+		try {
+			Runnable noop = () -> {
+			};
+			ptp.execute(noop);
+			ptp.execute(noop);
+			Assertions.assertThrows(TaskRejectedException.class, () -> ptp.execute(noop));
+		} finally {
+			ptp.resume();
+			ptp.shutdown();
+		}
+	}
+
+	@Test
+	public void testDefaultQueueCapacityIsApplied() {
+		PauseableThreadPoolTaskExecutor ptp = new PauseableThreadPoolTaskExecutor(1);
+		ptp.initialize();
+		try {
+			Assertions.assertEquals(PauseableThreadPoolTaskExecutor.DEFAULT_QUEUE_CAPACITY,
+					ptp.getQueueCapacity());
+		} finally {
+			ptp.shutdown();
+		}
+	}
+
+	@Test
+	public void testNonPositiveQueueCapacityIsRejected() {
+		Assertions.assertThrows(IllegalStateException.class,
+				() -> new PauseableThreadPoolTaskExecutor(1, 0));
+	}
 }
