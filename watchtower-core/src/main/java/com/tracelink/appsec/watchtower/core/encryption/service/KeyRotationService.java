@@ -13,10 +13,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.persistence.Convert;
-import javax.persistence.EntityManagerFactory;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.persistence.Convert;
+import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
@@ -24,6 +24,8 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -33,6 +35,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.scheduling.annotation.Scheduled;
+
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -60,6 +64,8 @@ public class KeyRotationService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataEncryptionService.class);
 	private static final String UNKNOWN_ENC_TYPE = "Unknown encryption type: ";
+	/** The longest rotation period a schedule may use, in days. */
+	static final int MAX_ROTATION_PERIOD_DAYS = 3650;
 
 	private final EncryptionType encryptionType;
 	private final boolean decryptMode;
@@ -175,6 +181,10 @@ public class KeyRotationService {
 	 */
 	public List<DataEncryptionKey> getKeys() {
 		return Collections.unmodifiableList(dataEncryptionKeyRepository.findAll());
+	}
+
+	public Page<DataEncryptionKey> getKeys(Pageable pageable) {
+		return dataEncryptionKeyRepository.findAll(pageable);
 	}
 
 	/*
@@ -527,6 +537,11 @@ public class KeyRotationService {
 			throw new IllegalArgumentException(
 					"Please provide a rotation period greater than zero to enable scheduled rotations");
 		}
+		// A period of centuries is a schedule that never runs; cap it at a sensible ceiling
+		if (enable && rotationPeriod > MAX_ROTATION_PERIOD_DAYS) {
+			throw new IllegalArgumentException("Please provide a rotation period of at most "
+					+ MAX_ROTATION_PERIOD_DAYS + " days (10 years)");
+		}
 		// Make sure rotation period is null to disable
 		if (!enable && rotationPeriod != null) {
 			rotationPeriod = null;
@@ -552,6 +567,7 @@ public class KeyRotationService {
 	 * enabled or a rotation period is not set, this method does nothing.
 	 */
 	@Scheduled(cron = "0 0 0 * * *")
+	@SchedulerLock(name = "key-rotation", lockAtMostFor = "PT30M", lockAtLeastFor = "PT5M")
 	private void autoRotateKeys() {
 		EncryptionMetadata encryptionMetadata = getEncryptionMetadata();
 		// If auto-rotation not correctly configured, does nothing

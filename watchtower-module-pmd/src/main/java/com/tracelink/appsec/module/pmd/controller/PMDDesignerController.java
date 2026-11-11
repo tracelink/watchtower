@@ -4,9 +4,9 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +25,7 @@ import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAnd
 import com.tracelink.appsec.watchtower.core.rule.RuleDesignerService;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 
-import net.sourceforge.pmd.lang.rule.XPathRule;
+import net.sourceforge.pmd.lang.rule.xpath.XPathRule;
 
 /**
  * Controller to handle designing a PMD Rule

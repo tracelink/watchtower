@@ -8,6 +8,11 @@ import java.nio.file.Paths;
 import java.security.Key;
 import java.security.UnrecoverableKeyException;
 import java.util.Arrays;
+import java.util.Base64;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -142,6 +147,27 @@ public class KeyEncryptionServiceTest {
 		Assertions.assertTrue(keyEncryptionService.keyRotationInProgress());
 		keyEncryptionService.finishKeyRotation();
 		Assertions.assertFalse(keyEncryptionService.keyRotationInProgress());
+	}
+
+	@Test
+	public void testEncryptKeyUsesV2FormatAndDecryptsLegacyFormat() throws Exception {
+		KeyEncryptionService keyEncryptionService = new KeyEncryptionService(
+				EncryptionType.ENVIRONMENT, keyStorePath, "password", null, null, null, null);
+		keyEncryptionService.init();
+		Key keyEncryptionKey = EncryptionUtils.generateKey();
+		setField(CURRENT_KEY, keyEncryptionService, keyEncryptionKey);
+		Key dataKey = EncryptionUtils.generateKey();
+
+		String wrapped = keyEncryptionService.encryptKey(dataKey);
+		Assertions.assertTrue(wrapped.startsWith(EncryptionUtils.V2_PREFIX));
+
+		Cipher legacy = Cipher.getInstance("AES/GCM/NoPadding");
+		legacy.init(Cipher.WRAP_MODE, new SecretKeySpec(keyEncryptionKey.getEncoded(), "AES"),
+				new GCMParameterSpec(128, new byte[12]));
+		String legacyWrapped = Base64.getEncoder().encodeToString(legacy.wrap(dataKey));
+
+		Assertions.assertArrayEquals(dataKey.getEncoded(),
+				keyEncryptionService.decryptKey(legacyWrapped).getEncoded());
 	}
 
 	@Test

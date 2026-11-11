@@ -1,0 +1,111 @@
+<!-- Review finding, redesigned from the 2026-10-15 UAT walkthrough (mockup board "Review finding"):
+     the finding as a card of chips, the two decisions as large choices, the rest folded away. -->
+<div th:replace="~{fragments/pageheader :: header('Review finding', null)}"></div>
+<section data-feedback-page data-feedback-dialog class="wt-review-page"
+ th:with="severityValue=${T(com.tracelink.appsec.watchtower.core.rule.RulePriority).priorityForName(review.selected.severity) != null ? T(com.tracelink.appsec.watchtower.core.rule.RulePriority).priorityForName(review.selected.severity).priority : 6}"
+ th:attr="data-scan-type=${review.scanType},data-scan-id=${review.scanId},data-finding-key=${review.selected.key},data-version=${review.selected.version},data-csrf-token=${_csrf.token},data-csrf-header=${_csrf.headerName}">
+ <div class="wt-meta-chips mb-3">
+  <a class="wt-mini-chip wt-mini-chip--link wt-meta-chip" th:href="${review.returnUrl}"><span class="material-icons" aria-hidden="true">arrow_back</span>Back to report</a>
+  <a th:replace="~{fragments/featurehelp :: info('finding-feedback', 'finding review', 'Record correctness and handling independently. Feedback does not suppress findings, change a rule or bypass a pull request.')}"></a>
+ </div>
+
+ <section aria-label="Selected occurrence" class="wt-review-card mb-3">
+  <div class="wt-review-card__title">
+   <span th:replace="~{fragments/severity :: pill(${review.selected.severity}, ${severityValue})}"></span>
+   <h2 th:text="${review.selected.title}"></h2>
+  </div>
+  <div class="wt-meta-chips">
+   <span class="wt-mini-chip wt-meta-chip" tabindex="0" th:if="${scanner != null}" th:attr="data-tip=${'Found by ' + scanner.name()}"><span
+    class="material-icons wt-accent-icon" aria-hidden="true" th:text="${scanner.icon()}"></span><span th:text="${scanner.name()}"></span></span>
+   <span class="wt-mini-chip wt-meta-chip" tabindex="0" th:if="${review.selected.file != null}"
+    th:attr="data-tip=${review.selected.file + (review.selected.line != null and review.selected.line > 0 ? ', line ' + review.selected.line : '')}"><span
+    class="material-icons" aria-hidden="true">description</span><span class="wt-mono"
+    th:text="${review.selected.file.substring(review.selected.file.lastIndexOf('/') + 1) + (review.selected.line != null and review.selected.line > 0 ? ':' + review.selected.line : '')}"></span></span>
+   <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+    th:attr="data-tip=${review.selected.revision != null ? 'Saved against the rule revision that produced this finding: ' + review.selected.revision : 'The scan did not record a rule revision. This review remains attached to this occurrence.'}"><span
+    class="material-icons" aria-hidden="true">history</span>Rule as scanned</span>
+   <th:block th:if="${review.selected.ruleId != null and #authorization.expression('hasAuthority(''Rule Modify'') or hasAuthority(''Ruleset View'')')}">
+    <a class="wt-mini-chip wt-mini-chip--link wt-meta-chip" data-tip="How often this rule's findings are judged correct"
+     th:href="@{/rules/{id}/health(id=${review.selected.ruleId},revision=${review.selected.revision ?: 'unknown'},scanType=${review.scanType})}"><span
+     class="material-icons" aria-hidden="true">monitor_heart</span>Rule health</a>
+    <a th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}" class="wt-mini-chip wt-mini-chip--link wt-meta-chip" th:href="@{/rules/{id}/improvements(id=${review.selected.ruleId})}"><span class="material-icons" aria-hidden="true">troubleshoot</span>Investigate rule</a>
+    <a class="wt-mini-chip wt-mini-chip--link wt-meta-chip" data-tip="Saved reviews of this rule"
+     th:href="@{/rules/{id}/reviews(id=${review.selected.ruleId},revision=${review.selected.revision ?: 'unknown'},scanType=${review.scanType})}"><span
+     class="material-icons" aria-hidden="true">fact_check</span>Rule reviews</a>
+   </th:block>
+  </div>
+  <!-- The code behind the finding, loaded only when opened; never stored. -->
+  <details class="wt-review-source" th:if="${sourceUrl != null}" data-review-source
+   th:attr="hx-get=${sourceUrl}" hx-trigger="toggle once" hx-target="find .wt-review-source__body"
+   hx-select="unset" hx-swap="innerHTML" hx-boost="false">
+   <summary class="wt-mini-chip wt-mini-chip--link wt-meta-chip"><span class="material-icons" aria-hidden="true">code</span>View source</summary>
+   <div class="wt-review-source__head">
+    <span class="wt-mini-chip" tabindex="0" data-tip="Fetched from the repository when you open it, and never stored by Watchtower."><span class="material-icons" aria-hidden="true">cloud_download</span>Not stored</span>
+    <span class="wt-mini-chip" tabindex="0" th:if="${secretsScanned}" data-tip="Lines flagged by a secrets scanner are masked."><span class="material-icons" aria-hidden="true">visibility_off</span>Secrets masked</span>
+   </div>
+   <div class="wt-review-source__body wt-code-block"><p class="wt-muted">Loading…</p></div>
+  </details>
+ </section>
+
+ <div class="wt-meta-chips mb-3" aria-label="What saving a review does">
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Who decided what and why, kept for audit."><span class="material-icons" aria-hidden="true">history_edu</span>Saved to review history</span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="True and false positive judgments show which rules are noisy."><span class="material-icons" aria-hidden="true">monitor_heart</span>Feeds rule health</span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Does not change rules, hide findings, bypass the pull request or train a model. Works with AI off."><span class="material-icons" aria-hidden="true">do_not_disturb_on</span>Changes nothing else</span>
+ </div>
+ <p th:if="${!#strings.isEmpty(review.limitation)}" class="wt-field-help" th:text="${review.limitation}"></p>
+
+ <form data-review-form hx-boost="false" class="wt-review-card">
+  <fieldset class="wt-judgment-cards" data-review-judgment>
+   <legend>Is the detection correct?</legend>
+   <label class="wt-judgment-card wt-judgment-card--true"><input type="radio" name="judgment" value="TRUE_POSITIVE" th:checked="${review.selected.judgment == 'TRUE_POSITIVE'}"><span
+    class="material-icons" aria-hidden="true">check_circle</span><span><strong>True positive</strong><small>Correct detection</small></span></label>
+   <label class="wt-judgment-card wt-judgment-card--false"><input type="radio" name="judgment" value="FALSE_POSITIVE" th:checked="${review.selected.judgment == 'FALSE_POSITIVE'}"><span
+    class="material-icons" aria-hidden="true">cancel</span><span><strong>False positive</strong><small>Incorrect detection</small></span></label>
+   <label class="wt-judgment-card wt-judgment-card--unknown"><input type="radio" name="judgment" value="UNKNOWN" th:checked="${review.selected.judgment == null or review.selected.judgment == 'UNKNOWN'}"><span
+    class="material-icons" aria-hidden="true">help</span><span><strong>Unknown</strong><small>Needs investigation</small></span></label>
+  </fieldset>
+  <fieldset class="wt-choice-chips" data-review-disposition>
+   <legend>How will you handle it?</legend>
+   <label class="wt-choice-chip" data-tip="Action required"><input type="radio" name="disposition" value="ACTION_REQUIRED" th:checked="${review.selected.disposition == null or review.selected.disposition == 'ACTION_REQUIRED'}"><span class="material-icons" aria-hidden="true">build</span>Fix it</label>
+   <label class="wt-choice-chip"><input type="radio" name="disposition" value="ACCEPTED_RISK" th:checked="${review.selected.disposition == 'ACCEPTED_RISK'}"><span class="material-icons" aria-hidden="true">shield</span>Accepted risk</label>
+   <label class="wt-choice-chip"><input type="radio" name="disposition" value="TEST_CODE" th:checked="${review.selected.disposition == 'TEST_CODE'}"><span class="material-icons" aria-hidden="true">science</span>Test code</label>
+   <label class="wt-choice-chip"><input type="radio" name="disposition" value="NOT_EXPLOITABLE" th:checked="${review.selected.disposition == 'NOT_EXPLOITABLE'}"><span class="material-icons" aria-hidden="true">verified_user</span>Not exploitable</label>
+   <label class="wt-choice-chip"><input type="radio" name="disposition" value="OTHER" th:checked="${review.selected.disposition == 'OTHER'}"><span class="material-icons" aria-hidden="true">more_horiz</span>Other</label>
+   <p class="wt-review-tip"><span class="material-icons" aria-hidden="true">lightbulb</span>A true positive in test code is still correct: choose True positive and Test code.</p>
+  </fieldset>
+  <md-outlined-text-field data-review-explanation type="textarea" label="Why? (no source code or secrets)"
+    rows="3" maxlength="300" th:value="${review.selected.explanation}"></md-outlined-text-field>
+  <details th:if="${review.bulkAvailable}" data-review-bulk class="wt-review-fold">
+   <summary><span class="material-icons" aria-hidden="true">library_add_check</span>Apply to more findings
+    <span class="wt-mini-chip" data-review-selected-count role="status">1 occurrence selected</span></summary>
+   <p class="wt-field-help">Choose up to 100 occurrences from this scan. The same decision and explanation apply to each.</p>
+   <md-outlined-text-field type="search" label="Search rule or file" data-review-search maxlength="200" autocomplete="off"></md-outlined-text-field>
+   <div data-review-options role="group" aria-label="Findings available for bulk review" class="wt-review-options"></div>
+   <p data-review-page-status role="status"></p>
+   <div class="wt-actions"><md-text-button type="button" data-review-previous disabled>Previous</md-text-button>
+    <md-text-button type="button" data-review-next disabled>Next</md-text-button></div>
+  </details>
+  <div data-feedback-selection hidden><input type="checkbox" checked th:value="${review.selected.key}" aria-label="Selected occurrence"></div>
+  <div class="wt-review-actions">
+   <md-filled-button type="submit" data-review-save has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save review</md-filled-button>
+   <a class="wt-button-link wt-button-link-secondary" th:href="${review.returnUrl}">Cancel</a>
+   <span th:unless="${review.bulkAvailable}" class="wt-mini-chip" data-review-selected-count role="status">1 occurrence selected</span>
+   <span class="wt-review-actions__spacer"></span>
+   <span th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}" data-assessment>
+    <md-outlined-button type="button" data-assessment-ask has-icon
+     data-tip="A second opinion only; nothing is sent until you click. Needs AI turned on."><span slot="icon" class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span>Ask AI (advisory)</md-outlined-button>
+   </span>
+  </div>
+  <p data-review-status role="status" aria-live="polite"></p>
+  <div th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}" data-assessment-result class="wt-evidence-result" aria-live="polite"></div>
+ </form>
+
+ <!-- History loads when opened. -->
+ <details class="wt-review-card wt-review-fold mt-3" data-review-history-section aria-label="Review history">
+  <summary><span class="material-icons" aria-hidden="true">history</span>History</summary>
+  <div data-review-history class="wt-review-history"></div>
+  <p data-review-history-status role="status"></p>
+  <div class="wt-actions"><md-text-button type="button" data-review-history-previous disabled>Previous history</md-text-button>
+   <md-text-button type="button" data-review-history-next disabled>Next history</md-text-button></div>
+ </details>
+</section>

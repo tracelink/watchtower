@@ -1,28 +1,156 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-	<div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-		<!-- <span class="text-uppercase page-subtitle">Dashboard</span> -->
-		<h3 class="page-title">Watchtower Dashboard</h3>
-	</div>
+<div xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <!-- Home, redesigned from the 2026-10-15 UAT walkthrough (mockup:
+       https://claude.ai/artifact/A9LYQ5mKsqLzBzz1qTXcQ8). Visuals over text: icons, coloured dots
+       and short words, with the meaning on hover/focus ([data-tip]). -->
+  <div class="wt-home-head" data-assistant-kind="home">
+    <div th:replace="~{fragments/pageheader :: header('Watchtower dashboard', 'Security operations overview')}"></div>
+    <!-- System status: one chip (scanning on/paused, scanner and integration dots) that opens a
+         panel. Module states come from policy and settings only; nothing contacts a provider. -->
+    <details class="wt-system-status" data-home-status>
+      <summary class="wt-system-status__chip" th:aria-label="${processorHealth.summary}">
+        <span class="wt-system-status__state" th:classappend="${' wt-tone-' + processorHealth.tone}">
+          <span class="material-icons" aria-hidden="true" th:text="${processorHealth.icon}">check_circle</span><span th:text="${processorHealth.label}">Scanning on</span></span>
+        <span class="wt-system-status__group" aria-hidden="true">
+          <span class="material-icons">radar</span>
+          <span class="wt-dot wt-dot--ready"></span><span th:text="${processorHealth.countModules('ready')}">0</span>
+          <th:block th:if="${processorHealth.countModules('setup') > 0}"><span class="wt-dot wt-dot--setup"></span><span th:text="${processorHealth.countModules('setup')}">0</span></th:block>
+          <th:block th:if="${processorHealth.countModules('off') > 0}"><span class="wt-dot wt-dot--off"></span><span th:text="${processorHealth.countModules('off')}">0</span></th:block>
+        </span>
+        <span class="wt-system-status__group" aria-hidden="true" th:unless="${processorHealth.integrations.empty}">
+          <span class="material-icons">hub</span>
+          <th:block th:if="${processorHealth.countIntegrations('ok') > 0}"><span class="wt-dot wt-dot--ready"></span><span th:text="${processorHealth.countIntegrations('ok')}">0</span></th:block>
+          <th:block th:if="${processorHealth.countIntegrations('warn') > 0}"><span class="wt-dot wt-dot--setup"></span><span th:text="${processorHealth.countIntegrations('warn')}">0</span></th:block>
+          <th:block th:if="${processorHealth.countIntegrations('bad') > 0}"><span class="wt-dot wt-dot--off"></span><span th:text="${processorHealth.countIntegrations('bad')}">0</span></th:block>
+        </span>
+        <span class="material-icons wt-system-status__caret" aria-hidden="true">expand_more</span>
+      </summary>
+      <div class="wt-system-status__panel">
+        <div class="wt-system-status__heading">
+          <span><span class="material-icons" aria-hidden="true">radar</span>Scanners</span>
+          <span class="wt-dot-legend"><span><span class="wt-dot wt-dot--ready"></span>Ready</span><span><span class="wt-dot wt-dot--setup"></span>Needs setup</span><span><span class="wt-dot wt-dot--off"></span>Off</span></span>
+        </div>
+        <ul class="wt-module-tiles" data-health-scanners>
+          <li th:each="module : ${processorHealth.modules}" class="wt-module-tile" th:classappend="${' wt-module-tile--' + module.state}"
+              tabindex="0" th:attr="data-tip=${module.name + ' · ' + module.stateLabel + ' — ' + module.reason}"
+              th:aria-label="${module.name + ', ' + module.purpose + ': ' + module.stateLabel + '. ' + module.reason}">
+            <span class="material-icons" aria-hidden="true" th:text="${module.icon}">radar</span>
+            <span class="wt-module-tile__name" th:text="${module.name}">Scanner</span>
+            <span class="wt-dot" th:classappend="${' wt-dot--' + module.state}" aria-hidden="true"></span>
+          </li>
+          <li th:if="${processorHealth.modules.empty}" class="wt-muted">None registered</li>
+        </ul>
+        <div class="wt-system-status__heading"><span><span class="material-icons" aria-hidden="true">hub</span>Integrations</span></div>
+        <ul class="wt-integration-rows" data-health-connections>
+          <li th:each="integration : ${processorHealth.integrations}">
+            <span class="material-icons wt-integration-rows__icon" aria-hidden="true" th:text="${integration.icon}">call_merge</span>
+            <span class="wt-integration-rows__name"><strong th:text="${integration.label}">Label</strong><small th:text="${integration.provider}">Provider</small></span>
+            <span class="wt-mini-chip" th:classappend="${' wt-mini-chip--' + integration.connection}" tabindex="0"
+                  th:attr="data-tip=${integration.connectionTip}" th:aria-label="${integration.connectionText + '. ' + integration.connectionTip}"
+                  th:text="${integration.connectionText}">Connected</span>
+            <span th:if="${integration.webhookText != null}" class="wt-mini-chip" th:classappend="${' wt-mini-chip--' + integration.webhook}" tabindex="0"
+                  th:attr="data-tip=${integration.webhookTip}" th:aria-label="${integration.webhookText + '. ' + integration.webhookTip}"
+                  th:text="${integration.webhookText}">Webhook off</span>
+          </li>
+          <li th:if="${processorHealth.integrations.empty}" class="wt-muted">None configured</li>
+        </ul>
+        <div class="wt-system-status__actions">
+          <a sec:authorize="hasAnyAuthority('Module Settings View','Module Settings Modify')" class="btn btn-secondary btn-sm" href="/configuration/modules"><span class="material-icons" aria-hidden="true">tune</span>Scanner modules</a>
+          <a sec:authorize="hasAuthority('API Settings View')" class="btn btn-secondary btn-sm" href="/apisettings"><span class="material-icons" aria-hidden="true">hub</span>Integrations</a>
+        </div>
+      </div>
+    </details>
+    <!-- Weekly digest (board approved 2026-10-24): one chip beside the system status; home-digest.js shows it only when the
+         feature is on and there is a digest to read or the person may write one. -->
+    <span class="wt-ai-anchor wt-home-digest" data-home-digest hidden sec:authorize="hasAuthority('Scan Dashboard View')"
+        th:attr="data-csrf-header=${_csrf.headerName},data-csrf-token=${_csrf.token}">
+      <button type="button" class="wt-mini-chip wt-ai-chip" aria-expanded="false" data-tip="This week in one look, written by the assistant from counts only"><span
+          class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span><span data-digest-label>Weekly digest</span></button></span>
+  </div>
+
+  <section class="wt-stat-strip mb-3" aria-label="Last 30 days" data-home-overview>
+    <div class="wt-stat-strip__head">
+      <span class="wt-meta-label"><span class="material-icons" aria-hidden="true">calendar_month</span>Last 30 days</span>
+      <span th:if="${metricsStale}" class="wt-status-chip wt-status-chip--warning" role="status"
+          title="Some values may be stale until metric projections are ready.">Metrics warming up</span>
+    </div>
+    <dl class="wt-stat-boxes">
+      <div class="wt-stat-box" tabindex="0" data-tip="Scans that finished in the selected period, all scan types. Queued, running and failed scans are not counted, so a results list that shows every status can be higher."><span class="material-icons" aria-hidden="true">task_alt</span><dt>Scans finished</dt><dd th:text="${#numbers.formatInteger(overview.completed, 1, 'COMMA')}">0</dd></div>
+      <div class="wt-stat-box" tabindex="0" data-tip="Scans in the selected period that failed or did not complete, all scan types." th:classappend="${overview.failedIncomplete > 0} ? ' wt-stat-box--danger' : ''">
+        <span class="material-icons" aria-hidden="true">report</span><dt>Failed or incomplete</dt><dd th:text="${#numbers.formatInteger(overview.failedIncomplete, 1, 'COMMA')}">0</dd></div>
+      <div class="wt-stat-box" tabindex="0" data-tip="Findings of the scans finished in the selected period, as recorded when each scan completed. Manual-review matches are not counted."><span class="material-icons" aria-hidden="true">bug_report</span><dt>Findings</dt><dd th:text="${#numbers.formatInteger(overview.findings, 1, 'COMMA')}">0</dd></div>
+      <div class="wt-stat-box" tabindex="0" data-tip="Average time from start to finish of scans finished in the last 30 days, all scan types."
+           aria-describedby="home-average-help">
+        <span class="material-icons" aria-hidden="true">timer</span><dt>Average scan time</dt><dd th:text="${overview.averageDuration}">0 ms</dd>
+        <span id="home-average-help" class="visually-hidden">Average time from start to finish of scans finished in the last 30 days, all scan types.</span></div>
+    </dl>
+  </section>
+
+  <section class="wt-home-totals mb-4" aria-labelledby="home-totals-title">
+    <div class="wt-home-totals__head">
+      <span class="material-icons" aria-hidden="true">all_inclusive</span>
+      <h2 id="home-totals-title" class="h6">Total scans</h2>
+      <span class="wt-mini-chip">All time</span>
+    </div>
+    <div class="wt-table-scroll" role="region" aria-labelledby="home-totals-title" tabindex="0">
+      <table class="table">
+        <caption class="visually-hidden">All-time scans and findings by scan type</caption>
+        <thead><tr><th scope="col">Scan type</th><th scope="col" class="text-end" data-tip="Finished scans only, since the first scan.">Scans finished</th><th scope="col" class="text-end" data-tip="Findings of finished scans, as recorded when each scan completed.">Findings</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          <tr th:each="total : ${homeTotals}" data-home-module>
+            <th scope="row"><span class="material-icons" aria-hidden="true" th:text="${total.icon}"></span><span th:text="${total.type}"></span></th>
+            <td class="text-end wt-num" th:text="${#numbers.formatInteger(total.scans, 1, 'COMMA')}"></td>
+            <td class="text-end wt-num" th:text="${#numbers.formatInteger(total.findings, 1, 'COMMA')}"></td>
+            <td>
+              <span class="wt-home-totals__actions">
+                <a sec:authorize="hasAuthority('Scan Dashboard View')" class="btn btn-secondary btn-sm" th:href="${total.dashboardUrl}"><span class="material-icons" aria-hidden="true">insights</span>Dashboard</a>
+                <a sec:authorize="hasAuthority('Scan Results View')" class="btn btn-secondary btn-sm" th:href="${total.resultsUrl}"><span class="material-icons" aria-hidden="true">list</span>Results</a>
+                <a th:if="${!total.automatic}" sec:authorize="hasAuthority('Scan Submit')" class="btn btn-secondary btn-sm" th:href="${total.newScanUrl}"><span class="material-icons" aria-hidden="true">add</span>New scan</a>
+                <span th:if="${total.automatic}" class="wt-mini-chip wt-mini-chip--auto" tabindex="0"
+                      data-tip="Image scans start by themselves when an image is pushed to the registry."
+                      aria-label="Automatic: image scans start by themselves when an image is pushed to the registry."><span class="material-icons" aria-hidden="true">bolt</span>Automatic</span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section th:unless="${workTiles.empty}" class="wt-work-strip mb-4" aria-labelledby="home-work-title" data-home-rule-work>
+    <div class="wt-work-strip__head">
+      <h2 id="home-work-title" class="h6"><span class="material-icons" aria-hidden="true">checklist</span>Needs a person</h2>
+      <a class="btn btn-secondary btn-sm" href="/rules/work">Rule work<span class="material-icons" aria-hidden="true">arrow_forward</span></a>
+    </div>
+    <ul class="wt-work-tiles">
+      <li th:each="tile : ${workTiles}">
+        <a class="wt-work-tile" th:classappend="${' wt-work-tile--' + tile.tone}" th:href="${tile.url}"
+           th:attr="data-tip=${tile.tip}" th:aria-label="${tile.count + ' ' + tile.label + '. ' + tile.tip}">
+          <span class="material-icons" aria-hidden="true" th:text="${tile.icon}"></span>
+          <span><strong class="wt-num" th:text="${#numbers.formatInteger(tile.count, 1, 'COMMA')}">0</strong><small th:text="${tile.label}"></small></span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  <div th:replace="~{fragments/scanworkload :: workload}"></div>
+
+  <section aria-labelledby="recent-activity-title" class="mb-4">
+    <div class="wt-section-heading">
+      <h2 id="recent-activity-title" class="h5">Recent activity</h2>
+      <span class="wt-dot-legend" aria-hidden="true">
+        <span><span class="wt-scanner-tile wt-scanner-tile--ran wt-scanner-tile--key"></span>Ran</span>
+        <span><span class="wt-scanner-tile wt-scanner-tile--running wt-scanner-tile--key"></span>Running</span>
+        <span><span class="wt-scanner-tile wt-scanner-tile--notrun wt-scanner-tile--key"></span>Did not finish</span>
+        <span><span class="wt-mini-chip">+N</span>Not used</span>
+      </span>
+    </div>
+    <div class="card">
+      <div th:if="${recentActivity.empty}" class="wt-state wt-state-empty" data-home-activity-empty>
+        <span class="material-icons" aria-hidden="true">inbox</span><div><h3>No recent scans</h3><p>New scan activity will appear here.</p></div>
+      </div>
+      <div th:unless="${recentActivity.empty}" class="wt-table-scroll wt-home-activity" role="region" aria-label="Recent scan activity" tabindex="0">
+        <div th:replace="~{fragments/scanactivity :: table(${recentActivity}, 'Ten most recently finished scans')}"></div>
+      </div>
+    </div>
+  </section>
 </div>
-<!-- End Page Header -->
-<!-- Small Stats Blocks -->
-<div th:each="metricEntry : ${metrics.entrySet()}">
-	<h4 class="page-subtitle" th:text="${metricEntry.getKey() + ' Stats'}"></h4>
-	<div class="row">
-		<div class="col-lg col-md-6 col-sm-6 mb-4" th:each="metricPair : ${metricEntry.getValue()}">
-			<div class="stats-small stats-small--1 card card-small">
-				<div class="card-body p-0 d-flex">
-					<div class="d-flex flex-column m-auto">
-						<div class="stats-small__data text-center">
-							<span class="stats-small__label text-uppercase" th:text="${metricPair.getFirst()}"></span>
-							<h6 class="stats-small__value count my-3" th:text="${metricPair.getSecond()}"></h6>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		
-	</div>
-</div>
-<!-- End Small Stats Blocks -->

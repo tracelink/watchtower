@@ -10,11 +10,11 @@ import com.tracelink.appsec.module.eslint.editor.EsLintRuleEditor;
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
 import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
@@ -23,7 +23,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
  * @author mcool
  */
 @WatchtowerModule
-public class EsLintModule extends AbstractModule {
+public class EsLintModule extends AbstractCodeScanModule {
 
 	public static final String MODULE_NAME = "ESLint";
 	public static final String ESLINT_RULE_EDIT_PRIVILEGE_NAME = "ESLint Rule Editor";
@@ -65,7 +65,7 @@ public class EsLintModule extends AbstractModule {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public IScanner getScanner() {
+	public ICodeScanner getScanner() {
 		return new EsLintScanner(engine);
 	}
 

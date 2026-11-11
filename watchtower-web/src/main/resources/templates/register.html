@@ -1,76 +1,73 @@
 <!doctype html>
 <html class="no-js h-100" lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/htmlhead"></head>
+<head th:replace="~{fragments/authhead}"></head>
 <body class="h-100">
-<div class="container-fluid">
-    <div class="row align-items-center">
-        <div class="col"></div>
-        <div class="col-lg-6">
-            <div class="card card-small mb-4" style="margin-top:25%">
-                <div class="card-header border-bottom">
-                    <div class="align-middle m-auto">
-                        <img id="main-logo" class="d-inline-block align-middle mr-1" style="max-width: 50px;"
-                             src="images/watchtowerlogo.svg" alt="Watchtower">
-                        <span class="align-middle" style="font-size:1.5rem">Watchtower</span>
-                    </div>
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item p-3">
-                        <div class="row">
-                            <div class="col-sm-12 col-md">
-                                <h6 class="d-block mb-2">Register</h6>
-                                <form action="#" th:action="@{/register}" th:object="${userRegistrationForm}"
-                                      method="post">
-                                    <fieldset>
-                                        <div class="form-group">
-                                            <input class="form-control" required="true" th:field="*{username}"
-                                                   placeholder="Username" name="username" type="text" autofocus="true"/>
-                                        </div>
-                                        <div class="form-group">
-                                            <input class="form-control" required="true" th:field="*{password}"
-                                                   placeholder="Password" name="password" type="password" value=""/>
-                                        </div>
-                                        <div class="form-group">
-                                            <input class="form-control" required="true"
-                                                   th:field="*{passwordConfirmation}" placeholder="Confirm Password"
-                                                   name="passwordConfirmation" type="password" value=""/>
-                                            <label th:text="${pwRequirements}"/>
-                                        </div>
-                                        <button class="btn btn-lg btn-success btn-block" type="Submit">Register</button>
-                                    </fieldset>
-                                    <div th:if="${#fields.hasErrors('*')}"
-                                         class="alert alert-accent bg-danger alert-dismissible fade show mb-0"
-                                         role="alert">
-                                        <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Username
-                                            Error
-                                        </div>
-                                        <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Password
-                                            Error
-                                        </div>
-                                        <div th:if="${#fields.hasErrors('passwordConfirmation')}"
-                                             th:errors="*{passwordConfirmation}">Password Confirmation Error
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </li>
-                    <li class="list-group-item p-3">
-                        <div class="row">
-                            <div class="col-sm-12 col-md">
-                                <h6 class="d-block mb-2">Already Registered?</h6>
-                                <a href="/login">
-                                    <button class="btn btn-lg btn-primary btn-block" value="Login" type="submit">Login
-                                    </button>
-                                </a>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
+<!-- Material Web migration, Wave 2: .wt-auth-shell (components.css) replaces the
+     .container-fluid > .row.align-items-center.min-vh-100 > .col/.col-lg-6/.col Bootstrap
+     grid. .card/.card-header/.list-group markup stays Bootstrap (no Material Web equivalent
+     exists for either - see IMPROVEMENT_PLAN_MATERIAL_UI.md's card-conversion correction). -->
+<main class="wt-auth-shell">
+    <div class="card card-small mb-4">
+        <div class="card-header border-bottom">
+            <div class="align-middle m-auto">
+                <img id="main-logo" class="d-inline-block align-middle mr-1 me-1"
+                     src="images/watchtowerlogo.svg" alt="Watchtower">
+                <span class="align-middle auth-brand-title">Watchtower</span>
             </div>
         </div>
-        <div class="col"></div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item p-3">
+                <div class="row">
+                    <div class="col-sm-12 col-md">
+                        <h1 class="h5 d-block mb-2">Register</h1>
+                        <form action="#" th:action="@{/register}" th:object="${userRegistrationForm}"
+                              method="post">
+                            <!-- th:field is Thymeleaf's specialized attribute processor for
+                                 recognized form-field tags (input/select/textarea/option) - it
+                                 silently does NOT recognize md-outlined-text-field, so it fell
+                                 through to emitting a bare, meaningless field="..." attribute
+                                 instead of value="..." (confirmed live: the Username field lost
+                                 its typed value after a failed submit, since no value attribute
+                                 was ever set). Fixed with the same th:value pattern already
+                                 proven working everywhere else in this migration (the pilot's
+                                 dialog fields, the CSRF hidden input above) - explicit
+                                 th:value="${userRegistrationForm.x}" instead of *{x} shorthand,
+                                 since *{x} only works inside th:field's own specialized
+                                 processor. -->
+                            <fieldset class="wt-md-form" style="border: none; padding: 0;">
+                                <!-- Errors and the password policy sit on their own fields, not in a
+                                     block below the button (docs/design-system.md, "Restraint"). -->
+                                <md-outlined-text-field required th:value="${userRegistrationForm.username}"
+                                       label="Username" name="username" type="text" autofocus="true"
+                                       autocomplete="username"
+                                       th:attr="error=${#fields.hasErrors('username') ? 'true' : null},error-text=${#fields.hasErrors('username') ? #strings.listJoin(#fields.errors('username'), ' ') : null}"></md-outlined-text-field>
+                                <md-outlined-text-field required label="Password" name="password"
+                                       type="password" autocomplete="new-password"
+                                       th:attr="supporting-text=${pwRequirements},error=${#fields.hasErrors('password') ? 'true' : null},error-text=${#fields.hasErrors('password') ? #strings.listJoin(#fields.errors('password'), ' ') : null}"></md-outlined-text-field>
+                                <md-outlined-text-field required label="Confirm password"
+                                       name="passwordConfirmation" type="password"
+                                       autocomplete="new-password"
+                                       th:attr="error=${#fields.hasErrors('passwordConfirmation') ? 'true' : null},error-text=${#fields.hasErrors('passwordConfirmation') ? #strings.listJoin(#fields.errors('passwordConfirmation'), ' ') : null}"></md-outlined-text-field>
+                                <p th:if="${#fields.hasGlobalErrors()}" class="wt-tone-danger mb-0" role="alert"
+                                   th:text="${#strings.listJoin(#fields.globalErrors(), ' ')}">Error</p>
+                                <md-filled-button class="wt-btn-block" type="submit">Register</md-filled-button>
+                            </fieldset>
+                        </form>
+                    </div>
+                </div>
+            </li>
+            <li class="list-group-item p-3">
+                <div class="row">
+                    <div class="col-sm-12 col-md">
+                        <p class="fw-bold d-block mb-2">Already registered?</p>
+                        <md-outlined-button class="wt-btn-block" href="/login">Login
+                        </md-outlined-button>
+                    </div>
+                </div>
+            </li>
+        </ul>
     </div>
-</div>
+</main>
+    <div th:replace="~{fragments/versionbadge}"></div>
 </body>
 </html>

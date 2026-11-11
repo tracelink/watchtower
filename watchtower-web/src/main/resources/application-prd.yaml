@@ -1,7 +1,17 @@
 server:
   port: 7777
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: true
+        http-only: true
+        same-site: strict
 
 spring:
+  flyway:
+    placeholders:
+      metricsZoneOffsetMillis: ${WATCHTOWER_METRICS_ZONE_OFFSET_MILLIS:19800000}
   datasource:
     url: ${JDBC_URL}
     username: ${JDBC_USERNAME}
@@ -21,3 +31,13 @@ spring:
         provider:
           oidc:
             issuer-uri: ${ISSUER_URI}
+
+watchtower:
+  metrics:
+    zone: ${WATCHTOWER_METRICS_ZONE:Asia/Kolkata}
+    environment: ${WATCHTOWER_METRICS_ENVIRONMENT:production}
+    cloudwatch:
+      enabled: ${WATCHTOWER_CLOUDWATCH_ENABLED:true}
+      namespace: ${WATCHTOWER_CLOUDWATCH_NAMESPACE:Watchtower/Runtime}
+      region: ${WATCHTOWER_CLOUDWATCH_REGION:us-east-1}
+      step: ${WATCHTOWER_CLOUDWATCH_STEP:60s}

@@ -1,4 +1,4 @@
-class WatchtowerViolationsPieChart {
+window.WatchtowerViolationsPieChart = class WatchtowerViolationsPieChart {
 	constructor(selectId, canvasId, scanType){
 		this.selectId = selectId;
 		this.canvasId = canvasId;
@@ -20,7 +20,9 @@ class WatchtowerViolationsPieChart {
 		
 		var data = {
 			datasets: [{
-				hoverBorderColor: '#ffffff',
+				// Item 10.14: was a hardcoded #ffffff, which drew a white halo around the
+				// hovered slice on a dark background.
+				hoverBorderColor: wtThemeValue('--wt-surface', '#ffffff'),
 				data: counts,
 				backgroundColor: getColors(labels.length)
 			}],
@@ -28,21 +30,21 @@ class WatchtowerViolationsPieChart {
 		};
 	
 		var options = {
-			legend: {
-				position: 'right',
-				labels: {
-					 padding: 5,
-					 boxWidth: 15
+			plugins: {
+				legend: {
+					position: 'right',
+					labels: {
+						 padding: 5,
+						 boxWidth: 15
+					}
+				},
+				tooltip: {
+					mode: 'index',
+					position: 'nearest'
 				}
 			},
-			cutoutPercentage: 0,
 			// Uncomment the following line in order to disable the animations.
 			// animation: false,
-			tooltips: {
-				custom: false,
-				mode: 'index',
-				position: 'nearest'
-			},
 			layout: {
 		        padding: {
 		            left: 10,
@@ -63,17 +65,19 @@ class WatchtowerViolationsPieChart {
 	
 	updatePieTimePeriod = async (event) => {
 		let period = event.target.value;
+		wtSetChartLoading('pie-no-data', 'Loading finding distribution…');
 			
-		const response = await fetch(`/rest/metrics/violations-by-type?period=${period}&type=${this.scanType}`);
-		const result = await response.json();
-		this.updatePieData(result);
+		try {
+			const query = wtMetricQuery(this.selectId, period);
+			this.updatePieData(await wtFetchMetric(`/rest/metrics/violations-by-type?${query}&type=${this.scanType}`));
+		} catch (error) {
+			toggleChart(true, 'pie-no-data', this.canvasId, error.message);
+		}
 	};
 	
 	pieContentLoad = async () => {
-		const response = await fetch(`/rest/metrics/violations-by-type?period=last-four-weeks&type=${this.scanType}`);
-		const result = await response.json();
-		this.updatePieData(result);
-	
-		$('#'+this.selectId).change(this.updatePieTimePeriod);
+		const select = document.getElementById(this.selectId);
+		await this.updatePieTimePeriod({target: {value: select.value || 'last-thirty-days'}});
+		select.addEventListener('change', this.updatePieTimePeriod);
 	};
-}
+};

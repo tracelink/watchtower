@@ -1,6 +1,6 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 
 /**
  * The status of a scan

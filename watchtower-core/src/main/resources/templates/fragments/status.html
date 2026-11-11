@@ -1,0 +1,9 @@
+<th:block th:fragment="chip(status)">
+	<span class="wt-status-chip"
+		th:classappend="${status == null ? ' wt-tone-neutral' : ' wt-tone-' + status.tone}"
+		th:aria-label="${status == null ? 'Scan status unavailable' : status.accessibleText}">
+		<span class="material-icons" aria-hidden="true"
+			th:text="${status == null ? 'help' : status.icon}">info</span>
+		<span th:text="${status == null ? 'Unknown' : status.label}">Status</span>
+	</span>
+</th:block>

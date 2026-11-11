@@ -97,6 +97,30 @@ public class RulesetDtoTest {
 	}
 
 	@Test
+	public void testGetAllRulesDedupesRuleReachedViaMultipleInheritancePaths() {
+		// r1 inherits from both r2 and r3, and both r2 and r3 provide the same named rule
+		// (e.g. via separate PMD-provided sub-rulesets that both include it) - PMD's own
+		// RuleSetLoader warns "the rule with name X is duplicated" if this isn't collapsed.
+		r1.setName("Combined Ruleset");
+		r2.setName("PMD - Security");
+		RulesetDto r3 = new RulesetDto();
+		r3.setName("PMD - Complete");
+
+		RuleDto sharedViaR2 = new MockCustomRuleDto();
+		sharedViaR2.setName("SharedRule");
+		sharedViaR2.setPriority(RulePriority.MEDIUM);
+		RuleDto sharedViaR3 = new MockCustomRuleDto();
+		sharedViaR3.setName("SharedRule");
+		sharedViaR3.setPriority(RulePriority.MEDIUM);
+
+		r2.setRules(Collections.singleton(sharedViaR2));
+		r3.setRules(Collections.singleton(sharedViaR3));
+		r1.setRulesets(new java.util.HashSet<>(java.util.Arrays.asList(r2, r3)));
+
+		Assertions.assertEquals(1, r1.getAllRules().size());
+	}
+
+	@Test
 	public void testGetNumRules() {
 		r1.setName("PMD Ruleset");
 		r2.setName("Regex Ruleset");

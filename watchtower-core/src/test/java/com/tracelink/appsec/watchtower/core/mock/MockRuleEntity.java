@@ -37,7 +37,7 @@ public class MockRuleEntity extends RuleEntity {
 			dto.setMessage(getMessage());
 			dto.setExternalUrl(getExternalUrl());
 			dto.setPriority(getPriority());
-			return dto;
+			return withStewardship(dto);
 		}
 		MockCustomRuleDto dto = new MockCustomRuleDto();
 		dto.setId(getId());
@@ -46,6 +46,6 @@ public class MockRuleEntity extends RuleEntity {
 		dto.setMessage(getMessage());
 		dto.setExternalUrl(getExternalUrl());
 		dto.setPriority(getPriority());
-		return dto;
+		return withStewardship(dto);
 	}
 }

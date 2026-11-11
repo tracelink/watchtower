@@ -1,0 +1,104 @@
+<!-- One form in two columns (UAT walkthrough, 2026-10-16): the rule on the left, its samples on the
+     right. Format hints are plain lines under their fields (the Material supporting text sat on top
+     of the next field's label). After Test rule each sample shows Matched / Not matched by its
+     label, green when that is what the sample needs. Test rule and Save rule sit bottom right. -->
+<div class="wt-designer-workspace" data-betterleaks-designer>
+  <form class="card wt-designer-card wt-betterleaks-designer" action="/designer/betterleaks" method="POST">
+    <div class="wt-designer-grid">
+      <div class="wt-md-form">
+        <div class="wt-designer-card__head">
+          <h2 class="h6 m-0 wt-designer-card__title"><span class="wt-scanner-tile wt-scanner-tile--ran"
+              aria-hidden="true"><span class="material-icons">key</span></span>Custom secrets rule</h2>
+          <span th:replace="~{fragments/designer :: howto('Describe the secret with a regex (Go RE2). Keywords are cheap pre-filters: a file is only checked when it contains one. Entropy drops low-randomness matches such as placeholders. The secret group is the regex group holding the secret. The optional filter is a CEL expression; a finding is dropped when it is true.')}"></span>
+        </div>
+        <div class="wt-field">
+          <md-outlined-text-field label="Rule ID" name="ruleId" required
+              th:value="${form.ruleId}"></md-outlined-text-field>
+          <small class="wt-field-help">custom-lower-case-and-dashes</small>
+        </div>
+        <md-outlined-text-field type="textarea" rows="2" label="Guidance" name="description"
+            required th:value="${form.description}"></md-outlined-text-field>
+        <md-outlined-text-field label="Documentation URL" name="externalUrl" required
+            th:value="${form.externalUrl}"></md-outlined-text-field>
+        <md-outlined-select label="Severity" name="priority" required>
+          <md-select-option th:each="p : ${priorities}" th:value="${p}"
+              th:selected="${p.name() == form.priority}">
+            <div slot="headline"><span th:class="${'wt-sev wt-sev-' + p.getPriority()}"
+                th:text="${p.getName()}">High</span></div>
+          </md-select-option>
+        </md-outlined-select>
+        <div class="wt-field">
+          <md-outlined-text-field class="wt-mono-field" label="Pattern" name="regex" required
+              th:value="${form.regex}"></md-outlined-text-field>
+          <small class="wt-field-help">One line, Go RE2</small>
+        </div>
+        <details class="wt-form-disclosure">
+          <summary>Keywords, entropy and filter (optional)</summary>
+          <div class="wt-field">
+            <md-outlined-text-field label="Keywords" name="keywords" th:value="${form.keywords}"></md-outlined-text-field>
+            <small class="wt-field-help">Comma-separated</small>
+          </div>
+          <div class="wt-form-grid">
+            <div class="wt-field">
+              <md-outlined-text-field label="Minimum entropy" name="entropy"
+                  th:value="${form.entropy}"></md-outlined-text-field>
+              <small class="wt-field-help">0-8</small>
+            </div>
+            <md-outlined-text-field label="Secret group" name="secretGroup"
+                th:value="${form.secretGroup}"></md-outlined-text-field>
+          </div>
+          <md-outlined-text-field class="wt-mono-field" label="Filter (CEL)" name="filter"
+              th:value="${form.filter}"></md-outlined-text-field>
+        </details>
+      </div>
+      <fieldset class="wt-md-form wt-betterleaks-samples">
+        <legend class="h6 m-0">Samples <span class="wt-muted wt-betterleaks-samples__note">made-up values
+          only</span></legend>
+        <div class="wt-betterleaks-sample">
+          <div class="wt-betterleaks-sample__head">
+            <span class="wt-meta-label">Must match</span>
+            <th:block th:if="${result != null and result.problem() == null}">
+              <span th:if="${result.matchesPositive()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--ok"
+                  data-betterleaks-sample-result="positive"><span class="material-icons"
+                  aria-hidden="true">check_circle</span>Matched</span>
+              <span th:unless="${result.matchesPositive()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--bad"
+                  data-betterleaks-sample-result="positive"><span class="material-icons"
+                  aria-hidden="true">cancel</span>Not matched</span>
+            </th:block>
+          </div>
+          <md-outlined-text-field class="wt-mono-field" type="textarea" rows="4" label="Must match"
+              name="positiveSample" required th:value="${form.positiveSample}"></md-outlined-text-field>
+        </div>
+        <div class="wt-betterleaks-sample">
+          <div class="wt-betterleaks-sample__head">
+            <span class="wt-meta-label">Must not match</span>
+            <th:block th:if="${result != null and result.problem() == null}">
+              <span th:unless="${result.matchesNegative()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--ok"
+                  data-betterleaks-sample-result="negative"><span class="material-icons"
+                  aria-hidden="true">check_circle</span>Not matched</span>
+              <span th:if="${result.matchesNegative()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--bad"
+                  data-betterleaks-sample-result="negative"><span class="material-icons"
+                  aria-hidden="true">cancel</span>Matched</span>
+            </th:block>
+          </div>
+          <md-outlined-text-field class="wt-mono-field" type="textarea" rows="4" label="Must not match"
+              name="negativeSample" required th:value="${form.negativeSample}"></md-outlined-text-field>
+        </div>
+        <div class="wt-designer-actions">
+          <span th:if="${result != null}" class="wt-designer-actions__result" data-betterleaks-test-result
+              role="status" aria-live="polite">
+            <span th:if="${result.passed()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--ok"><span
+                class="material-icons" aria-hidden="true">verified</span>Passed</span>
+            <span th:unless="${result.passed()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--bad wt-chip-wrap"><span
+                class="material-icons" aria-hidden="true">error</span><span th:text="${result.failureReason()}">reason</span></span>
+          </span>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <md-outlined-button type="submit" name="action" value="test" has-icon><span slot="icon"
+              class="material-icons" aria-hidden="true">play_arrow</span>Test rule</md-outlined-button>
+          <md-filled-button type="submit" name="action" value="save" has-icon><span slot="icon"
+              class="material-icons" aria-hidden="true">save</span>Save rule</md-filled-button>
+        </div>
+      </fieldset>
+    </div>
+  </form>
+</div>

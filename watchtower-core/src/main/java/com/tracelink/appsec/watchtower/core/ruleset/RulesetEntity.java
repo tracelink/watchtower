@@ -4,19 +4,19 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
@@ -34,6 +34,13 @@ public class RulesetEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "ruleset_id")
 	private long id;
+
+	@jakarta.persistence.Version
+	@Column(name = "configuration_version")
+	private long configurationVersion;
+
+	public long getConfigurationVersion() { return configurationVersion; }
+
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "ruleset_ruleset", joinColumns = @JoinColumn(name = "ruleset_id"),

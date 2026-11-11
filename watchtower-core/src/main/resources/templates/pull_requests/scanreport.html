@@ -1,76 +1,189 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-	<div class="col-12 col-sm-6 text-center text-sm-left mb-0">
-		<!--  <span class="text-uppercase page-subtitle">Pull Request Scan</span> -->
-		<h3 class="page-title">Pull Request Scan Report</h3>
+<span data-nav-active="/scan/results" hidden></span>
+<!-- PR report, redesigned from the 2026-10-15 UAT walkthrough (mockup board "PR report"): facts as
+     icon chips with hover labels, the scanners as tiles with a timing bar, blocking on the right. -->
+<div class="wt-home-head wt-report-head" th:attr="data-assistant-kind='pull_request',data-assistant-scan-id=${result.id}">
+	<div th:replace="~{fragments/pageheader :: header(${result.getDisplayName()}, 'Pull request scan')}"></div>
+	<!-- The scan's status beside its title, meaning on hover (UAT #32). -->
+	<span class="wt-mini-chip wt-meta-chip wt-report-head__status" tabindex="0" th:if="${result.statusPresentation != null}"
+		th:classappend="${' wt-tone-' + result.statusPresentation.tone}"
+		th:attr="data-tip=${result.statusPresentation.accessibleText}" th:aria-label="${result.statusPresentation.label + '. ' + result.statusPresentation.accessibleText}"><span
+		class="material-icons" aria-hidden="true" th:text="${result.statusPresentation.icon}"></span><span th:text="${result.statusPresentation.label}"></span></span>
+	<!-- PR-level bypass (§4.12, §4.17): shown while this scan blocks its PR, while the PR has a
+	     bypass, or while a bypass request waits. -->
+	<div class="wt-report-status" th:if="${bypass.blocked() or bypass.isActive() or bypassRequest.isPending()}"
+			th:attr="data-bypass-status=${bypass.blocked() ? 'blocked' : 'bypassed'}">
+		<span th:if="${bypass.blocked()}" class="wt-status-chip wt-status-chip--danger" tabindex="0"
+			th:attr="data-tip=${bypassCoverage.total() + ' findings at or above the blocking level stop this pull request from merging.'}"><span
+			class="material-icons" aria-hidden="true">block</span>Blocking</span>
+		<span th:if="${bypass.isActive()}" class="wt-status-chip wt-status-chip--warning"><span class="material-icons" aria-hidden="true">lock_open</span>Bypassed</span>
+		<span th:if="${bypassRequest.isPending()}" class="wt-status-chip wt-status-chip--warning"><span class="material-icons" aria-hidden="true">hourglass_top</span>Bypass requested</span>
+		<md-outlined-button class="wt-row-action" type="button" has-icon data-wt-dialog-target="#bypassDialog">
+			<span slot="icon" class="material-icons" aria-hidden="true">lock_open</span>
+			<th:block th:text="${canManageBypass and bypassRequest.isPending() and !bypassRequest.viewerIsRequester()} ? 'Review request' : 'Bypass'"></th:block>
+		</md-outlined-button>
 	</div>
 </div>
-<!-- End Page Header -->
-<!-- Content -->
-<div class="row">
-	<div class="col">
-		<div class="card h-100">
-			<div class="card-body">
-				<div class="row border-bottom mb-4">
-					<div class="col">
-						<div class="mb-4">
-							<h6 class="d-block">Pull Request Name</h6>
-							<div th:text="${result.getDisplayName()}"></div>
-						</div>
-						<div class="mb-4">
-							<h6 class="d-block">Author</h6>
-							<div th:text="${result.getAuthor()}"></div>
-						</div>
-					</div>
-					<div class="col">
-						<div class="mb-4">
-							<h6 class="d-block">API ID</h6>
-							<div th:text="${result.getApiLabel()}"></div>
-						</div>
-						<div class="mb-4">
-							<h6 class="d-block">Pull Request Link</h6>
-							<a th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank"/>
-						</div>
-					</div>
-					<div class="col">
-						<div class="mb-4">
-							<h6 class="d-block">Scanned On</h6>
-							<div class="localizetime" th:text="${result.getDateMillis()}"></div>
-						</div>
-						<div class="mb-4">
-							<h6 class="d-block">Number of Violations</h6>
-							<div
-								th:text="${result.getViolations().size()}"></div>
-						</div>
-					</div>
-				</div>
-				<div class="row">
-					<div class="col">
-						<h6 class="">Violations</h6>
-						<table class="table mb-0 w-100 datatable">
-							<thead class="bg-light">
-								<tr>
-									<th scope="col" class="border-0">Violation Name</th>
-									<th scope="col" class="border-0">Severity</th>
-									<th scope="col" class="border-0">File</th>
-									<th scope="col" class="border-0">Line Number</th>
-									<th scope="col" class="border-0">Description</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr th:each="vio : ${result.getViolations()}">
-									<td th:text="${vio.getViolationName()}"></td>
-									<td th:text="${vio.getSeverity()}"></td>
-									<td th:text="${vio.getFileName()}"></td>
-									<td th:text="${vio.getLineNumber()}"></td>
-									<td th:text="${vio.getMessage()}"></td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
+<div class="wt-meta-chips mb-3">
+	<a class="wt-mini-chip wt-mini-chip--link wt-meta-chip" th:href="${result.getPrLink()}" target="_blank" rel="noopener noreferrer"><span
+		class="material-icons" aria-hidden="true">open_in_new</span>View pull request</a>
+	<th:block th:replace="~{fragments/prstate :: chip(${result.closedState}, ${result.resolved})}"></th:block>
+
+	<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Author" th:aria-label="${'Author ' + result.getAuthor()}"><span
+		class="material-icons" aria-hidden="true">person</span><span th:text="${result.getAuthor()}"></span></span>
+	<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Integration" th:aria-label="${'Integration ' + result.getApiLabel()}"><span
+		class="material-icons" aria-hidden="true">call_merge</span><span th:text="${result.getApiLabel()}"></span></span>
+	<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Scanned" th:if="${result.getDateMillis() > 0}"><span
+		class="material-icons" aria-hidden="true">schedule</span><span class="localizetime" data-time-style="short" th:attr="data-millis=${result.getDateMillis()}"
+		th:text="${result.getDateMillis()}"></span></span>
+	<span class="wt-mini-chip wt-meta-chip" th:unless="${result.getDateMillis() > 0}"><span class="material-icons" aria-hidden="true">schedule</span>Not completed</span>
+	<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Total time from start to finish" th:if="${result.hasPerformanceTimings()}"><span
+		class="material-icons" aria-hidden="true">timer</span><span th:text="${result.totalDurationDisplay}"></span></span>
+	<!-- Manual-review matches as the same chip as Home and the results list (UAT #29). -->
+	<a th:replace="~{fragments/severity :: mcrChip(${result.mcrCount}, ${'/scan/mcr/report/' + result.id})}"></a>
+	<!-- This scan's own exports, plus the local + AWS evidence ones when it has an AWS assessment. -->
+	<details th:replace="~{fragments/remote-assessments :: downloads(${'/scan/report/' + result.id + '/export?format=csv'}, ${'/scan/report/' + result.id + '/export?format=sarif'})}"></details>
+</div>
+<!-- Scanners and timing in one strip (replaces the "Scan details" table, UAT #13): one tile per
+     scanner that took part, "+N" for the rest, and the three stages as a proportional bar. -->
+<section class="wt-scan-strip mb-3" aria-label="Scanners and timing" th:with="tiles=${result.scannerTiles}"
+		th:if="${(result.scannerTiles != null and result.scannerTiles.recorded) or result.hasPerformanceTimings()}">
+	<th:block th:if="${tiles != null and tiles.recorded}"><div th:replace="~{fragments/scanstrip :: scanners(${tiles}, ${result.executionSummary})}"></div></th:block>
+	<div class="wt-scan-strip__timing" th:if="${result.hasPerformanceTimings()}">
+		<div class="wt-timing-bar" aria-hidden="true">
+			<span class="wt-timing-bar__seg wt-timing-bar__seg--prepare" th:style="'width:' + ${result.getStageWidth('prepare')}"></span>
+			<span class="wt-timing-bar__seg wt-timing-bar__seg--analysis" th:style="'width:' + ${result.getStageWidth('analysis')}"></span>
+			<span class="wt-timing-bar__seg wt-timing-bar__seg--deliver" th:style="'width:' + ${result.getStageWidth('deliver')}"></span>
 		</div>
+		<dl class="wt-timing-legend">
+			<div th:attr="data-tip=${result.sourceStrategyText}" th:tabindex="${result.sourceStrategyText != null} ? 0 : null"><dt>Prepare source</dt><dd th:text="${result.sourcePreparationDurationDisplay}"></dd></div>
+			<div><dt>Security analysis</dt><dd th:text="${result.scannerExecutionDurationDisplay}"></dd></div>
+			<div><dt>Deliver results</dt><dd th:text="${result.deliveryDurationDisplay}"></dd></div>
+		</dl>
 	</div>
-</div>
-<!-- End Content -->
+</section>
+<md-dialog id="bypassDialog" th:if="${bypass.blocked() or bypass.isActive() or bypassRequest.isPending()}"
+		th:with="maxReason=${T(com.tracelink.appsec.watchtower.core.scan.code.scm.pr.bypass.PullRequestBypassEntity).MAX_REASON_LENGTH},
+			isApprover=${canManageBypass and bypassRequest.isPending() and !bypassRequest.viewerIsRequester()},
+			canAsk=${bypass.canBypass() and !bypassRequest.isPending()}">
+	<div slot="headline" class="wt-action-with-help"><span class="material-icons wt-bypass-icon" aria-hidden="true">lock_open</span>Bypass blocking
+    <a th:replace="~{fragments/featurehelp :: info('bypass-reasons', 'PR bypass reasons', 'Record why blocking findings need an exception; finding feedback is recorded separately.')}"></a>
+  </div>
+	<div slot="content" class="wt-bypass-dialog">
+		<!-- Active bypass -->
+		<th:block th:if="${bypass.isActive()}">
+			<p>Bypassed by <strong th:text="${bypass.active().bypassedBy()}"></strong>
+				on <span class="localizetime" data-time-style="short" th:text="${bypass.active().createdAt()}"></span>:
+				<span th:text="${bypass.active().reason()}"></span></p>
+			<p class="wt-field-help">New blocking findings still block.</p>
+			<form th:if="${canManageBypass}" id="revokeBypassForm" method="POST" th:action="${revokeBypassUrl}">
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+			</form>
+		</th:block>
+		<!-- Pending request: approvers decide, the requester may withdraw -->
+		<th:block th:if="${bypassRequest.isPending()}">
+			<p data-bypass-request="pending">Requested by <strong th:text="${bypassRequest.pending().requestedBy}"></strong>
+				<th:block th:if="${bypassRequest.pending().fromPullRequestComment}">in a pull request comment</th:block>
+				on <span class="localizetime" data-time-style="short" th:text="${bypassRequest.pending().createdAt}"></span>:
+				<span th:text="${bypassRequest.pending().reason}"></span></p>
+			<!-- Bitbucket names can't be matched to Watchtower logins, so the "not your own request"
+			     check can't apply; say so where the approver decides (user decision, §4.18). -->
+			<!-- AI summary for the approver (helpers board): counts and one risk note; it decides nothing. -->
+			<div th:if="${isApprover}" class="wt-ai-summary" data-ai-bypass>
+				<button type="button" class="wt-mini-chip wt-ai-chip" data-ai-helper="bypass" hidden th:attr="data-request-id=${bypassRequest.pending().id}"
+					data-tip="A short summary of what this request covers. It reads counts and severities only, never code. You decide."><span
+					class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span><span data-ai-bypass-label>AI summary</span></button>
+				<div class="wt-ai-summary__panel" data-ai-bypass-panel hidden></div>
+			</div>
+			<p th:if="${isApprover and bypassRequest.pending().fromPullRequestComment}" class="wt-field-help"
+				data-bypass-request-source="pr-comment">This is a Bitbucket name. Don't approve your own request.</p>
+			<th:block th:if="${isApprover}">
+				<form id="approveBypassForm" method="POST" th:action="${requestBypassUrl + '/approve'}">
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+				</form>
+				<form id="declineBypassForm" method="POST" th:action="${requestBypassUrl + '/decline'}" class="wt-md-form">
+					<md-outlined-text-field label="Note if you decline (optional)" name="note"
+						th:maxlength="${maxReason}"></md-outlined-text-field>
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+				</form>
+			</th:block>
+			<form th:if="${bypassRequest.viewerIsRequester()}" id="withdrawBypassForm" method="POST"
+				th:action="${requestBypassUrl + '/withdraw'}">
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+			</form>
+		</th:block>
+		<!-- Blocked, nothing pending: why it can't be bypassed, or the form to bypass / ask -->
+		<th:block th:if="${bypass.blocked() and !bypassRequest.isPending()}">
+			<p th:unless="${bypass.canBypass()}" data-bypass-refusal th:text="${bypass.refusal()}"></p>
+			<form th:if="${canAsk}" id="bypassForm" method="POST" class="wt-md-form"
+				th:action="${canManageBypass ? bypassUrl : requestBypassUrl}">
+				<!-- What a bypass does, as three tiles instead of numbered sentences. -->
+				<div class="wt-bypass-effects">
+					<div class="wt-bypass-effect wt-bypass-effect--ok"><span class="material-icons" aria-hidden="true">task_alt</span>
+						<span th:text="${canManageBypass ? 'Unblocks this PR now' : 'Asks an approver to unblock this PR'}"></span></div>
+					<div class="wt-bypass-effect wt-bypass-effect--block"><span class="material-icons" aria-hidden="true">block</span>
+						<span>New findings on later commits still block</span></div>
+					<div class="wt-bypass-effect wt-bypass-effect--log"><span class="material-icons" aria-hidden="true">history_edu</span>
+						<span>Recorded with your name and reason</span></div>
+				</div>
+				<!-- Covered findings, collapsed: each file once, its rules as chips with a severity dot. -->
+				<details class="wt-bypass-covered" data-bypass-covered>
+					<summary>
+						<span class="material-icons wt-bypass-covered__caret" aria-hidden="true">expand_more</span>
+						<strong tabindex="0" data-tip="Every rule and file pair of this scan is covered, including findings that did not block, so this can be more than the blocking count in the summary."
+							th:text="${'Covers ' + bypassCoverage.total() + (bypassCoverage.total() == 1 ? ' finding' : ' findings')}"></strong>
+						<span class="wt-bypass-covered__dots" aria-hidden="true">
+							<th:block th:each="count : ${bypassCoverage.severities()}"><span class="wt-dot" th:classappend="' wt-signal-rail-' + ${count.severityValue()}"></span><span th:text="${count.count()}"></span></th:block>
+						</span>
+					</summary>
+					<div class="wt-bypass-covered__files">
+						<div th:each="group : ${bypassCoverage.files()}">
+							<div class="wt-bypass-covered__file" th:attr="title=${group.path()}"><span class="material-icons" aria-hidden="true">description</span><span th:text="${group.name()}"></span></div>
+							<ul class="wt-bypass-findings">
+								<li th:each="rule : ${group.rules()}" class="wt-mini-chip" th:attr="title=${rule.severity()}"><span class="wt-dot"
+									th:classappend="' wt-signal-rail-' + ${rule.severityValue()}" aria-hidden="true"></span><span th:text="${rule.name()}"></span></li>
+							</ul>
+						</div>
+					</div>
+				</details>
+				<!-- Reason category as icon choices. The category explains the exception; it does not
+				     label the findings (finding feedback does that). -->
+				<fieldset class="wt-choice-chips" aria-describedby="bypass-reason-help">
+					<legend>Why?</legend>
+					<label class="wt-choice-chip"><input type="radio" name="reasonCode" value="FALSE_POSITIVE"><span class="material-icons" aria-hidden="true">gpp_bad</span>False positive</label>
+					<label class="wt-choice-chip"><input type="radio" name="reasonCode" value="ACCEPTED_RISK"><span class="material-icons" aria-hidden="true">shield</span>Accepted risk</label>
+					<label class="wt-choice-chip"><input type="radio" name="reasonCode" value="TEST_CODE"><span class="material-icons" aria-hidden="true">science</span>Test code</label>
+					<label class="wt-choice-chip"><input type="radio" name="reasonCode" value="NOT_EXPLOITABLE"><span class="material-icons" aria-hidden="true">verified_user</span>Not exploitable</label>
+					<label class="wt-choice-chip"><input type="radio" name="reasonCode" value="OTHER" checked><span class="material-icons" aria-hidden="true">more_horiz</span>Other</label>
+					<span id="bypass-reason-help" class="visually-hidden">The category explains the exception; it does not label the findings. If a finding is wrong, record finding feedback on it too.</span>
+				</fieldset>
+				<md-outlined-text-field type="textarea" rows="3" label="Reason" name="reason" required autofocus
+					th:maxlength="${maxReason}"
+					supporting-text="Shown on the pull request"></md-outlined-text-field>
+				<p th:unless="${canManageBypass}" class="wt-field-help">Or comment
+					<code th:text="${T(com.tracelink.appsec.watchtower.core.scan.code.scm.pr.bypass.PRCommentCommand).BYPASS_SYNTAX}"></code>
+					on the pull request.</p>
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+			</form>
+		</th:block>
+	</div>
+	<div slot="actions">
+		<md-text-button id="cancelBypassDialog" type="button">Close</md-text-button>
+		<md-text-button th:if="${bypass.isActive() and canManageBypass}" form="revokeBypassForm" type="submit">Revoke bypass</md-text-button>
+		<md-text-button th:if="${bypassRequest.isPending() and bypassRequest.viewerIsRequester()}" form="withdrawBypassForm" type="submit">Withdraw request</md-text-button>
+		<md-text-button th:if="${isApprover}" form="declineBypassForm" type="submit">Decline</md-text-button>
+		<md-filled-button th:if="${isApprover}" form="approveBypassForm" type="submit">Approve</md-filled-button>
+		<md-filled-button th:if="${canAsk}" form="bypassForm" type="submit"
+			th:text="${canManageBypass ? 'Bypass blocking' : 'Send request'}"></md-filled-button>
+	</div>
+</md-dialog>
+<!-- Findings. The code that backs these lives in the #wt-code-section below, not in this
+     table: a scan with hundreds of violations used to render hundreds of snippets inside
+     these rows, and the same file once per violation in it. -->
+<div class="wt-report-views mb-3" th:if="${providerStatuses != null and !providerStatuses.isEmpty()}"><div th:replace="~{fragments/remote-assessments :: status}"></div></div>
+<div th:replace="~{fragments/remote-assessments :: findings(${providerIncomplete == true}, true)}"></div>
+
+<!-- Code, once per file that has findings - never for a clean file, because
+     PRScanResultService only ever builds an entry for a file a violation landed in. -->
+<div th:replace="~{fragments/findings :: code(${result.getCodeFiles()})}"></div>
+
+<div th:replace="~{fragments/feedback :: dialog('pull_request', ${result.getId()})}"></div>

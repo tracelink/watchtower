@@ -9,11 +9,11 @@ import com.tracelink.appsec.module.json.designer.JsonRuleDesigner;
 import com.tracelink.appsec.module.json.ruleeditor.JsonRuleEditor;
 import com.tracelink.appsec.module.json.scanner.JsonScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
@@ -22,7 +22,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
  * @author csmith
  */
 @WatchtowerModule
-public class JsonModule extends AbstractModule {
+public class JsonModule extends AbstractCodeScanModule {
 	public static final String SCANNER_NAME = "JSON";
 	public static final String JSON_RULE_EDITOR_PRIVILEGE_NAME = "JSON Rule Editor";
 	public static final String JSON_RULE_DESIGNER_PRIVILEGE_NAME = "JSON Rule Designer";
@@ -48,7 +48,7 @@ public class JsonModule extends AbstractModule {
 	}
 
 	@Override
-	public IScanner getScanner() {
+	public ICodeScanner getScanner() {
 		return new JsonScanner();
 	}
 

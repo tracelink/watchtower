@@ -1,0 +1,8 @@
+<!-- The reviewed finding's code, loaded into the Review finding page's "View source" panel.
+     Fetched for this response only; a line flagged by a secrets scanner is masked. -->
+<th:block th:fragment="source">
+	<div th:if="${file == null}" class="wt-code-unavailable"><strong>Source unavailable.</strong> This finding or its scan could not be found, so there is no file to read.</div>
+	<th:block th:if="${file != null}"><th:block th:replace="~{fragments/findings :: codeBody(${file})}"></th:block></th:block>
+	<a th:if="${link != null}" class="wt-code-open-link" th:href="${link}" target="_blank"
+		rel="noopener noreferrer">Whole file in the pull request<span class="material-icons" aria-hidden="true">open_in_new</span></a>
+</th:block>

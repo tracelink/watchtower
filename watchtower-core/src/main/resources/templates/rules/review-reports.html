@@ -1,0 +1,245 @@
+<!-- Review reports (UAT walkthrough, 2026-10-16): one report chip ("Week 42 · 13 Oct, 15:47") replaces
+     the dropdown and Open button; the schedule is a chip that opens a dialog and the Settings tab is
+     gone; the summary is four counted tiles and reason chips; attention rows are a table with scanner
+     tiles, plain-word reason buttons (the server still filters on the stored codes) and an icon
+     action; empty themes and coverage get a real empty state. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority(''Rule Modify'')')},
+    Words=${T(com.tracelink.appsec.watchtower.core.rule.report.RuleReportPresentation)},
+    Scanners=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity)},
+    summary=${selectedReport == null ? null : selectedReport.summary},
+    counts=${selectedReport == null ? null : selectedReport.summary.counts}">
+<section data-rule-report-page data-rule-report-dialog th:data-report-id="${selectedReport?.id}"
+ th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}" th:data-can-modify="${canModify}">
+
+<div class="wt-home-head wt-report-head wt-page-bar">
+ <div th:replace="~{fragments/pageheader :: header('Review reports', null)}"></div>
+ <div class="wt-meta-chips wt-report-head__status">
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+      data-tip="A saved weekly snapshot of findings, human reviews and rule ownership. Making a report never opens tasks, changes rules or changes enforcement. For today's backlog use Rule work."><span
+      class="material-icons" aria-hidden="true">help_outline</span>What is this?</span>
+ </div>
+ <div class="wt-page-actions wt-report-head__status">
+  <button th:if="${canModify}" type="button" class="wt-mini-chip wt-meta-chip wt-mini-chip--link" data-wt-dialog-open="#reportScheduleDialog"
+      data-tip="Scheduled and manual reports each keep the latest 12. Click to change the schedule."><span class="material-icons"
+      aria-hidden="true">event_repeat</span><span data-rule-report-schedule-label th:text="${scheduleLabel}">Weekly · Monday (UTC)</span></button>
+  <span th:unless="${canModify}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+      data-tip="Scheduled and manual reports each keep the latest 12."><span class="material-icons"
+      aria-hidden="true">event_repeat</span><span th:text="${scheduleLabel}">Weekly · Monday (UTC)</span></span>
+  <md-outlined-button th:if="${canModify}" type="button" data-rule-report-run has-icon><span class="material-icons" slot="icon"
+      aria-hidden="true">add_chart</span>Make report now</md-outlined-button>
+ </div>
+</div>
+<p class="wt-inline-status" data-rule-report-status role="status" aria-live="polite"></p>
+
+<div th:if="${selectedReport == null and view != 'coverage'}" class="wt-empty-picture" data-report-none>
+ <span class="material-icons wt-empty-picture__icon" aria-hidden="true">summarize</span>
+ <strong>No saved report yet</strong>
+ <span class="wt-muted" th:text="${canModify ? 'Make one now, or wait for the weekly schedule.' : 'The weekly schedule makes one.'}">Make one now, or wait for the weekly schedule.</span>
+</div>
+
+<th:block th:if="${selectedReport != null}">
+<div class="wt-meta-chips mb-3" data-report-chips>
+ <details class="wt-popover wt-download-menu" data-report-picker>
+  <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Saved report: ' + Words.periodLabel(selectedReport.period) + '. Change'}"><span
+      class="material-icons" aria-hidden="true">calendar_month</span><strong th:text="${Words.periodLabel(selectedReport.period)}">Week 42</strong>
+      · <span class="localizetime" data-time-style="short" th:text="${selectedReport.created_at}"></span><span class="material-icons"
+      aria-hidden="true">arrow_drop_down</span></summary>
+  <div class="wt-popover__body wt-download-menu__body">
+   <a th:each="saved : ${reportHistory}" class="wt-menu-item" th:href="@{/rules/review-reports(reportId=${saved.id},view=${view})}"
+      th:attr="aria-current=${saved.id == selectedReport.id ? 'true' : null}"><strong th:text="${saved.label()}">Week 42</strong>
+      <span class="localizetime" data-time-style="short" th:text="${saved.createdAt}"></span><span th:unless="${saved.scheduled()}"
+      class="wt-muted" th:text="${'by ' + saved.actor}">by steward</span></a>
+  </div>
+ </details>
+ <span th:if="${selectedReport.trigger == 'SCHEDULED'}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+     data-tip="Made by the weekly schedule."><span class="material-icons" aria-hidden="true">schedule</span>Scheduled</span>
+ <span th:unless="${selectedReport.trigger == 'SCHEDULED'}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+     th:attr="data-tip=${'Made on request by ' + selectedReport.actor + '.'}"><span class="material-icons" aria-hidden="true">person</span>Manual</span>
+ <span th:if="${!selectedReport.complete_items}" class="wt-mini-chip wt-meta-chip wt-mini-chip--warn" tabindex="0" data-report-legacy
+     th:attr="data-tip=${summary.attention_truncated
+       ? 'This older report kept only a sample of its attention rows. Its no-match and coverage figures were not verified. Today''s numbers are on Rule work and Rule health.'
+       : 'This older report saved a short summary only. Its no-match and coverage figures were not verified. Today''s numbers are on Rule work and Rule health.'}"><span
+     class="material-icons" aria-hidden="true">history</span><span th:text="${summary.attention_truncated
+       ? 'Older report · ' + #numbers.formatInteger(#lists.size(summary.attention), 1, 'COMMA') + ' of ' + #numbers.formatInteger(counts.attention, 1, 'COMMA') + ' rows kept'
+       : 'Older report'}">Older report</span></span>
+</div>
+</th:block>
+
+<!-- Coverage is live, so it is reachable even before the first report is saved; the saved-report tabs need a report. -->
+<nav class="wt-segmented-filter mb-3" aria-label="Report views"
+    th:with="tabs=${selectedReport == null ? {'coverage'} : {'summary','attention','themes','coverage'}},
+             tabIcons=${ {'summary':'summarize','attention':'priority_high','themes':'category','coverage':'shield'} }">
+ <a th:each="tab : ${tabs}" class="wt-segment"
+    th:href="${selectedReport == null} ? @{/rules/review-reports(view=${tab})} : @{/rules/review-reports(view=${tab},reportId=${selectedReport.id})}"
+    th:classappend="${view == tab} ? 'is-active'" th:attr="aria-current=${view == tab ? 'page' : null},data-report-tab=${tab}"><span
+    class="material-icons" aria-hidden="true" th:text="${tabIcons.get(tab)}">summarize</span><span
+    th:text="${#strings.capitalize(tab)}">Summary</span><span class="wt-count-badge" th:if="${tab == 'attention'}"
+    th:text="${#numbers.formatInteger(counts.attention, 1, 'COMMA')}">1,641</span><span class="wt-count-badge" th:if="${tab == 'themes'}"
+    th:text="${#numbers.formatInteger(counts.themes ?: #lists.size(summary.themes), 1, 'COMMA')}">0</span></a>
+</nav>
+
+<th:block th:if="${selectedReport != null}">
+<section th:hidden="${view != 'summary'}" data-report-summary>
+ <h2 class="visually-hidden">Summary</h2>
+ <div class="wt-stat-tiles wt-stat-tiles--4 mb-3">
+  <span class="wt-stat-tile" tabindex="0" th:attr="data-tip=${'Active rules; retired rules (' + (counts.retired_excluded ?: 0) + ') are left out.'}"><span
+      class="material-icons" aria-hidden="true">rule</span><span><strong th:text="${#numbers.formatInteger(counts.rules, 1, 'COMMA')}">1,641</strong><span>Rules in the report</span></span></span>
+  <span class="wt-stat-tile" tabindex="0" data-tip="Rules with at least one reason below."><span
+      class="material-icons" aria-hidden="true">priority_high</span><span><strong th:text="${#numbers.formatInteger(counts.attention, 1, 'COMMA')}">1,641</strong><span>Need attention</span></span></span>
+  <span class="wt-stat-tile" tabindex="0" data-tip="Too few reviewed findings to judge the rule."><span
+      class="material-icons" aria-hidden="true">hourglass_empty</span><span><strong th:text="${#numbers.formatInteger(counts.insufficient_data, 1, 'COMMA')}">1,641</strong><span>Too little data</span></span></span>
+  <span class="wt-stat-tile" tabindex="0" data-tip="Groups of similar finding feedback."><span
+      class="material-icons" aria-hidden="true">category</span><span><strong th:text="${#numbers.formatInteger(counts.themes ?: #lists.size(summary.themes), 1, 'COMMA')}">0</strong><span>Feedback themes</span></span></span>
+ </div>
+ <div class="wt-meta-chips mb-3" th:if="${reasonCounts != null and !reasonCounts.isEmpty()}" data-report-reasons>
+  <th:block th:each="r : ${reasons}" th:with="count=${reasonCounts.get(r.code()) ?: 0}">
+   <a th:if="${count > 0}" class="wt-mini-chip wt-meta-chip wt-mini-chip--link" th:href="@{/rules/review-reports(view='attention',reportId=${selectedReport.id},reason=${r.code()})}"
+      th:attr="data-tip=${r.tip() + (selectedReport.complete_items ? '' : ' Counted in the kept sample.')}"><span class="material-icons"
+      aria-hidden="true" th:text="${r.icon()}">person_off</span><span th:text="${r.label()}">No owner</span><span class="wt-count-badge"
+      th:text="${#numbers.formatInteger(count, 1, 'COMMA')}">1,641</span></a>
+  </th:block>
+ </div>
+ <div data-rule-report-upstream></div>
+</section>
+
+<section th:hidden="${view != 'attention'}" id="results-region" aria-live="polite" data-report-attention>
+ <h2 class="visually-hidden">Attention</h2>
+ <th:block th:if="${attention != null}">
+  <div class="wt-meta-chips wt-work-filters mb-3">
+   <form method="get" action="/rules/review-reports" class="wt-meta-chips">
+    <input type="hidden" name="reportId" th:value="${selectedReport.id}"><input type="hidden" name="view" value="attention">
+    <input type="hidden" name="reason" th:value="${reason}"><input type="hidden" name="pageSize" th:value="${attention.rows.pageSize}">
+    <md-outlined-text-field class="wt-search-pill wt-work-search" type="search" name="search" label="Search rule or owner" maxlength="200"
+        th:value="${search}" autocomplete="off"><span slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+   </form>
+   <nav class="wt-segmented-filter" aria-label="Reason">
+    <a class="wt-segment" th:href="@{/rules/review-reports(view='attention',reportId=${selectedReport.id},search=${search},reason='all',pageSize=${attention.rows.pageSize})}"
+       th:classappend="${reason == 'all'} ? 'is-active'" th:attr="aria-current=${reason == 'all' ? 'true' : null}">All</a>
+    <a th:each="r : ${reasons}" class="wt-segment" th:attr="aria-current=${reason == r.code() ? 'true' : null},data-tip=${r.tip()},data-report-reason=${r.code()}"
+       th:href="@{/rules/review-reports(view='attention',reportId=${selectedReport.id},search=${search},reason=${r.code()},pageSize=${attention.rows.pageSize})}"
+       th:classappend="${reason == r.code()} ? 'is-active'"><span class="material-icons" aria-hidden="true" th:text="${r.icon()}">person_off</span><span
+       th:text="${r.label()}">No owner</span></a>
+   </nav>
+  </div>
+  <div th:if="${attention.rows.content.isEmpty()}" class="wt-empty-picture">
+   <span class="material-icons wt-empty-picture__icon" aria-hidden="true">filter_alt_off</span>
+   <strong>No saved rows match this filter</strong>
+   <span class="wt-muted">Try another reason or clear the search.</span>
+  </div>
+  <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Rules that need attention" th:unless="${attention.rows.content.isEmpty()}">
+   <table class="table mb-0">
+    <caption class="visually-hidden" th:text="${attention.complete ? 'Every saved attention row' : 'The rows this older report kept'}"></caption>
+    <thead><tr><th scope="col">Rule</th><th scope="col">Why</th><th scope="col">Owner</th><th scope="col">Open reviews</th>
+     <th scope="col"><span class="visually-hidden">Action</span></th></tr></thead>
+    <tbody>
+     <tr th:each="item : ${attention.rows.content}" th:with="scanner=${Scanners.of(item.module)}" data-report-item>
+      <th scope="row"><span class="wt-work-rule"><span class="wt-scanner-tile wt-scanner-tile--ran" role="img" tabindex="0"
+          th:attr="data-tip=${scanner.name() + ' rule'},aria-label=${scanner.name() + ' rule'}"><span class="material-icons"
+          aria-hidden="true" th:text="${scanner.icon()}">coffee</span></span><span th:text="${Scanners.withoutScannerPrefix(item.name)}">JavaDeserialization</span></span></th>
+      <td><span class="wt-meta-chips"><span th:each="why : ${item.reasons}" th:with="r=${Words.reason(why.code)}" class="wt-mini-chip" tabindex="0"
+          th:classappend="${why.code == 'CONFIRMED_NOISE' or why.code == 'REVIEW_OVERDUE'} ? ' wt-mini-chip--bad'"
+          th:attr="data-tip=${why.detail == null or why.detail.isBlank() ? r.tip() : why.detail}"><span class="material-icons"
+          aria-hidden="true" th:text="${r.icon()}">person_off</span><span th:text="${r.label()}">No owner</span></span></span></td>
+      <td>
+       <span th:if="${item.owner != null and !item.owner.isBlank()}" class="wt-mini-chip"><span class="material-icons"
+           aria-hidden="true">person</span><span th:text="${item.owner}">appsec team</span></span>
+       <span th:unless="${item.owner != null and !item.owner.isBlank()}" class="wt-mini-chip"><span class="material-icons"
+           aria-hidden="true">person_off</span>None</span>
+      </td>
+      <td th:text="${item.openReviews}" class="wt-muted">0</td>
+      <td class="text-end"><a class="wt-icon-action" th:href="@{/rules/{id}/reviews(id=${item.ruleId},revision=${item.revision ?: 'unknown'})}"
+          th:attr="aria-label=${'Saved reviews for ' + item.name}" data-tip="Saved reviews for this rule"><span class="material-icons"
+          aria-hidden="true">rate_review</span></a></td>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+  <th:block th:unless="${attention.rows.content.isEmpty()}"><div th:replace="~{fragments/pagination :: pagination(${pageUrl}, ${attention.rows})}"></div></th:block>
+ </th:block>
+</section>
+
+<section th:hidden="${view != 'themes'}" data-report-themes>
+ <h2 class="visually-hidden">Feedback themes</h2>
+ <div data-rule-report-themes></div>
+</section>
+</th:block>
+
+<!-- Live coverage (CWE profile x language), drawn by cwe-coverage.js from /rules/coverage. The saved report's
+     older CWE x language matrix stays behind the disclosure. -->
+<section th:hidden="${view != 'coverage'}" data-report-coverage data-cwe-coverage th:data-can-modify="${canModify}">
+ <h2 class="visually-hidden">CWE coverage</h2>
+ <div class="wt-meta-chips mb-3" data-cov-chips></div>
+ <div class="wt-table-scroll wt-table-scroll--wide" data-cov-table tabindex="0" role="region" aria-label="CWE coverage by language"><span
+     class="wt-muted">Loading coverage…</span></div>
+ <details class="wt-form-disclosure mt-3" th:if="${selectedReport != null}">
+  <summary>Saved report: CWE mapping by language</summary>
+  <div class="wt-meta-chips mb-3"><span class="wt-mini-chip wt-meta-chip" tabindex="0" data-rule-report-note
+      data-tip="Which CWE categories rules map to, and whether their engines ran. A CWE mapping or a run is not proof a vulnerability would be caught."><span
+      class="material-icons" aria-hidden="true">help_outline</span>How to read this</span></div>
+  <div class="wt-table-scroll wt-table-scroll--wide" data-rule-report-matrix tabindex="0" aria-label="CWE mapping by language"></div>
+ </details>
+</section>
+
+<!-- The weekly schedule (UTC), opened from the schedule chip. -->
+<md-dialog id="reportScheduleDialog" th:if="${canModify}" data-report-schedule-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span>Report schedule</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <form slot="content" id="reportScheduleForm" class="wt-md-form" data-rule-report-settings>
+  <label class="wt-setting-row wt-setting-row--plain"><span class="wt-setting-row__label">Make a report every week</span>
+   <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" data-rule-report-enabled aria-label="Make a report every week"></span></label>
+  <div class="wt-setting-row wt-setting-row--plain"><span class="wt-setting-row__label">Day (UTC)</span>
+   <span class="wt-setting-row__value"><md-outlined-select data-rule-report-weekday aria-label="Day (UTC)"><md-select-option value="1" selected><div slot="headline">Monday</div></md-select-option><md-select-option value="2"><div slot="headline">Tuesday</div></md-select-option><md-select-option value="3"><div slot="headline">Wednesday</div></md-select-option><md-select-option value="4"><div slot="headline">Thursday</div></md-select-option><md-select-option value="5"><div slot="headline">Friday</div></md-select-option><md-select-option value="6"><div slot="headline">Saturday</div></md-select-option><md-select-option value="7"><div slot="headline">Sunday</div></md-select-option></md-outlined-select></span></div>
+  <span class="wt-mini-chip" tabindex="0" data-tip="Scheduled and manual reports each keep the latest 12; older ones are removed."><span
+      class="material-icons" aria-hidden="true">inventory_2</span>Keeps the latest 12</span>
+ </form>
+ <div slot="actions">
+  <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+  <md-filled-button type="submit" form="reportScheduleForm" has-icon><span class="material-icons" slot="icon" aria-hidden="true">save</span>Save</md-filled-button>
+ </div>
+</md-dialog>
+
+<!-- Coverage: the CWE profile (which weaknesses matter here) and the answer to one gap. Filled by cwe-coverage.js. -->
+<md-dialog id="cweProfileDialog" th:if="${canModify}" data-cov-profile-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span>CWE profile</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <span class="wt-mini-chip" tabindex="0" data-cov-profile-count
+      data-tip="The weaknesses that matter in your environment. Coverage is measured against these."><span class="material-icons"
+      aria-hidden="true">inventory_2</span><span data-cov-profile-count-label>0 selected</span></span>
+  <md-outlined-text-field label="Add a weakness" placeholder="Number or name, for example 918 or request forgery" maxlength="80"
+      autocomplete="off" data-cov-search><span slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+  <div class="wt-meta-chips" data-cov-results></div>
+  <div class="wt-meta-chips">
+   <md-outlined-button type="button" data-cov-top25 has-icon><span slot="icon" class="material-icons"
+       aria-hidden="true">format_list_numbered</span>Add the 2024 Top 25</md-outlined-button>
+  </div>
+  <div class="wt-meta-chips" data-cov-entries></div>
+  <p class="wt-inline-status" role="alert" data-cov-error></p>
+ </div>
+ <div slot="actions"><md-filled-button type="button" data-wt-dialog-close>Done</md-filled-button></div>
+</md-dialog>
+
+<md-dialog id="cweGapDialog" th:if="${canModify}" data-cov-gap-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span data-cov-gap-title>CWE</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <div class="wt-meta-chips" data-cov-gap-state></div>
+  <div class="wt-meta-chips" data-gap-suggestion role="status" aria-live="polite"></div>
+  <md-outlined-text-field label="Note (optional)" maxlength="255" autocomplete="off" data-cov-note></md-outlined-text-field>
+  <p class="wt-inline-status" role="alert" data-cov-gap-error></p>
+ </div>
+ <div slot="actions">
+  <span class="wt-ai-anchor" data-ai-helper="ruleDraft" hidden>
+   <md-outlined-button type="button" data-gap-suggest has-icon
+       data-tip="Ask the assistant to draft a rule for this gap. It opens in the designer, unsaved, and you decide whether to save it."><span
+       class="material-icons wt-ai-icon" slot="icon" aria-hidden="true">auto_awesome</span>Suggest a rule</md-outlined-button>
+  </span>
+  <md-text-button type="button" data-cov-clear hidden>Clear decision</md-text-button>
+  <md-text-button type="button" data-cov-decide="DEFERRED">Defer</md-text-button>
+  <md-text-button type="button" data-cov-decide="NOT_APPLICABLE">Not applicable</md-text-button>
+  <md-outlined-button type="button" data-cov-decide="NOT_COVERABLE" has-icon><span class="material-icons" slot="icon"
+      aria-hidden="true">block</span>Not coverable yet</md-outlined-button>
+ </div>
+</md-dialog>
+</section>
+</th:block>

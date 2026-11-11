@@ -27,8 +27,44 @@ public class PMDRuleDesignerTest {
 	}
 
 	@Test
+	public void starterQueryMatchesItsOwnSample() {
+		var model = pmdDesigner.getDefaultRuleDesignerModelAndView().getModel();
+		RuleDesignerModelAndView mav = pmdDesigner.query((String) model.get("language"),
+				(String) model.get("query"), (String) model.get("sourceCode"));
+		MatcherAssert.assertThat((java.util.List<?>) mav.getModel().get("matches"), Matchers.hasSize(1));
+		// The match carries its line, so the "Line 3" chip can jump to System.out.println.
+		MatcherAssert.assertThat(mav.getModel().get("matches"), Matchers.is(java.util.List.of(
+				com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch.atLine(3,
+						"Selected by the XPath query"))));
+	}
+
+	@Test
+	public void syntaxTreeIndentsWithRealSpacesNotEntityText() {
+		RuleDesignerModelAndView mav = pmdDesigner.query(defaultLanguage, defaultQuery, defaultSrc);
+		var names = ((java.util.List<?>) mav.getModel().get("ast")).stream()
+				.map(node -> ((com.tracelink.appsec.module.pmd.designer.DesignerASTModel) node).getName()).toList();
+		MatcherAssert.assertThat(names, Matchers.everyItem(Matchers.not(Matchers.containsString("&nbsp;"))));
+		MatcherAssert.assertThat(names.get(1), Matchers.startsWith("\u00A0"));
+	}
+
+	@Test
+	public void anXPathPmdCannotParseIsExplainedNotShownAsNoMatches() {
+		// Dev E2E G02: "//[[bad" answered "0 matches found", as if the query were fine.
+		RuleDesignerModelAndView mav = pmdDesigner.query(defaultLanguage, "//[[bad", defaultSrc);
+
+		java.util.List<?> matches = (java.util.List<?>) mav.getModel().get("matches");
+		MatcherAssert.assertThat(matches, Matchers.hasSize(1));
+		MatcherAssert.assertThat(matches.get(0).toString(),
+				Matchers.containsString("PMD could not use the XPath"));
+		MatcherAssert.assertThat("no Java class names in a message for people", matches.get(0).toString(),
+				Matchers.not(Matchers.containsString("Exception")));
+		MatcherAssert.assertThat("the syntax tree of the sample still shows", mav.getModel().get("ast"),
+				Matchers.notNullValue());
+	}
+
+	@Test
 	public void testGetRuleDesignerModelAndView() {
-		RuleDesignerModelAndView mav = pmdDesigner.getRuleDesignerModelAndView();
+		RuleDesignerModelAndView mav = pmdDesigner.getDefaultRuleDesignerModelAndView();
 		assertMav(mav);
 	}
 

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.module.eslint.engine.LinterEngine;
@@ -31,7 +31,7 @@ public class EsLintRuleServiceTest {
 
 	private static final String RULE_NAME = "eslint-rule";
 
-	@MockBean
+	@MockitoBean
 	private EsLintRuleRepository ruleRepository;
 
 	private static LinterEngine engine;

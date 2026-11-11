@@ -45,7 +45,7 @@ public class WireMockExtension extends WireMockServer
 	}
 
 
-	private void checkForUnmatchedRequests() {
+	private void verifyNoUnmatchedRequests() {
 		if (failOnUnmatchedRequests) {
 			List<LoggedRequest> unmatchedRequests = findAllUnmatchedRequests();
 			if (!unmatchedRequests.isEmpty()) {
@@ -61,7 +61,7 @@ public class WireMockExtension extends WireMockServer
 
 	@Override
 	public void afterEach(ExtensionContext context) throws Exception {
-		checkForUnmatchedRequests();
+		verifyNoUnmatchedRequests();
 		stop();
 	}
 

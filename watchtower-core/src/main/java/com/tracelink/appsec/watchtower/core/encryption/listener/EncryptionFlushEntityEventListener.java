@@ -9,7 +9,7 @@ import com.tracelink.appsec.watchtower.core.encryption.service.KeyEncryptionServ
 import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import javax.persistence.Convert;
+import jakarta.persistence.Convert;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.event.internal.DefaultFlushEntityEventListener;

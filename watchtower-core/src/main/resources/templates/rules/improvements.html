@@ -1,0 +1,139 @@
+<!-- Suggest a rule improvement (Improve board, 2026-10-22): the title names the rule with its
+     scanner tile, severity, health and owner; the four stacked cards become a 3-step bar
+     (Evidence → Proposal → Save draft) that shows one step at a time with its state. Evidence is
+     five plain-word tiles; the caveats sit behind one "How it's chosen" chip. With no reviewed
+     findings the page says so and Next stays off (the server refuses too). Nothing here runs a test
+     or changes the live rule. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority(''Rule Modify'')')}">
+<section data-rule-improvements th:data-rule-id="${improvementRuleId}" th:data-csrf-header="${_csrf.headerName}"
+    th:data-csrf-token="${_csrf.token}" th:data-can-modify="${canModify}" th:data-chat-ready="${chat.ready()}"
+    th:data-candidates-url="@{/rules/{id}/candidates(id=${improvementRuleId})}">
+
+<div class="wt-home-head wt-report-head wt-page-bar">
+ <div class="wt-detail-title">
+  <span class="wt-scanner-tile wt-scanner-tile--ran wt-scanner-tile--lg" role="img" tabindex="0"
+      th:attr="data-tip=${scanner.name() + ' rule (' + scanner.purpose() + ')'},aria-label=${scanner.name() + ' rule'}"><span
+      class="material-icons" aria-hidden="true" th:text="${scanner.icon()}">key</span></span>
+  <div th:replace="~{fragments/pageheader :: header(${'Improve ' + ruleName}, null)}"></div>
+ </div>
+ <div class="wt-meta-chips wt-report-head__status" data-improvement-rule-chips>
+  <span th:if="${rule.priority != null}" th:class="${'wt-sev wt-sev-' + rule.priority.priority}" th:text="${rule.priority.name}">High</span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+      th:data-tip="${rule.isCustom() ? 'Written in Watchtower: every field can be edited' : 'Comes with the scanner'}"><span
+      class="material-icons" aria-hidden="true" th:text="${rule.isCustom() ? 'edit_note' : 'inventory_2'}">edit_note</span><span
+      th:text="${rule.isCustom() ? 'Custom' : 'Provided'}">Custom</span></span>
+  <a th:each="chip : ${healthChips}" class="wt-mini-chip wt-meta-chip" th:href="@{/rules/{id}/health(id=${rule.id})}"
+      th:classappend="${chip.tone().isEmpty() ? '' : ' wt-mini-chip--' + chip.tone()}"
+      th:attr="data-tip=${chip.tip() + ' Opens Rule health.'}"><span class="material-icons" aria-hidden="true"
+      th:text="${chip.icon()}">hourglass_empty</span><span th:text="${chip.text()}">Too little data</span></a>
+ </div>
+ <div class="wt-page-actions wt-report-head__status">
+  <span th:if="${rule.stewardship != null and !#strings.isEmpty(rule.stewardship.owner)}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+      data-tip="Rule owner"><span class="material-icons" aria-hidden="true">person</span><span th:text="${rule.stewardship.owner}">owner</span></span>
+ </div>
+</div>
+
+<div class="wt-candidate-steps wt-improve-steps mb-3" role="tablist" aria-label="Steps">
+ <button type="button" role="tab" class="wt-candidate-step" data-improvement-step="1" aria-controls="improvement-step-1" aria-selected="true"><span
+     class="wt-candidate-step__n">1</span><span class="wt-candidate-step__text"><strong>Evidence</strong><span data-improvement-step-state="1">Loading…</span></span></button>
+ <button type="button" role="tab" class="wt-candidate-step" data-improvement-step="2" aria-controls="improvement-step-2" aria-selected="false"><span
+     class="wt-candidate-step__n">2</span><span class="wt-candidate-step__text"><strong>Proposal</strong><span data-improvement-step-state="2">Needs evidence</span></span></button>
+ <button th:if="${canModify}" type="button" role="tab" class="wt-candidate-step" data-improvement-step="3" aria-controls="improvement-step-3" aria-selected="false"><span
+     class="wt-candidate-step__n">3</span><span class="wt-candidate-step__text"><strong>Save draft</strong><span data-improvement-step-state="3">Locked</span></span></button>
+</div>
+<p class="visually-hidden" data-improvement-status role="status" aria-live="polite"></p>
+
+<!-- 1. Evidence -->
+<section class="wt-candidate-panel" id="improvement-step-1" role="tabpanel" data-improvement-panel="1">
+ <div class="wt-meta-chips">
+  <strong>Evidence</strong>
+  <nav class="wt-segmented-filter" aria-label="Evidence window">
+   <button th:each="d : ${T(com.tracelink.appsec.watchtower.core.rule.workflow.RuleDetailPresentation).WINDOWS}" type="button"
+       class="wt-segment" th:classappend="${d == 90} ? 'is-active'" th:attr="data-improvement-days=${d},aria-pressed=${d == 90}"><span
+       class="material-icons" aria-hidden="true">date_range</span><span th:text="${d + ' d'}">90 d</span></button>
+  </nav>
+  <details class="wt-popover wt-download-menu" data-improvement-language-menu>
+   <summary class="wt-mini-chip wt-meta-chip" data-tip="Optional. Limits approved knowledge to one language, e.g. Java."><span class="material-icons"
+       aria-hidden="true">translate</span><span data-improvement-language-label>Language: any</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+   <div class="wt-popover__body wt-download-menu__body wt-improve-language">
+    <md-outlined-text-field data-improvement-language label="Language" maxlength="32" placeholder="e.g. java"></md-outlined-text-field>
+    <div class="wt-actions wt-actions--end">
+     <md-text-button type="button" data-improvement-language-clear>Any</md-text-button>
+     <md-outlined-button type="button" data-improvement-language-apply>Apply</md-outlined-button>
+    </div>
+   </div>
+  </details>
+  <span class="wt-spacer"></span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-improvement-how
+      data-tip="Only human decisions count. AI opinions are never used as evidence. Older-version findings are shown apart because the rule has changed since. Code from repositories is not sent."><span
+      class="material-icons" aria-hidden="true">help_outline</span>How it's chosen</span>
+ </div>
+ <div class="wt-stat-tiles wt-stat-tiles--5" data-improvement-tiles aria-label="Evidence by kind"></div>
+ <div class="wt-empty-picture wt-empty-picture--flat" data-improvement-empty hidden>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">rate_review</span>
+  <strong>No reviewed findings yet</strong>
+  <span class="wt-muted wt-empty-picture__why">A proposal needs people's decisions on this rule's findings. Review some findings first.</span>
+  <a class="btn wt-button-link" th:href="@{/rules/work(queue='review',search=${ruleName})}"><span class="material-icons"
+      aria-hidden="true">rate_review</span>Review findings</a>
+ </div>
+ <div class="wt-actions wt-actions--end">
+  <span class="wt-mini-chip" tabindex="0" data-improvement-needs-evidence hidden
+      data-tip="Next is available once at least one finding has been reviewed."><span class="material-icons"
+      aria-hidden="true">block</span>Needs evidence</span>
+  <md-outlined-button type="button" data-improvement-next disabled trailing-icon has-icon>Next<span slot="icon" class="material-icons"
+      aria-hidden="true">arrow_forward</span></md-outlined-button>
+ </div>
+</section>
+
+<!-- 2. Proposal -->
+<section class="wt-candidate-panel" id="improvement-step-2" role="tabpanel" data-improvement-panel="2" hidden>
+ <md-outlined-text-field data-improvement-question label="What should improve?" type="textarea" rows="3" maxlength="1000"
+     placeholder="e.g. It flags classes that already suppress the class property"></md-outlined-text-field>
+ <div class="wt-meta-chips">
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Counts against your daily and the organization's daily AI budget."><span
+      class="material-icons" aria-hidden="true">account_balance_wallet</span>Uses daily AI budget</span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-improvement-chat
+      th:classappend="${chat.ready()} ? ' wt-mini-chip--ok' : ' wt-mini-chip--warn'"
+      th:attr="data-tip=${chat.ready() ? 'Proposals need AI chat to be on and ready.' : chat.message()}"><span class="material-icons"
+      aria-hidden="true">chat</span><span th:text="${chat.ready() ? 'Chat is on' : 'Chat not ready'}">Chat is on</span></span>
+  <span class="wt-spacer"></span>
+  <md-text-button type="button" data-improvement-cancel hidden>Cancel</md-text-button>
+  <md-filled-button type="button" data-improvement-generate disabled has-icon><span slot="icon" class="material-icons"
+      aria-hidden="true">auto_awesome</span>Generate proposal</md-filled-button>
+ </div>
+ <div class="wt-improve-proposal" data-improvement-review hidden>
+  <div class="wt-meta-chips">
+   <strong>Proposal</strong>
+   <span class="wt-mini-chip wt-mini-chip--warn" tabindex="0"
+       data-tip="Nothing has run. Test it with examples in Candidates before it can replace the rule."><span class="material-icons"
+       aria-hidden="true">auto_awesome</span>AI suggestion — not tested</span>
+   <span class="wt-mini-chip" tabindex="0" data-improvement-outcome hidden></span>
+  </div>
+  <div data-improvement-proposal></div>
+ </div>
+ <div class="wt-actions wt-actions--end" th:if="${canModify}">
+  <md-outlined-button type="button" data-improvement-use hidden trailing-icon has-icon>Use this proposal<span slot="icon" class="material-icons"
+      aria-hidden="true">arrow_forward</span></md-outlined-button>
+ </div>
+</section>
+
+<!-- 3. Save draft -->
+<section th:if="${canModify}" class="wt-candidate-panel" id="improvement-step-3" role="tabpanel" data-improvement-panel="3" hidden>
+ <div class="wt-meta-chips">
+  <strong>Save as draft candidate</strong>
+  <span class="wt-mini-chip wt-mini-chip--ok" tabindex="0"
+      data-tip="Saving stores a draft in Candidates. Examples and tests are added there."><span class="material-icons"
+      aria-hidden="true">shield</span>Doesn't change the live rule or run tests</span>
+ </div>
+ <div class="wt-improve-fields" data-improvement-fields></div>
+ <md-outlined-text-field data-improvement-rationale label="Your reason" maxlength="300"
+     placeholder="Why you accept this change (shown with the draft)"></md-outlined-text-field>
+ <div class="wt-actions wt-actions--end">
+  <a class="wt-button-link wt-button-link-secondary" data-improvement-candidates th:href="@{/rules/{id}/candidates(id=${improvementRuleId})}"><span
+      class="material-icons" aria-hidden="true">science</span>Open candidates</a>
+  <md-filled-button type="button" data-improvement-save has-icon><span slot="icon" class="material-icons"
+      aria-hidden="true">save</span>Save draft</md-filled-button>
+ </div>
+</section>
+</section>
+</th:block>

@@ -1,6 +1,7 @@
 package com.tracelink.appsec.watchtower.core.rule;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -10,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
@@ -19,9 +23,10 @@ import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.RuleEditModelAndView;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class RuleEditorServiceTest {
-	@MockBean
+	@MockitoBean
 	private RuleService ruleService;
 
 	private RuleEditorService ruleEditorService;
@@ -87,12 +92,12 @@ public class RuleEditorServiceTest {
 		BDDMockito.when(ruleService.getRulesForModule(BDDMockito.anyString()))
 				.thenReturn(Collections.singletonList(mockDto));
 
-		BDDMockito.when(mockRuleManager.getRuleEditModelAndView(mockDto))
+		BDDMockito.when(mockRuleManager.getDefaultRuleEditModelAndView(mockDto))
 				.thenReturn(new RuleEditModelAndView(view));
 		RuleEditModelAndView mav = ruleEditorService.getRuleEditModelAndView(module, ruleId);
 		MatcherAssert.assertThat(mav.getModel().get("activeRule"), Matchers.is(mockDto));
 		MatcherAssert.assertThat(mav.getModel().get("ruleView"), Matchers.is(view));
-		BDDMockito.verify(mockRuleManager).getRuleEditModelAndView(mockDto);
+		BDDMockito.verify(mockRuleManager).getDefaultRuleEditModelAndView(mockDto);
 	}
 
 	@Test
@@ -103,7 +108,42 @@ public class RuleEditorServiceTest {
 		RuleEditModelAndView mav = ruleEditorService.getRuleEditModelAndView(module, null);
 		MatcherAssert.assertThat(mav.getModel().get("activeRule"), Matchers.nullValue());
 		BDDMockito.verify(mockRuleManager, BDDMockito.never())
-				.getRuleEditModelAndView(BDDMockito.any());
+				.getDefaultRuleEditModelAndView(BDDMockito.any());
+	}
+
+	@Test
+	public void testGetRuleEditModelAndViewOpensOnTheFirstCustomRule() throws Exception {
+		String module = "mock";
+		ruleEditorService.registerRuleEditor(module, mockRuleManager);
+		RuleDto provided = BDDMockito.mock(RuleDto.class);
+		BDDMockito.when(provided.isCustom()).thenReturn(false);
+		RuleDto custom = BDDMockito.mock(RuleDto.class);
+		BDDMockito.when(custom.isCustom()).thenReturn(true);
+		BDDMockito.when(ruleService.getRulesForModule(module)).thenReturn(List.of(provided, custom));
+		BDDMockito.when(mockRuleManager.getDefaultRuleEditModelAndView(custom))
+				.thenReturn(new RuleEditModelAndView("custom-view"));
+
+		RuleEditModelAndView mav = ruleEditorService.getRuleEditModelAndView(module, null);
+
+		MatcherAssert.assertThat(mav.getModel().get("activeRule"), Matchers.is(custom));
+		MatcherAssert.assertThat(mav.getModel().get("customCount"), Matchers.is(1L));
+		MatcherAssert.assertThat(mav.getModel().get("providedCount"), Matchers.is(1L));
+	}
+
+	@Test
+	public void testGetRuleEditModelAndViewOpensOnProvidedWithoutCustomRules() throws Exception {
+		String module = "mock";
+		ruleEditorService.registerRuleEditor(module, mockRuleManager);
+		RuleDto provided = BDDMockito.mock(RuleDto.class);
+		BDDMockito.when(provided.isCustom()).thenReturn(false);
+		BDDMockito.when(ruleService.getRulesForModule(module)).thenReturn(List.of(provided));
+		BDDMockito.when(mockRuleManager.getDefaultRuleEditModelAndView(provided))
+				.thenReturn(new RuleEditModelAndView("provided-view"));
+
+		RuleEditModelAndView mav = ruleEditorService.getRuleEditModelAndView(module, null);
+
+		MatcherAssert.assertThat(mav.getModel().get("activeRule"), Matchers.is(provided));
+		MatcherAssert.assertThat(mav.getModel().get("customCount"), Matchers.is(0L));
 	}
 
 	@Test

@@ -1,0 +1,34 @@
+<!--/* Rule designer results (UAT walkthrough, 2026-10-16): one strip under the sample and rule cards.
+     A count chip, then a "Line N" chip per match that jumps to the highlighted line in the sample
+     (rule-designer.js); hover shows what the rule says there. Engine messages without a line
+     (parse errors) are amber chips. Nothing shows before the rule has run. */-->
+<section th:fragment="matches(matches, error)" class="card wt-designer-matches" data-designer-output
+    aria-label="Matches">
+  <th:block th:if="${error != null}">
+    <span class="wt-mini-chip wt-meta-chip wt-mini-chip--bad"><span class="material-icons"
+        aria-hidden="true">error</span>Could not run</span>
+    <pre class="wt-designer-error" th:text="${error}">error</pre>
+  </th:block>
+  <th:block th:if="${error == null and matches != null}"
+      th:with="found=${T(com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch).countMatches(matches)}">
+    <span class="wt-mini-chip wt-meta-chip" th:classappend="${found > 0} ? ' wt-mini-chip--ok'"
+        data-designer-match-count><span class="material-icons" aria-hidden="true"
+        th:text="${found > 0 ? 'check_circle' : 'search_off'}">check_circle</span><span
+        th:text="${found == 0 ? 'No matches' : (found == 1 ? '1 match' : found + ' matches')}">1 match</span></span>
+    <th:block th:each="match : ${matches}">
+      <button th:if="${match.hasLine()}" type="button" class="wt-mini-chip wt-meta-chip wt-mini-chip--link"
+          th:attr="data-designer-match-line=${match.line},data-tip=${match.message.isBlank() ? null : match.message},aria-label=${'Go to line ' + match.line + (match.message.isBlank() ? '' : ': ' + match.message)}"><span
+          class="material-icons" aria-hidden="true">my_location</span><span th:text="${'Line ' + match.line}">Line 1</span></button>
+      <span th:unless="${match.hasLine() or match.message.isBlank()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--warn wt-designer-note"><span
+          class="material-icons" aria-hidden="true">warning</span><span th:text="${match.message}">message</span></span>
+    </th:block>
+  </th:block>
+  <span th:if="${error == null and matches == null}" class="wt-muted wt-designer-hint">Run the rule to see what
+    it matches.</span>
+  <p class="visually-hidden" data-designer-status role="status" aria-live="polite"
+     th:text="${error != null ? 'The rule could not run.' : (matches == null ? 'Ready.' : T(com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch).countMatches(matches) + ' matches found.')}">Ready.</p>
+</section>
+
+<!--/* The "How to write it" chip on a designer's rule card: the help text on hover and focus. */-->
+<span th:fragment="howto(text)" class="wt-mini-chip wt-meta-chip" tabindex="0"
+    th:attr="data-tip=${text}"><span class="material-icons" aria-hidden="true">help_outline</span>How to write it</span>

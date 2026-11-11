@@ -1,27 +1,25 @@
 package com.tracelink.appsec.watchtower.core.auth.model;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import javax.validation.constraints.NotEmpty;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.validation.constraints.NotEmpty;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -61,16 +59,13 @@ public class UserEntity {
 	private Set<RoleEntity> roles = new HashSet<>();
 
 	@Column(name = "last_login")
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date lastLogin;
+	private LocalDateTime lastLogin;
 
 	@Column(name = "last_modified")
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date lastModified;
+	private LocalDateTime lastModified;
 
 	@Column(name = "created")
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date created;
+	private LocalDateTime created;
 
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private Set<ApiKeyEntity> apiKeys = new LinkedHashSet<ApiKeyEntity>();
@@ -131,27 +126,35 @@ public class UserEntity {
 		return roles.stream().map(RoleEntity::getRoleName).collect(Collectors.joining(", "));
 	}
 
-	public Date getLastLogin() {
+	public LocalDateTime getLastLogin() {
 		return lastLogin;
 	}
 
-	public void setLastLogin(Date lastLogin) {
+	public void setLastLogin(LocalDateTime lastLogin) {
 		this.lastLogin = lastLogin;
 	}
 
-	public Date getLastModified() {
+	public long getLastLoginMillis() {
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(lastLogin);
+	}
+
+	public LocalDateTime getLastModified() {
 		return lastModified;
 	}
 
-	public void setLastModified(Date lastModified) {
+	public void setLastModified(LocalDateTime lastModified) {
 		this.lastModified = lastModified;
 	}
 
-	public Date getCreated() {
+	public LocalDateTime getCreated() {
 		return created;
 	}
 
-	public void setCreated(Date created) {
+	public long getCreatedMillis() {
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(created);
+	}
+
+	public void setCreated(LocalDateTime created) {
 		this.created = created;
 	}
 

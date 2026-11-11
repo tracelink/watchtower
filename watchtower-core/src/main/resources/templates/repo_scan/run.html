@@ -1,0 +1,75 @@
+<!-- One run (UAT #31, #32): title with Run N and the run's status, one row of fact chips, then one
+     row per repository and branch. While the run is unfinished the page refreshes itself. -->
+<div class="wt-home-head wt-report-head">
+  <div th:replace="~{fragments/pageheader :: header(${plan.displayName}, ${plan.apiLabel})}"></div>
+  <span class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">tag</span><span th:text="${'Run ' + runNo}">Run 6</span></span>
+  <th:block th:unless="${rows.isEmpty()}"><th:block th:insert="~{fragments/status :: chip(${overview.status})}"></th:block></th:block>
+</div>
+<section class="wt-meta-chips mb-3" aria-label="Run summary" hx-trigger="every 15s" hx-select="#content" hx-target="#content"
+    th:attr="hx-get=${finished < rows.size() or (rows.isEmpty() and emptyReason == null) ? '/reposcan/run/' + plan.id + '/' + runNo : null}">
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Integration"><span class="material-icons" aria-hidden="true">code</span><span th:text="${plan.apiLabel}">BitBucket</span></span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" th:classappend="${failed > 0} ? ' wt-tone-danger' : (${finished == rows.size() and !rows.isEmpty()} ? ' wt-mini-chip--ok' : '')"
+      th:attr="data-tip=${'Repositories in this run that finished. ' + failed + ' failed.'}"><span class="material-icons" aria-hidden="true"
+      th:text="${failed > 0} ? 'error' : 'check_circle'">check_circle</span><span th:text="${finished + ' of ' + rows.size() + ' finished'}">1 of 1 finished</span></span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Findings across all repositories in this run"><span class="material-icons" aria-hidden="true">bug_report</span><span
+      th:text="${totalFindings + (totalFindings == 1 ? ' finding' : ' findings')}">0 findings</span></span>
+  <span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Findings not seen in the previous comparable scan of the same branch"><span class="material-icons" aria-hidden="true">fiber_new</span><span
+      th:text="${newFindings + ' new'}">0 new</span></span>
+</section>
+<th:block th:if="${rows.isEmpty()}"><div th:replace="~{fragments/emptystate :: state(${emptyReason != null ? emptyReason : 'Preparing this run…'})}"></div></th:block>
+<div class="wt-table-scroll" tabindex="0" role="region" aria-label="Scans of this run" th:unless="${rows.isEmpty()}">
+  <table class="table mb-0">
+    <caption>Repositories and branches in this run, most critical first</caption>
+    <thead><tr><th scope="col">Repository</th><th scope="col">Status</th><th scope="col">Commit</th><th scope="col">Scanners</th>
+      <th scope="col">Findings</th><th scope="col">New</th><th scope="col">Fixed</th><th scope="col"><span class="visually-hidden">Report</span></th></tr></thead>
+    <tbody>
+      <tr th:each="scan : ${rows}" th:with="tiles=${scan.scannerTiles},
+          compared=${scan.fixedCount != null and scan.assessment.complete()}">
+        <th scope="row" class="wt-scan-target">
+          <a class="wt-entity-link" th:href="@{/repositories/{id}(id=${scan.repository.id})}" th:text="${scan.repository.repoName}">repo</a>
+          <span class="wt-scan-kind"><span class="material-icons" aria-hidden="true">alt_route</span><span th:text="${scan.branch}">main</span></span>
+        </th>
+        <td th:with="st=${T(com.tracelink.appsec.watchtower.core.scan.presentation.StatusPresentationModel).from(scan)}">
+          <th:block th:insert="~{fragments/status :: chip(${st})}"></th:block>
+          <span th:if="${scan.outcome != null and scan.outcome.name() != 'SCANNED'}" class="wt-status-chip wt-tone-neutral" th:text="${scan.outcome.displayName}">Unchanged</span>
+          <details class="wt-execution-skip-info" th:if="${scan.error != null}">
+            <summary aria-label="Why it failed"><span class="material-icons" aria-hidden="true">info</span></summary>
+            <div class="wt-execution-skip-popover"><p class="mb-0" th:text="${scan.error}">error</p></div>
+          </details>
+        </td>
+        <td><button th:if="${scan.commitHash != null}" type="button" class="wt-mini-chip wt-copy-chip"
+              th:attr="data-copy-text=${scan.commitHash}, data-tip=${scan.commitHash + '. Click to copy.'}" th:aria-label="${'Copy commit ' + scan.commitHash}"><span
+              class="wt-mono" th:text="${scan.commitHash.length() > 7 ? scan.commitHash.substring(0, 7) : scan.commitHash}"></span><span
+              class="material-icons" aria-hidden="true">content_copy</span></button></td>
+        <td>
+          <span class="wt-scanner-tiles" role="list" aria-label="Scanners" th:if="${tiles.recorded}">
+            <span th:each="scanner : ${tiles.shown}" role="listitem" class="wt-scanner-tile" th:classappend="${' wt-scanner-tile--' + scanner.state}"
+                tabindex="0" th:attr="data-tip=${scanner.label}" th:aria-label="${scanner.label}"><span class="material-icons" aria-hidden="true" th:text="${scanner.icon}"></span></span>
+          </span>
+          <span th:unless="${tiles.recorded}" class="wt-muted" tabindex="0" data-tip="Which scanners ran was not recorded for this scan.">—</span>
+        </td>
+        <td>
+          <span class="wt-findings-cell">
+            <strong class="wt-num" th:text="${scan.findingSummary.total}">0</strong>
+            <div th:replace="~{fragments/severity :: countSummary(${scan.findingSummary.severities})}"></div>
+            <span th:if="${scan.providerFindingCount > 0}" class="wt-mini-chip" tabindex="0"
+                th:attr="data-tip=${'Includes ' + scan.providerFindingCount + ' findings from the AWS Security Agent.'}"
+                th:text="${'+' + scan.providerFindingCount + ' AWS'}"></span>
+            <span th:if="${scan.findingSummary.providerIncomplete}" class="wt-mini-chip"
+                  data-tip="Provider assessment incomplete; counts include imported findings only.">Incomplete</span>
+          </span>
+        </td>
+        <td class="wt-num" th:text="${scan.newCount == null ? '—' : scan.newCount}">0</td>
+        <!-- #31: a fix counts only when both scans used the same scanners and this one was complete. -->
+        <td>
+          <span th:if="${compared}" class="wt-num" th:text="${scan.fixedCount}">0</span>
+          <span th:unless="${compared}" class="wt-mini-chip wt-tone-warning" tabindex="0"
+              data-tip="Not compared: this scan and the previous one did not use the same scanners, or this one was not complete, so earlier findings are not counted as fixed."><span
+              class="material-icons" aria-hidden="true">compare_arrows</span>Not compared</span>
+        </td>
+        <td><a th:if="${scan.reportKey != null}" class="btn btn-secondary btn-sm wt-report-link" th:href="@{/reposcan/report/{id}(id=${scan.id})}"
+            th:aria-label="${'Report of ' + scan.repository.repoName + ' @ ' + scan.branch}"><span>View report</span><span class="material-icons" aria-hidden="true">arrow_forward</span></a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>

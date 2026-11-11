@@ -1,0 +1,23 @@
+{
+  "name": "watchtower-material-web-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Builds a single self-contained Material Web / Lit bundle for Watchtower's UI migration, self-hosted (no CDN) so the app has no runtime dependency on a third-party host. Mirrors the codemirror6/ project's build shape.",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --format=iife --outfile=../../resources/static/scripts/material-web-bundle.js",
+    "test": "node smoketest.js && node sidebar-nav.test.js && node shell-navigation.test.js && node workspace-resizer.test.js && node finding-workspace.test.js && node aws-finding-workspace.test.js && node finding-action.test.js &&node scan-submission.test.js && node rulesets.test.js && node localizetime.test.js && node feature-guide.test.js && node ruleset-import.test.js && node rule-edit.test.js && node rule-designer.test.js && node advisory-designer.test.js && node alert-settings.test.js && node pr-bypass.test.js && node confirm-action.test.js && node allowlist.test.js && node role-privileges.test.js && node dashboard.test.js && node ui-consistency.test.js && node notifications.test.js && node eslint-designer.test.js && node logging.test.js && node assistant.test.js && node assistant-context.test.js && node assistant-history.test.js && node ai-helpers.test.js && node ai-reviewed-workflows.test.js && node rule-improvements.test.js && node setup-workflows.test.js && node finding-feedback.test.js && node finding-review.test.js && node assistant-admin.test.js && node rule-candidates.test.js && node rule-reviews.test.js && node rule-review-report.test.js && node variant-search.test.js && node assistant-evaluation.test.js && node ai-integration.test.js && node knowledge-page.test.js && node finding-assessment.test.js && node repo-suggest.test.js && node secret-field.test.js && node bitbucket-webhooks.test.js && node rule-work.test.js && node cwe-suggest.test.js && node cwe-coverage.test.js && node cwe-starter.test.js && node rule-designer-draft.test.js && node rule-draft-suggest.test.js && node ai-review.test.js && node repo-dialogs.test.js && node repo-inventory-filters.test.js && node settings-popups.test.js && node module-file-types.test.js && node designer-file-types.test.js && node alert-copilot.test.js && node home-digest.test.js && node cwe-catalog.test.js && node knowledge-draft.test.js && node knowledge-propose.test.js",
+    "test:e2e": "playwright test",
+    "test:e2e:list": "playwright test --list",
+    "test:r1-browser": "playwright test -c r1-playwright.config.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.55.1",
+    "esbuild": "^0.28.2",
+    "jsdom": "^29.1.1"
+  },
+  "dependencies": {
+    "@material/web": "^2.4.0",
+    "lit": "^3.3.0"
+  }
+}

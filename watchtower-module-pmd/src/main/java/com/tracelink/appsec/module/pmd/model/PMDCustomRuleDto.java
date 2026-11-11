@@ -2,16 +2,20 @@ package com.tracelink.appsec.module.pmd.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.LanguageScopedRule;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Represents a data transfer object for the {@link PMDRuleEntity}. All fields in this object are in
@@ -19,7 +23,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  * @author mcool
  */
-public class PMDCustomRuleDto extends CustomRuleDto implements PMDRuleDto {
+public class PMDCustomRuleDto extends CustomRuleDto implements PMDRuleDto, LanguageScopedRule {
 
 	@NotNull(message = "Parser language" + CANNOT_BE_NULL)
 	@NotEmpty(message = "Parser language" + CANNOT_BE_EMPTY)
@@ -30,8 +34,7 @@ public class PMDCustomRuleDto extends CustomRuleDto implements PMDRuleDto {
 	@Size(max = 255, message = "Rule class cannot have a length of more than 256 characters.")
 	private String ruleClass;
 
-	@Valid
-	private List<PMDPropertyDto> properties = new ArrayList<>();
+	private List<@Valid PMDPropertyDto> properties = new ArrayList<>();
 
 	@Override
 	public String getModule() {
@@ -44,6 +47,12 @@ public class PMDCustomRuleDto extends CustomRuleDto implements PMDRuleDto {
 
 	public void setParserLanguage(String parserLanguage) {
 		this.parserLanguage = parserLanguage;
+	}
+
+	@Override
+	public Set<String> scannedLanguages() {
+		return parserLanguage == null || parserLanguage.isBlank() ? Set.of()
+				: Set.of(parserLanguage.trim().toLowerCase(Locale.ROOT));
 	}
 
 	public String getRuleClass() {
@@ -81,4 +90,18 @@ public class PMDCustomRuleDto extends CustomRuleDto implements PMDRuleDto {
 	}
 
 
+	@Override
+	protected RuleRevision executableDefinition() {
+		// Duplicate parameter names have order-dependent behavior and no reliable set ordering.
+		if (getProperties().stream().map(PMDPropertyDto::getName).distinct().count()
+				!= getProperties().size()) {
+			return null;
+		}
+		return newDefinition().field("parserLanguage", getParserLanguage())
+				.field("ruleClass", getRuleClass())
+				.unordered("properties", getProperties().stream().map(property ->
+						RuleRevision.definition("pmd-property", "parameter")
+								.field("name", property.getName())
+								.field("value", property.getValue()).hash()).toList());
+	}
 }

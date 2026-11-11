@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.module;
 
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
@@ -11,6 +11,7 @@ import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
@@ -35,15 +36,17 @@ import com.tracelink.appsec.watchtower.core.scan.ScanRegistrationService;
  * {@link WatchtowerModule} for that functionality, including JPA and Entity creation.
  *
  * @author mcool
+ * @param <S> The Scanner type implemented by this Module
+ * 
  */
-public abstract class AbstractModule {
+public abstract class AbstractModule<S extends IScanner<?, ?>> {
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractModule.class);
 
 	@Autowired
 	private Flyway flyway;
 
 	@Autowired
-	private ScanRegistrationService scanRegistrationService;
+	private AuthConfigurationService authService;
 
 	@Autowired
 	private RuleEditorService ruleEditorService;
@@ -55,7 +58,10 @@ public abstract class AbstractModule {
 	private RuleDesignerService ruleDesignerService;
 
 	@Autowired
-	private AuthConfigurationService authService;
+	private ScanRegistrationService scanRegistrationService;
+
+	@Autowired
+	private ApplicationContext applicationContext;
 
 	/**
 	 * The name of the module.
@@ -102,12 +108,20 @@ public abstract class AbstractModule {
 	/**
 	 * The implementation of an {@link IScanner}.
 	 * <p>
-	 * This scanner will be used to run rules against files and generate a report containing info
-	 * about any violations found or errors encountered.
+	 * This scanner will be used to run rules and generate a report containing info about any
+	 * violations found or errors encountered.
 	 *
 	 * @return scanner implementation for this module
 	 */
-	public abstract IScanner getScanner();
+	public abstract S getScanner();
+
+	/**
+	 * Allow Modules to provide additional privileges they utilize to be added to the main set of
+	 * privileges in Watchtower
+	 * 
+	 * @return the list of privileges used in the Module, or null if there are none
+	 */
+	public abstract List<PrivilegeEntity> getModulePrivileges();
 
 	/**
 	 * The implementation of the {@link IRuleDesigner}.
@@ -126,14 +140,6 @@ public abstract class AbstractModule {
 	 * @return rule editor implementation for this module
 	 */
 	public abstract IRuleEditor getRuleEditor();
-
-	/**
-	 * Allow Modules to provide additional privileges they utilize to be added to the main set of
-	 * privileges in Watchtower
-	 * 
-	 * @return the list of privileges used in the Module, or null if there are none
-	 */
-	public abstract List<PrivilegeEntity> getModulePrivileges();
 
 	/**
 	 * Allow Modules to provide any rules as {@linkplain RulesetDesignation#PROVIDED} rulesets. On
@@ -160,7 +166,7 @@ public abstract class AbstractModule {
 					+ " could not be created as it does not have a valid name. Please provide a nonempty string that does not contain whitespace.");
 		}
 
-		LOG.info("BUILDING SCANNER: {}", name);
+		LOG.info("BUILDING MODULE: {}", name);
 
 		ClassicConfiguration compConfig = new ClassicConfiguration(flyway.getConfiguration());
 
@@ -176,14 +182,7 @@ public abstract class AbstractModule {
 
 		// migrate
 		Flyway.configure().configuration(compConfig).load().migrate();
-
-		LOG.info("Registering Scanner: {}", name);
 		try {
-			scanRegistrationService.registerScanner(getName(), getScanner());
-			ruleEditorService.registerRuleEditor(getName(), getRuleEditor());
-			if (getRuleDesigner() != null) {
-				ruleDesignerService.registerRuleDesigner(getName(), getRuleDesigner());
-			}
 			List<PrivilegeEntity> privileges = getModulePrivileges();
 			if (privileges != null) {
 				for (PrivilegeEntity privilege : privileges) {
@@ -191,22 +190,35 @@ public abstract class AbstractModule {
 							privilege.getName(), privilege.getDescription());
 				}
 			}
+			ruleEditorService.registerRuleEditor(getName(), getRuleEditor());
+			if (getRuleDesigner() != null) {
+				ruleDesignerService.registerRuleDesigner(getName(), getRuleDesigner());
+			}
+			scanRegistrationService.registerScanner(getName(), getScanner());
+
 		} catch (ModuleException e) {
-			throw new RuntimeException("Error registering scanner " + name, e);
+			throw new RuntimeException("Error registering module " + getName());
 		}
 	}
 
 	/**
 	 * Certain processes must occur after all modules have been loaded. This method handles those
 	 * cases.
+	 * <p>
+	 * Only this module's own context counts: the actuator's management port runs in a child
+	 * context whose refresh event also reaches these listeners, and used to import every provided
+	 * rule a second time on each boot.
+	 *
+	 * @param event the refresh of this module's context or of a child context
 	 */
-	@EventListener(classes = ContextRefreshedEvent.class)
-	public void afterModulesLoaded() {
+	@EventListener
+	public void afterModulesLoaded(ContextRefreshedEvent event) {
+		if (event.getApplicationContext() != applicationContext) {
+			LOG.debug("Not importing provided rules for {} on a child context refresh", getName());
+			return;
+		}
 		try {
-			long s = System.currentTimeMillis();
 			List<RulesetDto> providedRulesets = getProvidedRulesets();
-			long e = System.currentTimeMillis();
-			LOG.info("Checkov Get Provided rules took: " + (e - s) + " milliseconds");
 			if (providedRulesets != null) {
 				LOG.info("Importing Provided rules for {} Starting", getName());
 				rulesetService.registerProvidedRulesets(getName(), providedRulesets);

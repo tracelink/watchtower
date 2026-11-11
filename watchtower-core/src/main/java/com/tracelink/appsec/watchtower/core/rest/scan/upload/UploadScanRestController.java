@@ -1,10 +1,14 @@
 package com.tracelink.appsec.watchtower.core.rest.scan.upload;
 
+import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
+import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.UploadScan;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.result.UploadScanResult;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanResultService;
+import com.tracelink.appsec.watchtower.core.scan.code.upload.service.UploadScanningService;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.security.Principal;
 import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege;
-import com.tracelink.appsec.watchtower.core.exception.ScanRejectedException;
-import com.tracelink.appsec.watchtower.core.scan.upload.UploadScan;
-import com.tracelink.appsec.watchtower.core.scan.upload.result.UploadScanResult;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanningService;
-
 /**
  * Controller for all REST API calls. Handles a health check and sending a scan via REST.
  *
@@ -35,6 +32,7 @@ import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanningSe
 @RequestMapping("/rest/uploadscan")
 @PreAuthorize("hasAuthority('" + CorePrivilege.SCAN_SUBMIT_NAME + "')")
 public class UploadScanRestController {
+
 	private static final Logger LOG = LoggerFactory.getLogger(UploadScanRestController.class);
 
 	private UploadScanningService scanService;
@@ -49,8 +47,7 @@ public class UploadScanRestController {
 
 	@PostMapping()
 	ResponseEntity<UploadScanResult> scanUpload(@RequestParam Optional<String> name,
-			@RequestParam Optional<String> ruleset,
-			@RequestBody MultipartFile uploadFile,
+			@RequestParam Optional<String> ruleset, @RequestBody MultipartFile uploadFile,
 			Principal userPrincipal) {
 		String uploadName = name.orElse(uploadFile.getOriginalFilename());
 		String rulesetName = ruleset.orElse(null);
@@ -60,22 +57,22 @@ public class UploadScanRestController {
 		try {
 			upload.setName(uploadName);
 			upload.setRuleSetName(rulesetName);
-
 			upload.setUser(userPrincipal == null ? "" : userPrincipal.getName());
-			upload.setSubmitDate(System.currentTimeMillis());
 
-			Path zipLocation = scanService.copyToLocation(uploadFile);
-			upload.setFilePath(zipLocation);
+			String storageKey = scanService.storeUpload(uploadFile);
+			upload.setStorageKey(storageKey);
 
 			ticket = scanService.doUploadScan(upload);
 		} catch (ScanRejectedException e) {
+			LOG.warn("Rejected upload scan for user {}: {}", upload.getUser(), e.getMessage());
 			return ResponseEntity.badRequest().body(
-					uploadScanResultService.generateFailedUploadResult(upload, e.getMessage()));
+					uploadScanResultService.generateFailedUploadResult(upload,
+							"Upload scan request was rejected"));
 		} catch (IOException e) {
 			LOG.error("Error copying the file", e);
 			return ResponseEntity.badRequest()
 					.body(uploadScanResultService.generateFailedUploadResult(upload,
-							"Error copying the file: " + e.getMessage()));
+							"Unable to store the uploaded file"));
 		}
 
 		return ResponseEntity.ok(uploadScanResultService.generateResultForTicket(ticket));
@@ -85,6 +82,4 @@ public class UploadScanRestController {
 	ResponseEntity<UploadScanResult> getResultForTicket(@PathVariable String ticket) {
 		return ResponseEntity.ok(uploadScanResultService.generateResultForTicket(ticket));
 	}
-
-
 }

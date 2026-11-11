@@ -1,0 +1,107 @@
+<!--/* IMPROVEMENT_PLAN.md item 10.13: one severity presentation shared by all four report
+     pages (PR, MCR, upload, image), so a scan's severity reads the same everywhere instead of
+     being plain text on three pages and a pill on one.
+
+     Both fragments key off RulePriority.getPriority() - 1 High .. 6 Informational - rather than
+     off the display name, so renaming a priority cannot silently drop its colour. Every result
+     violation now carries that number: PR and upload always did, image gained it alongside this
+     change. */-->
+
+<!--/* The pill itself. Putting `data-order` on the surrounding <td> is the caller's job, since
+     only the caller knows whether its table is a DataTable. */-->
+<span th:fragment="pill(severity, severityValue)" class="wt-sev"
+      th:classappend="'wt-sev-' + ${severityValue}" th:text="${severity}"></span>
+
+<!--/* Compact counts for result DTOs, whose violations expose severityValue. The visible
+     abbreviations keep dense tables scannable; aria-label expands every abbreviation. */-->
+<div th:fragment="compactSummary(violations)" class="wt-severity-counts" role="group"
+     aria-label="Findings by severity">
+	<!--/* Each count is set on an enclosing th:block: Thymeleaf evaluates th:if before th:with on
+	     the same element, so a chip that set and tested its own count never rendered (tables
+	     showed only the total, or nothing). */-->
+	<th:block th:if="${violations != null && !violations.isEmpty()}">
+		<span class="wt-findings-total" data-findings-total
+		      th:text="${#lists.size(violations)}"
+		      th:aria-label="${#lists.size(violations)} + ' total findings'"></span>
+		<th:block th:with="count=${#lists.size(violations.?[severityValue == 1])}"><span class="wt-sev wt-sev-count wt-sev-1"
+		      th:if="${count > 0}" th:text="${count} + 'H'"
+		      th:aria-label="${count} + ' High ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' High ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severityValue == 2])}"><span class="wt-sev wt-sev-count wt-sev-2"
+		      th:if="${count > 0}" th:text="${count} + 'MH'"
+		      th:aria-label="${count} + ' Medium High ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Medium High ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severityValue == 3])}"><span class="wt-sev wt-sev-count wt-sev-3"
+		      th:if="${count > 0}" th:text="${count} + 'M'"
+		      th:aria-label="${count} + ' Medium ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Medium ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severityValue == 4])}"><span class="wt-sev wt-sev-count wt-sev-4"
+		      th:if="${count > 0}" th:text="${count} + 'ML'"
+		      th:aria-label="${count} + ' Medium Low ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Medium Low ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severityValue == 5])}"><span class="wt-sev wt-sev-count wt-sev-5"
+		      th:if="${count > 0}" th:text="${count} + 'L'"
+		      th:aria-label="${count} + ' Low ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Low ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severityValue == 6])}"><span class="wt-sev wt-sev-count wt-sev-6"
+		      th:if="${count > 0}" th:text="${count} + 'I'"
+		      th:aria-label="${count} + ' Informational ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Informational ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+	</th:block>
+	<span class="wt-sev-summary-empty" data-findings-total th:if="${violations == null || violations.isEmpty()}"
+	      aria-label="No findings">0</span>
+</div>
+
+<!--/* The submit-scan tables operate on persisted entities, where severity is a RulePriority. */-->
+<div th:fragment="entitySummary(violations)" class="wt-severity-counts" role="group"
+     aria-label="Findings by severity">
+	<!--/* Same structure as compactSummary (count on an enclosing th:block, total first), so every
+	     table reads the same way. */-->
+	<th:block th:if="${violations != null && !violations.isEmpty()}">
+		<span class="wt-findings-total" data-findings-total
+		      th:text="${#lists.size(violations)}"
+		      th:aria-label="${#lists.size(violations)} + ' total findings'"></span>
+		<th:block th:with="count=${#lists.size(violations.?[severity != null && severity.priority == 1])}"><span class="wt-sev wt-sev-count wt-sev-1" th:if="${count > 0}" th:text="${count} + 'H'" th:aria-label="${count} + ' High ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' High ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severity != null && severity.priority == 2])}"><span class="wt-sev wt-sev-count wt-sev-2" th:if="${count > 0}" th:text="${count} + 'MH'" th:aria-label="${count} + ' Medium High ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Medium High ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severity != null && severity.priority == 3])}"><span class="wt-sev wt-sev-count wt-sev-3" th:if="${count > 0}" th:text="${count} + 'M'" th:aria-label="${count} + ' Medium ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Medium ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severity != null && severity.priority == 4])}"><span class="wt-sev wt-sev-count wt-sev-4" th:if="${count > 0}" th:text="${count} + 'ML'" th:aria-label="${count} + ' Medium Low ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Medium Low ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severity != null && severity.priority == 5])}"><span class="wt-sev wt-sev-count wt-sev-5" th:if="${count > 0}" th:text="${count} + 'L'" th:aria-label="${count} + ' Low ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Low ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+		<th:block th:with="count=${#lists.size(violations.?[severity == null || severity.priority == 6])}"><span class="wt-sev wt-sev-count wt-sev-6" th:if="${count > 0}" th:text="${count} + 'I'" th:aria-label="${count} + ' Informational ' + (${count} == 1 ? 'finding' : 'findings')" th:data-tip="${count} + ' Informational ' + (${count} == 1 ? 'finding' : 'findings')"></span></th:block>
+	</th:block>
+	<span class="wt-sev-summary-empty" th:if="${violations == null || violations.isEmpty()}" aria-label="No findings">0</span>
+</div>
+
+<!--/* Dashboard rows already carry presentation counts so they do not repeat template math. */-->
+<div th:fragment="countSummary(counts)" class="wt-severity-counts" role="group"
+     aria-label="Findings by severity">
+	<span th:each="count : ${counts}" class="wt-sev wt-sev-count"
+	      th:classappend="'wt-sev-' + ${count.severityValue}"
+	      th:text="${count.compactText}" th:aria-label="${count.accessibleText}" th:data-tip="${count.accessibleText}"></span>
+	<span class="wt-sev-summary-empty" th:if="${counts == null || counts.isEmpty()}"
+	      aria-label="No findings">0</span>
+</div>
+
+<!--/* Count-by-severity strip for the top of a report. A level with no findings is omitted
+     rather than shown as a zero, so the strip stays a summary rather than a legend.
+
+     The six blocks are spelled out instead of looped because each count is a SpEL selection
+     (`?[severityValue == N]`) whose comparison has to be a literal: inside a selection the
+     evaluation root is the element being tested, so a loop variable would resolve against the
+     violation rather than against the loop. Six explicit lookups are worth more than a clever
+     loop that silently counts the wrong thing. */-->
+<div th:fragment="summary(violations)" class="wt-sev-summary">
+	<span class="wt-sev wt-sev-1" th:if="${#lists.size(violations.?[severityValue == 1]) > 0}"
+	      th:text="${#lists.size(violations.?[severityValue == 1])} + ' High'"></span>
+	<span class="wt-sev wt-sev-2" th:if="${#lists.size(violations.?[severityValue == 2]) > 0}"
+	      th:text="${#lists.size(violations.?[severityValue == 2])} + ' Medium High'"></span>
+	<span class="wt-sev wt-sev-3" th:if="${#lists.size(violations.?[severityValue == 3]) > 0}"
+	      th:text="${#lists.size(violations.?[severityValue == 3])} + ' Medium'"></span>
+	<span class="wt-sev wt-sev-4" th:if="${#lists.size(violations.?[severityValue == 4]) > 0}"
+	      th:text="${#lists.size(violations.?[severityValue == 4])} + ' Medium Low'"></span>
+	<span class="wt-sev wt-sev-5" th:if="${#lists.size(violations.?[severityValue == 5]) > 0}"
+	      th:text="${#lists.size(violations.?[severityValue == 5])} + ' Low'"></span>
+	<span class="wt-sev wt-sev-6" th:if="${#lists.size(violations.?[severityValue == 6]) > 0}"
+	      th:text="${#lists.size(violations.?[severityValue == 6])} + ' Informational'"></span>
+	<span class="wt-sev-summary-empty" th:if="${#lists.isEmpty(violations)}">No findings</span>
+</div>
+
+<!--/* Manual code review (MCR) matches next to a findings count: a quiet chip, not counted in the
+     findings, linking to the scan's MCR report (UAT #29, walkthrough 2026-10-15). */-->
+<a th:fragment="mcrChip(count, url)" th:if="${count > 0}" class="wt-mini-chip wt-mini-chip--link" th:href="${url}"
+   th:attr="data-tip=${count + (count == 1 ? ' manual code review match' : ' manual code review matches') + ', not counted in findings. Opens the MCR report.'}"
+   th:aria-label="${count + ' manual code review ' + (count == 1 ? 'match' : 'matches') + ', not counted in findings'}"><span
+   class="material-icons" aria-hidden="true">rate_review</span><span th:text="${count + ' MCR'}"></span></a>

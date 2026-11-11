@@ -14,7 +14,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -31,13 +34,14 @@ import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.UserEntity;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class OidcAuthServiceTest {
 
-	@MockBean
+	@MockitoBean
 	private UserService userService;
 
-	@MockBean
+	@MockitoBean
 	private RoleService roleService;
 
 	@Mock
@@ -57,7 +61,7 @@ public class OidcAuthServiceTest {
 				.redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
 				.authorizationUri("https://example.com/auth")
 				.tokenUri("https://example.com/token")
-				.userInfoUri("https://example.com/userinfo")
+				.userNameAttributeName("sub")
 				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).build();
 
 		OAuth2AccessToken accessToken = new OAuth2AccessToken(TokenType.BEARER, "1234567890ABCDEF",

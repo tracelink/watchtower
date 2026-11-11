@@ -5,13 +5,13 @@
 	<parent>
 		<groupId>com.tracelink.appsec</groupId>
 		<artifactId>watchtower-parent</artifactId>
-		<version>2.5.0-SNAPSHOT</version>
+		<version>2.6.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>watchtower-cli</artifactId>
 
 	<properties>
-		<maven.compiler.target>1.8</maven.compiler.target>
-		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<maven.compiler.source>21</maven.compiler.source>
 		<unirest.version>3.3.00</unirest.version>
 	</properties>
 
@@ -49,9 +49,33 @@
 
 		<!-- Test -->
 		<dependency>
-			<groupId>com.github.tomakehurst</groupId>
-			<artifactId>wiremock-jre8</artifactId>
-			<version>2.27.2</version>
+			<groupId>org.wiremock</groupId>
+			<artifactId>wiremock</artifactId>
+			<version>3.13.2</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>jetty-servlet</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>jetty-servlets</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>jetty-webapp</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jetty.http2</groupId>
+					<artifactId>http2-server</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.wiremock</groupId>
+			<artifactId>wiremock-jetty12</artifactId>
+			<version>3.13.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

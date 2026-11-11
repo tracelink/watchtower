@@ -15,7 +15,7 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 public class JsonRuleEditor implements IRuleEditor {
 
 	@Override
-	public RuleEditModelAndView getRuleEditModelAndView(RuleDto rule) {
+	public RuleEditModelAndView getDefaultRuleEditModelAndView(RuleDto rule) {
 		RuleEditModelAndView mav = new RuleEditModelAndView("rule-edit/json");
 		mav.addObject("rule", rule);
 		mav.addObject("priorities", RulePriority.values());

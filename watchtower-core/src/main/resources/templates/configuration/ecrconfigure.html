@@ -1,0 +1,62 @@
+<!-- Amazon ECR fields, inside apiconfigure.html's form (UAT walkthrough, 2026-10-16): the same layout
+     as Bitbucket. The secret key shows as "Saved" with Replace (configuration/secretfield.html) and
+     is never sent to the page; what happens when a scan blocks an image is choice chips; the setup
+     steps open from one Setup guide button as a numbered checklist. -->
+<div class="wt-form-grid">
+  <md-outlined-text-field label="AWS Region" id="region" name="region"
+      supporting-text="For example us-east-1" th:value="${entity?.region}"></md-outlined-text-field>
+  <md-outlined-text-field label="Registry ID" id="registryId" name="registryId"
+      supporting-text="The 12-digit AWS account ID that owns the registry"
+      th:value="${entity?.registryId}"></md-outlined-text-field>
+  <md-outlined-text-field label="AWS Access Key ID" id="awsAccessKey" name="awsAccessKey"
+      th:value="${entity?.awsAccessKey}"></md-outlined-text-field>
+  <div th:replace="~{configuration/secretfield :: field('awsSecretKey', 'awsSecretKey', 'AWS Secret Key', ${entity != null},
+      'The secret of the access key above')}"></div>
+</div>
+<fieldset class="wt-choice-chips" data-block-choice>
+  <legend>When a scan blocks an image <span class="wt-field-help">applies once the webhook is registered</span></legend>
+  <label th:each="c, it : ${T(com.tracelink.appsec.watchtower.core.scan.apiintegration.IntegrationPresentation).blockChoices(apiType)}"
+      class="wt-choice-chip" th:attr="data-tip=${c.tip}">
+    <input type="radio" name="rejectOption" th:value="${c.value}" th:aria-label="${c.label}"
+        th:checked="${entity == null ? it.first : #strings.equals(c.value, entity.rejectOption?.getName())}"/>
+    <span class="material-icons" aria-hidden="true" th:text="${c.icon}">delete</span><span th:text="${c.label}">Delete the image</span>
+  </label>
+</fieldset>
+<details class="wt-setup-guide" data-setup-guide>
+  <summary class="btn btn-secondary btn-sm"><span class="material-icons" aria-hidden="true">checklist</span>Setup guide<span
+      class="material-icons wt-setup-guide__chevron" aria-hidden="true">expand_more</span></summary>
+  <div class="wt-setup-guide__body">
+    <strong class="wt-setup-guide__title"><span class="material-icons" aria-hidden="true">checklist</span>Set up Amazon ECR for Watchtower</strong>
+    <ol class="wt-setup-steps">
+      <li>
+        <strong>Find the region and registry</strong>
+        <span>Use the AWS Region of the registry and its registry ID, the 12-digit AWS account ID that owns it. Image scanning must be on for the registry.</span>
+      </li>
+      <li>
+        <strong>Create an access key for Watchtower</strong>
+        <span>An IAM user (or a key for an existing one) with these permissions. Registering creates a CloudFormation stack with an EventBridge rule, connection, API destination and IAM role, so the user also needs to create and delete those (EventBridge, IAM role and pass-role, and the Secrets Manager secret EventBridge makes for the connection).</span>
+        <span class="wt-meta-chips">
+          <code class="wt-mini-chip">ecr:GetRegistryScanningConfiguration</code><code class="wt-mini-chip">ecr:DescribeImageScanFindings</code>
+          <code class="wt-mini-chip" data-tip="Only if a blocked image is deleted">ecr:BatchDeleteImage</code><code class="wt-mini-chip">cloudformation:CreateStack</code>
+          <code class="wt-mini-chip">cloudformation:DescribeStacks</code><code class="wt-mini-chip">cloudformation:DeleteStack</code>
+        </span>
+      </li>
+      <li>
+        <strong>Save</strong>
+        <span>Saving stores the settings only; nothing is created in AWS yet.</span>
+      </li>
+      <li>
+        <strong>Test the connection</strong>
+        <span>Test connection, at the top of this page, checks the credential.</span>
+      </li>
+      <li>
+        <strong>Register the webhook</strong>
+        <span>Watchtower creates the stack so ECR scan results are sent to Watchtower.</span>
+      </li>
+      <li>
+        <strong>Choose what happens when a scan blocks an image</strong>
+        <span>Do nothing, or delete the image. Deleting an image can't be undone.</span>
+      </li>
+    </ol>
+  </div>
+</details>

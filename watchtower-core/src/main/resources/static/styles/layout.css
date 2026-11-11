@@ -1,0 +1,519 @@
+/* Watchtower design system - layout layer (page shell, sidebar, and content area).
+   See tokens.css for the split's overview comment and load order. */
+
+/* ---------- Shell (Phase 11 Section D) ---------- */
+
+/* fragments/container.html's top-level layout. Was a Bootstrap grid (.container-fluid > .row,
+   sidebar as a col-lg-2, <main> as offset-lg-2/col-lg-10) - inexpressible once the sidebar
+   became an icon rail, since offset-lg-2 is a fixed 16.667% of the viewport, not the rail's
+   ~64px. CSS Grid's first track is driven by the same --wt-rail-w tokens .main-sidebar's own
+   width reads, so the two can never drift apart. The sidebar itself stays position:fixed
+   (unchanged from before this section) and is not a grid item in the layout-flow sense - the
+   grid's first column exists purely to reserve horizontal space for it. */
+.wt-shell {
+  display: grid;
+  grid-template-columns: var(--wt-rail-w) 1fr;
+  min-height: 100vh;
+}
+html.wt-rail-expanded .wt-shell {
+  grid-template-columns: var(--wt-rail-w-expanded) 1fr;
+}
+.main-content {
+  display: flex;
+  flex-direction: column;
+  grid-column: 2;
+  min-block-size: 100vh;
+  /* Grid items default to min-width:auto, which refuses to shrink below their content's
+     intrinsic width - the same overflow trap flex children have without min-width:0. A wide
+     table or code block would otherwise push <main> past its track and force the whole page to
+     scroll horizontally instead of the table itself. */
+  min-width: 0;
+}
+/* Bootstrap columns are flex items with min-width:auto, so a wide table or header inside one
+   grew the column past the screen (the rule designer on phones). Let them shrink; wide content
+   then scrolls in its own .wt-table-scroll region, as on every other page. */
+.row > .col,
+.row > [class^="col-"],
+.row > [class*=" col-"] { min-width: 0; }
+.main-content > #content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+}
+.main-content-container { flex: 1 1 auto; }
+@media (max-width: 767.98px) {
+  /* Mobile has no rail track at all - the sidebar becomes a fixed-position overlay drawer
+     (below) that consumes no grid space, so <main> gets the full single column regardless of
+     whether the rail happens to be persisted as expanded. */
+  html.wt-rail-expanded .wt-shell,
+  .wt-shell {
+    grid-template-columns: 1fr;
+  }
+  .main-content {
+    grid-column: 1;
+  }
+}
+
+/* Mobile drawer scrim (fragments/container.html). Desktop never shows it - the rail has no
+   backdrop of its own, only the mobile drawer does. */
+.wt-drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--wt-z-sidebar) - 1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--wt-duration) var(--wt-ease);
+}
+.wt-drawer-scrim.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (min-width: 768px) {
+  .wt-drawer-scrim {
+    display: none;
+  }
+}
+/* mobile-drawer.js sets this instead of Bootstrap's .modal-open, so the open drawer's scroll
+   lock has its own cleanup path and never collides with loading-indicator.js's modal-backdrop
+   cleanup (item 11.0b) on a boosted swap. */
+body.wt-drawer-open {
+  overflow: hidden;
+}
+
+/* ---------- Sidebar ---------- */
+
+.main-sidebar {
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  position: fixed;
+  width: var(--wt-rail-w);
+  height: 100vh;
+  background: var(--wt-sidebar-bg);
+  z-index: 1070;
+  will-change: transform;
+  transition: transform 200ms ease-in-out;
+  box-shadow: var(--wt-shadow-md);
+}
+html.wt-rail-expanded .main-sidebar {
+  width: var(--wt-rail-w-expanded);
+}
+@media (max-width: 767.98px) {
+  /* Mobile drawer: a fixed width unrelated to either rail token - full nav labels are always
+     shown here (see the label-visibility rules below), so ~64px would be useless. visibility is
+     added alongside the existing transform so a closed drawer's links drop out of the tab order
+     instead of sitting focusable just off-screen - same technique .wt-nav-section already uses
+     for its own collapsed state, just applied to the whole drawer. */
+  html.wt-rail-expanded .main-sidebar,
+  .main-sidebar {
+    width: 280px;
+    transform: translateX(-100%);
+    visibility: hidden;
+    box-shadow: none;
+    transition: transform 200ms ease-in-out, visibility 0s linear 200ms;
+  }
+  .main-sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: var(--wt-shadow-md);
+    transition-delay: 0s;
+  }
+}
+
+.main-sidebar .main-navbar {
+  background: var(--wt-sidebar-bg-alt) !important;
+  border-bottom: 1px solid var(--wt-sidebar-border) !important;
+}
+.main-sidebar .main-navbar .navbar {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+.main-sidebar .navbar-brand {
+  overflow: hidden;
+  height: 3.75rem;
+  font-size: 1rem;
+  line-height: 25px;
+  color: var(--wt-sidebar-fg-active);
+}
+/* IMPROVEMENT_PLAN.md Phase 11 Section G: was an inline style paired with the dead m-w-25
+   class (Section F) - #main-logo's shared background/radius/padding rule lives below,
+   this just fixes this one usage's size. The 3 auth pages' #main-logo needs a different
+   size; see .card-header #main-logo near the auth-brand rules in components.css. */
+.main-sidebar #main-logo {
+  max-width: 25px;
+}
+.main-sidebar .navbar-brand span {
+  font-weight: 600;
+}
+/* Desktop rail expand/collapse pin (sidebar.html). Renamed from the old .toggle-sidebar; mobile
+   drawer opening is handled by the persistent shell button in container.html. */
+.main-sidebar .rail-toggle {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  padding: 1.25rem;
+  font-size: 1.25rem;
+  color: var(--wt-sidebar-fg);
+  border-left: 1px solid var(--wt-sidebar-border);
+}
+.main-sidebar .rail-toggle:hover {
+  cursor: pointer;
+  color: var(--wt-sidebar-fg-active);
+}
+
+#main-logo {
+  background: #ffffff;
+  border-radius: 0.25rem;
+  padding: 2px;
+}
+
+.main-sidebar .nav-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.wt-sidebar-account {
+  position: relative;
+  flex: 0 0 auto;
+  border-top: 1px solid var(--wt-sidebar-border);
+  background: var(--wt-sidebar-bg-alt);
+}
+.wt-sidebar-account-toggle {
+  display: flex;
+  min-block-size: var(--wt-navbar-h);
+  align-items: center;
+  gap: var(--wt-space-2);
+  padding: var(--wt-space-3) var(--wt-space-4);
+  overflow: hidden;
+  color: var(--wt-sidebar-fg);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.wt-sidebar-account-toggle:hover,
+.wt-sidebar-account-toggle:focus-visible { color: var(--wt-sidebar-fg-active); background: rgba(255, 255, 255, 0.04); }
+.wt-sidebar-account-toggle:focus-visible { outline: 2px solid var(--wt-accent); outline-offset: -2px; }
+.wt-sidebar-account-toggle .material-icons { flex: 0 0 auto; font-size: 1.25rem; }
+.wt-sidebar-account .dropdown-menu { inset: auto auto 0 calc(100% + var(--wt-space-2)); }
+
+.main-sidebar .nav .nav-item,
+.main-sidebar .nav .nav-link {
+  white-space: nowrap;
+  min-width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+  transition: box-shadow 150ms ease, color 150ms ease, background-color 150ms ease;
+}
+.main-sidebar .nav .nav-item .nav-link {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--wt-sidebar-border);
+  font-weight: 400;
+  color: var(--wt-sidebar-fg);
+  padding: 0.875rem 1.5rem;
+}
+.main-sidebar .nav .nav-item .nav-link i {
+  min-width: 1.25rem;
+  font-size: 90%;
+  text-align: center;
+  vertical-align: middle;
+  color: var(--wt-sidebar-fg);
+  opacity: 0.75;
+  transition: color 150ms ease;
+  margin-right: 0.5rem;
+}
+/* Collapsed rail (desktop default): icon-only, centred, no label - but ONLY at the top level.
+   Every selector below uses a direct-child chain (.nav-wrapper > wt-sidebar-nav > .nav >
+   .nav-item > .nav-link) so it stops at the top level and never reaches into a .wt-nav-section
+   flyout's own nested .nav-item .nav-link - those always show full labels, left-aligned,
+   regardless of rail state, since a flyout has room and its whole reason to exist is showing
+   what the icon rail can't. Mobile is exempt too - the drawer is always full-width with labels,
+   this block only applies >=768px, and the expanded override right after wins back over it via
+   html.wt-rail-expanded's higher specificity.
+   Bug fix: the chain must name wt-sidebar-nav explicitly between .nav-wrapper and .nav -
+   fragments/sidebar.html renders that custom element (style="display:contents") as a real DOM
+   node in between. display:contents only removes it from the render tree; the `>` combinator
+   still walks the actual DOM tree, so ".nav-wrapper > .nav" alone never matched anything and
+   every rule in this block (and the staggered-reveal one below) was silently dead - the rail
+   never centred its icons, never hid the labels, and never hid the trailing chevron, leaving a
+   sliver of clipped label text visible next to every icon in the collapsed 64px rail. */
+@media (min-width: 768px) {
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link {
+    justify-content: center;
+    padding: 0.875rem 0;
+  }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link > i {
+    margin-right: 0;
+  }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link > span,
+  .main-sidebar .navbar-brand span {
+    display: none;
+  }
+  .wt-sidebar-account-toggle { justify-content: center; padding-inline: 0; }
+  .wt-sidebar-account-toggle [data-sidebar-username] { display: none; }
+  /* The trailing keyboard_arrow_right chevron on expandable items (icon + label + chevron, in
+     that DOM order). Scoped the same way - a flyout's own links only ever have icon + label
+     (2 children), so this never matches inside one regardless of depth. */
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link > i.material-icons:last-child {
+    display: none;
+  }
+  /* Bug fix, reported directly: the logo effectively disappeared on a collapsed rail. Root
+     cause was the .d-table m-auto wrapper (shrink-to-fit + margin-auto centering) computing
+     to ~8px wide instead of the image's own 25px, in this specific combination of a flex
+     parent (.main-navbar .navbar) and .navbar-brand's own overflow:hidden - flex items with
+     non-visible overflow get an automatic minimum size of 0 for content-sizing purposes, and
+     a table-display child's shrink-to-fit width collapsed to near nothing inside that zero
+     minimum rather than sizing to its image. Flex-centering sidesteps shrink-to-fit sizing
+     entirely. !important needed: Bootstrap's own .d-table utility is itself !important. */
+  .main-sidebar .navbar-brand .d-table {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+}
+html.wt-rail-expanded .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link {
+  justify-content: flex-start;
+  padding: 0.875rem 1.5rem;
+}
+html.wt-rail-expanded .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link > i {
+  margin-right: 0.5rem;
+}
+html.wt-rail-expanded .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link > span,
+html.wt-rail-expanded .main-sidebar .navbar-brand span {
+  display: inline;
+}
+html.wt-rail-expanded .wt-sidebar-account-toggle { justify-content: flex-start; padding-inline: var(--wt-space-4); }
+html.wt-rail-expanded .wt-sidebar-account-toggle [data-sidebar-username] { display: inline; }
+html.wt-rail-expanded .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item > .nav-link > i.material-icons:last-child {
+  display: inline;
+}
+.main-sidebar .nav .nav-item .nav-link i.material-icons {
+  font-size: 1.125rem;
+  top: -1px;
+}
+/* The active/hover rail used to be an inset box-shadow, which can only pop in and out. As a
+   pseudo-element it can scale from the centre instead, so moving between nav items reads as one
+   indicator travelling rather than two rectangles blinking. */
+.main-sidebar .nav .nav-item .nav-link {
+  position: relative;
+}
+.main-sidebar .nav .nav-item .nav-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--wt-accent);
+  transform: scaleY(0);
+  transition: transform var(--wt-duration) var(--wt-ease);
+}
+.main-sidebar .nav .nav-item.active > .nav-link::before,
+.main-sidebar .nav .nav-item .nav-link.active::before,
+.main-sidebar .nav .nav-item:hover > .nav-link::before,
+.main-sidebar .nav .nav-item .nav-link:hover::before {
+  transform: scaleY(1);
+}
+.main-sidebar .nav .nav-item.active,
+.main-sidebar .nav .nav-item .nav-link.active,
+.main-sidebar .nav .nav-item:hover,
+.main-sidebar .nav .nav-item .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--wt-sidebar-fg-active);
+}
+
+/* Collapsible nav sections (item 10.16). Animating grid-template-rows from 0fr to 1fr is what
+   lets a list of unknown height transition at all - max-height would need a magic number that is
+   either too small (clipping) or too large (a visibly slow start).
+
+   visibility, not display: a collapsed section must stay out of the tab order, and visibility
+   does that while remaining transitionable. The delay makes it flip to hidden only after the
+   collapse finishes, so the content does not vanish before it has finished shrinking. */
+.wt-nav-section {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--wt-duration) var(--wt-ease);
+}
+.wt-nav-section > * {
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear var(--wt-duration);
+}
+.wt-nav-section.is-open {
+  grid-template-rows: 1fr;
+}
+.wt-nav-section.is-open > * {
+  visibility: visible;
+  transition-delay: 0s;
+}
+/* Phase 11 Section D: .wt-nav-section now nests inside its <li class="nav-item"> (previously a
+   sibling of it - the same JS-driven .is-open class and grid-template-rows transition above are
+   reused unchanged either way, only the positioning differs here) so it has a position:relative
+   ancestor to flyout against when the rail is collapsed to icons-only. Nesting it also fixes a
+   latent bug in the staggered-reveal nth-child animation further down: with .wt-nav-section as
+   an interleaved sibling, nth-child counted it against the .nav-item index, skipping some
+   items' delays on any menu with an expandable section. */
+@media (min-width: 768px) {
+  .main-sidebar .nav .nav-item {
+    position: relative;
+  }
+  .main-sidebar .nav .nav-item .wt-nav-section {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 14rem;
+    background: var(--wt-sidebar-bg-alt);
+    box-shadow: var(--wt-shadow-md);
+    border: 1px solid var(--wt-sidebar-border);
+    border-radius: 0 var(--wt-radius) var(--wt-radius) 0;
+    z-index: var(--wt-z-sidebar);
+  }
+}
+html.wt-rail-expanded .main-sidebar .nav .nav-item .wt-nav-section {
+  position: static;
+  min-width: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  z-index: auto;
+}
+
+/* Staggered reveal, once per full page load. The sidebar sits outside #content, so hx-boost
+   never re-renders it and this does not replay on every navigation. */
+@media (prefers-reduced-motion: no-preference) {
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item {
+    animation: wt-nav-in 300ms var(--wt-ease) backwards;
+  }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(1) { animation-delay: 20ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(2) { animation-delay: 45ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(3) { animation-delay: 70ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(4) { animation-delay: 95ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(5) { animation-delay: 120ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(6) { animation-delay: 145ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(7) { animation-delay: 170ms; }
+  .main-sidebar .nav-wrapper > wt-sidebar-nav > .nav > .nav-item:nth-child(8) { animation-delay: 195ms; }
+
+  /* Fade new content in on a boosted navigation. htmx puts .htmx-settling on the swap target
+     for the settle window, so this needs no JS of its own. */
+  #content.htmx-settling {
+    opacity: 0;
+  }
+  #content {
+    transition: opacity var(--wt-duration-fast) var(--wt-ease);
+  }
+}
+
+@keyframes wt-nav-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.main-sidebar .nav .nav-item.active i,
+.main-sidebar .nav .nav-item .nav-link.active i,
+.main-sidebar .nav .nav-item:hover i,
+.main-sidebar .nav .nav-item .nav-link:hover i {
+  color: var(--wt-accent);
+  opacity: 1;
+}
+.main-sidebar .dropdown-menu {
+  position: static !important;
+  transform: translate(0) !important;
+  box-shadow: inset 0 -3px 3px rgba(0, 0, 0, 0.15);
+  border-radius: 0;
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: var(--wt-sidebar-bg-alt);
+}
+.main-sidebar .dropdown-menu .dropdown-item {
+  padding: 0.7rem 1.75rem;
+  border-bottom: 1px solid var(--wt-sidebar-border);
+  color: var(--wt-sidebar-fg);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  background: transparent;
+}
+.main-sidebar .dropdown-menu .dropdown-item:hover,
+.main-sidebar .dropdown-menu .dropdown-item.active {
+  color: var(--wt-sidebar-fg-active);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* The content-area header is intentionally absent. On small screens a compact floating button
+   keeps the off-canvas navigation reachable without reserving a full-width bar on every page. */
+.wt-mobile-menu-trigger {
+  position: fixed;
+  top: var(--wt-space-3);
+  right: var(--wt-space-3);
+  z-index: var(--wt-z-navbar);
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--wt-text);
+  border: 1px solid var(--wt-border);
+  border-radius: 50%;
+  background: var(--wt-surface);
+  box-shadow: var(--wt-shadow-md);
+}
+.wt-mobile-menu-trigger:hover { background: var(--wt-surface-alt); }
+.wt-mobile-menu-trigger:focus-visible { outline: none; box-shadow: var(--wt-focus-ring); }
+@media (max-width: 767.98px) {
+  .wt-sidebar-account .dropdown-menu { inset: auto var(--wt-space-2) calc(100% + var(--wt-space-1)) var(--wt-space-2); }
+  .wt-sidebar-account-toggle { justify-content: flex-start; }
+  .wt-sidebar-account-toggle [data-sidebar-username] { display: inline; }
+}
+.main-content .dropdown-menu {
+  background: var(--wt-surface);
+  border: 1px solid var(--wt-border);
+  box-shadow: var(--wt-shadow-md);
+}
+.dropdown-item {
+  color: var(--wt-text);
+}
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background: var(--wt-surface-alt);
+  color: var(--wt-text);
+}
+
+.main-footer {
+  flex: 0 0 auto;
+  padding: var(--wt-space-2) var(--wt-space-4);
+  border-top: 1px solid var(--wt-border);
+  background: var(--wt-surface);
+  text-align: end;
+}
+.main-footer .copyright {
+  color: var(--wt-text-muted);
+}
+
+/* Sidebar group headings (Scans / Manage / Help, UAT walkthrough 2026-10-15). Collapsed rail: a
+   thin divider; expanded rail and the mobile drawer: a small uppercase label. A heading followed
+   directly by another heading, or by nothing, has no visible items and is hidden. */
+.main-sidebar .wt-nav-heading { margin: var(--wt-space-2) var(--wt-space-3) 0; border-block-start: 1px solid var(--wt-sidebar-border); list-style: none; }
+.main-sidebar .wt-nav-heading > span { display: none; }
+.main-sidebar .wt-nav-heading:has(+ .wt-nav-heading),
+.main-sidebar .wt-nav-heading:last-child { display: none; }
+html.wt-rail-expanded .main-sidebar .wt-nav-heading { margin: 0; padding: var(--wt-space-4) var(--wt-space-5) var(--wt-space-1); border: 0; }
+html.wt-rail-expanded .main-sidebar .wt-nav-heading > span { display: block; color: color-mix(in srgb, var(--wt-sidebar-fg) 70%, transparent); font-size: var(--wt-text-xs); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.main-sidebar .wt-nav-ai { color: #c4b5fd; }
+@media (max-width: 767.98px) {
+  .main-sidebar .wt-nav-heading { margin: 0; padding: var(--wt-space-4) var(--wt-space-5) var(--wt-space-1); border: 0; }
+  .main-sidebar .wt-nav-heading > span { display: block; color: color-mix(in srgb, var(--wt-sidebar-fg) 70%, transparent); font-size: var(--wt-text-xs); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+}

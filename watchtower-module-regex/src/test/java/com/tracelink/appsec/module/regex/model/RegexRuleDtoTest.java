@@ -31,6 +31,22 @@ public class RegexRuleDtoTest {
 	}
 
 	@Test
+	public void aPatternThatDoesNotCompileIsRefusedByValidation() {
+		// Dev E2E G03: the rule editor and designer saved "([unclosed" as a rule.
+		jakarta.validation.Validator validator =
+				jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator();
+		RegexCustomRuleDto broken = setup();
+		broken.setRegexPattern("([unclosed");
+
+		java.util.List<String> messages = validator.validate(broken).stream()
+				.map(jakarta.validation.ConstraintViolation::getMessage).toList();
+
+		Assertions.assertEquals(java.util.List.of("Regex pattern is not a valid regular expression."),
+				messages);
+		Assertions.assertTrue(validator.validate(setup()).isEmpty(), "a good pattern passes");
+	}
+
+	@Test
 	public void testGetters() {
 		Assertions.assertEquals(RegexModule.REGEX_MODULE_NAME, regexRuleDto.getModule());
 		Assertions.assertEquals(id, regexRuleDto.getId());

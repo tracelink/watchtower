@@ -5,12 +5,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
 import com.tracelink.appsec.watchtower.core.scan.ScanStatus.ScanStatusConverter;
 
@@ -22,7 +22,7 @@ import com.tracelink.appsec.watchtower.core.scan.ScanStatus.ScanStatusConverter;
  * @author csmith
  */
 @MappedSuperclass
-public abstract class AbstractScanEntity<C extends AbstractScanContainer<?>, V extends AbstractViolationEntity<?>> {
+public abstract class AbstractScanEntity<C extends AbstractScanContainerEntity<?>, V extends AbstractScanViolationEntity<?>> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,6 +44,12 @@ public abstract class AbstractScanEntity<C extends AbstractScanContainer<?>, V e
 
 	@Column(name = "error")
 	private String errorMessage;
+
+	@Column(name = "rules_evaluated")
+	private Integer rulesEvaluated;
+
+	@Column(name = "scanner_executions_json")
+	private String scannerExecutionsJson;
 
 	public long getId() {
 		return id;
@@ -113,5 +119,13 @@ public abstract class AbstractScanEntity<C extends AbstractScanContainer<?>, V e
 	public String getError() {
 		return this.errorMessage;
 	}
+
+	public Integer getRulesEvaluated() { return rulesEvaluated; }
+
+	public void setRulesEvaluated(Integer rulesEvaluated) { this.rulesEvaluated = rulesEvaluated; }
+
+	public String getScannerExecutionsJson() { return scannerExecutionsJson; }
+
+	public void setScannerExecutionsJson(String value) { this.scannerExecutionsJson = value; }
 
 }

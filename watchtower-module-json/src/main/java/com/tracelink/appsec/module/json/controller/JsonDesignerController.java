@@ -3,9 +3,9 @@ package com.tracelink.appsec.module.json.controller;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,12 +52,13 @@ public class JsonDesignerController {
 			@RequestParam String message,
 			@RequestParam String fileExtension, @RequestParam int priority,
 			@RequestParam String query, @RequestParam String externalUrl,
-			@RequestParam String code, Authentication auth,
+			@RequestParam String code, @RequestParam(defaultValue="json") String sourceFormat, Authentication auth,
 			RedirectAttributes redirectAttributes) {
 
 		JsonRuleDto ruleDto = createJsonRuleDto(name, message, fileExtension, priority, query,
 				externalUrl, auth);
-		RuleDesignerModelAndView mav = designerService.query(query, code);
+		RuleDesignerModelAndView mav = "json".equals(sourceFormat) ? designerService.query(query, code) : designerService.query(query, code, sourceFormat);
+		mav.addObject("moduleFileTypes", ruleDesignerService.getFileTypes("json"));
 
 		Set<ConstraintViolation<JsonRuleDto>> violations = validator.validate(ruleDto);
 		String vioMessage = "";
@@ -103,8 +104,9 @@ public class JsonDesignerController {
 
 	@PostMapping("/designer/json/query")
 	public RuleDesignerModelAndView query(@RequestParam String query, @RequestParam String code,
-			Authentication auth) {
-		RuleDesignerModelAndView mav = designerService.query(query, code);
+			@RequestParam(defaultValue="json") String sourceFormat, Authentication auth) {
+		RuleDesignerModelAndView mav = "json".equals(sourceFormat) ? designerService.query(query, code) : designerService.query(query, code, sourceFormat);
+		mav.addObject("moduleFileTypes", ruleDesignerService.getFileTypes("json"));
 		mav.addObject("knownModules", ruleDesignerService.getKnownModulesForUser(auth));
 		return mav;
 	}

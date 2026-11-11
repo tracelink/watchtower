@@ -1,6 +1,6 @@
 package com.tracelink.appsec.module.checkov.service;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,15 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException
  */
 @Service
 public class CheckovRuleService {
+
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
 
 	private final CheckovRuleRepository ruleRepository;
 
@@ -49,6 +58,7 @@ public class CheckovRuleService {
 		}
 		rule.setPriority(dto.getPriority());
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 
 }

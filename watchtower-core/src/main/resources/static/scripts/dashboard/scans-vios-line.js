@@ -1,4 +1,4 @@
-class WatchtowerScanViolationsLineChart{
+window.WatchtowerScanViolationsLineChart = class WatchtowerScanViolationsLineChart {
 	constructor(selectId, canvasId, scanType){
 		this.selectId = selectId;
 		this.canvasId = canvasId;
@@ -46,43 +46,41 @@ class WatchtowerScanViolationsLineChart{
 		};
 	
 		var options = {
-			legend: {
-				position: 'top',
-				labels: {
-					 padding: 10,
-					 boxWidth: 15
+			plugins: {
+				legend: {
+					position: 'top',
+					labels: {
+						 padding: 10,
+						 boxWidth: 15
+					}
+				},
+				tooltip: {
+					mode: 'index',
+					position: 'nearest'
 				}
 			},
-			cutoutPercentage: 0,
 			// Uncomment the following line in order to disable the animations.
 			// animation: false,
-			tooltips: {
-				custom: false,
-				mode: 'index',
-				position: 'nearest'
-			},
 			scales: {
-				yAxes: [{
+				'scans-axis': {
 					display: true,
-					id: "scans-axis",
 					type: 'linear',
 					position: 'right',
-					gridLines: {
+					grid: {
 						display: false
 					},
 					ticks: {
 						beginAtZero: true
 					}
-					
-				}, {
+				},
+				'vios-axis': {
 					display: true,
-					id: "vios-axis",
 					type: 'linear',
 					position: 'left',
 					ticks: {
 						beginAtZero: true
 					}
-				}]
+				}
 			},
 			layout: {
 		        padding: {
@@ -104,25 +102,20 @@ class WatchtowerScanViolationsLineChart{
 	
 	updateLineTimePeriod = async (event) => {
 		let period = event.target.value;
-			
-		const scansResponse = await fetch(`/rest/metrics/scans-by-period?period=${period}&type=${this.scanType}`);
-		const scansResult = await scansResponse.json();
-		
-		const violationsResponse = await fetch(`/rest/metrics/violations-by-period?period=${period}&type=${this.scanType}`);
-		const violationsResult = await violationsResponse.json();
-		
-		this.updateLineData(scansResult, violationsResult);
+		wtSetChartLoading('line-no-data', 'Loading scan trend…');
+		try {
+			const query = wtMetricQuery(this.selectId, period);
+			const scansResult = await wtFetchMetric(`/rest/metrics/scans-by-period?${query}&type=${this.scanType}`);
+			const violationsResult = await wtFetchMetric(`/rest/metrics/violations-by-period?${query}&type=${this.scanType}`);
+			this.updateLineData(scansResult, violationsResult);
+		} catch (error) {
+			toggleChart(true, 'line-no-data', this.canvasId, error.message);
+		}
 	};
 	
 	lineContentLoad = async () => {
-		const scansResponse = await fetch(`/rest/metrics/scans-by-period?period=last-four-weeks&type=${this.scanType}`);
-		const scansResult = await scansResponse.json();
-		
-		const violationsResponse = await fetch(`/rest/metrics/violations-by-period?period=last-four-weeks&type=${this.scanType}`);
-		const violationsResult = await violationsResponse.json();
-		
-		this.updateLineData(scansResult, violationsResult);
-	
-		$('#' + this.selectId).change(this.updateLineTimePeriod);
+		const select = document.getElementById(this.selectId);
+		await this.updateLineTimePeriod({target: {value: select.value || 'last-thirty-days'}});
+		select.addEventListener('change', this.updateLineTimePeriod);
 	};
-}
+};

@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -31,7 +31,7 @@ public class RuleDesignerControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private RuleDesignerService mockDesignerService;
 
 	///////////////////
@@ -67,7 +67,7 @@ public class RuleDesignerControllerTest {
 		RuleDesignerModelAndView mockMAV = new RuleDesignerModelAndView(null);
 		List<String> modules = Arrays.asList("Test");
 
-		BDDMockito.when(mockDesignerService.getDesignerModelAndView(BDDMockito.anyString()))
+		BDDMockito.when(mockDesignerService.getDefaultDesignerModelAndView(BDDMockito.anyString()))
 				.thenReturn(mockMAV);
 		BDDMockito.when(mockDesignerService.getKnownModulesForUser(BDDMockito.any()))
 				.thenReturn(modules);
@@ -79,8 +79,31 @@ public class RuleDesignerControllerTest {
 
 	@Test
 	@WithMockUser(authorities = {CorePrivilege.RULE_DESIGNER_NAME})
+	public void testGetLangDesignerHighlightsActiveModule() throws Exception {
+		RuleDesignerModelAndView mockMAV = new RuleDesignerModelAndView(null);
+		List<String> modules = Arrays.asList("Mock", "Other");
+
+		BDDMockito.when(mockDesignerService.getDefaultDesignerModelAndView(BDDMockito.anyString()))
+				.thenReturn(mockMAV);
+		BDDMockito.when(mockDesignerService.getKnownModulesForUser(BDDMockito.any()))
+				.thenReturn(modules);
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/designer/mock"))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.content()
+						.string(Matchers.containsString("class=\"wt-segment is-active\"")))
+				.andExpect(MockMvcResultMatchers.content()
+						.string(Matchers.containsString("aria-selected=\"true\"")))
+				.andExpect(MockMvcResultMatchers.content()
+						.string(Matchers.containsString("class=\"wt-segment\"")))
+				.andExpect(MockMvcResultMatchers.content()
+						.string(Matchers.containsString("aria-selected=\"false\"")));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.RULE_DESIGNER_NAME})
 	public void testGetLangDesignerBad() throws Exception {
-		BDDMockito.when(mockDesignerService.getDesignerModelAndView(BDDMockito.anyString()))
+		BDDMockito.when(mockDesignerService.getDefaultDesignerModelAndView(BDDMockito.anyString()))
 				.thenThrow(new ModuleNotFoundException(""));
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/designer/mock"))

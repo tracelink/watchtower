@@ -1,52 +1,118 @@
-<aside class="main-sidebar col-12 col-md-3 col-lg-2 px-0">
+<!-- The 'open' class name is unchanged from the pre-Alpine dead hamburger this replaces;
+     layout.css's mobile media query already styles it. Material Web migration, Section C:
+     wt-mobile-drawer.js (fragments/container.html's scrim element) toggles this class directly
+     via querySelector('.main-sidebar') - no wrapper element needed on this <aside> itself. -->
+<aside id="main-navigation" class="main-sidebar">
   <div class="main-navbar">
-    <nav class="navbar align-items-stretch navbar-light bg-white flex-md-nowrap border-bottom p-0">
-      <a class="navbar-brand w-100 mr-0" href="/" style="line-height: 25px;">
+    <nav class="navbar align-items-stretch navbar-light flex-md-nowrap border-bottom p-0">
+      <a class="navbar-brand w-100 mr-0 me-0" href="/">
         <div class="d-table m-auto">
-          <img id="main-logo" class="d-inline-block align-top mr-1 m-w-25" style="max-width: 25px;"
+          <img id="main-logo" class="d-inline-block align-top mr-1 me-1"
                src="/images/watchtowerlogo.svg" alt="Watchtower Dashboard">
-          <span class="d-none d-md-inline ml-1">Watchtower</span>
+          <!-- No d-none/d-md-inline here any more: the mobile drawer always shows full labels,
+               and layout.css's own media queries now own showing/hiding this for the desktop
+               rail's collapsed/expanded state instead. -->
+          <span class="ml-1 ms-1">Watchtower</span>
         </div>
       </a>
-      <a class="toggle-sidebar d-sm-inline d-md-none d-lg-none">
-        <i class="material-icons">&#xE5C4;</i>
-      </a>
+      <!-- Material Web migration, Section C: wt-rail-toggle.js owns the markup itself now. -->
+      <wt-rail-toggle style="display:contents"></wt-rail-toggle>
     </nav>
   </div>
+  <!-- Material Web migration, Section C: wt-sidebar-nav.js owns section toggle/active-link
+       highlighting/flyout-position behavior over this real Thymeleaf-rendered markup - it never
+       re-templates any of it. .nav-wrapper stays a plain native div (it needs its own real box
+       for overflow-y:auto scrolling, so it is not itself a display:contents wrapper). -->
   <div class="nav-wrapper">
-    <ul class="nav flex-column">
-      <th:block th:each="menu, iter : ${sidebar}">
-        <th:block th:if="${menu.getLinks().size() == 1}">
-	      <li class="nav-item"  th:if="${#authorization.expression(menu.getAuthorizationExpression())}">
-		      <a class="nav-link" th:each="link : ${menu.getLinks()}" th:href="${link.getUrl()}" th:target="${link.isExternalLink() ? '_blank' : '_self'}">
-			    <i class="material-icons" th:text="${menu.getMaterialIcon()}"></i>
-			    <span th:text="${menu.getGroupName()}"></span>
-		      </a>
-	      </li>
-	    </th:block>
-	    <th:block th:if="${menu.getLinks().size() > 1}">
-	      <li class="nav-item" th:if="${#authorization.expression(menu.getAuthorizationExpression())}">
-		      <a class="nav-link" th:href="${'#' + 'sidebarcollapse' + iter.index}" data-toggle="collapse">
-			    <i class="material-icons" th:text="${menu.getMaterialIcon()}"></i>
-	            <span th:text="${menu.getGroupName()}"></span>
-	            <i class="material-icons">keyboard_arrow_right</i>
-		      </a>
-	      </li>
-	      <div class="collapse" th:id="${'sidebarcollapse' + iter.index}">
-	        <ul class="px-3">
-	          <li th:each="link : ${menu.getLinks()}" th:if="${#authorization.expression(link.getAuthorizationExpression())}" class="nav-item">
-			    <a class="nav-link" th:href="${link.getUrl()}" th:target="${link.isExternalLink() ? '_blank' : '_self'}">
-			      <i class="material-icons" th:text="${link.getMaterialIcon()}"></i>
-		  	      <span th:text="${link.getDisplayName()}"></span>
-		  	    </a>      
-	          </li>
-	        </ul>
-	      </div>
-	    </th:block>
-      </th:block> 
-    </ul>
+    <wt-sidebar-nav style="display:contents">
+      <ul class="nav flex-column">
+        <th:block th:each="menu, iter : ${sidebar}">
+          <!-- Group headings (UAT walkthrough 2026-10-15): Home, then Scans, Manage and Help. A
+               heading with nothing visible under it is hidden by layout.css; in the collapsed
+               rail a heading shows as a thin divider. -->
+          <li class="wt-nav-heading" th:if="${menu.getGroupName() == 'Pull Requests'}"><span>Scans</span></li>
+          <li class="wt-nav-heading" th:if="${menu.getGroupName() == 'Rules'}"><span>Manage</span></li>
+          <th:block th:if="${menu.getGroupName() == 'Administration'}">
+            <li class="nav-item" sec:authorize="hasAnyAuthority('Module Settings View','Module Settings Modify')"><a href="/configuration/modules" class="nav-link" title="Scanner modules"><i class="material-icons" aria-hidden="true">tune</i><span>Scanner modules</span></a></li>
+            <li class="nav-item" th:if="${#authorization.expression('hasAuthority(''Assistant Admin'') or hasAuthority(''Assistant Audit'')')}"><a href="/admin/assistant" class="nav-link" title="AI assistant settings"><i class="material-icons wt-nav-ai" aria-hidden="true">auto_awesome</i><span>AI assistant settings</span></a></li>
+          </th:block>
+          <th:block th:if="${menu.getLinks().size() == 1}">
+  	      <li class="nav-item"  th:if="${#authorization.expression(menu.getAuthorizationExpression())}">
+  		      <a class="nav-link" th:each="link : ${menu.getLinks()}" th:href="${link.getUrl()}" th:target="${link.isExternalLink() ? '_blank' : '_self'}"
+  		         th:title="${menu.getGroupName()}">
+  			    <i class="material-icons" th:text="${menu.getMaterialIcon()}"></i>
+  			    <span th:text="${menu.getGroupName()}"></span>
+  		      </a>
+  	      </li>
+  	    </th:block>
+  	    <th:block th:if="${menu.getLinks().size() > 1}">
+  	      <!-- Phase 11 Section D: .wt-nav-section (below) now nests INSIDE this <li>, not as its
+  	           sibling as before - see layout.css's .wt-nav-section comment for why (a flyout
+  	           needs a position:relative ancestor to anchor against, and this incidentally fixes
+  	           the staggered-reveal animation's nth-child counting too). wt-sidebar-nav.js needs
+  	           no changes here: isOpen()/toggleSection() still key off data-section-index exactly
+  	           as sidebar-alpine.js's did. -->
+  	      <li class="nav-item" th:if="${#authorization.expression(menu.getAuthorizationExpression())}">
+  		      <a class="nav-link" href="#" th:attr="data-section-index=${iter.index}"
+  		         th:title="${menu.getGroupName()}" aria-expanded="false">
+  			    <i class="material-icons" th:text="${menu.getMaterialIcon()}"></i>
+  	            <span th:text="${menu.getGroupName()}"></span>
+  	            <i class="material-icons">keyboard_arrow_right</i>
+  		      </a>
+  		      <!-- IMPROVEMENT_PLAN.md item 10.16: a class toggle rather than display:none, because
+  		           display cannot be transitioned. .wt-nav-section animates grid-template-rows
+  		           instead and uses visibility to keep a collapsed section out of the tab order -
+  		           collapsed by default in CSS, so there is nothing to flash before this
+  		           component's JS connects. -->
+  		      <div th:attr="data-section-index=${iter.index}" class="wt-nav-section">
+  		        <ul class="px-3">
+  		          <li th:each="link : ${menu.getLinks()}" th:if="${#authorization.expression(link.getAuthorizationExpression())}" class="nav-item">
+  				    <a class="nav-link" th:href="${link.getUrl()}" th:target="${link.isExternalLink() ? '_blank' : '_self'}">
+  				      <i class="material-icons" th:text="${link.getMaterialIcon()}"></i>
+  			  	      <span th:text="${link.getDisplayName()}"></span>
+  			  	    </a>
+  		          </li>
+  		        </ul>
+  		      </div>
+  	      </li>
+  	    </th:block>
+        </th:block>
+        <li class="wt-nav-heading"><span>Help</span></li>
+        <li class="nav-item">
+          <a href="/help/features" class="nav-link" title="Feature guide"><i class="material-icons" aria-hidden="true">help_outline</i><span>Feature guide</span></a>
+        </li>
+      </ul>
+    </wt-sidebar-nav>
   </div>
-  
-  
-  
-  </aside>
+  <footer class="wt-sidebar-account">
+    <wt-user-menu style="display:contents">
+      <a class="wt-sidebar-account-toggle dropdown-toggle" href="#" role="button"
+          title="Account menu">
+        <i class="material-icons" aria-hidden="true">account_circle</i>
+        <span data-sidebar-username
+            th:text="${#authentication.getPrincipal().getUsername()}"></span>
+      </a>
+      <!-- Account menu (UAT walkthrough, 2026-10-16): who you are at the top (name and role), Dark
+           mode as a switch, and "Log out". -->
+      <div class="dropdown-menu dropdown-menu-small wt-account-menu">
+        <div class="wt-account-menu__who">
+          <i class="material-icons" aria-hidden="true">account_circle</i>
+          <span class="wt-person__text"><strong th:text="${#authentication.getPrincipal().getUsername()}">username</strong>
+            <span th:if="${accountRoles != null}" class="wt-person__meta" th:text="${accountRoles}">Full System Admin</span></span>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a class="dropdown-item" href="/profile">
+          <i class="material-icons" aria-hidden="true">person</i> Profile
+        </a>
+        <wt-theme-toggle style="display:contents"></wt-theme-toggle>
+        <div class="dropdown-divider"></div>
+        <form method="POST" action="/logout" hx-boost="false">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <button class="dropdown-item text-danger btn" type="submit">
+            <i class="material-icons text-danger" aria-hidden="true">logout</i> Log out
+          </button>
+        </form>
+      </div>
+    </wt-user-menu>
+  </footer>
+</aside>

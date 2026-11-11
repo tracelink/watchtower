@@ -1,0 +1,39 @@
+<!-- An Opengrep rule (UAT walkthrough, 2026-10-16). The stable rule ID, license and versioned source
+     are facts, shown as chips; a provided rule's message and definition are text (hidden inputs carry
+     what the POST validates), so only its severity is a field. A custom rule keeps every field. -->
+<div class="card-footer">
+<form action="/rule/edit/opengrep" method="post" class="wt-md-form">
+<div class="wt-meta-chips">
+  <span th:replace="~{fragments/rulefacts :: fact('tag', ${rule.engineRuleId}, 'Stable engine rule ID: kept in exported definitions')}"></span>
+  <th:block th:if="${rule.provided}">
+    <span th:replace="~{fragments/rulefacts :: fact('gavel', ${rule.license}, 'Rule license')}"></span>
+    <span th:replace="~{fragments/rulefacts :: fact('inventory_2', ${rule.source != null and rule.source.contains('/') ? #strings.substringAfter(rule.source, '/') : rule.source}, ${'Versioned rule source: ' + rule.source})}"></span>
+    <th:block th:if="${rule.externalUrl != null and !rule.externalUrl.isEmpty()}"><a th:replace="~{fragments/rulefacts :: doc(${rule.externalUrl})}"></a></th:block>
+  </th:block>
+</div>
+<input type="hidden" name="engineRuleId" th:value="${rule.engineRuleId}">
+<th:block th:if="${rule.provided}">
+  <p th:text="${rule.message}">Finding message</p>
+  <dl class="wt-metadata-grid"><div><dt>Rule definition</dt><dd class="wt-mono" th:text="${rule.definition}">{}</dd></div></dl>
+  <input type="hidden" name="name" th:value="${rule.name}">
+  <input type="hidden" name="message" th:value="${rule.message}">
+  <input type="hidden" name="externalUrl" th:value="${rule.externalUrl}">
+  <input type="hidden" name="license" th:value="${rule.license}">
+  <input type="hidden" name="source" th:value="${rule.source}">
+  <input type="hidden" name="definition" th:value="${rule.definition}">
+</th:block>
+<md-outlined-select th:replace="~{fragments/rulefacts :: severity(${priorities}, ${rule.priority})}"></md-outlined-select>
+<th:block th:unless="${rule.provided}">
+  <md-outlined-text-field name="name" label="Name" required th:value="${rule.name}"></md-outlined-text-field>
+  <md-outlined-text-field name="message" label="Finding message" required th:value="${rule.message}"></md-outlined-text-field>
+  <md-outlined-text-field name="externalUrl" label="Reference URL" required th:value="${rule.externalUrl}"></md-outlined-text-field>
+  <md-outlined-text-field name="license" label="Rule license" required th:value="${rule.license}"></md-outlined-text-field>
+  <md-outlined-text-field name="source" label="Versioned rule source" required th:value="${rule.source}"></md-outlined-text-field>
+  <md-outlined-text-field class="wt-mono-field" type="textarea" rows="10" name="definition" label="Rule definition (JSON)" required th:value="${rule.definition}" supporting-text='One rule object with languages and pattern or taint fields. Example: {"languages":["python"],"pattern":"eval(...)"}'></md-outlined-text-field>
+</th:block>
+<input type="hidden" name="author" th:value="${rule.author}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+<input type="hidden" name="id" th:value="${rule.id}">
+<md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+</form>
+</div>

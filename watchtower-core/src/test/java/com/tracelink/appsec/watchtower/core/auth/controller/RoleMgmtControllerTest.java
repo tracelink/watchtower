@@ -6,18 +6,20 @@ import java.util.List;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -28,6 +30,7 @@ import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.service.PrivilegeService;
 import com.tracelink.appsec.watchtower.core.auth.service.RoleService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.ui.HtmlAssertions;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = WatchtowerTestApplication.class)
@@ -37,10 +40,10 @@ public class RoleMgmtControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockBean
+	@MockitoBean
 	private RoleService mockRoleService;
 
-	@MockBean
+	@MockitoBean
 	private PrivilegeService mockPrivilegeService;
 
 
@@ -56,12 +59,50 @@ public class RoleMgmtControllerTest {
 		roleList.add(role);
 		BDDMockito.when(mockRoleService.findDefaultRole()).thenReturn(role);
 		BDDMockito.when(mockRoleService.findAllRoles()).thenReturn(roleList);
-		mockMvc.perform(MockMvcRequestBuilders.get("/rolemgmt"))
+		MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/rolemgmt"))
 				.andExpect(
 						MockMvcResultMatchers.model().attribute("roles", Matchers.contains(role)))
 				.andExpect(
 						MockMvcResultMatchers.model().attribute("defaultRole",
-								Matchers.is(role)));
+								Matchers.is(role)))
+				.andReturn();
+		// admin/rolemgmt.html had the form-inline, close-button and selectpicker (default-role
+		// select) conversions in Phase 11 Section B - guard the result structurally.
+		HtmlAssertions.assertHtmlIntegrity(result);
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.ROLE_VIEW_NAME, CorePrivilege.ROLE_MODIFY_NAME})
+	public void testRoleMgmtShowsDefaultAsInUseAndOthersAsDeletable() throws Exception {
+		RoleEntity defaultRole = new RoleEntity().setRoleName("Default User").setDefaultRole(true);
+		RoleEntity other = new RoleEntity().setRoleName("Auditors");
+		BDDMockito.when(mockRoleService.findAllRoles()).thenReturn(List.of(defaultRole, other));
+		BDDMockito.when(mockPrivilegeService.getAllPrivileges()).thenReturn(List.of());
+
+		MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/rolemgmt"))
+				.andExpect(MockMvcResultMatchers.model().attributeExists("roleUsers"))
+				.andExpect(MockMvcResultMatchers.model().attribute("privilegeTotal", 0))
+				.andReturn();
+		HtmlAssertions.assertHtmlIntegrity(result);
+		String html = result.getResponse().getContentAsString();
+		Assertions.assertTrue(html.contains("In use"));
+		Assertions.assertTrue(html.contains("aria-label=\"Delete Auditors\""));
+		Assertions.assertFalse(html.contains("aria-label=\"Delete Default User\""));
+		Assertions.assertTrue(html.contains("Make Auditors the default role"));
+	}
+
+	@Test
+	@WithMockUser(authorities = {CorePrivilege.ROLE_MODIFY_NAME})
+	public void testRoleMgmtDeleteDefaultRoleRefused() throws Exception {
+		RoleEntity role = new RoleEntity().setRoleName("Default User").setDefaultRole(true);
+		BDDMockito.when(mockRoleService.findRoleById(BDDMockito.anyLong())).thenReturn(role);
+		mockMvc.perform(MockMvcRequestBuilders.post("/rolemgmt/delete").param("id", "5")
+				.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.status().is3xxRedirection())
+				.andExpect(MockMvcResultMatchers.flash()
+						.attribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
+								Matchers.containsString("Make another role the default first")));
+		BDDMockito.verify(mockRoleService, BDDMockito.never()).deleteRole(role);
 	}
 
 	///////////////////
@@ -92,7 +133,9 @@ public class RoleMgmtControllerTest {
 						MockMvcResultMatchers.model().attribute("role", Matchers.is(role)))
 				.andExpect(
 						MockMvcResultMatchers.model().attribute("privileges",
-								Matchers.contains(priv)));
+								Matchers.contains(priv)))
+				.andExpect(MockMvcResultMatchers.model().attribute("privilegesByModule",
+						Matchers.instanceOf(java.util.Map.class)));
 	}
 
 	///////////////////

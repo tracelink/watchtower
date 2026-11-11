@@ -2,7 +2,7 @@ package com.tracelink.appsec.watchtower.core.auth.service;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -99,7 +99,7 @@ public class OidcAuthService extends OidcUserService {
 
 			RoleEntity userRole = roleService.findDefaultRole();
 			user.setRoles(Collections.singleton(userRole));
-			user.setCreated(new Date());
+			user.setCreated(LocalDateTime.now());
 			userService.updateUser(user);
 		}
 

@@ -1,0 +1,84 @@
+<div data-webhook-page th:attr="data-endpoint=@{/apisettings/{label}/webhooks(label=${apiLabel})},data-label=${apiLabel},data-csrf-header=${_csrf.headerName},data-csrf-token=${_csrf.token},data-can-modify=${#authorization.expression('hasAuthority(''API Settings Modify'')')}">
+  <div th:replace="~{fragments/pageheader :: header(${apiLabel + ' webhooks'}, null)}"></div>
+
+  <!-- One line of status chips and the page's actions, like the other table pages. The long
+       explanations live in the info popover and in tooltips, not in paragraphs. -->
+  <div class="wt-page-bar mb-2">
+    <div class="wt-page-meta wt-meta-chips" data-webhook-chips>
+      <span class="wt-mini-chip wt-meta-chip">Bitbucket Cloud</span>
+    </div>
+    <div class="wt-page-actions">
+      <button type="button" class="wt-icon-action" data-webhook-refresh aria-label="Refresh all"
+          data-tip="Refresh all: checks Bitbucket in the background"><span class="material-icons" aria-hidden="true">refresh</span></button>
+      <details class="wt-popover wt-webhook-more" sec:authorize="hasAuthority('API Settings Modify')">
+        <summary class="wt-icon-action" aria-label="More actions"><span class="material-icons" aria-hidden="true">more_vert</span></summary>
+        <div class="wt-popover__body">
+          <button type="button" class="wt-webhook-menu-item" data-webhook-rotate><span class="material-icons" aria-hidden="true">key</span>Rotate signing secret…</button>
+        </div>
+      </details>
+      <md-filled-button type="button" has-icon data-webhook-choose sec:authorize="hasAuthority('API Settings Modify')"><span slot="icon" class="material-icons" aria-hidden="true">add</span>Choose repositories</md-filled-button>
+    </div>
+  </div>
+
+  <p class="wt-webhook-notice" role="status" aria-live="polite" data-webhook-status hidden></p>
+
+  <!-- The workspace hook is one slim row: no card, no heading, no paragraph. It stays out of the
+       repository table below. -->
+  <section class="wt-webhook-workspace" aria-label="Workspace webhook" data-workspace-hooks></section>
+
+  <div class="wt-webhook-tools">
+    <md-outlined-text-field class="wt-search-pill" type="search" label="Search repositories" placeholder="Repository name"
+        autocomplete="off" data-repo-search><span slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+  </div>
+
+  <div class="wt-table-scroll"><table class="table mb-0 wt-inventory-table"><caption class="visually-hidden">Repository webhooks. The workspace hook is shown separately above.</caption>
+    <thead><tr><th scope="col">Repository</th><th scope="col">Events</th><th scope="col">Owner</th><th scope="col">Active</th><th scope="col">Status</th><th scope="col">Checked</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody data-repo-hooks></tbody>
+  </table></div>
+  <div class="wt-webhook-pager"><span data-repo-page-label></span>
+    <button type="button" class="wt-icon-action" data-repo-prev aria-label="Previous page" data-tip="Previous"><span class="material-icons" aria-hidden="true">chevron_left</span></button>
+    <button type="button" class="wt-icon-action" data-repo-next aria-label="Next page" data-tip="Next"><span class="material-icons" aria-hidden="true">chevron_right</span></button>
+  </div>
+
+  <!-- Activity: every refresh and change, newest first; one operation opens to its per-repository results. -->
+  <md-dialog data-webhook-activity class="wt-webhook-dialog"><div slot="headline">Activity</div><div slot="content">
+    <div data-activity-list></div>
+    <div data-activity-detail hidden>
+      <div class="wt-webhook-activity-summary" data-outcome-summary></div>
+      <div data-outcome-list></div>
+      <div class="wt-webhook-pager"><button type="button" class="wt-icon-action" data-outcome-prev aria-label="Previous page" data-tip="Previous"><span class="material-icons" aria-hidden="true">chevron_left</span></button>
+        <button type="button" class="wt-icon-action" data-outcome-next aria-label="Next page" data-tip="Next"><span class="material-icons" aria-hidden="true">chevron_right</span></button></div>
+    </div>
+  </div><div slot="actions"><md-text-button type="button" data-outcome-back hidden>Back</md-text-button><md-text-button type="button" data-activity-close>Close</md-text-button></div></md-dialog>
+
+  <md-dialog data-hook-settings><div slot="headline" data-settings-title>Webhook events</div><form slot="content" class="wt-md-form" data-settings-form>
+    <div class="wt-webhook-presets">
+      <label class="wt-webhook-preset"><input type="radio" name="preset" value="ALL" checked/><span class="material-icons" aria-hidden="true">notifications_active</span><strong>All events</strong><span class="wt-muted">Scans, closes and comments</span></label>
+      <label class="wt-webhook-preset"><input type="radio" name="preset" value="SCAN_AND_CLOSE"/><span class="material-icons" aria-hidden="true">task_alt</span><strong>Scan &amp; close</strong><span class="wt-muted">No comments</span></label>
+      <label class="wt-webhook-preset"><input type="radio" name="preset" value="SCAN_ONLY"/><span class="material-icons" aria-hidden="true">manage_search</span><strong>Scan only</strong><span class="wt-muted">Opened and updated</span></label>
+    </div>
+    <label class="wt-checkbox-row"><input type="checkbox" data-settings-active checked/>Active</label>
+  </form><div slot="actions"><md-text-button type="button" data-settings-cancel>Cancel</md-text-button><md-filled-button type="button" data-settings-save>Save</md-filled-button></div></md-dialog>
+
+  <md-dialog data-repo-picker class="wt-webhook-dialog"><div slot="headline">Choose repositories</div><div slot="content" class="wt-md-form">
+    <md-outlined-text-field class="wt-search-pill" type="search" label="Search catalog" autocomplete="off" data-picker-search><span slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+    <div class="wt-webhook-picker-bar"><md-text-button type="button" data-picker-select>Select this page</md-text-button><md-text-button type="button" data-picker-clear>Clear</md-text-button>
+      <span class="wt-webhook-picker-page" data-picker-page></span>
+      <button type="button" class="wt-icon-action" data-picker-prev aria-label="Previous page" data-tip="Previous"><span class="material-icons" aria-hidden="true">chevron_left</span></button>
+      <button type="button" class="wt-icon-action" data-picker-next aria-label="Next page" data-tip="Next"><span class="material-icons" aria-hidden="true">chevron_right</span></button></div>
+    <div data-picker-list class="wt-webhook-picker-list"></div>
+    <fieldset class="wt-choice-chips"><legend>Events</legend>
+      <label class="wt-choice-chip"><input type="radio" name="pickerPreset" value="ALL" checked aria-label="All events"/><span class="material-icons" aria-hidden="true">notifications_active</span><span>All events</span></label>
+      <label class="wt-choice-chip"><input type="radio" name="pickerPreset" value="SCAN_AND_CLOSE" aria-label="Scan and close"/><span class="material-icons" aria-hidden="true">task_alt</span><span>Scan &amp; close</span></label>
+      <label class="wt-choice-chip"><input type="radio" name="pickerPreset" value="SCAN_ONLY" aria-label="Scan only"/><span class="material-icons" aria-hidden="true">manage_search</span><span>Scan only</span></label>
+    </fieldset>
+    <label class="wt-checkbox-row"><input type="checkbox" data-picker-active checked/>Active</label>
+  </div><div slot="actions"><span class="wt-webhook-picker-count" data-picker-count role="status">0 selected</span><md-text-button type="button" data-picker-cancel>Cancel</md-text-button><md-filled-button type="button" data-picker-save disabled>Create hooks</md-filled-button></div></md-dialog>
+
+  <md-dialog data-hook-delete><div slot="headline">Delete this hook?</div><div slot="content" data-delete-description></div><div slot="actions"><md-text-button type="button" data-delete-cancel>Cancel</md-text-button><md-filled-button type="button" class="wt-row-action--danger" data-delete-confirm>Delete</md-filled-button></div></md-dialog>
+
+  <md-dialog data-secret-rotation><div slot="headline">Rotate signing secret</div><div slot="content" class="wt-md-form">
+    <div class="wt-webhook-warning"><span class="material-icons" aria-hidden="true">warning</span><span>Updates every hook Watchtower owns. Old and new keys both work for up to 24 hours.</span></div>
+    <md-outlined-text-field label="Type the integration label to confirm" autocomplete="off" data-rotation-confirmation></md-outlined-text-field>
+  </div><div slot="actions"><md-text-button type="button" data-rotation-cancel>Cancel</md-text-button><md-filled-button type="button" data-rotation-start disabled>Rotate</md-filled-button></div></md-dialog>
+</div>

@@ -1,14 +1,16 @@
-$(document).ready(function() {
-    $('[data-toggle="popover"]').popover()
-
-    var editor = CodeMirror.fromTextArea(document.getElementById('source'), {
-        lineNumbers: true
-    });
-	
-	$('#saveRegexRuleModal').on('show.bs.modal', function(e) {
-	    let query = $("#regexquery").val();
-	    let source = editor.getValue();
-	    $("#formSource").val(source);
-	    $("#ruleQuery").val(query);
-	  });
-});
+(() => {
+  const source = document.getElementById('source');
+  const openTrigger = document.getElementById('openSaveRegexRuleDialog');
+  if (!source || !openTrigger) return;
+  const editor = CodeMirror.fromTextArea(source, {lineNumbers: true});
+  editor.setSize('100%', null);
+  const queryEditor = CodeMirror.fromTextArea(document.getElementById('regexquery'), {lineWrapping: true});
+  window.wtDesignerMatches?.(editor);
+  const dialog = document.querySelector(openTrigger.dataset.wtDialogTarget);
+  openTrigger.addEventListener('click', () => {
+    document.getElementById('formSource').value = editor.getValue();
+    document.getElementById('ruleQuery').value = queryEditor.getValue();
+    dialog.show();
+  });
+  document.getElementById('cancelSaveRegexRuleDialog').addEventListener('click', () => dialog.close());
+})();

@@ -3,9 +3,11 @@
   font-family: 'Material Icons';
   font-style: normal;
   font-weight: 400;
-  src: url(/webjars/material-design-icons/3.0.1/MaterialIcons-Regular.eot); /* For IE6-8 */
-  src: local('Material Icons'),
-    local('MaterialIcons-Regular'),
+  font-display: swap;
+  /* The current Material Icons font (material-icons 1.13.12, Apache-2.0) first: the 3.0.1 webjar
+     predates icons the UI uses (auto_awesome for AI, key, hub, checklist, ...). Local copies are
+     not trusted for the same reason. The webjar stays as a fallback. */
+  src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
     url(/webjars/material-design-icons/3.0.1/MaterialIcons-Regular.woff2) format('woff2'),
     url(/webjars/material-design-icons/3.0.1/MaterialIcons-Regular.woff) format('woff'),
     url(/webjars/material-design-icons/3.0.1/MaterialIcons-Regular.ttf) format('truetype');
@@ -20,6 +22,11 @@
   letter-spacing: normal;
   text-transform: none;
   display: inline-block;
+  /* One em square, always: until the font loads, the ligature shows as its name ("assessment")
+     and that wide text wrapped header lines, then jumped back when the font arrived (CLS 0.2-0.4
+     at tablet width in the e2e budget). */
+  inline-size: 1em;
+  overflow: hidden;
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;

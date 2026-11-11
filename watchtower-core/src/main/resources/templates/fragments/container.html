@@ -1,33 +1,153 @@
 <!doctype html>
 <html class="no-js h-100" lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/htmlhead"></head>
-<body class="h-100">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Main Sidebar -->
-            <div th:replace="fragments/sidebar"></div>
-            <!-- End Main Sidebar -->
-            <main class="main-content col-lg-10 col-md-9 col-sm-12 p-0 offset-lg-2 offset-md-3">
-                <!-- Main Navbar -->
-                <div th:replace="fragments/topnavbar"></div>
-                <!-- End Main Navbar -->
+<head th:replace="~{fragments/htmlhead}"></head>
+<body class="h-100" hx-boost="true" hx-target="#content" hx-select="#content" hx-swap="innerHTML" hx-history-elt="#content">
+    <div id="wt-loading-bar"></div>
+    <!-- Phase 11 Section D: replaces the old .container-fluid > .row Bootstrap grid, which
+         reserved space for the sidebar as a fixed 16.667% (col-lg-2/offset-lg-2) - inexpressible
+         once the sidebar became an icon rail. .wt-shell is CSS Grid instead, its first column
+         driven by the same --wt-rail-w tokens .main-sidebar's own width reads (layout.css). -->
+    <div class="wt-shell">
+        <!-- Main Sidebar -->
+        <div th:replace="~{fragments/sidebar}"></div>
+        <!-- End Main Sidebar -->
+        <!-- Mobile-drawer scrim: wt-mobile-drawer.js owns show/hide/focus-trap for the whole
+             drawer (this scrim, the mobile trigger, and .main-sidebar's 'open' class) -
+             see that file's header comment. Desktop never shows the scrim (layout.css) - the
+             rail has no backdrop, only the mobile drawer does. -->
+        <wt-mobile-drawer style="display:contents">
+          <div class="wt-drawer-scrim" aria-hidden="true"></div>
+        </wt-mobile-drawer>
+        <!-- Cmd+K command palette: wt-command-palette.js owns its own md-dialog and reads
+             .main-sidebar's rendered links as its data source (see that file's header comment).
+             Outside #content, same "never re-renders on boosted nav" tier as wt-mobile-drawer. -->
+        <wt-command-palette style="display:contents"></wt-command-palette>
+        <!-- Compact round launcher with the AI sparkle used on every AI entry point (UAT #4/#6). -->
+        <button class="wt-assistant-launcher" type="button" data-assistant-open
+          th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}"
+          aria-label="Open AI assistant" data-tip="AI assistant"><span class="material-icons" aria-hidden="true">auto_awesome</span></button>
+        <wt-assistant-drawer id="wt-assistant-drawer" th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}"
+          hx-boost="false" hx-select="unset" hx-target="#wt-assistant-drawer"
+          th:attr="data-csrf-token=${_csrf.token},data-csrf-header=${_csrf.headerName}">
+          <!-- AiChat board (2026-10-22): a right side panel, not a centred dialog, so the page being
+               asked about stays visible and usable. Header icons, a context chip fed by the page,
+               a model chip, starter questions, cited-rule chips and inline change-set cards. -->
+          <aside class="wt-assistant-panel" data-assistant-panel aria-label="AI assistant" hidden>
+            <header class="wt-assistant-panel__head">
+              <span class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span>
+              <h2>AI assistant</h2>
+              <span class="wt-mini-chip wt-mini-chip--warn" data-assistant-setup hidden tabindex="0" role="status" aria-live="polite"><span
+                class="material-icons" aria-hidden="true">chat</span><span data-assistant-setup-label>Checking chat</span></span>
+              <span class="wt-assistant-panel__icons wt-assistant-toolbar" hidden>
+                <button type="button" class="wt-icon-action" data-assistant-new aria-label="New chat" data-tip="New chat"><span
+                  class="material-icons" aria-hidden="true">add_comment</span></button>
+                <button type="button" class="wt-icon-action" data-assistant-history aria-label="History" data-tip="Earlier chats"><span
+                  class="material-icons" aria-hidden="true">history</span></button>
+              </span>
+              <button type="button" class="wt-icon-action" data-assistant-close aria-label="Close AI assistant"
+                data-tip="Close. The chat stays here when you come back."><span class="material-icons" aria-hidden="true">close</span></button>
+            </header>
+            <div class="wt-assistant-panel__chips wt-chip-row" data-assistant-chips hidden>
+              <span class="wt-mini-chip wt-mini-chip--link wt-assistant-context" data-assistant-context-chip tabindex="0" hidden><span
+                class="material-icons" aria-hidden="true" data-assistant-context-icon>visibility</span><span data-assistant-context-label></span><button type="button"
+                class="wt-assistant-context__remove" data-assistant-context-remove aria-label="Stop sharing this page"><span
+                class="material-icons" aria-hidden="true">close</span></button></span>
+              <span class="wt-mini-chip wt-mini-chip--info wt-assistant-context" data-assistant-draft-chip tabindex="0" hidden
+                data-tip="Your draft goes with your next question only, then it is dropped. The assistant treats it as text to read, never as instructions."><span
+                class="material-icons" aria-hidden="true">edit_note</span>Draft shared<button type="button" class="wt-assistant-context__remove"
+                data-assistant-draft-remove aria-label="Stop sharing the draft"><span class="material-icons" aria-hidden="true">close</span></button></span>
+              <details class="wt-popover wt-assistant-model">
+                <summary class="wt-mini-chip" aria-label="Model and effort for this chat" data-tip="Model and effort for this chat. Click to change (approved models only)."><span
+                  class="material-icons" aria-hidden="true">memory</span><span data-assistant-model-label></span><span
+                  class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+                <div class="wt-popover__body wt-assistant-model__body" data-assistant-model-menu></div>
+              </details>
+              <input type="hidden" data-assistant-model aria-label="Assistant model">
+              <input type="hidden" data-assistant-effort aria-label="Reasoning effort">
+              <span class="wt-mini-chip wt-mini-chip--warn" data-assistant-actions-chip tabindex="0" hidden
+                data-tip="The assistant can prepare ruleset changes. Nothing changes until you approve each change set. Off by default; an admin turns it on in AI assistant settings."><span
+                class="material-icons" aria-hidden="true">bolt</span>Ruleset actions on</span>
+              <span class="wt-mini-chip" data-assistant-readonly-chip tabindex="0" hidden
+                data-tip="The assistant can read rules and findings but can't change rules or run scans. Ruleset actions are off."><span
+                class="material-icons" aria-hidden="true">lock</span>Read-only</span>
+            </div>
+            <div class="wt-assistant-panel__body" data-assistant-body>
+              <div class="wt-empty-picture wt-assistant-intro" data-assistant-intro>
+                <span class="material-icons wt-empty-picture__icon" aria-hidden="true">forum</span>
+                <strong>Ask about rules and their evidence <a th:replace="~{fragments/featurehelp :: info('assistant', 'the AI rule assistant', 'Ask about rules and their evidence; the assistant cannot change rules or run scans.')}"></a></strong>
+                <span class="wt-mini-chip wt-mini-chip--ok" tabindex="0" data-tip="The assistant can't change rules or run scans; people decide enforcement."><span
+                  class="material-icons" aria-hidden="true">lock</span>Read-only</span>
+                <md-outlined-button href="/admin/assistant" data-assistant-settings hidden
+                  th:if="${#authorization.expression('hasAuthority(''Assistant Admin'') or hasAuthority(''Assistant Audit'')')}" has-icon><span
+                  slot="icon" class="material-icons" aria-hidden="true">tune</span>AI settings</md-outlined-button>
+              </div>
+              <div class="wt-assistant-history" data-assistant-history-list hidden></div>
+              <div class="wt-assistant-start" data-assistant-start hidden>
+                <div class="wt-empty-picture">
+                  <span class="material-icons wt-empty-picture__icon wt-ai-icon" aria-hidden="true">auto_awesome</span>
+                  <strong data-assistant-start-title>Ask about rules and findings</strong>
+                  <span class="wt-muted">Answers cite the rules and findings they use.</span>
+                </div>
+                <span class="wt-eyebrow">Try</span>
+                <div class="wt-assistant-starters" data-assistant-starters></div>
+              </div>
+              <div data-assistant-messages class="wt-assistant-messages" aria-label="Conversation" aria-live="polite"></div>
+              <p class="wt-assistant-status wt-muted" role="status" aria-live="polite" data-assistant-status></p>
+            </div>
+            <form class="wt-assistant-panel__foot" data-assistant-form hx-boost="false" hidden>
+              <div class="wt-assistant-compose">
+                <label for="wt-assistant-input" class="wt-assistant-sr">Message</label>
+                <textarea id="wt-assistant-input" name="message" rows="2" maxlength="16000" required
+                  placeholder="Ask about rules and findings…"></textarea>
+                <button type="submit" class="wt-assistant-send" data-assistant-send aria-label="Send" data-tip="Send"><span
+                  class="material-icons" aria-hidden="true">arrow_upward</span></button>
+                <button type="button" class="wt-assistant-send" data-assistant-cancel aria-label="Stop answer" data-tip="Stop this answer" hidden><span
+                  class="material-icons" aria-hidden="true">stop</span></button>
+              </div>
+              <div class="wt-assistant-foot-row">
+                <span class="wt-mini-chip" data-assistant-budget tabindex="0" hidden
+                  data-tip="Your daily AI budget. Resets at midnight UTC."><span class="material-icons" aria-hidden="true">savings</span><span
+                  data-assistant-budget-label></span></span>
+                <span class="wt-muted" data-assistant-expiry hidden></span>
+                <span class="wt-muted">Answers can be wrong; check the cited rules.</span>
+              </div>
+            </form>
+          </aside>
+        </wt-assistant-drawer>
+        <main class="main-content p-0">
+            <!-- The desktop content header was intentionally removed. Mobile still needs one
+                 persistent, semantic way to open the off-canvas navigation without reserving a
+                 full-width bar on every page. This button remains outside #content so boosted
+                 navigation never replaces it. -->
+            <button type="button" class="wt-mobile-menu-trigger d-md-none"
+                    data-wt-drawer-trigger aria-label="Open navigation menu"
+                    aria-controls="main-navigation" aria-expanded="false">
+                <i class="material-icons" aria-hidden="true">menu</i>
+            </button>
+            <!-- Only #content is boosted/swapped, so the sidebar and other persistent shell
+                 controls never re-render on internal navigation. -->
+            <div id="content">
                 <div th:if="${success != null}" class="alert alert-success alert-dismissible fade show mb-0" role="alert">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
+                    <span th:replace="~{fragments/closebutton :: button('alert')}"></span>
                     <div th:text="${success}"></div>
                 </div>
                 <div th:if="${failure != null}" class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
+                    <span th:replace="~{fragments/closebutton :: button('alert')}"></span>
                     <div th:text="${failure}"></div>
                 </div>
                 <div class="main-content-container container-fluid px-4">
-                    <div th:replace="${contentViewName}"></div>
+                    <div th:replace="~{${contentViewName}}"></div>
                 </div>
-            </main>
-        </div>
+                <!-- Inside #content (not <head>) so these still run on every boosted
+                     (hx-select="#content") navigation, not just a full page load. -->
+                <th:block th:if="${scripts != null}" th:each="script : ${scripts}">
+                    <script th:src="${script}" th:attr="nonce=${nonce}"></script>
+                </th:block>
+            </div>
+            <footer class="main-footer" aria-label="Application version">
+                <div th:replace="~{fragments/versionbadge}"></div>
+            </footer>
+        </main>
     </div>
 </body>
 </html>

@@ -22,8 +22,9 @@ import com.google.gson.reflect.TypeToken;
 @RestController
 public class CspReportController {
 	private static final Logger LOG = LoggerFactory.getLogger(CspReportController.class);
+	private static final int MAX_REPORT_LENGTH = 16_384;
 
-	private static Gson gson = new Gson();
+	private static final Gson GSON = new Gson();
 
 	private static final Type MAP_TYPE = new TypeToken<Map<String, Map<String, String>>>() {
 	}.getType();
@@ -31,15 +32,22 @@ public class CspReportController {
 	@PostMapping("/rest/csp/report")
 	ResponseEntity<String> submitCspReport(@RequestBody String report) {
 		try {
-			Map<String, Map<String, String>> reportMap = gson.fromJson(report, MAP_TYPE);
+			if (report.length() > MAX_REPORT_LENGTH) {
+				return ResponseEntity.badRequest().body("Invalid report");
+			}
+			Map<String, Map<String, String>> reportMap = GSON.fromJson(report, MAP_TYPE);
 			Map<String, String> cspReport = reportMap.get("csp-report");
-			String cspViolation = "CSP violation of " + cspReport.get("violated-directive")
-					+ " directive at "
-					+ cspReport.get("referrer") + ". Blocked URI: " + cspReport.get("blocked-uri");
-			LOG.info(cspViolation);
+			LOG.info("CSP violation of {} directive at {}. Blocked URI: {}",
+					sanitize(cspReport.get("violated-directive")),
+					sanitize(cspReport.get("referrer")), sanitize(cspReport.get("blocked-uri")));
 			return ResponseEntity.ok().body("Received report");
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().body("Invalid report");
 		}
+	}
+
+	private String sanitize(String value) {
+		if (value == null) return "unknown";
+		return value.replace('\r', ' ').replace('\n', ' ').replace('\t', ' ');
 	}
 }

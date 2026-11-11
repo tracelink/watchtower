@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.validation.BindingResult;
@@ -31,13 +31,13 @@ import com.tracelink.appsec.watchtower.test.WatchtowerTestApplication;
 @SpringBootTest(classes = WatchtowerTestApplication.class)
 public class CheckovRuleEditControllerTest {
 
-	@MockBean
+	@MockitoBean
 	private RuleEditController ruleEditController;
 
-	@MockBean
+	@MockitoBean
 	private RuleService ruleService;
 
-	@MockBean
+	@MockitoBean
 	private CheckovRuleService checkovRuleService;
 
 	@Autowired

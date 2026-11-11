@@ -15,7 +15,7 @@ import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 public class CheckovRuleEditor implements IRuleEditor {
 
 	@Override
-	public RuleEditModelAndView getRuleEditModelAndView(RuleDto rule) {
+	public RuleEditModelAndView getDefaultRuleEditModelAndView(RuleDto rule) {
 		String ruleEditView = "rule-edit/checkov-core";
 		RuleEditModelAndView mav = new RuleEditModelAndView(ruleEditView);
 		mav.addObject("rule", rule);

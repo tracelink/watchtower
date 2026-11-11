@@ -3,13 +3,14 @@ package com.tracelink.appsec.watchtower.core.encryption.listener;
 import java.security.Key;
 import java.util.Optional;
 
-import javax.persistence.Convert;
+import jakarta.persistence.Convert;
 
 import org.hibernate.CustomEntityDirtinessStrategy;
-import org.hibernate.EmptyInterceptor;
+import org.hibernate.Interceptor;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.event.monitor.internal.EmptyEventMonitor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
 import org.hibernate.persister.entity.EntityPersister;
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -40,10 +41,10 @@ public class EncryptionFlushEntityEventListenerTest {
 	public final CoreLogWatchExtension logWatcher = CoreLogWatchExtension
 			.forClass(EncryptionFlushEntityEventListener.class);
 
-	@MockBean
+	@MockitoBean
 	private DataEncryptionKeyRepository dataEncryptionKeyRepository;
 
-	@MockBean
+	@MockitoBean
 	private KeyEncryptionService keyEncryptionService;
 
 	private EncryptionFlushEntityEventListener listener;
@@ -123,6 +124,8 @@ public class EncryptionFlushEntityEventListenerTest {
 				keyEncryptionService);
 
 		EventSource eventSource = BDDMockito.mock(EventSource.class);
+		BDDMockito.when(eventSource.asEventSource()).thenReturn(eventSource);
+		BDDMockito.when(eventSource.getEventMonitor()).thenReturn(new EmptyEventMonitor());
 		SessionFactoryImplementor sessionFactoryImplementor = BDDMockito
 				.mock(SessionFactoryImplementor.class);
 		CustomEntityDirtinessStrategy strategy = BDDMockito
@@ -139,7 +142,7 @@ public class EncryptionFlushEntityEventListenerTest {
 		BDDMockito.when(entry.getLoadedState()).thenReturn(new Object[]{value});
 		BDDMockito.when(entry.getEntityName())
 				.thenReturn(TestEntity.class.getSimpleName());
-		BDDMockito.when(eventSource.getInterceptor()).thenReturn(EmptyInterceptor.INSTANCE);
+		BDDMockito.when(eventSource.getInterceptor()).thenReturn(new Interceptor() {});
 		BDDMockito.when(eventSource.getFactory()).thenReturn(sessionFactoryImplementor);
 		BDDMockito.when(sessionFactoryImplementor.getCustomEntityDirtinessStrategy())
 				.thenReturn(strategy);

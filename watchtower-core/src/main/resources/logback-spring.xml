@@ -2,8 +2,18 @@
 <configuration>
 	<include resource="org/springframework/boot/logging/logback/defaults.xml" />
 
-	<property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %logger{36} %-5level - %msg%n" />
-	<property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %class{36}.%M - %msg%n" />
+	<!-- Defence in depth: known credential formats are masked in every message and stack trace,
+	     including the in-app log viewer (LogsService), which shares this context's rules. The
+	     built-in words are overridden, and throwables are named explicitly (%xEx) because the
+	     implicit one logback appends does not go through these rules. -->
+	<conversionRule conversionWord="msg" converterClass="com.tracelink.appsec.watchtower.core.logging.MaskingMessageConverter" />
+	<conversionRule conversionWord="m" converterClass="com.tracelink.appsec.watchtower.core.logging.MaskingMessageConverter" />
+	<conversionRule conversionWord="message" converterClass="com.tracelink.appsec.watchtower.core.logging.MaskingMessageConverter" />
+	<conversionRule conversionWord="xEx" converterClass="com.tracelink.appsec.watchtower.core.logging.MaskingThrowableConverter" />
+	<conversionRule conversionWord="ex" converterClass="com.tracelink.appsec.watchtower.core.logging.MaskingThrowableConverter" />
+
+	<property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %logger{36} %-5level - %msg%n%xEx" />
+	<property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %class{36}.%M - %msg%n%xEx" />
 	<property scope="context" name="LOGS_DIR" value="./logs" />
 	<property name="FILENAME_PATTERN" value="${LOGS_DIR}/watchtower-%d{yyyy-MM-dd}.log" />
 
@@ -22,7 +32,17 @@
 	<logger name="com.tracelink.appsec" level="INFO">
 		<appender-ref ref="ROLLING-QUEUE" />
 	</logger>
-	
+
+	<!-- UISecurityConfig and RestSecurityConfig each construct their own explicit
+	     DaoAuthenticationProvider and never rely on the shared global AuthenticationManager -
+	     that's deliberate, so each chain only authenticates against its own UserDetailsService.
+	     Spring Security's own global-AuthenticationManagerBuilder init still runs regardless
+	     (triggered by @EnableWebSecurity, independent of Boot autoconfiguration) and always warns
+	     when it finds more than one UserDetailsService bean, even though nothing here uses the
+	     result. Known false positive for this app's architecture. -->
+	<logger name="org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer"
+			level="ERROR" />
+
 	<springProfile name="dev,test,default">
 		<root level="INFO">
 			<appender-ref ref="CONSOLE" />

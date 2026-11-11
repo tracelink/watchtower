@@ -1,0 +1,84 @@
+<div th:replace="~{fragments/pageheader :: header('PR Settings', null)}"></div>
+
+<!-- One card (UAT walkthrough, 2026-10-16): each setting is one row, an icon, what it does in one
+     line (defaults and limits included), then a short number field with its unit as plain text
+     after it. View-only users see the same rows with the values as text. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).PR_SETTINGS_MODIFY_NAME+''')')}">
+<div class="card card-small mb-4 wt-settings-card">
+  <form data-pr-settings-form action="/prsettings/update" method="POST" th:if="${canModify}">
+    <div class="wt-setting-rows">
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">sync</span></span>
+        <div class="wt-setting-row__text"><strong>Sync frequency</strong>
+          <span id="sync-frequency-help" class="wt-field-help">How often open pull requests are checked with the source control system for a merge or decline. Default 15, minimum 5.</span></div>
+        <span class="wt-setting-row__value">
+          <md-outlined-text-field class="wt-number-field" name="syncFrequencyMinutes" type="number" min="5" required
+              aria-label="Sync frequency in minutes" aria-describedby="sync-frequency-help"
+              th:value="${settings.syncFrequencyMinutes}"></md-outlined-text-field>
+          <span class="wt-setting-row__unit">minutes</span></span>
+      </div>
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">folder_copy</span></span>
+        <div class="wt-setting-row__text"><strong>Full-source threshold</strong>
+          <span id="source-threshold-help" class="wt-field-help">Above this many changed files, the whole repository is downloaded.</span></div>
+        <span class="wt-setting-row__value">
+          <md-outlined-text-field class="wt-number-field" name="fullSourceFileThreshold" type="number" min="1" required
+              aria-label="Full-source threshold in files" aria-describedby="source-threshold-help"
+              th:value="${settings.fullSourceFileThreshold}"></md-outlined-text-field>
+          <span class="wt-setting-row__unit">files</span></span>
+      </div>
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">timer</span></span>
+        <div class="wt-setting-row__text"><strong>Performance window</strong>
+          <span id="performance-window-help" class="wt-field-help">Recent period compared with the all-time baseline on the Speed chart. Default 7, range 1–365.</span></div>
+        <span class="wt-setting-row__value">
+          <md-outlined-text-field class="wt-number-field" name="performanceWindowDays" type="number" min="1" max="365" required
+              aria-label="Performance window in days" aria-describedby="performance-window-help"
+              th:value="${settings.performanceWindowDays}"></md-outlined-text-field>
+          <span class="wt-setting-row__unit">days</span></span>
+      </div>
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">forum</span></span>
+        <div class="wt-setting-row__text"><strong id="status-comment-label">Scan status comment</strong>
+          <span class="wt-field-help">Post one comment on the pull request when a scan starts and update it as the scan progresses and finishes, with a link to the report. Respects each integration's "Do nothing" setting.</span></div>
+        <span class="wt-setting-row__value">
+          <input type="hidden" name="statusComments" data-switch-value th:value="${settings.statusCommentsEnabled}">
+          <button type="button" class="wt-switch" role="switch" data-switch aria-labelledby="status-comment-label" th:aria-checked="${settings.statusCommentsEnabled}"></button></span>
+      </div>
+    </div>
+    <div class="wt-form-footer-end">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+    </div>
+  </form>
+  <div data-pr-settings-readonly th:unless="${canModify}">
+    <span class="wt-status-chip mb-2">View only</span>
+    <div class="wt-setting-rows">
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">sync</span></span>
+        <div class="wt-setting-row__text"><strong>Sync frequency</strong>
+          <span class="wt-field-help">How often open pull requests are checked with the source control system for a merge or decline.</span></div>
+        <span class="wt-setting-row__value"><strong th:text="${settings.syncFrequencyMinutes}">15</strong><span class="wt-setting-row__unit">minutes</span></span>
+      </div>
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">folder_copy</span></span>
+        <div class="wt-setting-row__text"><strong>Full-source threshold</strong>
+          <span class="wt-field-help">Above this many changed files, the whole repository is downloaded.</span></div>
+        <span class="wt-setting-row__value"><strong th:text="${settings.fullSourceFileThreshold}">20</strong><span class="wt-setting-row__unit">files</span></span>
+      </div>
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">timer</span></span>
+        <div class="wt-setting-row__text"><strong>Performance window</strong>
+          <span class="wt-field-help">Recent period compared with the all-time baseline on the Speed chart.</span></div>
+        <span class="wt-setting-row__value"><strong th:text="${settings.performanceWindowDays}">7</strong><span class="wt-setting-row__unit">days</span></span>
+      </div>
+      <div class="wt-setting-row">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span class="material-icons">forum</span></span>
+        <div class="wt-setting-row__text"><strong>Scan status comment</strong>
+          <span class="wt-field-help">One comment on the pull request, updated as the scan progresses and finishes.</span></div>
+        <span class="wt-setting-row__value"><strong th:text="${settings.statusCommentsEnabled ? 'On' : 'Off'}">On</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+</th:block>

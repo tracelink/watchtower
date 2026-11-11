@@ -3,9 +3,9 @@ package com.tracelink.appsec.module.regex.controller;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,16 +48,23 @@ public class RegexDesignerController {
 	}
 
 	@PostMapping("/designer/regex/save")
-	public RuleDesignerModelAndView saveRule(@RequestParam String name,
+	public RuleDesignerModelAndView saveRule(@RequestParam(value = "mcrRule", required = false) String mcrRule,
+			@RequestParam String name,
 			@RequestParam String message,
 			@RequestParam String fileExtension, @RequestParam int priority,
 			@RequestParam String query, @RequestParam String externalUrl,
 			@RequestParam String source, Authentication auth,
 			RedirectAttributes redirectAttributes) {
 
+		if (mcrRule != null) {
+			name = "MCR Match: " + name;
+			priority = 6;
+		}
+
 		RegexCustomRuleDto regexDto = createRegexRuleDto(name, message, fileExtension, priority, query,
 				externalUrl, auth);
 		RuleDesignerModelAndView mav = designerService.query(query, source);
+		mav.addObject("moduleFileTypes", ruleDesignerService.getFileTypes("regex"));
 
 		Set<ConstraintViolation<RegexCustomRuleDto>> violations = validator.validate(regexDto);
 		if (!violations.isEmpty()) {
@@ -100,6 +107,7 @@ public class RegexDesignerController {
 	public RuleDesignerModelAndView query(@RequestParam String query, @RequestParam String source,
 			Authentication auth) {
 		RuleDesignerModelAndView mav = designerService.query(query, source);
+		mav.addObject("moduleFileTypes", ruleDesignerService.getFileTypes("regex"));
 		mav.addObject("knownModules", ruleDesignerService.getKnownModulesForUser(auth));
 		return mav;
 	}

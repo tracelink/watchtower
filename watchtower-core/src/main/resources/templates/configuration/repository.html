@@ -1,89 +1,364 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-        <h3 class="page-title">Repository Configuration</h3>
+<span hidden data-assistant-kind="repositories"></span>
+<div th:replace="~{fragments/pageheader :: header(${pageTitle}, null)}"></div>
+
+<!-- The repository inventory (docs/design-system.md, "Restraint"): one meta line, one page bar
+     (integration tabs, the page's actions or the selection's), one search toolbar, the table.
+     Status is one chip per row with its reason behind it; changes happen in dialogs. Everything
+     below the header is #results-region, which the search, tabs and pager swap. -->
+<div id="results-region" data-repo-scan
+    th:with="canModify=${#authorization.expression('hasAuthority(''Repository Settings Modify'')')},
+             canScan=${isCode and #authorization.expression('hasAuthority(''Scan Submit'')')}">
+<th:block th:if="${tabs.isEmpty()}">
+  <div th:replace="~{fragments/emptystate :: state('No repository integrations are configured.')}"></div>
+</th:block>
+<th:block th:unless="${tabs.isEmpty()}"
+    th:with="selectable=${(canModify or canScan) and !rows.isEmpty()},
+             pageUrl=${inventoryPath + '?source=' + #uris.escapeQueryParam(activeSource)},
+             filterStatusKey=${filter.status == null ? '' : filter.status.key}">
+
+<p class="wt-page-meta wt-meta-chips mb-2" th:if="${counts != null and (counts.gone > 0 or counts.paused > 0)}" data-inventory-meta>
+  <span th:if="${counts.gone > 0}"><a th:href="${pageUrl + '&status=gone'}" th:text="${counts.gone + ' gone'}">3 gone</a></span>
+  <span th:if="${counts.paused > 0}"><a th:href="${pageUrl + '&status=paused'}" th:text="${counts.paused + ' paused'}">1 paused</a></span>
+</p>
+
+<div class="wt-page-bar mb-2">
+  <!-- The one segmented control; a colour dot marks an integration that was deleted (red) or whose
+       last connection check failed (amber), with the meaning on hover. -->
+  <nav class="wt-segmented-filter mb-0" role="tablist" aria-label="Integrations">
+    <a th:each="tab : ${tabs}" role="tab" class="wt-segment"
+        th:href="${inventoryPath + '?source=' + #uris.escapeQueryParam(tab.label)}"
+        th:aria-selected="${tab.label == activeSource}"
+        th:attr="aria-current=${tab.label == activeSource ? 'page' : null}"
+        th:classappend="${tab.label == activeSource} ? 'is-active'"
+        hx-target="#results-region" hx-select="#results-region" hx-swap="outerHTML" hx-push-url="true"
+        data-repository-tab>
+      <span th:if="${tab.orphaned}" class="wt-dot wt-dot--off" data-tab-state="deleted"
+          data-tip="This integration was deleted. Its repositories can't be scanned until they are deleted."></span>
+      <span th:if="${!tab.orphaned and tab.failing}" class="wt-dot wt-dot--setup" data-tab-state="failing"
+          data-tip="Its last connection check failed. See Integrations."></span>
+      <span th:text="${tab.label}">bitbucket</span>
+      <span th:if="${tab.orphaned}" class="visually-hidden">Deleted</span>
+      <span th:if="${!tab.orphaned and tab.failing}" class="visually-hidden">Failing</span>
+      <span th:if="${tab.label == activeSource and counts != null}" class="wt-count-badge"
+          th:text="${#numbers.formatInteger(counts.total, 1, 'COMMA')}">3</span>
+    </a>
+  </nav>
+  <div class="wt-page-actions" th:if="${canModify or canScan}">
+    <!-- What can be done to the selection: one Edit (one repository or many), pause, resume,
+         delete. A tinted bar with outlined buttons, so it reads as a toolbar. -->
+    <div class="wt-selection-bar" data-selection-bar hidden role="toolbar" aria-label="Selected repositories"
+        th:attr="data-matching-total=${pagination == null ? 0 : pagination.totalElements()}">
+      <span class="wt-selection-bar__count"><strong data-selection-count>0</strong> selected</span>
+      <md-text-button type="button" data-select-matching hidden
+          th:if="${pagination != null and pagination.totalElements() > rows.size()}"
+          th:text="${'Select all ' + pagination.totalElements() + ' matching'}">Select all matching</md-text-button>
+      <th:block th:if="${canModify}">
+        <md-outlined-button class="wt-row-action" has-icon type="button" data-edit-selection data-requires-selection>
+          <span slot="icon" class="material-icons" aria-hidden="true">edit</span>Edit</md-outlined-button>
+        <md-outlined-button class="wt-row-action" has-icon type="submit" form="repoPauseForm">
+          <span slot="icon" class="material-icons" aria-hidden="true">pause</span>Pause</md-outlined-button>
+        <md-outlined-button class="wt-row-action" has-icon type="submit" form="repoResumeForm">
+          <span slot="icon" class="material-icons" aria-hidden="true">play_arrow</span>Resume</md-outlined-button>
+        <md-outlined-button class="wt-row-action wt-row-action--danger" has-icon type="submit" form="repoDeleteForm">
+          <span slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete</md-outlined-button>
+      </th:block>
+      <button type="button" class="wt-icon-action" data-selection-clear aria-label="Clear the selection"
+          title="Clear the selection"><span class="material-icons" aria-hidden="true">close</span></button>
     </div>
+    <!-- Sync is an icon whose hover gives the last sync; adding is the filled button until rows
+         are ticked, then scanning the selection takes its place (Fixes board 2026-10-22). -->
+    <!-- While a sync runs the icon spins and is off; the page checks back and reloads when it is done (repo-scan.js). -->
+    <button th:if="${isCode and canModify and !activeOrphaned}" type="submit" form="repoSyncForm" class="wt-icon-action"
+        th:classappend="${syncRunning} ? 'is-busy' : ''" th:disabled="${syncRunning}"
+        data-no-selection th:attr="aria-label=${syncRunning ? 'Syncing the repository list' : 'Sync now'},data-tip=${syncRunning ? 'Syncing the repository list. This page updates when it is done.' : 'Sync now · last synced ' + lastSync},data-sync-running=${syncRunning ? 'true' : null}"><span
+        class="material-icons" aria-hidden="true">sync</span></button>
+    <md-filled-button th:if="${isCode and canModify and !activeOrphaned}" type="button" has-icon
+        data-wt-dialog-target="#repoAddDialog" data-no-selection><span class="material-icons" slot="icon"
+        aria-hidden="true">add</span>Add repository</md-filled-button>
+    <md-filled-button th:if="${canScan and !activeOrphaned}" type="button" data-wt-dialog-target="#repoScanDialog" has-icon
+        data-requires-selection data-hide-unselected data-no-matching disabled hidden><span class="material-icons" slot="icon"
+        aria-hidden="true">play_arrow</span>Scan selected</md-filled-button>
+  </div>
 </div>
-<!-- End Page Header -->
-<!-- Default Light Table -->
-<div class="row border-bottom pb-4 mb-4">
-    <div class="col">
-        <div class="card card-small mb-2">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Select a Source Control ID</h6>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item px-3">
-                    <!-- Button Groups -->
-                    <div class="btn-group btn-group-toggle mb-3" id="scmidbtn" data-toggle="buttons">
-                        <label th:each="repoKey, oStat : ${repos.keySet()}" th:class="${oStat.first}? 'btn btn-white active' : 'btn btn-white'">
-                            <input type="radio" th:id="${repoKey}" autocomplete="off" th:text="${repoKey}">
-                        </label>
-                    </div>
-                </li>
-            </ul>
+<!-- A deleted integration's tab exists only to clean it up: one red line says what happened and
+     offers the clean-up. -->
+<div class="wt-failure-line mb-2" th:if="${activeOrphaned and counts != null and counts.total > 0}" data-orphan-line>
+  <span class="material-icons" aria-hidden="true">link_off</span>
+  <span><strong th:text="${activeSource + ' was deleted.'}">AccountApi was deleted.</strong>
+    <span th:text="${counts.total == 1 ? 'Its repository is orphaned: it can''t be scanned until it is deleted.' : 'Its ' + counts.total + ' repositories are orphaned: they can''t be scanned until they are deleted.'}">Its 3 repositories are orphaned.</span></span>
+  <md-outlined-button th:if="${canModify}" class="wt-row-action wt-row-action--danger" has-icon type="submit"
+      form="repoCleanUpForm" data-no-selection data-clean-up><span slot="icon" class="material-icons"
+      aria-hidden="true">delete_sweep</span><span
+      th:text="${'Delete ' + activeSource + (counts.total == 1 ? '''s repository' : '''s ' + counts.total + ' repositories')}">Delete AccountApi's 3 repositories</span></md-outlined-button>
+</div>
+<form id="repoCleanUpForm" method="POST" th:action="@{/repository/{t}/clean-up(t=${activeScanType})}" hidden
+    th:if="${canModify and activeOrphaned}" data-confirm-action="Delete" data-confirm-title="Delete repositories?"
+    th:attr="data-confirm=${'Delete all ' + (counts == null ? 0 : counts.total) + ' repositories of the deleted integration ' + activeSource + ' and their repository scans? Its tab goes away. Pull request scan history stays.'}">
+  <input type="hidden" name="source" th:value="${activeSource}"/>
+  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+</form>
+<form id="repoSyncForm" method="POST" th:action="@{/repository/{t}/sync(t=${activeScanType})}" hidden
+    th:if="${isCode and canModify}">
+  <input type="hidden" name="source" th:value="${activeSource}"/>
+  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+</form>
+
+<th:block th:if="${canModify}">
+  <form th:each="bulk : ${ {'pause', 'resume', 'delete'} }" th:id="${'repo' + #strings.capitalize(bulk) + 'Form'}"
+      method="POST" th:action="@{/repository/{t}/bulk(t=${activeScanType})}" hidden data-bulk-form
+      th:attr="data-bulk-action=${bulk},data-confirm=${bulk == 'delete' ? 'Delete the selected repositories?' : null},data-confirm-action=${bulk == 'delete' ? 'Delete' : null}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" name="action" th:value="${bulk}"/>
+    <input type="hidden" name="source" th:value="${activeSource}"/>
+    <input type="hidden" name="q" th:value="${query}"/>
+    <input type="hidden" name="status" th:value="${filter.status == null ? '' : filter.status.key}"/>
+    <input type="hidden" name="label" th:value="${filter.label}"/>
+    <input type="hidden" name="scanned" th:value="${filter.coverage == null ? '' : filter.coverage.key}"/>
+    <div data-selected-ids></div>
+  </form>
+</th:block>
+
+<form class="wt-filter-toolbar mb-3" method="GET" role="search" data-filter-form
+    th:action="${inventoryPath}"
+    hx-target="#results-region" hx-select="#results-region" hx-swap="outerHTML" hx-push-url="true">
+  <input type="hidden" name="source" th:value="${activeSource}"/>
+  <input type="hidden" name="scanned" th:if="${filter.coverage != null}" th:value="${filter.coverage.key}"/>
+  <!-- The search pill filters as you type (repo-scan.js); status and label are chip menus. -->
+  <md-outlined-text-field id="repository-search" class="wt-search-pill" type="search" name="q" label="Search repositories"
+      autocomplete="off" data-repository-search placeholder="Name, or label:pci team:checkout" th:value="${query}"><span
+      slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+  <label class="wt-chip-select" data-auto-submit>
+    <span class="visually-hidden">Status</span>
+    <select name="status" aria-label="Status">
+      <option value="" th:selected="${filter.status == null}">Status: Any</option>
+      <option th:each="s : ${statuses}" th:value="${s.key}" th:selected="${filter.status == s}" th:text="${'Status: ' + s.labelFor(!isCode)}"></option>
+    </select>
+  </label>
+  <label class="wt-chip-select" data-auto-submit th:unless="${labels == null or labels.isEmpty()}">
+    <span class="visually-hidden">Label</span>
+    <select name="label" aria-label="Label">
+      <option value="" th:selected="${filter.label == null}">Label: Any</option>
+      <option th:each="l : ${labels}" th:value="${l}" th:selected="${filter.label == l}" th:text="${'Label: ' + l}"></option>
+    </select>
+  </label>
+  <a th:unless="${filter.isEmpty()}" class="wt-button-link wt-button-link-secondary" th:href="${pageUrl}"
+      hx-target="#results-region" hx-select="#results-region" hx-swap="outerHTML" hx-push-url="true">Clear</a>
+  <span class="wt-filter-status" role="status" aria-live="polite" data-repository-filter-status
+      th:text="${pagination == null or counts == null or filter.isEmpty() ? ''
+          : pagination.totalElements() + ' of ' + counts.total
+              + (counts.total == 1 ? ' repository' : ' repositories')
+              + (filter.coverage == null ? '' : ' · ' + filter.coverage.label)}">12 of 128 repositories</span>
+  <span class="wt-table-actions ms-auto">
+    <a class="wt-icon-action" hx-boost="false" aria-label="Export these repositories as CSV" title="Export CSV"
+        th:href="@{/repository/{t}/export(t=${activeScanType},source=${activeSource},q=${query},status=${filter.status == null ? '' : filter.status.key},label=${filter.label},scanned=${filter.coverage == null ? '' : filter.coverage.key})}"><span
+        class="material-icons" aria-hidden="true">file_download</span></a>
+    <button th:if="${canModify}" type="button" class="wt-icon-action" data-wt-dialog-target="#repoImportDialog"
+        aria-label="Import owners, labels and rulesets from CSV" title="Import CSV"><span class="material-icons" aria-hidden="true">file_upload</span></button>
+  </span>
+</form>
+
+<th:block th:if="${rows.isEmpty() and (counts == null or counts.total == 0)}"
+    th:with="emptyMessage=${isCode ? 'No repositories yet. Sync now lists them from the integration.' : 'No repositories yet. They appear after their first scan.'}">
+  <div th:replace="~{fragments/emptystate :: state(${emptyMessage})}"></div>
+</th:block>
+<th:block th:if="${rows.isEmpty() and counts != null and counts.total > 0}">
+  <div th:replace="~{fragments/emptystate :: state('No repository matches these filters.')}"></div>
+</th:block>
+
+<div class="wt-table-scroll" role="region" th:aria-label="${activeSource + ' repositories'}" tabindex="0"
+    th:unless="${rows.isEmpty()}">
+  <!-- Owner and Labels show only when some repository on the page has one. -->
+  <table class="table mb-0 wt-inventory-table"
+      th:with="showOwner=${!rows.?[repo.team != null or repo.ownerName != null].isEmpty()},
+               showLabels=${!rows.?[repo.labels != null and !repo.labels.isEmpty()].isEmpty()}">
+    <caption class="visually-hidden" th:text="${'Repositories of ' + activeSource}">Repositories</caption>
+    <thead>
+      <tr>
+        <th scope="col" th:if="${selectable}"><input type="checkbox" data-select-all aria-label="Select all repositories on this page"/></th>
+        <th scope="col">Repository</th>
+        <th scope="col">Status</th>
+        <th scope="col" class="wt-result-secondary" th:if="${showOwner}">Owner</th>
+        <th scope="col" class="wt-result-secondary" th:if="${showLabels}">Labels</th>
+        <th scope="col" class="wt-result-secondary">Ruleset</th>
+        <th scope="col" class="wt-result-secondary" th:if="${isCode}">Last commit</th>
+        <th scope="col" th:if="${isCode}">Last scan</th>
+        <th scope="col" th:if="${canScan}"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="row : ${rows}" th:with="repo=${row.repo}, last=${row.lastScan}" data-repository-row
+          th:data-repository-name="${repo.repoName}">
+        <td th:if="${selectable}"><input type="checkbox" class="wt-repo-select" th:value="${repo.id}"
+            th:aria-label="${'Select ' + repo.repoName}"
+            th:attr="data-edit-id=${repo.id},data-edit-name=${repo.repoName},data-edit-project=${repo.projectKey},data-edit-ruleset=${repo.ruleset == null ? -1 : repo.ruleset.id},data-edit-team=${repo.team},data-edit-owner=${repo.ownerName},data-edit-labels=${#strings.listJoin(repo.labels, ', ')},data-edit-criticality=${repo.criticality},data-edit-paused=${repo.scanningPaused}"/></td>
+        <th scope="row">
+          <a class="wt-entity-link" th:href="${isCode ? '/repositories/' + repo.id : '/repository/' + activeScanType + '/' + repo.id}"
+              th:text="${repo.repoName}">payments-api</a>
+          <span th:if="${repo.projectKey != null}" class="text-muted small" th:text="${repo.projectKey}">PAY</span>
+          <span th:if="${repo.criticality < 3}" class="wt-status-chip wt-status-chip--warning"
+              th:text="${T(com.tracelink.appsec.watchtower.core.scan.repository.RepoCriticality).of(repo.criticality).displayName}">Critical</span>
+        </th>
+        <td>
+          <!-- The status explains itself on hover and focus. -->
+          <span class="wt-status-chip" tabindex="0" data-repository-status
+              th:classappend="${' wt-tone-' + row.status.tone}"
+              th:attr="data-tip=${row.reason},aria-label=${row.status.labelFor(!isCode) + '. ' + row.reason}"><span
+              th:if="${row.status.name() == 'ORPHANED'}" class="material-icons" aria-hidden="true">link_off</span><span
+              th:text="${row.status.labelFor(!isCode)}">Active</span></span>
+        </td>
+        <td class="wt-result-secondary" th:if="${showOwner}" th:text="${(repo.team ?: '') + (repo.team != null and repo.ownerName != null ? ' · ' : '') + (repo.ownerName ?: '')}"></td>
+        <td class="wt-result-secondary" th:if="${showLabels}"><span th:each="l : ${repo.labels}" class="wt-status-chip wt-tone-neutral" th:text="${l}">pci</span></td>
+        <td class="wt-result-secondary" th:with="T_ID=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity)},
+            rulesetName=${repo.ruleset == null ? null : repo.ruleset.name},
+            provider=${T_ID.rulesetScanner(rulesetName)}">
+          <span th:if="${rulesetName == null}" class="wt-muted">None</span>
+          <span th:if="${rulesetName != null}" class="wt-ruleset-name"><span th:if="${provider != null}" class="wt-scanner-tile wt-scanner-tile--ran"
+              aria-hidden="true"><span class="material-icons" th:text="${provider.icon}">cloud</span></span><span
+              th:text="${T_ID.readableRulesetName(rulesetName)}">Default</span></span>
+        </td>
+        <td class="wt-result-secondary" th:if="${isCode}" th:text="${row.lastCommit}">3 d ago</td>
+        <td th:if="${isCode}">
+          <!-- The same status chip as every scan list (UAT #32), linking to the report, then its findings. -->
+          <a th:if="${last != null}" class="wt-last-scan" th:href="@{/reposcan/report/{id}(id=${last.id})}"
+              th:with="st=${T(com.tracelink.appsec.watchtower.core.scan.presentation.StatusPresentationModel).from(last)}"
+              th:aria-label="${'Latest scan of ' + repo.repoName + ': ' + st.label + (row.lastScanAgo.isEmpty() ? '' : ', ' + row.lastScanAgo)}">
+            <span class="wt-status-chip" th:classappend="${' wt-tone-' + st.tone}" th:attr="data-tip=${st.accessibleText}"><span
+                class="material-icons" aria-hidden="true" th:text="${st.icon}"></span><span th:text="${st.label + (row.lastScanAgo.isEmpty() ? '' : ' · ' + row.lastScanAgo)}"></span></span>
+            <span th:each="lvl : ${last.severityCounts.levels()}" class="wt-sev wt-sev-count"
+                th:classappend="'wt-sev-' + ${lvl.value}" th:text="${lvl.count}" th:aria-label="${lvl.count + ' ' + lvl.name}"></span>
+          </a>
+          <span th:if="${last == null}" class="text-muted">Never</span>
+        </td>
+        <td th:if="${canScan}"><div class="wt-table-actions">
+          <button type="button" class="wt-icon-action" data-wt-dialog-target="#repoScanDialog"
+              th:if="${row.status.name() != 'GONE' and row.status.name() != 'ORPHANED'}"
+              th:attr="data-repo-id=${repo.id},data-repo-name=${repo.repoName},aria-label=${'Scan ' + repo.repoName}"
+              title="Scan"><span class="material-icons" aria-hidden="true">play_circle_outline</span></button>
+        </div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div th:replace="~{fragments/pagination(baseUrl=${baseUrl}, pagination=${pagination})}"></div>
+
+<th:block th:if="${canScan and !activeOrphaned}">
+  <md-dialog th:replace="~{repo_scan/scandialog :: dialog(${activeSource}, null, ${rulesetChoices}, ${frequencies})}"></md-dialog>
+</th:block>
+
+<th:block th:if="${canModify}">
+  <!-- Edit for several repositories (one opens the single-repository dialog below instead).
+       Every field starts as "Keep": only what is changed is saved. -->
+  <md-dialog id="repoBulkEditDialog" data-bulk-edit-dialog>
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+      <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">edit_note</span></span>
+      <span class="wt-person__text"><span data-bulk-edit-title>Edit repositories</span></span></span>
+      <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="repoBulkEditForm" method="POST" th:action="@{/repository/{t}/bulk(t=${activeScanType})}" class="wt-md-form">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="action" value="edit"/>
+      <input type="hidden" name="source" th:value="${activeSource}"/>
+      <input type="hidden" name="q" th:value="${query}"/>
+      <input type="hidden" name="status" th:value="${filter.status == null ? '' : filter.status.key}"/>
+      <input type="hidden" name="label" th:value="${filter.label}"/>
+      <input type="hidden" name="scanned" th:value="${filter.coverage == null ? '' : filter.coverage.key}"/>
+      <div data-selected-ids></div>
+      <div class="wt-meta-chips" data-bulk-edit-names hidden></div>
+      <span class="wt-mini-chip wt-meta-chip wt-chip-start" tabindex="0"
+          data-tip="Anything left on Keep or blank keeps each repository's own value. Labels you enter replace their labels."><span
+          class="material-icons" aria-hidden="true">info</span>Only what you change is saved</span>
+      <div th:replace="~{fragments/rulesetpicker :: picker('repoBulkRuleset', ${rulesetChoices}, 'bulk')}"></div>
+      <fieldset class="wt-choice-chips">
+        <legend>Criticality</legend>
+        <label class="wt-choice-chip"><input type="radio" name="criticality" value="" checked aria-label="Keep each one's"/><span
+            class="material-icons" aria-hidden="true">sync_lock</span><span>Keep</span></label>
+        <label th:each="c : ${criticalities}" class="wt-choice-chip"><input type="radio" name="criticality" th:value="${c.level}"
+            th:aria-label="${c.displayName}"/><span th:text="${c.displayName}">Normal</span></label>
+      </fieldset>
+      <div class="wt-form-pair">
+        <md-outlined-text-field name="team" label="Team" placeholder="Keep"></md-outlined-text-field>
+        <md-outlined-text-field name="owner" label="Owner" placeholder="Keep"></md-outlined-text-field>
+      </div>
+      <md-outlined-text-field name="labels" label="Labels" placeholder="Keep" supporting-text="Comma separated; replaces their labels"></md-outlined-text-field>
+    </form>
+    <div slot="actions">
+      <md-text-button type="button" data-dialog-close>Cancel</md-text-button>
+      <md-filled-button type="submit" form="repoBulkEditForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+    </div>
+  </md-dialog>
+
+  <md-dialog th:replace="~{configuration/repositoryedit :: dialog(${activeScanType}, ${rulesetChoices}, ${criticalities},
+      ${activeSource}, ${query}, ${filterStatusKey}, ${filter.label}, false)}"></md-dialog>
+
+  <!-- Import: a drop zone (the file input itself, full size), the limits under it, and the
+       columns as chips. The exported list is the template to edit. -->
+  <md-dialog id="repoImportDialog">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+      <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">upload_file</span></span>
+      <span class="wt-person__text"><span>Import owners, labels and rulesets</span></span></span>
+      <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="repoImportForm" method="POST" enctype="multipart/form-data" hx-boost="false"
+        th:action="@{/repository/{t}/import(t=${activeScanType})}" class="wt-md-form">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="source" th:value="${activeSource}"/>
+      <label class="wt-drop-zone" for="repoImportFile">
+        <span class="material-icons" aria-hidden="true">upload</span>
+        <strong data-import-file-name>Drop a CSV file or browse</strong>
+        <span class="wt-field-help">Up to 5,000 rows · 1 MB</span>
+        <input id="repoImportFile" class="wt-drop-zone__input" type="file" name="file" accept=".csv,text/csv" required data-import-file/>
+      </label>
+      <div class="wt-chip-field">
+        <span class="wt-picker-label">Columns</span>
+        <span class="wt-meta-chips">
+          <span class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">code</span>repo</span>
+          <span class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">groups</span>team</span>
+          <span class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">person</span>owner</span>
+          <span class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">sell</span>labels</span>
+          <span class="wt-mini-chip wt-meta-chip"><span class="material-icons" aria-hidden="true">priority_high</span>criticality</span>
+          <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">rule_folder</span>ruleset (optional)</span>
+        </span>
+      </div>
+      <span class="wt-mini-chip wt-mini-chip--warn wt-chip-start" tabindex="0"
+          data-tip="A blank team, owner or labels cell clears that value for the repository."><span
+          class="material-icons" aria-hidden="true">info</span>Blank cells clear values</span>
+    </form>
+    <div slot="actions" class="wt-dialog-actions--split">
+      <a class="btn btn-secondary btn-sm wt-dialog-actions__start" th:href="@{/repository/{t}/export(t=${activeScanType},source=${activeSource})}"
+          hx-boost="false"><span class="material-icons" aria-hidden="true">download</span>Export current list</a>
+      <md-text-button type="button" data-dialog-close>Cancel</md-text-button>
+      <md-filled-button type="submit" form="repoImportForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">upload</span>Import</md-filled-button>
+    </div>
+  </md-dialog>
+
+  <md-dialog id="repoAddDialog" th:if="${isCode and !activeOrphaned}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+      <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">code</span></span>
+      <span class="wt-person__text"><span>Add a repository</span>
+        <span class="wt-person__meta" th:text="${activeSource}">BitBucket</span></span></span>
+      <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="repoAddForm" method="POST" th:action="@{/repository/{t}/add(t=${activeScanType})}" class="wt-md-form">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="source" th:value="${activeSource}"/>
+      <md-outlined-text-field name="slug" label="Repository" required supporting-text="As in its URL, e.g. payments-api"></md-outlined-text-field>
+      <div th:replace="~{fragments/rulesetpicker :: picker('repoAddRuleset', ${rulesetChoices}, 'add')}"></div>
+      <fieldset class="wt-choice-chips">
+        <legend>Criticality</legend>
+        <label th:each="c : ${criticalities}" class="wt-choice-chip"><input type="radio" name="criticality" th:value="${c.level}"
+            th:checked="${c.level == 3}" th:aria-label="${c.displayName}"/><span th:text="${c.displayName}">Normal</span></label>
+      </fieldset>
+      <details class="wt-form-disclosure">
+        <summary>Team, owner and labels (optional)</summary>
+        <div class="wt-form-pair">
+          <md-outlined-text-field name="team" label="Team"></md-outlined-text-field>
+          <md-outlined-text-field name="owner" label="Owner"></md-outlined-text-field>
         </div>
+        <md-outlined-text-field name="labels" label="Labels" supporting-text="Comma separated"></md-outlined-text-field>
+      </details>
+    </form>
+    <div slot="actions">
+      <md-text-button type="button" data-dialog-close>Cancel</md-text-button>
+      <md-filled-button type="submit" form="repoAddForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">add</span>Add</md-filled-button>
     </div>
+  </md-dialog>
+</th:block>
+</th:block>
 </div>
-<div class="row">
-    <div class="col">
-        <div class="card card-small mb-2">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Repositories</h6>
-            </div>
-            <div class="row p-3">
-                <div class="col">
-                    <div th:each="repoKey, oStat : ${repos.keySet()}"
-                               th:style="${oStat.first} ? '' : 'display:none'" th:id="${repoKey}"
-                               class="table-responsive reposTable">
-                        <table class="table mb-0 datatable">
-                          <thead class="bg-light">
-                          <tr>
-                            <th scope="col" class="border-0">Count</th>
-                            <th scope="col" class="border-0">Repository Name</th>
-                            <th scope="col" class="border-0">Last Scanned</th>
-                            <th scope="col" class="border-0">Ruleset</th>
-                            <th scope="col" class="border-0">Blocking Level</th>
-                            <th scope="col" class="border-0" 
-							    th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).REPO_SETTINGS_MODIFY_NAME+''')')}">Set Ruleset</th>
-                          </tr>
-                          </thead>
-                          <tbody>
-                          <tr th:each="repoDetails, dStat : ${repos.get(repoKey)}" th:class="${repoDetails.enabled ? '' : 'text-muted'}">
-                            <td th:text="${dStat.count}">
-                            <td th:text="${repoDetails.repoName}">
-                            <td class="localizetime" th:text="${repoDetails.getLastReviewedDate()}">
-                            <td th:text="${repoDetails.ruleset == null ? 'None' : repoDetails.ruleset.name}">
-                            <td th:text="${repoDetails.ruleset == null ? 'N/A' : (repoDetails.ruleset.blockingLevel == null ? 'None' : repoDetails.ruleset.blockingLevel.name)}">
-                            <td th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).REPO_SETTINGS_MODIFY_NAME+''')')}">
-                              <th:block th:if="${repoDetails.enabled}">
-                                <form method="POST" action="/repository" onchange="this.submit()">
-                                  <input type="hidden" th:name="apiLabel" th:value="${repoDetails.apiLabel}"/>
-                                  <input type="hidden" th:name="repo" th:value="${repoDetails.repoName}"/>
-                                  <input type="hidden" th:name="${_csrf.parameterName}"
-                                         th:value="${_csrf.token}"/>
-                                  <select name="rulesetId" class="custom-select custom-select-sm"
-                                          style="max-width: 130px;">
-                                    <option th:selected="${repoDetails.ruleset == null}"
-                                            value="-1">None
-                                    </option>
-                                    <option th:each="ruleset : ${rulesets}"
-                                            th:selected="${repoDetails.ruleset != null && ruleset.name == repoDetails.ruleset.name}"
-                                            th:value="${ruleset.id}" th:text="${ruleset.name}"></option>
-                                  </select>
-                                </form>
-                              </th:block>
-                              <th:block th:unless="${repoDetails.enabled}">
-                              	<span th:text="Disabled"/>
-                              </th:block>
-                            </td>
-                          </tr>
-                          </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- End Default Light Table -->

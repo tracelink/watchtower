@@ -2,8 +2,10 @@ package com.tracelink.appsec.watchtower.core.rule;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -85,6 +87,21 @@ public class RuleEditController {
 		WatchtowerModelAndView mav = new WatchtowerModelAndView("");
 		mav.setViewName(view);
 		return mav;
+	}
+
+	@PostMapping("/{module}/{ruleId}/stewardship")
+	public String updateStewardship(@PathVariable String module, @PathVariable long ruleId,
+			@ModelAttribute RuleStewardshipUpdate update, Authentication authentication,
+			RedirectAttributes redirectAttributes) {
+		try {
+			ruleService.updateStewardship(ruleId, module, update, authentication.getName());
+			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,
+					"Rule owner and status saved.");
+		} catch (RuleNotFoundException | RuleException e) {
+			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
+					e.getMessage());
+		}
+		return RULE_EDIT_REDIRECT + "/" + module + "/" + ruleId;
 	}
 
 	@PostMapping("/{module}/delete")

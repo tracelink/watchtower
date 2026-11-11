@@ -1,0 +1,6 @@
+<span hidden data-assistant-kind="metrics" data-assistant-scan-type="container"></span>
+<div th:replace="~{fragments/pageheader :: header('Image dashboard', null)}"></div>
+<!-- The charts come first: all-time scan, finding and duration tiles repeated the numbers the
+     selected period already shows (docs/design-system.md, "Restraint"). -->
+<div th:replace="~{fragments/dashboard :: insights('Top advisories', false)}"></div>
+<div th:replace="~{fragments/dashboard :: recentScans('image', '/imagescan/results')}"></div>

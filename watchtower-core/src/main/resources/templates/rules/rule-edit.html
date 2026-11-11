@@ -1,136 +1,232 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-  <div
-      class="col-lg-12 col-md-12 col-sm-12 text-center text-sm-left mb-0">
-    <h3 class="page-title">Rule Editing</h3>
-  </div>
-</div>
-<!-- Rule Types -->
-<div class="row">
-  <div class="col-lg-12 col-md-12 col-sm-12 mb-4">
-    <div class="card card-small d-flex flex-column h-100">
-      <div class="card-header border-bottom">
-        <h6 class="card-title m-0">Select a Module</h6>
-      </div>
-      <div class="card-body border-bottom">
-        <div class="btn-group btn-group-toggle">
-          <div th:if="${modules.isEmpty()}">No rule types configured.
-          </div>
-          <a th:each="module : ${modules}"
-             th:href="${'/rule/edit/' + module.toLowerCase()}"
-             th:class="${module.toLowerCase()} == ${activeModule.toLowerCase()} ? 'btn btn-white active' : 'btn btn-white'"
-             th:text="${module}"/>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- End Rule Types -->
-<!-- Rules -->
-<div class="row">
-  <div class="col-lg-3 col-md-12 col-sm-12">
-    <div class="card card-small mb-4 scrollable-6">
-      <div class="card-header border-bottom">
-        <h6 class="card-title mb-0">Rules</h6>
-      </div>
-      <div class="card-body">
-      	<p class="card-title">Custom Rules</p>
-        <ul class="list-group list-group-flush text-center border-bottom mb-4">
-          <a th:each="rule : ${rules}"
-          	 th:if="${rule.isCustom()}"
-             th:class="'list-group-item list-group-item-action ruleLink px-0' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
-             th:id="${rule.id} + '-link'"
-             th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
-             th:text="${rule.name}"
-             th:data-value="${rule.id}">
-          </a>
-        </ul>
-        <p class="card-title">Provided Rules</p>
-        <ul class="list-group list-group-flush text-center">
-          <a th:each="rule : ${rules}"
-             th:if="${rule.isProvided()}"
-             th:class="'list-group-item list-group-item-action ruleLink px-0' + (${activeRule != null && activeRule.id == rule.id} ? 'active' : '')"
-             th:id="${rule.id} + '-link'"
-             th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
-             th:text="${rule.name}"
-             th:data-value="${rule.id}">
-          </a>
-        </ul>
-      </div>
-    </div>
-  </div>
-  <!-- End Rules -->
-  <!-- Rule Details -->
-  <div class="col-lg-9 col-md-12 col-sm-12">
-    <div class="card card-small mb-4 scrollable-6">
-      <!-- Card Header -->
-      <div class="card-header border-bottom">
-        <div class="d-flex align-items-center">
-          <div class="mr-auto">
-            <h6 class="card-title m-0"
-                th:if="${activeRule != null}"
-                th:text="${activeRule.getModule()} + ' Rule Details: ' + ${activeRule.name}"></h6>
-          </div>
-          <div>
-            <button class="btn btn-danger" data-toggle="modal"
-                    data-target="#deleteRuleModal"
-                    th:if="${activeRule!=null}"
-                    th:data-action="'/rule/edit/' + ${activeRule.getModule()} + '/delete'"
-                    th:data-id="${activeRule.id}" th:data-name="${activeRule.name}"
-                    th:data-rulesets="${activeRule.rulesets.isEmpty() ? ' does not currently belong to any rulesets' : ' currently belongs to the following rulesets: ' + #strings.listJoin(activeRule.rulesets, ', ')}">
-              Delete Rule
-            </button>
-          </div>
-        </div>
-      </div>
-      <!-- End Card Header -->
-      <div th:if="${activeRule == null && rules.size() == 0}">
-        <div class="card-footer">
-          <p class="card-title text-left">There are no rules configured for this module</p>
-        </div>
-      </div>
-      <div th:if="${activeRule == null && rules.size() > 0}">
-        <div class="card-footer">
-          <p class="card-title text-left">Please select a rule</p>
-        </div>
-      </div>
-      <div th:if="${activeRule != null}">
-        <div th:replace="${ruleView}"></div>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- End Rule Details -->
-<!-- Delete Rule Modal -->
-<div class="modal fade" id="deleteRuleModal" tabindex="-1" role="dialog"
-     aria-labelledby="deleteModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="deleteModalLabel">
-          <i class="material-icons">warning</i> Delete <label
-            id="deleteModalName"></label>
-        </h4>
-        <button type="button" class="close" data-dismiss="modal"
-                aria-hidden="true">×
-        </button>
+<div th:replace="~{fragments/pageheader :: header('Rule editing', null)}"></div>
+<span hidden th:if="${activeRule != null}" data-assistant-kind="rule" th:attr="data-assistant-rule-id=${activeRule.id}"></span>
+<!-- Rule editing (UAT walkthrough, 2026-10-16): module tabs with scanner icons and readable names;
+     Custom / Provided with their counts (a module without custom rules opens on Provided, #27);
+     the first rule is open, so the right side is never an empty "Select a rule" box. The header
+     carries the scanner tile, name, severity, status, health and Custom/Provided as chips, one row
+     of outlined actions under it; only custom rules can be deleted. -->
+<th:block th:if="${modules.isEmpty()}">
+  <div th:replace="~{fragments/emptystate :: state('No rule modules are configured.')}"></div>
+</th:block>
+<nav class="wt-segmented-filter wt-rule-modules mb-3" role="tablist" aria-label="Rule modules"
+    th:unless="${modules.isEmpty()}">
+  <a th:each="module : ${modules}" role="tab" class="wt-segment"
+      th:with="scanner=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity).of(module)}"
+      th:href="${'/rule/edit/' + module.toLowerCase()}"
+      th:classappend="${module.toLowerCase()} == ${activeModule.toLowerCase()} ? ' is-active' : ''"
+      th:aria-selected="${module.toLowerCase()} == ${activeModule.toLowerCase()}"
+      th:tabindex="${module.toLowerCase()} == ${activeModule.toLowerCase()} ? '0' : '-1'"><span
+      class="material-icons" aria-hidden="true" th:text="${scanner.icon()}">coffee</span><span
+      th:text="${scanner.name()}">PMD</span></a>
+</nav>
+<p th:if="${moduleDisabled}" class="wt-meta-chips mb-3"><span class="wt-mini-chip wt-meta-chip wt-mini-chip--warn"
+    tabindex="0" role="status"
+    data-tip="Rules stay editable and exportable; scans and tests will not run them until the module is turned on in Scanner modules."><span
+    class="material-icons" aria-hidden="true">power_settings_new</span>Module off</span></p>
 
+<div class="wt-rule-editor-layout" data-split-workspace data-split-key="rule-editor"
+    data-split-default="35"
+    th:with="kind=${activeRule != null ? (activeRule.isCustom() ? 'custom' : 'provided') : ((customCount ?: 0) > 0 ? 'custom' : 'provided')},
+        activeScanner=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity).of(activeModule)}">
+  <aside class="card card-small wt-rule-list-panel" aria-label="Rules">
+    <div class="card-body">
+      <md-outlined-text-field id="rule-search" class="wt-control-wide wt-search-pill" type="search" data-rule-search
+          autocomplete="off" th:label="${'Search ' + activeScanner.name() + ' rules'}" label="Search rules"><span
+          slot="leading-icon" class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+      <div class="wt-segmented-filter wt-rule-kind-filter" aria-label="Rule type">
+        <button type="button" class="wt-segment" data-rule-kind-filter="custom"
+            th:classappend="${kind == 'custom'} ? 'is-active'"
+            aria-pressed="true" th:aria-pressed="${kind == 'custom'}"><span class="material-icons"
+            aria-hidden="true">edit_note</span>Custom<span class="wt-count-badge"
+            th:text="${#numbers.formatInteger(customCount ?: 0, 1, 'COMMA')}">0</span></button>
+        <button type="button" class="wt-segment" data-rule-kind-filter="provided"
+            th:classappend="${kind == 'provided'} ? 'is-active'"
+            aria-pressed="false" th:aria-pressed="${kind == 'provided'}"><span class="material-icons"
+            aria-hidden="true">inventory_2</span>Provided<span class="wt-count-badge"
+            th:text="${#numbers.formatInteger(providedCount ?: 0, 1, 'COMMA')}">0</span></button>
       </div>
-      <div class="modal-body">
-        <p id="deleteModalContent"></p>
+      <p class="visually-hidden" data-rule-search-status role="status" aria-live="polite"></p>
+      <!-- Review reports has no sidebar entry; Knowledge does, so only this link stays here. -->
+      <a th:if="${#authorization.expression('hasAuthority(''Ruleset View'')')}" href="/rules/review-reports"
+          class="wt-mini-chip wt-meta-chip wt-mini-chip--link wt-rule-reports-link"><span class="material-icons"
+          aria-hidden="true">summarize</span>Review reports</a>
+
+      <nav data-rule-list aria-label="Rules in selected module">
+        <div class="wt-rule-links">
+          <a th:each="rule : ${rules}" th:if="${rule.isCustom()}" data-rule-link
+              data-rule-kind="custom"
+              th:classappend="${activeRule != null && activeRule.id == rule.id} ? ' is-active' : ''"
+              th:id="${rule.id} + '-link'" th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
+              th:text="${rule.name}" th:data-value="${rule.id}"
+              th:aria-current="${activeRule != null && activeRule.id == rule.id} ? 'page' : null"></a>
+          <a th:each="rule : ${rules}" th:if="${rule.isProvided()}" data-rule-link
+              data-rule-kind="provided"
+              th:classappend="${activeRule != null && activeRule.id == rule.id} ? ' is-active' : ''"
+              th:id="${rule.id} + '-link'" th:href="${'/rule/edit/' + activeModule + '/' + rule.id}"
+              th:text="${rule.name}" th:data-value="${rule.id}"
+              th:aria-current="${activeRule != null && activeRule.id == rule.id} ? 'page' : null"></a>
+        </div>
+      </nav>
+      <nav class="wt-client-pagination" aria-label="Rule pages">
+        <span data-rule-page-status role="status" aria-live="polite"></span>
+        <span class="wt-client-pagination-actions">
+          <button type="button" class="wt-page-step" data-rule-page-previous><span class="material-icons" aria-hidden="true">chevron_left</span>Previous</button>
+          <button type="button" class="wt-page-step" data-rule-page-next>Next<span class="material-icons" aria-hidden="true">chevron_right</span></button>
+        </span>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="wt-workspace-resizer" role="separator" aria-label="Resize rule list and editor"
+      aria-orientation="vertical" aria-valuemin="30" aria-valuemax="70" aria-valuenow="35"
+      tabindex="0" data-workspace-resizer></div>
+
+  <section class="card card-small wt-rule-detail-panel" data-rule-detail aria-labelledby="rule-detail-heading">
+    <div class="card-header border-bottom wt-rule-detail-head" th:if="${activeRule != null}">
+      <div class="wt-rule-title">
+        <span class="wt-scanner-tile wt-scanner-tile--ran" role="img" tabindex="0"
+            th:attr="data-tip=${activeScanner.name() + ' rule'},aria-label=${activeScanner.name() + ' rule'}"><span
+            class="material-icons" aria-hidden="true" th:text="${activeScanner.icon()}">coffee</span></span>
+        <h2 id="rule-detail-heading" class="h5 m-0" th:text="${activeRule.name}">Rule</h2>
+        <span th:if="${activeRule.priority != null}" th:class="${'wt-sev wt-sev-' + activeRule.priority.priority}"
+            th:text="${activeRule.priority.name}">High</span>
+        <span th:with="state=${activeRule.stewardship.state.name()}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+            th:classappend="${state == 'ACTIVE' ? 'wt-mini-chip--ok' : (state == 'DEPRECATED' ? 'wt-mini-chip--warn' : '')}"
+            th:data-tip="${state == 'ACTIVE' ? 'Runs in scans' : (state == 'DEPRECATED' ? 'Being phased out: still runs in scans' : 'Retired: excluded from future scans')}"><span
+            class="material-icons" aria-hidden="true"
+            th:text="${state == 'ACTIVE' ? 'radio_button_checked' : (state == 'DEPRECATED' ? 'schedule' : 'block')}">radio_button_checked</span><span
+            th:text="${state == 'ACTIVE' ? 'Active' : (state == 'DEPRECATED' ? 'Being phased out' : 'Retired')}">Active</span></span>
+        <span th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}" data-rule-health-chips
+            th:data-rule-id="${activeRule.id}"></span>
+        <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+            th:data-tip="${activeRule.isCustom() ? 'Written in Watchtower: every field can be edited and it can be deleted' : 'Comes with the scanner: only its severity and owner can change'}"><span
+            class="material-icons" aria-hidden="true" th:text="${activeRule.isCustom() ? 'edit_note' : 'inventory_2'}">edit_note</span><span
+            th:text="${activeRule.isCustom() ? 'Custom' : 'Provided'}">Custom</span></span>
+        <!-- CWE chips: the primary one first, then any secondary ones. The weakness name is on hover, from the
+             MITRE catalog when it is loaded; a CWE the catalog does not know (or MITRE discourages) turns amber. -->
+        <span th:if="${activeRule.stewardship.notSecurity}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+            data-tip="A style or quality rule: it has no CWE and is not counted as a gap."><span class="material-icons"
+            aria-hidden="true">label_off</span><span>Not a security rule</span></span>
+        <span th:each="chip : ${cweChips}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+            th:classappend="${chip.warn} ? ' wt-mini-chip--warn'" th:attr="data-tip=${chip.tip}"><span
+            th:if="${chip.primary}" class="material-icons" aria-hidden="true">shield</span><span
+            th:text="${chip.label}">CWE-79</span></span>
+        <!-- Only custom rules can be deleted; it asks first. -->
+        <button type="button" th:if="${activeRule.isCustom()}"
+            class="wt-icon-action wt-icon-action--danger wt-icon-action--bordered wt-rule-delete"
+            data-wt-dialog-target="#deleteRuleModal" aria-label="Delete rule" data-tip="Delete rule"
+            th:data-action="${'/rule/edit/' + activeRule.getModule() + '/delete'}"
+            th:data-id="${activeRule.id}" th:data-name="${activeRule.name}"
+            th:data-rulesets="${activeRule.rulesets.isEmpty() ? 'It does not currently belong to any rulesets.' : 'It currently belongs to: ' + #strings.listJoin(activeRule.rulesets, ', ') + '.'}"><span
+            class="material-icons" aria-hidden="true">delete</span></button>
       </div>
-      <div class="modal-footer">
-        <form class="form-inline" id="deleteModalForm" method="POST"
-              action="#">
-          <input type="hidden" th:name="${_csrf.parameterName}"
-                 th:value="${_csrf.token}"/> <input id="deleteModalInput"
-                                                    type="hidden" name="#" value="#"/>
-          <button class="btn btn-danger px-2" type="submit">Delete
-            Rule
-          </button>
-        </form>
+      <div class="wt-rule-actions" aria-label="Rule actions">
+        <!-- Short labels (UI polish item 18) so all six actions fit one row; the full names are the accessible names and tooltips. -->
+        <md-outlined-button type="button" has-icon aria-label="Owner and status"
+          data-tip="Owner and status: set the owner, next review date, and whether this rule runs in future scans."
+          data-wt-dialog-target="#stewardshipModal"><span slot="icon" class="material-icons"
+          aria-hidden="true">person</span>Owner &amp; status</md-outlined-button>
+        <md-outlined-button type="button" th:if="${#authorization.expression('hasAuthority(''Assistant Use'')')}"
+          th:data-assistant-explain="${activeRule.id}" has-icon><span slot="icon" class="material-icons wt-ai-icon"
+          aria-hidden="true">auto_awesome</span>Explain</md-outlined-button>
+        <md-outlined-button has-icon th:if="${#authorization.expression('hasAuthority(''Scan Results View'')')}"
+          th:href="@{/rules/{id}/health(id=${activeRule.id})}" aria-label="Rule health" data-tip="Rule health"><span slot="icon" class="material-icons"
+          aria-hidden="true">monitor_heart</span>Health</md-outlined-button>
+        <md-outlined-button has-icon th:href="@{/rules/{id}/reviews(id=${activeRule.id})}" aria-label="Saved reviews" data-tip="Saved reviews"><span slot="icon"
+          class="material-icons" aria-hidden="true">fact_check</span>Reviews</md-outlined-button>
+        <md-outlined-button has-icon th:href="@{/rules/{id}/candidates(id=${activeRule.id})}" aria-label="Test improvements" data-tip="Test improvements"><span slot="icon"
+          class="material-icons" aria-hidden="true">science</span>Test</md-outlined-button>
+        <md-outlined-button has-icon data-rule-suggest-improvement
+          th:if="${#authorization.expression('hasAuthority(''Assistant Use'') and hasAuthority(''Scan Results View'') and hasAuthority(''Ruleset View'')')}"
+          th:href="@{/rules/{id}/improvements(id=${activeRule.id})}" aria-label="Suggest improvement"
+          data-tip="Suggest improvement: ask the AI assistant for a change to this rule, based on people's reviews of its findings."><span slot="icon"
+          class="material-icons wt-ai-icon" aria-hidden="true">auto_awesome</span>Suggest</md-outlined-button>
       </div>
     </div>
-  </div>
+    <div class="card-body" th:if="${activeRule == null && rules.size() == 0}">
+      <h2 id="rule-detail-heading" class="visually-hidden">Rule details</h2>
+      <div th:if="${activeModule.equalsIgnoreCase('advisory')}" class="wt-empty-picture wt-empty-picture--flat">
+        <span class="material-icons wt-empty-picture__icon" aria-hidden="true">bug_report</span>
+        <strong>No advisory rules to edit</strong>
+        <span class="wt-muted wt-empty-picture__why">Advisories come from image scans. To stop one being reported,
+          add it to the allowlist in the Rule Designer's Advisory tab.</span>
+        <a class="btn wt-button-link" href="/designer/advisory"><span class="material-icons"
+            aria-hidden="true">build</span>Open Rule Designer</a>
+      </div>
+      <div th:unless="${activeModule.equalsIgnoreCase('advisory')}">
+        <div th:replace="~{fragments/emptystate :: state('There are no rules configured for this module.')}"></div>
+      </div>
+    </div>
+    <div class="card-body" th:if="${activeRule == null && rules.size() > 0}">
+      <h2 id="rule-detail-heading" class="visually-hidden">Rule details</h2>
+      <div th:replace="~{fragments/emptystate :: state('Select a rule to view its details.')}"></div>
+    </div>
+    <div th:if="${activeRule != null}">
+      <div th:replace="~{${ruleView}}"></div>
+    </div>
+  </section>
 </div>
-<!-- End Delete Rule Modal -->
+
+
+
+
+<md-dialog id="deleteRuleModal">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person"><span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">delete_forever</span></span><span class="wt-person__text"><span>Delete rule?</span></span></span></div>
+  <form slot="content" id="deleteModalForm" method="POST" action="#" hx-boost="false">
+    <p id="deleteModalContent"></p>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input id="deleteModalInput" type="hidden" name="ruleId" value=""/>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancelDeleteRuleModal" type="button">Cancel</md-text-button>
+    <md-filled-button class="wt-btn-danger" form="deleteModalForm" type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete rule</md-filled-button>
+  </div>
+</md-dialog>
+
+<!-- Owner and status (UAT walkthrough, 2026-10-16): "Use in scans" as three buttons with the long
+     wording on hover; owner + next review and CWE + category side by side. -->
+<md-dialog id="stewardshipModal" th:if="${activeRule != null}"
+    th:with="ownerScanner=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity).of(activeModule)},
+        ruleTitle=${T(com.tracelink.appsec.watchtower.core.scan.presentation.ScannerIdentity).withoutScannerPrefix(activeRule.name)}">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons"
+        th:text="${ownerScanner.icon()}">key</span></span>
+    <span class="wt-person__text"><span th:text="${ruleTitle}">private-key</span>
+      <span class="wt-person__meta">Owner and status</span></span></span>
+    <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <form slot="content" id="stewardshipForm" method="POST" class="wt-md-form"
+      th:action="@{/rule/edit/{module}/{id}/stewardship(module=${activeRule.getModule()}, id=${activeRule.id})}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <fieldset class="wt-choice-chips">
+      <legend>Use in scans</legend>
+      <label th:each="state : ${T(com.tracelink.appsec.watchtower.core.rule.RuleState).values()}" class="wt-choice-chip"
+          tabindex="-1" th:attr="data-tip=${state.name() == 'ACTIVE' ? 'Runs in scans.' : (state.name() == 'DEPRECATED' ? 'Still runs; marked for removal.' : 'Left out of future scans; past results stay.')}"><input
+          type="radio" name="state" required th:value="${state.name()}" th:checked="${state == activeRule.stewardship.state}"
+          th:aria-label="${state.name() == 'ACTIVE' ? 'Active' : (state.name() == 'DEPRECATED' ? 'Phasing out' : 'Retired')}"/><span
+          class="material-icons" aria-hidden="true" th:text="${state.name() == 'ACTIVE' ? 'play_circle' : (state.name() == 'DEPRECATED' ? 'trending_down' : 'archive')}">play_circle</span><span
+          th:text="${state.name() == 'ACTIVE' ? 'Active' : (state.name() == 'DEPRECATED' ? 'Phasing out' : 'Retired')}">Active</span></label>
+    </fieldset>
+    <div class="wt-form-pair">
+      <md-outlined-text-field name="owner" label="Owner or team" maxlength="255"
+          th:value="${activeRule.stewardship.owner}"></md-outlined-text-field>
+      <md-outlined-text-field name="reviewBy" label="Next review" type="date"
+          th:value="${activeRule.stewardship.reviewBy}"></md-outlined-text-field>
+    </div>
+    <div class="wt-form-pair">
+      <md-outlined-text-field name="cwe" label="CWE (optional)" maxlength="32" placeholder="e.g. CWE-798"
+          th:value="${activeRule.stewardship.cwe}"></md-outlined-text-field>
+      <md-outlined-text-field name="category" label="Category (optional)" maxlength="128" placeholder="e.g. Secrets"
+          th:value="${activeRule.stewardship.category}"></md-outlined-text-field>
+    </div>
+    <md-outlined-text-field name="secondaryCwes" label="Secondary CWEs (optional)" maxlength="160" placeholder="e.g. CWE-564, CWE-943"
+        supporting-text="Up to ten, comma separated. They need a primary CWE."
+        th:value="${activeRule.stewardship.secondaryCwes}"></md-outlined-text-field>
+    <label class="wt-setting-row"><span class="wt-setting-row__label">Not a security rule</span>
+      <span class="wt-setting-row__value"><input type="checkbox" role="switch" class="wt-switch" name="notSecurity" value="true"
+          aria-label="Not a security rule: a style or quality rule with no CWE" th:checked="${activeRule.stewardship.notSecurity}"/></span></label>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancelStewardshipModal" type="button">Cancel</md-text-button>
+    <md-filled-button type="submit" form="stewardshipForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+  </div>
+</md-dialog>

@@ -1,0 +1,14 @@
+<div class="col"><p class="wt-page-meta">Pinned Opengrep 1.30.2 · direct execution · intra-file taint. Save a rule, then use Test improvements with human reviewed fixtures. <a href="/help/features">Feature guide</a></p>
+<!-- draftRule: a rule drafted by the assistant fills the same fields; nothing is saved until Save rule. -->
+<form action="/designer/opengrep/save" method="post" class="wt-md-form wt-form-two-col" th:with="rule=${null},priorities=${T(com.tracelink.appsec.watchtower.core.rule.RulePriority).values()}">
+<md-outlined-text-field name="name" th:readonly="${rule != null && rule.provided}" label="Name" required th:value="${rule?.name ?: draftRule?.name}"></md-outlined-text-field>
+<md-outlined-select label="Priority" name="priority"><md-select-option th:each="priority : ${priorities}" th:value="${priority}" th:selected="${(rule != null && priority == rule.priority) || (draftRule != null && priority.name() == draftRule.priority)}"><div slot="headline" th:text="${priority.getName()}"></div></md-select-option></md-outlined-select>
+<md-outlined-text-field name="engineRuleId" th:readonly="${rule != null}" label="Stable engine rule ID" required th:value="${rule?.engineRuleId ?: draftRule?.engineRuleId}"></md-outlined-text-field>
+<md-outlined-text-field name="message" th:readonly="${rule != null && rule.provided}" label="Finding message" required th:value="${rule?.message ?: draftRule?.message}"></md-outlined-text-field>
+<md-outlined-text-field name="externalUrl" th:readonly="${rule != null && rule.provided}" label="Reference URL" required th:value="${rule?.externalUrl ?: draftRule?.externalUrl}"></md-outlined-text-field>
+<md-outlined-text-field name="license" th:readonly="${rule != null && rule.provided}" label="Rule license" required th:value="${rule?.license}"></md-outlined-text-field>
+<md-outlined-text-field name="source" th:readonly="${rule != null && rule.provided}" label="Versioned rule source" required th:value="${rule?.source}"></md-outlined-text-field>
+<md-outlined-text-field type="textarea" rows="10" name="definition" th:readonly="${rule != null && rule.provided}" label="Rule definition (JSON)" required th:value="${rule?.definition ?: draftRule?.definition}" supporting-text='One rule object with languages and pattern or taint fields. Example: {"languages":["python"],"pattern":"eval(...)"}'></md-outlined-text-field>
+<input type="hidden" name="author" th:value="${rule == null ? #authentication.name : rule.author}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+<md-filled-button type="submit">Save rule</md-filled-button></form></div>

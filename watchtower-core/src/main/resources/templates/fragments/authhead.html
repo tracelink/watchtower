@@ -1,0 +1,26 @@
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<title>Watchtower</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script th:attr="nonce=${nonce}">
+  (function () {
+    var theme = 'light';
+    try {
+      if (localStorage.getItem('watchtower-theme') === 'dark') {
+        theme = 'dark';
+      }
+    } catch (e) {
+      // Storage can be unavailable in privacy modes; light remains the safe default.
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-bs-theme', theme);
+  })();
+</script>
+<link rel="stylesheet" href="/styles/icons.css">
+<link rel="stylesheet" href="/webjars/bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="/styles/tokens.css">
+<link rel="stylesheet" href="/styles/md-theme.css">
+<link rel="stylesheet" href="/styles/base.css">
+<link rel="stylesheet" href="/styles/components.css">
+<script src="/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js" th:attr="nonce=${nonce}"></script>
+<script src="/scripts/material-web-bundle.js" th:attr="nonce=${nonce}"></script>

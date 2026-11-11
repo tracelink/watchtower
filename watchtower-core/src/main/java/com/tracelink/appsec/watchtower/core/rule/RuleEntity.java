@@ -4,23 +4,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -36,7 +39,15 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
 @Entity
 @Table(name = "rules")
 @Inheritance(strategy = InheritanceType.JOINED)
+@jakarta.persistence.EntityListeners(com.tracelink.appsec.watchtower.core.rule.candidate.RuleDefinitionListener.class)
 public abstract class RuleEntity {
+
+	@jakarta.persistence.Version
+	@Column(name = "definition_version")
+	private long persistenceVersion;
+
+	public long getPersistenceVersion() { return persistenceVersion; }
+	public void setPersistenceVersion(long value) { persistenceVersion = value; }
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,6 +70,47 @@ public abstract class RuleEntity {
 	@Column(name = "priority")
 	@Enumerated(EnumType.ORDINAL)
 	private RulePriority priority;
+
+	@Embedded
+	private RuleStewardship stewardship = new RuleStewardship();
+
+	public RuleStewardship getStewardship() {
+		return stewardship;
+	}
+
+	/** Preserve local stewardship when an import replaces the module-specific definition. */
+	public void preserveStewardshipFrom(RuleEntity existing) {
+		stewardship = existing.getStewardship().copy();
+		persistenceVersion = existing.getPersistenceVersion();
+	}
+
+	protected <T extends RuleDto> T withStewardship(T dto) {
+		dto.setStewardship(stewardship.copy());
+		dto.getStewardship().setRevision(dto.getRevision());
+		return dto;
+	}
+
+	/**
+	 * Refresh before saving changed child parameters: their dirty state alone does not trigger the
+	 * parent entity's PreUpdate callback. This also makes import merges persist the new revision.
+	 */
+	public void refreshRevision() {
+		stewardship.setRevision(toDto().getRevision());
+	}
+
+	@PrePersist
+	protected void recordCreation() {
+		long now = System.currentTimeMillis();
+		stewardship.setCreatedAt(now);
+		stewardship.setUpdatedAt(now);
+		refreshRevision();
+	}
+
+	@PreUpdate
+	protected void recordUpdate() {
+		stewardship.setUpdatedAt(System.currentTimeMillis());
+		refreshRevision();
+	}
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "rule_ruleset", joinColumns = @JoinColumn(name = "rule_id"),
@@ -125,6 +177,15 @@ public abstract class RuleEntity {
 	 * @return rule DTO representing this rule entity
 	 */
 	public abstract RuleDto toDto();
+
+	/**
+	 * The designation of this one rule when rules of the same class can differ (a Regex rule is
+	 * custom or provided per row), or null when every rule of the class shares one designation.
+	 * Cheap: reads a column, unlike {@link #toDto()}.
+	 */
+	public RuleDesignation designationOfThisRule() {
+		return null;
+	}
 
 	/**
 	 * Converts a plaintext String into a Hex-encoded String and back to support saving to the DB

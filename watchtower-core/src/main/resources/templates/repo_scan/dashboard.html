@@ -1,0 +1,22 @@
+<span hidden data-assistant-kind="metrics" data-assistant-scan-type="repository"></span>
+<div th:replace="~{fragments/pageheader :: header('Repository scan dashboard', null)}"></div>
+<!-- Coverage as one low row of stat boxes, then charts and the latest scans.
+     Each coverage number opens the inventory with the same filter. -->
+<section class="wt-stat-strip mb-3" aria-label="Coverage" th:if="${coverage != null}" data-repo-coverage
+    th:with="inventory='/repositories',
+             canOpen=${#authorization.expression('hasAnyAuthority(''Repository Settings View'', ''Scan Results View'')')}">
+  <div class="wt-stat-strip__head"><span class="wt-meta-label">Coverage</span></div>
+  <dl class="wt-stat-boxes">
+    <div class="wt-stat-box" tabindex="0" data-tip="Repositories in the source control system that Watchtower tracks"><span class="material-icons" aria-hidden="true">inventory_2</span><dt>Repositories</dt>
+      <dd><a th:if="${canOpen}" class="wt-entity-link" th:href="${inventory}" th:text="${coverage.total}">0</a><span th:unless="${canOpen}" th:text="${coverage.total}">0</span></dd></div>
+    <div class="wt-stat-box" tabindex="0" data-tip="Repositories with at least one finished scan in the last 30 days"><span class="material-icons" aria-hidden="true">task_alt</span><dt>Scanned in 30 days</dt>
+      <dd><a th:if="${canOpen}" class="wt-entity-link" th:href="${inventory + '?scanned=recent'}" th:text="${coverage.recent}">0</a><span th:unless="${canOpen}" th:text="${coverage.recent}">0</span></dd></div>
+    <div class="wt-stat-box" tabindex="0" data-tip="Tracked repositories that have never been scanned" th:classappend="${coverage.never > 0} ? ' wt-stat-box--danger' : ''"><span class="material-icons" aria-hidden="true">remove_done</span><dt>Never scanned</dt>
+      <dd><a th:if="${canOpen}" class="wt-entity-link" th:href="${inventory + '?scanned=never'}" th:text="${coverage.never}">0</a><span th:unless="${canOpen}" th:text="${coverage.never}">0</span></dd></div>
+    <div class="wt-stat-box" tabindex="0" data-tip="Scanned in 30 days divided by repositories"><span class="material-icons" aria-hidden="true">donut_large</span><dt>Coverage</dt>
+      <dd><a th:if="${canOpen}" class="wt-entity-link" th:href="${inventory + '?scanned=stale'}" th:text="${coverage.percent() + '%'}"
+          th:title="${'Not scanned in 30 days: ' + (coverage.total - coverage.recent)}">0%</a><span th:unless="${canOpen}" th:text="${coverage.percent() + '%'}">0%</span></dd></div>
+  </dl>
+</section>
+<div th:replace="~{fragments/dashboard :: insights('Top rules', true)}"></div>
+<div th:replace="~{fragments/dashboard :: recentScans('repository', '/scans/results?type=repository')}"></div>

@@ -8,11 +8,11 @@ import com.tracelink.appsec.module.checkov.editor.CheckovRuleEditor;
 import com.tracelink.appsec.module.checkov.engine.CheckovEngine;
 import com.tracelink.appsec.module.checkov.scanner.CheckovScanner;
 import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
-import com.tracelink.appsec.watchtower.core.module.AbstractModule;
+import com.tracelink.appsec.watchtower.core.module.AbstractCodeScanModule;
 import com.tracelink.appsec.watchtower.core.module.WatchtowerModule;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.ruleeditor.IRuleEditor;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
 
 /**
@@ -25,7 +25,7 @@ import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
  *
  */
 @WatchtowerModule
-public class CheckovModule extends AbstractModule {
+public class CheckovModule extends AbstractCodeScanModule {
 
 	public static final String MODULE_NAME = "Checkov";
 	private final CheckovEngine engine;
@@ -68,7 +68,7 @@ public class CheckovModule extends AbstractModule {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public IScanner getScanner() {
+	public ICodeScanner getScanner() {
 		return new CheckovScanner(engine);
 	}
 

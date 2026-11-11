@@ -2,20 +2,20 @@ package com.tracelink.appsec.module.eslint.engine;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,13 +27,18 @@ import com.tracelink.appsec.module.eslint.engine.json.CategoryDefinition;
 import com.tracelink.appsec.module.eslint.engine.json.LinterMessage;
 import com.tracelink.appsec.module.eslint.engine.json.ProvidedRuleDefinition;
 import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
+import com.tracelink.appsec.watchtower.core.process.ProcessRequest;
+import com.tracelink.appsec.watchtower.core.process.ProcessRunner;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDesignation;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
 
 /**
- * The primary ESLint execution class. Ensures that Node, ESLint and Estraverse are installed at the
- * correct version, and to handle execution of JavaScript functions for ESLint features. If this
+ * The primary ESLint execution class. Ensures that Node and ESLint are installed at the
+ * required versions, and handles execution of JavaScript functions for ESLint features. If this
  * class cannot initialize properly, Watchtower should not start up.
  *
  * @author mcool
@@ -53,6 +58,8 @@ public final class LinterEngine {
 
 	private static final String LINTER_SCAN = "linter_scan.js";
 	private static final String LINTER_PARSE = "linter_parse.js";
+	private static final String LINTER_IDENTITY = "linter_identity.js";
+	private final ProcessRunner processRunner = new ProcessRunner();
 
 	private static final int NODE_VERSION_MAJOR = 12;
 	private static final String ESLINT_VERSION = "7.24.0";
@@ -79,6 +86,18 @@ public final class LinterEngine {
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize ESLint Engine", e);
 		}
+	}
+
+	public EngineExecutionIdentity getExecutionIdentity(ICodeScanner scanner, CodeScanConfig config) {
+		return EsLintExecutionIdentity.capture(this, scanner, config);
+	}
+
+	Path getWorkingDirectory() {
+		return eslintDirectory;
+	}
+
+	ProcessResult captureRuntime(String selection) {
+		return executeJsFunction(LINTER_IDENTITY, "capture", selection);
 	}
 
 	/**
@@ -174,7 +193,7 @@ public final class LinterEngine {
 	 * @return {@link ProcessResult} containing messages from the Linter and/or errors
 	 */
 	public ProcessResult scanCode(String lines, String directory, String file, String ruleset) {
-		return executeJsFunction(LINTER_SCAN, "scanCode", escapeCommandLineArgument(lines),
+		return executeJsFunction(LINTER_SCAN, "scanCode", lines,
 				directory, file, ruleset);
 	}
 
@@ -186,7 +205,7 @@ public final class LinterEngine {
 	 *         there are errors
 	 */
 	public ProcessResult parseAst(String sourceCode) {
-		return executeJsFunction(LINTER_PARSE, "parseAst", escapeCommandLineArgument(sourceCode));
+		return executeJsFunction(LINTER_PARSE, "parseAst", sourceCode);
 	}
 
 	/**
@@ -197,7 +216,7 @@ public final class LinterEngine {
 	 */
 	private void copyJsResources(Path targetDir) throws IOException {
 		// Copy JS resources to ESLint directory, overwriting any existing files
-		String[] resources = {LINTER_SCAN, LINTER_PARSE};
+		String[] resources = {LINTER_SCAN, LINTER_PARSE, LINTER_IDENTITY};
 		for (String resource : resources) {
 			Path dest = targetDir.resolve(resource);
 			try (InputStream is = getClass().getClassLoader()
@@ -312,48 +331,63 @@ public final class LinterEngine {
 	private ProcessResult executeJsFunction(String file, String function, String... arguments) {
 		List<String> command = Arrays.asList("node", "-p",
 				"require('./" + file.split("\\.")[0] + "')." + function +
-						(arguments.length == 0 ? "()"
-								: "(\"" + String.join("\", \"", arguments) + "\")"));
-		return runCommand(command);
+						"(...JSON.parse(process.argv[1]))", GSON.toJson(arguments));
+		return run(scriptRequest(command, eslintDirectory));
 	}
 
+	/** What the node child of a rule script may see of the server's environment. */
+	private static final Set<String> SCRIPT_ENVIRONMENT =
+			Set.of("PATH", "HOME", "TMPDIR", "LANG", "LC_ALL");
 
 	/**
-	 * Runs the given command using a {@link ProcessBuilder}.
+	 * The environment for a process that runs rule scripts. Rule authors write those scripts, so
+	 * the child gets only what node needs to start; the server's own variables (database, AWS and
+	 * API credentials) are left out. This is not a sandbox: the script still runs as the server's
+	 * user.
+	 *
+	 * @param server the server's environment
+	 * @return the variables the child may have, leaving out any that are unset
+	 */
+	static Map<String, String> scriptEnvironment(Map<String, String> server) {
+		Map<String, String> child = new TreeMap<>();
+		for (String name : SCRIPT_ENVIRONMENT) {
+			String value = server.get(name);
+			if (value != null) {
+				child.put(name, value);
+			}
+		}
+		return child;
+	}
+
+	/** A bounded run of a rule script, with the reduced environment. */
+	static ProcessRequest scriptRequest(List<String> command, Path directory) {
+		return new ProcessRequest(command, directory, Duration.ofMinutes(2), 8 * 1024 * 1024,
+				scriptEnvironment(System.getenv()));
+	}
+
+	/**
+	 * Runs the given command with bounded runtime and output.
 	 *
 	 * @param command the command to run
 	 * @return {@link ProcessResult} containing results and errors from command
 	 */
 	private ProcessResult runCommand(List<String> command) {
-		ProcessBuilder pb = new ProcessBuilder(command);
-		pb.directory(this.eslintDirectory.toFile());
-
-		String results = null;
-		String errors = null;
-		Process p = null;
-		try {
-			p = pb.start();
-			results = IOUtils.toString(p.getInputStream(), Charset.defaultCharset()).trim();
-			errors = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset()).trim();
-		} catch (IOException e) {
-			LOG.error("Failed to run command '" + String.join(" ", command), e);
-		} finally {
-			if (p != null) {
-				p.destroy();
-			}
-		}
-		return new ProcessResult(results, errors);
+		return run(new ProcessRequest(command, eslintDirectory, Duration.ofMinutes(2),
+				8 * 1024 * 1024));
 	}
 
-	/**
-	 * Escape newlines and double quotes in the given argument so that it can be passed to the
-	 * command line.
-	 *
-	 * @param argument command line argument to escape
-	 * @return escaped argument
-	 */
-	private String escapeCommandLineArgument(String argument) {
-		return argument.replaceAll("\n", "\\\\n").replaceAll("\"", "\\\\\"").replaceAll("\r",
-				"\\\\r");
+	private ProcessResult run(ProcessRequest request) {
+		try {
+			var result = processRunner.run(request);
+			String errors = result.stderr().trim();
+			if (!result.isSuccess() || result.stdoutTruncated() || result.stderrTruncated()) {
+				errors = "ESLint process failed (exit=" + result.exitCode() + ", timeout=" + result.timedOut()
+						+ ", truncated=" + (result.stdoutTruncated() || result.stderrTruncated()) + ")\n" + errors;
+			}
+			return new ProcessResult(result.stdout().trim(), errors);
+		} catch (RuntimeException exception) {
+			// Commands include source text; retain a source-free failure rather than logging arguments.
+			return new ProcessResult(null, "Cannot execute ESLint process");
+		}
 	}
 }

@@ -1,0 +1,123 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {JSDOM}=require('jsdom');
+const resources=path.resolve(__dirname,'../../resources');
+const script=name=>fs.readFileSync(path.join(resources,'static/scripts',name),'utf8');
+const flush=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setTimeout(r,0));};
+const ok=data=>({ok:true,json:async()=>data});
+(async()=>{
+ const markup=fs.readFileSync(path.resolve(__dirname,'../../../../../watchtower-module-aws-security-agent/src/main/resources/templates/awssecurity/readiness.html'),'utf8');
+ const dom=new JSDOM(markup,{url:'https://watchtower.test/aws-security/readiness/view',runScripts:'outside-only'}),w=dom.window,root=w.document.querySelector('[data-aws-setup]');
+ Object.assign(root.dataset,{resourcesReady:'true',csrfHeader:'X-CSRF',csrfToken:'token',scannerEnabled:'true',activeTab:'status'});
+ root.querySelectorAll('md-dialog').forEach(d=>{d.show=async()=>{d.open=true;};d.close=async()=>{d.open=false;};});
+ let stored=null,submitted=[],timeout=true,overrideHistory=null,scanner=true,receiptFindings=[];
+ w.fetch=async(url,options={})=>{
+  if(url==='/aws-security/setup/tests'&&options.method==='POST'){
+   const body=JSON.parse(options.body);submitted.push({body,headers:options.headers});
+   stored=stored||{id:'test-id',mode:body.mode,requester:'engineer',createdAt:1,state:'QUEUED',finished:false,configurationCurrent:true,inputsVerified:false,cleanupComplete:false,reviewRetired:false,findings:0,missing:0,pages:0,progress:[]};
+   if(timeout){timeout=false;throw new Error('Accepted response lost');}return ok(stored);
+  }
+  if(url==='/aws-security/setup/tests')return ok(overrideHistory===null?(stored?[stored]:[]):overrideHistory);
+  if(url==='/aws-security/readiness')return ok({ready:true,verifiedAt:1,checks:[{name:'Scanner module policy',state:scanner?'ENABLED':'DISABLED'}]});
+  if(url.includes('/receipt?page=0'))return ok({receipt:stored,findings:receiptFindings});
+  if(url.endsWith('/stop')){stored={...stored,state:'CANCELED',finished:true,cleanupComplete:true};return ok(stored);}
+  const id=decodeURIComponent(url.split('/').pop());return ok((overrideHistory||[]).find(r=>r.id===id)||stored);
+ };
+ w.eval(script('aws-security-setup.js'));await flush();
+ const panel=name=>root.querySelector('[data-aws-panel='+name+']');
+ assert.equal(submitted.length,0,'loading checks never starts a scan');
+ assert.equal(panel('status').hidden,false);assert.equal(panel('settings').hidden,true,'one tab at a time');
+ assert.match(root.querySelector('[data-aws-next-title]').textContent,/AWS scans are ready/);
+ assert.match(root.querySelector('[data-aws-overall]').className,/--ok/,'ready shows a green chip');
+ root.querySelector('[data-aws-checks-toggle]').click();assert.equal(root.querySelector('#aws-check-grid').hidden,false,'checks unfold');
+ root.querySelector('[data-aws-tab=settings]').click();assert.equal(panel('settings').hidden,false);assert.equal(panel('status').hidden,true);
+ const sw=root.querySelector('[data-aws-source-switch]'),was=sw.getAttribute('aria-checked')==='true';sw.click();
+ assert.equal(root.querySelector('[data-aws-source-value]').value,String(!was),'the switch posts its state');
+ root.querySelector('[data-aws-tab=tests]').click();
+ assert.equal(root.querySelectorAll('[data-aws-test-checklist] .wt-aws-test').length,3);
+ root.querySelector('[data-aws-test-mode=FULL]').click();await flush();
+ assert.equal(root.querySelector('#aws-setup-test-dialog').open,true);assert.match(root.querySelector('[data-aws-mode-name]').textContent,/Full-code review/);
+ root.querySelector('[data-aws-test-start]').click();await flush();
+ assert.match(root.querySelector('[data-aws-submit-status]').textContent,/response lost/);
+ root.querySelector('[data-aws-test-start]').click();await flush();
+ assert.equal(submitted.length,2);assert.equal(submitted[0].body.requestId,submitted[1].body.requestId,'a lost response retries with the same request id');
+ assert.equal(root.querySelector('#aws-setup-result-dialog').open,true);
+ assert.equal(root.querySelector('[data-aws-test-stop]').hidden,false,'queued work can be cancelled');
+ assert.match(root.querySelector('[data-aws-result-title]').textContent,/is running/);
+ root.querySelector('[data-aws-test-stop]').click();await flush();
+ assert.match(root.querySelector('[data-aws-test-checklist]').textContent,/Canceled/);
+ assert.doesNotMatch(root.querySelector('[data-aws-role-state]').className,/--ok/,'a cancelled scan cannot prove service-role success');
+ // A finished, passed test: result first, plain names, no "Not started" step.
+ const complete=mode=>({...stored,id:mode,mode,state:'COMPLETE',finished:true,configurationCurrent:true,inputsVerified:true,providerStatus:'COMPLETED',cleanupComplete:true,reviewRetired:true,missing:0,findings:4,pages:1,createdAt:1000,finishedAt:121000,reviewId:'cr-1',jobId:'cj-1',sourceSha:'abc',sourceBytes:336,progress:[{name:'PREFLIGHT',status:'COMPLETED'},{name:'FINALIZING',status:'NOT_STARTED'}]});
+ overrideHistory=[complete('FULL')];receiptFindings=[{details:{title:'AWS security finding: COMMAND_INJECTION',nativeSeverity:'CRITICAL',riskType:'COMMAND_INJECTION',locations:[{file:'app.py',startLine:3,endLine:4}]}}];
+ root.querySelector('[data-aws-recheck]').click();await flush();
+ assert.match(root.querySelector('[data-aws-tests-summary]').textContent,/1 of 3 passed/);
+ assert.match(root.querySelector('[data-aws-test-checklist]').textContent,/Passed · 4 findings/);
+ root.querySelector('[data-aws-test-mode=FULL]').click();await flush();
+ const result=root.querySelector('#aws-setup-result-dialog');
+ assert.match(result.querySelector('[data-aws-result-title]').textContent,/Full-code review passed/);
+ assert.match(result.querySelector('[data-aws-result-stats]').textContent,/4findings.*Deleted.*2 min/);
+ assert.match(result.querySelector('[data-aws-findings]').textContent,/CriticalCommand injection/);
+ assert.doesNotMatch(result.querySelector('[data-aws-findings]').textContent,/COMMAND_INJECTION|AWS security finding/,'no provider codes');
+ assert.doesNotMatch(result.querySelector('[data-aws-progress]').textContent,/Not started/,'a finished test never says a step did not start');
+ assert.match(result.querySelector('[data-aws-result-facts]').textContent,/cr-1/,'ids sit in Technical details');
+ root.querySelector('[data-aws-test-mode=DIFFERENTIAL]').click();await flush();assert.equal(root.querySelector('[data-aws-mode]').value,'DIFFERENTIAL','test action selects its own mode');
+ overrideHistory[0]={...complete('FULL'),cleanupComplete:false};root.querySelector('[data-aws-recheck]').click();await flush();assert.match(root.querySelector('[data-aws-tests-summary]').textContent,/0 of 3/,'unfinished cleanup cannot count as passed');
+ overrideHistory=[{...complete('FULL'),configurationCurrent:false}];root.querySelector('[data-aws-recheck]').click();await flush();assert.match(root.querySelector('[data-aws-test-checklist]').textContent,/Settings changed/,'stale configuration cannot count');
+ // The clean sample must come back with no findings: a completed run that reports some is not a pass.
+ overrideHistory=[complete('CLEAN')];root.querySelector('[data-aws-recheck]').click();await flush();
+ assert.match(root.querySelector('[data-aws-test-checklist]').textContent,/Unexpected · 4 findings/,'findings in the clean sample are flagged');
+ assert.doesNotMatch(root.querySelector('[data-aws-test-checklist]').textContent,/Passed/,'and not called passed');
+ assert.match(root.querySelector('[data-aws-tests-summary]').textContent,/0 of 3/,'and not counted as passed');
+ overrideHistory=[{...complete('CLEAN'),findings:0}];root.querySelector('[data-aws-recheck]').click();await flush();
+ assert.match(root.querySelector('[data-aws-test-checklist]').textContent,/Passed · 0 findings/,'a clean sample with no findings passes');
+ scanner=false;root.querySelector('[data-aws-recheck]').click();await flush();assert.match(root.querySelector('[data-aws-next-title]').textContent,/Turn on the AWS scanner/);assert.match(root.querySelector('[data-aws-overall]').className,/--warn/);
+ scanner=true;root.querySelector('[data-aws-recheck]').click();await flush();assert.match(root.querySelector('[data-aws-next-title]').textContent,/AWS scans are ready/);
+ // Returning through boosted navigation initializes the new page on its saved tab.
+ w.document.body.innerHTML=markup;
+ const reopened=w.document.querySelector('[data-aws-setup]');
+ Object.assign(reopened.dataset,{resourcesReady:'true',csrfHeader:'X-CSRF',csrfToken:'token',scannerEnabled:'true',activeTab:'settings'});
+ w.document.dispatchEvent(new w.Event('htmx:afterSwap'));await flush();
+ assert.equal(reopened.dataset.initialized,'true');assert.equal(reopened.querySelector('[data-aws-panel=settings]').hidden,false);
+ assert.equal(submitted.length,2,'reopening never submits another test');
+ dom.window.close();
+
+ const ai=new JSDOM(fs.readFileSync(path.join(resources,'templates/assistant/admin.html'),'utf8'),{url:'https://watchtower.test/admin/assistant',runScripts:'outside-only'}),aw=ai.window,ar=aw.document.querySelector('[data-assistant-admin]');
+ aw.fetch=async()=>ok({configured:true,healthOk:true});
+ aw.eval(script('assistant-admin-layout.js'));
+ const editor=ar.querySelector('[data-assistant-settings]');
+ editor.value=JSON.stringify({enabled:false,allowedModels:[]});editor.dispatchEvent(new aw.Event('wt:settings-loaded'));await flush();
+ // Board AiSettings2: the chip row replaces the setup banner card.
+ assert.equal(ar.querySelector('[data-assistant-key-label]').textContent,'Key saved');assert.equal(ar.querySelector('[data-assistant-connection-label]').textContent,'Connection healthy');
+ assert.equal(ar.querySelector('[data-assistant-model-summary]').textContent,'No default model');
+ editor.value=JSON.stringify({enabled:false,allowedModels:[{id:'fixture'}],defaultModel:'fixture',defaultEffort:'low'});editor.dispatchEvent(new aw.Event('wt:settings-loaded'));await flush();
+ assert.equal(ar.querySelector('[data-assistant-model-summary]').textContent,'Default fixture · low');
+ ar.querySelector('[data-assistant-model-chip]').click();assert.equal(ar.querySelector('[data-assistant-admin-panel=limits]').hidden,false,'the model chip opens Limits');
+ ar.querySelector('[data-assistant-admin-tab=features]').click();
+ assert.equal(ar.querySelector('[data-assistant-enabled]').checked,false);
+ ar.querySelector('[data-assistant-admin-tab=limits]').click();
+ assert.equal(ar.querySelector('[data-assistant-admin-panel=features]').hidden,true);
+ assert.equal(ar.querySelector('[data-assistant-admin-panel=limits]').hidden,false);
+ // Discovery exposes every account model and preserves the saved default and local allowances.
+ const configured={id:'tested-model',efforts:['low'],inputTokenLimit:24000,outputTokenLimit:8192,inputMicrosPerMillion:123456,outputMicrosPerMillion:4500000};
+ editor.value=JSON.stringify({enabled:false,allowedModels:[configured],defaultModel:configured.id,defaultEffort:'low'});
+ let modelPosts=0;
+ aw.fetch=async(url,options={})=>{if(options.method==='POST')modelPosts++;return ok({accessibleIds:['other-model','tested-model','other-model']});};
+ aw.eval(script('assistant-model-setup.js'));
+ const modelForm=ar.querySelector('[data-model-setup-form]'),field=name=>modelForm.querySelector('[name="'+name+'"]');
+ assert.equal(field('model').tagName,'MD-OUTLINED-SELECT');assert.equal(field('model').value,'tested-model');
+ assert.equal(field('inputTokens').value,'24000');assert.equal(field('outputTokens').value,'8192');
+ assert.equal(field('effort').value,'low');assert.equal(field('inputRate').value,'0.123456');assert.equal(field('outputRate').value,'4.5');
+ field('inputTokens').value='25000';
+ ar.querySelector('[data-model-setup-discover]').click();await flush();
+ assert.deepEqual(Array.from(field('model').querySelectorAll('md-select-option'),o=>o.getAttribute('value')),['','other-model','tested-model']);
+ assert.equal(field('model').value,'tested-model');assert.equal(field('inputTokens').value,'25000');assert.equal(field('inputRate').value,'0.123456');
+ assert.equal(modelPosts,0,'discovery cannot approve or alter saved configuration');
+ field('model').value='other-model';field('model').dispatchEvent(new aw.Event('change'));
+ assert.equal(field('inputRate').value,'','prices for another model are not reused');assert.equal(field('outputRate').value,'');
+ ar.querySelector('[data-model-setup]').dispatchEvent(new aw.Event('open'));
+ assert.equal(field('model').value,'tested-model');assert.equal(field('inputTokens').value,'24000');assert.equal(field('inputRate').value,'0.123456');
+ ai.window.close();
+ console.log('Setup workflows: independent AWS/AI controls, explicit execution, CSRF, stable retries, truthful progress and model readiness passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});

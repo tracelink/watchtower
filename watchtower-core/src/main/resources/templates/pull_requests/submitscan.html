@@ -1,183 +1,73 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-12 col-sm-6 text-center text-sm-left mb-0">
-        <!--  <span class="text-uppercase page-subtitle">Pull Request Scan</span> -->
-        <h3 class="page-title">Pull Request Scan</h3>
+<div th:replace="~{fragments/pageheader :: header('New pull request scan', null)}"></div>
+
+<!-- docs/design-system.md, "Restraint": the scanner's state is one chip line, and the admin
+     controls sit behind one button on it, instead of a second card beside the form. -->
+<div class="wt-page-bar mb-3" aria-label="Scanner state">
+  <p class="wt-page-meta wt-meta-chips m-0">
+    <span th:replace="~{fragments/scannerstate :: chips(${scanStatePaused}, ${scanStateQuiesced}, ${numScansQueued}, ${numScansInProgress})}"></span>
+  </p>
+  <details class="wt-admin-disclosure wt-popover" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).SCAN_ADMIN_NAME+''')')}">
+    <summary><span class="material-icons" aria-hidden="true">tune</span>Scanner controls</summary>
+    <div class="wt-popover__body wt-scanner-controls">
+      <strong>Affects every pull request scan</strong>
+      <form method="POST" action="/scan/pause"
+          th:data-confirm="${scanStatePaused} ? 'Resume the pull request scanner? Queued scans start again.' : 'Pause the pull request scanner? Scans are still accepted, but queued scans stop starting.'"
+          th:data-confirm-action="${scanStatePaused} ? 'Resume' : 'Pause'">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <input type="hidden" name="pause" th:value="${!scanStatePaused}">
+        <md-outlined-button type="submit" th:text="${scanStatePaused} ? 'Resume scanner' : 'Pause scanner'">Pause scanner</md-outlined-button>
+      </form>
+      <form method="POST" action="/scan/quiesce"
+          th:data-confirm="${scanStateQuiesced} ? 'Accept new pull request scans again?' : 'Quiesce the pull request scanner? Queued work finishes and new scans are rejected.'"
+          th:data-confirm-action="${scanStateQuiesced} ? 'Accept scans' : 'Quiesce'">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <input type="hidden" name="quiesce" th:value="${!scanStateQuiesced}">
+        <md-outlined-button type="submit" th:text="${scanStateQuiesced} ? 'Resume accepting scans' : 'Quiesce scanner'">Quiesce scanner</md-outlined-button>
+      </form>
     </div>
+  </details>
 </div>
-<!-- End Page Header -->
-<!-- Content -->
-<!-- Top Row -->
-<div class="row border-bottom pb-4 mb-4">
-    <div class="col-lg-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Submit a Scan</h6>
-            </div>
-            <!-- <div class="card-body pb-1"> -->
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item p-4">
-                    <form  method="POST" action="/scan">
-                        <div class="form-row">
-                            <div class="form-group col-auto">
-                                <label class="font-weight-bold">Choose an API</label>
-                                <select name="apiLabel" class="form-control">
-                                    <option th:each="scm : ${scms}" th:value="${scm.getApiLabel()}" th:text="${scm.getApiLabel() + ' - ' + scm.getApiType().getTypeName()}"/>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col">
-                                <label class="font-weight-bold">Repository Name</label>
-                                <input type="text" class="form-control" placeholder="Repository Name" name="repo">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col">
-                                <label class="font-weight-bold">Pull Request ID</label>
-                                <input type="text" class="form-control" placeholder="Pull Request ID" name="prid">
-                            </div>
-                        </div>
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                        <button class="btn btn-primary" type="Submit">Submit for Scanning</button>
-                    </form>
-                </li>
-            </ul>
-        </div>
+
+<!-- One row on wide screens (integration, repository, PR id, submit) so the form spans the page
+     instead of leaving half of it empty. -->
+<section class="card card-small wt-submission-form wt-submission-form--inline mb-4" aria-label="Submit a pull request scan">
+  <div class="card-body">
+    <p th:if="${scms.empty}" class="wt-inline-state">No pull request integration is configured.
+      <a href="/apisettings" th:if="${#authorization.expression('hasAuthority(''API Settings View'')')}">Set up a compatible source integration</a>
+      <span th:unless="${#authorization.expression('hasAuthority(''API Settings View'')')}">Ask an integration administrator to connect a compatible source.</span></p>
+    <form th:unless="${scms.empty}" method="POST" action="/scan" class="wt-md-form" data-scan-submission>
+      <md-outlined-select label="Integration" name="apiLabel" required>
+        <md-select-option th:each="scm : ${scms}" th:value="${scm.getApiLabel()}">
+          <div slot="headline" th:text="${scm.getApiLabel() + ' - ' + scm.getApiType().getTypeName()}"></div>
+        </md-select-option>
+      </md-outlined-select>
+      <!-- Searchable: suggests repositories Watchtower knows for the chosen integration. -->
+      <div class="wt-combo">
+        <md-outlined-text-field label="Repository" name="repo" required autocomplete="off" placeholder="e.g. wt-test"
+            data-repo-suggest="repo-suggestions" aria-haspopup="listbox"></md-outlined-text-field>
+        <div id="repo-suggestions" class="wt-combo__list" role="listbox" aria-label="Known repositories" hidden></div>
+      </div>
+      <md-outlined-text-field label="Pull request #" name="prid" required inputmode="numeric" autocomplete="off" placeholder="e.g. 58"></md-outlined-text-field>
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <div class="wt-form-actions">
+        <md-filled-button type="submit" data-submit-button><span slot="icon" class="material-icons" aria-hidden="true">play_arrow</span>Start scan</md-filled-button>
+        <span class="wt-submit-status" role="status" aria-live="polite" aria-atomic="true"></span>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="card card-small wt-recent-scans" aria-labelledby="pr-recent-heading" data-recent-scan-list>
+  <div class="card-header border-bottom wt-section-heading">
+    <h2 id="pr-recent-heading" class="h5 m-0">Recent pull request scans</h2>
+    <a class="wt-entity-link" href="/scan/results/all">View all results</a>
+  </div>
+  <div class="card-body">
+    <p class="wt-inline-state" th:if="${recentActivity.empty}">No pull request scans have been submitted yet.</p>
+    <!-- The Home table (status, scanners, findings, duration, finished) plus each PR's State. -->
+    <div class="wt-table-scroll" role="region" aria-label="Recent pull request scans" tabindex="0"
+        th:unless="${recentActivity.empty}" th:with="showState=true">
+      <div th:replace="~{fragments/scanactivity :: table(${recentActivity}, 'Five most recently submitted pull request scans')}"></div>
     </div>
-    <div class="col-lg-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Scanner Status</h6>
-            </div>
-            <div class="card-body p-0 pb-3 ">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item px-4">
-                        <strong class="d-block" th:text="'Queued Scans: ' + ${numScansQueued}"></strong>
-                        <strong class="d-block" th:text="'Active Scans: ' + ${numScansInProgress}"></strong>
-                    </li>
-                    <li class="list-group-item px-4" 
-                        th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).SCAN_ADMIN_NAME+''')')}">
-                        <label class="font-weight-bold">Pause/Resume Scanner</label>
-                        <form class="mb-1" method="POST" action="/scan/pause">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                            <th:block th:if="${scanStatePaused}">
-                                <input type="hidden" name="pause" value="false">
-                                <button class="btn btn-success" name="pause">Resume Scanner</button>
-                            </th:block>
-                            <th:block th:unless="${scanStatePaused}">
-                                <input type="hidden" name="pause" value="true">
-                                <button class="btn btn-warning" name="pause">Pause Scanner</button>
-                            </th:block>
-                        </form>
-                        <span>Pausing allows more scans to be queued, but does not execute any queued scans</span>
-                    </li>
-                    <li class="list-group-item px-4"
-                        th:unless="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).SCAN_ADMIN_NAME+''')')}">
-                        <label class="font-weight-bold">Pause/Resume Scanner</label>
-                        <div th:if="${scanStatePaused}" class="bg-warning rounded text-white text-center p-2" style="box-shadow: inset 0 0 5px rgba(0,0,0,.2);">Scanner is Paused</div>
-                        <div th:unless="${scanStatePaused}" class="bg-success rounded text-white text-center p-2" style="box-shadow: inset 0 0 5px rgba(0,0,0,.2);">Scanner is Working</div>
-                        <span>Pausing allows more scans to be queued, but does not execute any queued scans</span>
-                    </li>
-                    <li class="list-group-item px-4"
-                        th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).SCAN_ADMIN_NAME+''')')}">
-                        <label class="font-weight-bold">Quiesce/Resume Scanner</label>
-                        <form class="mb-1" method="POST" action="/scan/quiesce">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                            <th:block th:if="${scanStateQuiesced}">
-                                <input type="hidden" name="quiesce" value="false">
-                                <button class="btn btn-success" name="pausebtn">Resume Scanner</button>
-                            </th:block>
-                            <th:block th:unless="${scanStateQuiesced}">
-                                <input type="hidden" name="quiesce" value="true">
-                                <button class="btn btn-warning" name="quiescebtn">Quiesce Scanner</button>
-                            </th:block>
-                        </form>
-                        <span class="mt-1">Quiescing completes current queued scans and rejects all new scans</span>
-                    </li>
-                    <li class="list-group-item px-4"
-                        th:unless="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).SCAN_ADMIN_NAME+''')')}">
-                        <label class="font-weight-bold">Quiesce/Resume Scanner</label>
-                        <div th:if="${scanStateQuiesced}" class="bg-warning rounded text-white text-center p-2" style="box-shadow: inset 0 0 5px rgba(0,0,0,.2);">Scanner is Quiesced</div>
-                        <div th:unless="${scanStateQuiesced}" class="bg-success rounded text-white text-center p-2" style="box-shadow: inset 0 0 5px rgba(0,0,0,.2);">Scanner is Active</div>
-                        <span class="mt-1">Quiescing completes current queued scans and rejects all new scans</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Directions</h6>
-            </div>
-            <div class="card-body p-0 pb-3 ">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item px-4">
-                        <strong class="text-muted d-block mb-2">Submit a Scan</strong>
-                        <span>
-                          Fill out the form to the left with the SCM with which to interact and
-                          the repository and pull request id to scan. The scanner will be queued
-                          in the engine and process when a scanning thread is available.
-                        </span>
-                    </li>
-                    <li class="list-group-item px-4">
-                        <strong class="text-muted d-block mb-2">Scanner Status</strong>
-                        <span>
-                          The status of the scanner shows the number of scans currently queued in
-                          the system, as well as whether the scanner is paused or quiesced.
-                        </span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- End Top Row -->
-<div class="row">
-    <div class="col">
-        <div class="card card-small mb-4">
-            <div class="card-header border-bottom">
-                <h6 class="m-0">Past Scans Reporting</h6>
-            </div>
-            <div th:if="${lastScans.empty}">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item px-4">
-                        <strong class="text-muted d-block mb-2">No previous reports</strong>
-                    </li>
-                </ul>
-            </div>
-            <div th:unless="${lastScans.empty}">
-                <div class="card-body pb-3 text-center">
-                    <table class="table mb-0 datatable-invert">
-                        <thead class="bg-light">
-                        <tr>
-                            <th scope="col" class="border-0">Scan ID</th>
-                            <th scope="col" class="border-0">Scan End</th>
-                            <th scope="col" class="border-0">API Label</th>
-                            <th scope="col" class="border-0">Pull Request ID</th>
-                            <th scope="col" class="border-0">Num Violations</th>
-                            <th scope="col" class="border-0">Resolved</th>
-                            <th scope="col" class="border-0">View Report</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="scan : ${lastScans}">
-                                <td th:text="${scan.getId()}">Scan ID</td>
-                                <td class="localizetime" th:text="${scan.getEndDateMillis()}" th:data-order="${scan.getEndDateMillis()}">Date Reviewed</td>
-                                <td th:text="${scan.getContainer().getApiLabel()}">API Label</td>
-                                <td th:text="${scan.getContainer().getRepoName() + '-' + scan.getContainer().getPrId()}">Pull Request ID</td>
-                                <td th:text="${scan.getNumViolations()}">Number of Violations</td>
-                                <td th:text="${scan.getContainer().isResolved()}">Resolved</td>
-                                <td class="py-1">
-                               		<a class="btn btn-success btn-sm py-1" th:href="${'/scan/report/' + scan.getId()}">Report</a>
-                               </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- End Content -->
+  </div>
+</section>

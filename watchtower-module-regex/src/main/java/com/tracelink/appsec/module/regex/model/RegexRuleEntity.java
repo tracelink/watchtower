@@ -2,12 +2,13 @@ package com.tracelink.appsec.module.regex.model;
 
 import java.util.stream.Collectors;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 
+import com.tracelink.appsec.watchtower.core.rule.RuleDesignation;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetEntity;
@@ -57,6 +58,11 @@ public class RegexRuleEntity extends RuleEntity {
 		this.provided = provided;
 	}
 
+	@Override
+	public RuleDesignation designationOfThisRule() {
+		return isProvided() ? RuleDesignation.PROVIDED : RuleDesignation.CUSTOM;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -85,6 +91,6 @@ public class RegexRuleEntity extends RuleEntity {
 		dto.setPriority(getPriority());
 		dto.setRulesets(
 				getRulesets().stream().map(RulesetEntity::getName).collect(Collectors.toSet()));
-		return dto;
+		return withStewardship(dto);
 	}
 }

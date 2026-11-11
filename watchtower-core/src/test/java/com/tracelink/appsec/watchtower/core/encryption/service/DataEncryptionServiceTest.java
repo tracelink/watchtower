@@ -1,8 +1,12 @@
 package com.tracelink.appsec.watchtower.core.encryption.service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Optional;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.Assertions;
@@ -10,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.encryption.model.DataEncryptionKey;
@@ -28,7 +32,7 @@ public class DataEncryptionServiceTest {
 	public final CoreLogWatchExtension logWatcher =
 			CoreLogWatchExtension.forClass(DataEncryptionService.class);
 
-	@MockBean
+	@MockitoBean
 	private DataEncryptionKeyRepository dataEncryptionKeyRepository;
 
 	@Test
@@ -249,6 +253,45 @@ public class DataEncryptionServiceTest {
 		Assertions.assertEquals(1, logWatcher.getMessages().size());
 		Assertions.assertEquals("Skipping decryption with null key",
 				logWatcher.getMessages().get(0));
+	}
+
+	@Test
+	public void testEncryptStringUsesV2FormatWithUniqueCiphertexts() {
+		DataEncryptionService dataEncryptionService = new DataEncryptionService(
+				EncryptionType.ENVIRONMENT, dataEncryptionKeyRepository);
+		DataEncryptionKey dataEncryptionKey = new DataEncryptionKey();
+		dataEncryptionKey.setCurrentKey(EncryptionUtils.generateKey());
+		dataEncryptionKey.setConverterClassName(TestConverter.class.getName());
+		BDDMockito.when(dataEncryptionKeyRepository
+				.findByConverterClassName(TestConverter.class.getName()))
+				.thenReturn(Optional.of(dataEncryptionKey));
+
+		String first = dataEncryptionService.encryptString("foo", TestConverter.class);
+		String second = dataEncryptionService.encryptString("foo", TestConverter.class);
+
+		Assertions.assertTrue(first.startsWith(EncryptionUtils.V2_PREFIX));
+		Assertions.assertNotEquals(first, second);
+	}
+
+	@Test
+	public void testDecryptStringLegacyZeroIvFormat() throws Exception {
+		DataEncryptionService dataEncryptionService = new DataEncryptionService(
+				EncryptionType.ENVIRONMENT, dataEncryptionKeyRepository);
+		Key key = EncryptionUtils.generateKey();
+		DataEncryptionKey dataEncryptionKey = new DataEncryptionKey();
+		dataEncryptionKey.setCurrentKey(key);
+		dataEncryptionKey.setConverterClassName(TestConverter.class.getName());
+		BDDMockito.when(dataEncryptionKeyRepository
+				.findByConverterClassName(TestConverter.class.getName()))
+				.thenReturn(Optional.of(dataEncryptionKey));
+		Cipher legacy = Cipher.getInstance("AES/GCM/NoPadding");
+		legacy.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"),
+				new GCMParameterSpec(128, new byte[12]));
+		String legacyValue = Base64.getEncoder()
+				.encodeToString(legacy.doFinal("foo".getBytes(StandardCharsets.UTF_8)));
+
+		Assertions.assertEquals("foo",
+				dataEncryptionService.decryptString(legacyValue, TestConverter.class));
 	}
 
 	static class TestConverter {

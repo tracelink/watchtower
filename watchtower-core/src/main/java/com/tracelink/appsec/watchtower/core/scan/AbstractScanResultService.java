@@ -1,11 +1,14 @@
 package com.tracelink.appsec.watchtower.core.scan;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.stream.Collectors;
+
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +22,7 @@ import org.springframework.data.domain.Sort.Direction;
  * @param <S> a type describing this scan result's associated Scan
  * @param <V> a type describing this scan result's associated Violation
  */
-public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, ?>, V extends AbstractViolationEntity<S>> {
+public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, ?>, V extends AbstractScanViolationEntity<S>> {
 
 	private final IScanRepository<S> scanRepo;
 	private final IViolationRepository<V> vioRepo;
@@ -56,13 +59,24 @@ public abstract class AbstractScanResultService<S extends AbstractScanEntity<?, 
 	}
 
 	/**
+	 * Counts the number of scans that have completed since local midnight.
+	 *
+	 * @return number of scans completed today
+	 */
+	public long countScansToday() {
+		long startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault())
+				.toInstant().toEpochMilli();
+		return scanRepo.countByEndDateBetween(startOfDay, System.currentTimeMillis());
+	}
+
+	/**
 	 * Counts the number of violations that have been found, only considering those which are new
-	 * violations
+	 * violations and are not informational
 	 *
 	 * @return number of violations found
 	 */
 	public long countViolations() {
-		return vioRepo.count();
+		return vioRepo.findAll().stream().filter(v -> !v.getSeverity().equals(RulePriority.INFORMATIONAL)).count();
 	}
 
 	/**

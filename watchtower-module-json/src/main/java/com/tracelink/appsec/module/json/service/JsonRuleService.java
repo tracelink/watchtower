@@ -1,13 +1,15 @@
 package com.tracelink.appsec.module.json.service;
 
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.tracelink.appsec.module.json.model.JsonRuleDto;
 import com.tracelink.appsec.module.json.model.JsonRuleEntity;
 import com.tracelink.appsec.module.json.repository.JsonRuleRepository;
 import com.tracelink.appsec.watchtower.core.exception.rule.RuleNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * Handles logic to retrieve and edit Json rules.
@@ -17,10 +19,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class JsonRuleService {
 
+	@Autowired(required = false)
+	private com.tracelink.appsec.watchtower.core.rule.RuleService coreRuleService;
+
+	private void invalidateRuleCache() {
+		if (coreRuleService != null) {
+			coreRuleService.invalidateRuleCache();
+		}
+	}
+
 	private final JsonRuleRepository ruleRepository;
 
 	/**
-	 * Creates and instance of this service with a {@link JsonRuleRepository}.
+	 * Creates an instance of this service with a {@link JsonRuleRepository}.
 	 *
 	 * @param ruleRepository repository to interact with the database
 	 */
@@ -62,6 +73,7 @@ public class JsonRuleService {
 		rule.setFileExtension(dto.getFileExtension());
 		rule.setQuery(dto.getQuery());
 		ruleRepository.saveAndFlush(rule);
+		invalidateRuleCache();
 	}
 
 	/**
@@ -78,6 +90,7 @@ public class JsonRuleService {
 		JsonRuleEntity entity = dto.toEntity();
 		entity.setAuthor(dto.getAuthor());
 		ruleRepository.saveAndFlush(entity);
+		invalidateRuleCache();
 	}
 
 }

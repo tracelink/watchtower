@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "note": "Starter CWE for rules that have none. Applied only to rules without a CWE, only when the CWE exists in the loaded catalog, and always after a preview.",
+  "modules": {
+    "betterleaks": "CWE-798"
+  },
+  "rules": [
+    { "module": "pmd", "name": "HardCodedCryptoKey", "cwe": "CWE-321" },
+    { "module": "pmd", "name": "InsecureCryptoIv", "cwe": "CWE-329" },
+    { "module": "pmd", "name": "ArrayIsStoredDirectly", "cwe": "CWE-496" },
+    { "module": "pmd", "name": "MethodReturnsInternalArray", "cwe": "CWE-495" },
+    { "module": "pmd", "name": "AvoidCatchingThrowable", "cwe": "CWE-396" },
+    { "module": "pmd", "name": "AvoidCatchingGenericException", "cwe": "CWE-396" },
+    { "module": "pmd", "name": "AvoidCatchingNPE", "cwe": "CWE-395" },
+    { "module": "pmd", "name": "CompareObjectsWithEquals", "cwe": "CWE-595" },
+    { "module": "pmd", "name": "ReturnFromFinallyBlock", "cwe": "CWE-584" },
+    { "module": "pmd", "name": "DoNotTerminateVM", "cwe": "CWE-382" },
+    { "module": "pmd", "name": "EmptyCatchBlock", "cwe": "CWE-390" },
+    { "module": "pmd", "name": "CloseResource", "cwe": "CWE-772" }
+  ]
+}

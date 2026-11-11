@@ -1,7 +1,7 @@
 package com.tracelink.appsec.watchtower.core.module;
 
 /**
- * Exception thrown when an illegal action is attempted for a {@link AbstractModule}, such as when a
+ * Exception thrown when an illegal action is attempted for a {@link AbstractCodeScanModule}, such as when a
  * name collision occurs.
  *
  * @author mcool

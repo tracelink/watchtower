@@ -4,13 +4,11 @@ import com.tracelink.appsec.watchtower.core.encryption.model.DataEncryptionKey;
 import com.tracelink.appsec.watchtower.core.encryption.model.EncryptionType;
 import com.tracelink.appsec.watchtower.core.encryption.repository.DataEncryptionKeyRepository;
 import com.tracelink.appsec.watchtower.core.encryption.utils.EncryptionUtils;
+import com.tracelink.appsec.watchtower.core.encryption.utils.EncryptionUtils.CipherInitializationException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Key;
-import java.util.Base64;
 import java.util.Optional;
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,18 +80,13 @@ public class DataEncryptionService {
 		if (encryptionKey == null) {
 			return attribute;
 		}
-		// Get a cipher for the encryption key in encrypt mode
-		Cipher cipher = EncryptionUtils.getCipherForKeyAndMode(encryptionKey, Cipher.ENCRYPT_MODE);
-		if (cipher == null) {
-			LOGGER.warn(NULL_CIPHER_ENCRYPT + converterClass.getName());
-			return attribute;
-		}
-		// Try to encrypt the attribute using the cipher and log any errors
+		// Encrypt with a fresh random IV (v2 format) and log any errors
 		try {
-			byte[] encrypted = cipher.doFinal(attribute.getBytes());
-			return Base64.getEncoder().encodeToString(encrypted);
-		} catch (IllegalArgumentException | IllegalStateException | IllegalBlockSizeException
-				| BadPaddingException e) {
+			return EncryptionUtils.encrypt(encryptionKey,
+					attribute.getBytes(StandardCharsets.UTF_8));
+		} catch (CipherInitializationException e) {
+			LOGGER.warn(NULL_CIPHER_ENCRYPT + converterClass.getName());
+		} catch (GeneralSecurityException e) {
 			LOGGER.error(CANNOT_ENCRYPT + converterClass.getName(), e);
 		}
 		return attribute;
@@ -176,20 +169,13 @@ public class DataEncryptionService {
 			LOGGER.info(NULL_KEY_DECRYPT);
 			return null;
 		}
-		// Get a cipher for the decryption key in decrypt mode
-		Cipher cipher = EncryptionUtils.getCipherForKeyAndMode(decryptionKey, Cipher.DECRYPT_MODE);
-		if (cipher == null) {
-			LOGGER.warn(NULL_CIPHER_DECRYPT + dataEncryptionKey.getConverterClassName());
-			return null;
-		}
-		// Try to decrypt the dbData using the cipher and log any errors
+		// Decrypt (v2 or legacy zero-IV format) and log any errors
 		try {
-			// Get a cipher for the decryption key in decrypt mode
-			EncryptionUtils.getCipherForKeyAndMode(decryptionKey, Cipher.DECRYPT_MODE);
-			// Try to decrypt the dbData using the cipher and log any errors
-			byte[] encrypted = Base64.getDecoder().decode(dbData);
-			return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
-		} catch (IllegalArgumentException | IllegalStateException | IllegalBlockSizeException | BadPaddingException e) {
+			return new String(EncryptionUtils.decrypt(decryptionKey, dbData),
+					StandardCharsets.UTF_8);
+		} catch (CipherInitializationException e) {
+			LOGGER.warn(NULL_CIPHER_DECRYPT + dataEncryptionKey.getConverterClassName());
+		} catch (GeneralSecurityException e) {
 			String message = CANNOT_DECRYPT + dataEncryptionKey.getConverterClassName()
 					+ (current ? W_CURRENT_KEY : W_PREVIOUS_KEY);
 			if (dataEncryptionKey.isRotationInProgress()) {

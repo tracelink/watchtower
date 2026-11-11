@@ -1,0 +1,9 @@
+<!-- An advisory rule is read-only here, so its values are text, not disabled fields
+     (docs/design-system.md, "Restraint"). -->
+<div class="card-footer">
+	<div class="wt-meta-chips">
+		<span th:replace="~{fragments/rulefacts :: fact('person', ${rule.author}, 'Author')}"></span>
+		<th:block th:if="${rule.externalUrl != null and !rule.externalUrl.isEmpty()}"><a th:replace="~{fragments/rulefacts :: doc(${rule.externalUrl})}"></a></th:block>
+	</div>
+	<p id="ruleMessage" th:text="${rule.message}"></p>
+</div>

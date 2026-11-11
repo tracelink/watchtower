@@ -1,7 +1,7 @@
 package com.tracelink.appsec.module.pmd.designer;
 
 import net.sourceforge.pmd.lang.ast.Node;
-import net.sourceforge.pmd.lang.ast.xpath.Attribute;
+import net.sourceforge.pmd.lang.rule.xpath.Attribute;
 
 import java.util.ArrayList;
 import java.util.Iterator;

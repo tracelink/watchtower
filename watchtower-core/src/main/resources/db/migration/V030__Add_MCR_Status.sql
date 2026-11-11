@@ -1,0 +1,1 @@
+ALTER TABLE pull_request_scans ADD COLUMN mcr_status varchar(255) DEFAULT 0;

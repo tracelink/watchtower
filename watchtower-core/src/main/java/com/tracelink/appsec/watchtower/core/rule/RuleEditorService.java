@@ -27,8 +27,19 @@ public class RuleEditorService {
 	/**
 	 * Map from module name to the path to the edit rule HTML file
 	 */
+	@org.springframework.beans.factory.annotation.Autowired(required=false)
+	private com.tracelink.appsec.watchtower.core.module.ModuleControlService moduleControls;
+
 	private TreeMap<String, IRuleEditor> moduleMapping =
 			new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+	/** Names and checks the CWEs shown on the rule page; absent in tests that do not need it. */
+	private com.tracelink.appsec.watchtower.core.cwe.CweCatalogService cweCatalog;
+
+	@Autowired(required = false)
+	public void setCweCatalog(com.tracelink.appsec.watchtower.core.cwe.CweCatalogService cweCatalog) {
+		this.cweCatalog = cweCatalog;
+	}
 
 	public RuleEditorService(@Autowired RuleService ruleService) {
 		this.ruleService = ruleService;
@@ -93,24 +104,33 @@ public class RuleEditorService {
 		}
 
 		List<RuleDto> rules = ruleService.getRulesForModule(module);
-		RuleDto rule = null;
-		// if the rule is still null, make a blank page, else ask the scanner module how to display
-		RuleEditModelAndView mv;
+		RuleDto rule;
 		if (ruleId == null) {
-			mv = new RuleEditModelAndView("");
+			// Open on the first rule (a custom one when the module has any), so the editor is never
+			// an empty "Select a rule" box (UAT walkthrough, 2026-10-16; #27).
+			rule = rules.stream().filter(RuleDto::isCustom).findFirst()
+					.orElse(rules.isEmpty() ? null : rules.get(0));
 		} else {
 			rule = rules.stream()
 					.filter(r -> r.getId().equals(ruleId))
 					.findAny()
 					.orElseThrow(() -> new RuleNotFoundException("Unknown Rule and module pair"));
-			IRuleEditor ruleEditor = this.moduleMapping.get(module);
-			mv = ruleEditor.getRuleEditModelAndView(rule);
 		}
+		// No rule at all: a blank page; otherwise the scanner module draws the rule.
+		RuleEditModelAndView mv = rule == null ? new RuleEditModelAndView("")
+				: this.moduleMapping.get(module).getDefaultRuleEditModelAndView(rule);
 
+		long customCount = rules.stream().filter(RuleDto::isCustom).count();
 		mv.addObject("modules", getKnownModules());
 		mv.addObject("rules", rules);
+		mv.addObject("customCount", customCount);
+		mv.addObject("providedCount", rules.size() - customCount);
 		mv.addObject("activeModule", module);
+		mv.addObject("moduleDisabled", moduleControls != null && !moduleControls.enabled(module));
 		mv.addObject("activeRule", rule);
+		// Ready-made chips, so the page never reaches into the CWE catalog itself.
+		mv.addObject("cweChips", rule == null || cweCatalog == null ? List.of()
+				: cweCatalog.chipsFor(rule.getStewardship().getCwe(), rule.getStewardship().getSecondaryCwes()));
 
 		return mv;
 	}

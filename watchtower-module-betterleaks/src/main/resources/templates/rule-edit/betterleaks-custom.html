@@ -1,0 +1,55 @@
+<!-- A custom Betterleaks rule. Saving re-tests it against its samples and records a new version.
+     Read-only values are a meta line; optional matching fields and the version history sit behind
+     disclosures (docs/design-system.md, "Restraint"). -->
+<div class="card-footer">
+  <form class="wt-md-form" action="/rule/edit/betterleaks/custom" method="POST">
+    <div class="wt-meta-chips">
+      <span th:replace="~{fragments/rulefacts :: fact('person', ${rule.author}, 'Author')}"></span>
+      <span th:replace="~{fragments/rulefacts :: fact('history', ${'Version ' + rule.version}, 'Saving tests the rule against its samples and records a new version')}"></span>
+    </div>
+    <md-outlined-select label="Severity" name="priority" required>
+      <md-select-option th:each="p : ${priorities}" th:value="${p}"
+          th:selected="${p.name() == form.priority}">
+        <div slot="headline"><span th:class="${'wt-sev wt-sev-' + p.getPriority()}" th:text="${p.getName()}">High</span></div>
+      </md-select-option>
+    </md-outlined-select>
+    <md-outlined-text-field type="textarea" rows="2" label="Guidance" name="description" required
+        th:value="${form.description}"></md-outlined-text-field>
+    <md-outlined-text-field label="Documentation URL" name="externalUrl" required
+        th:value="${form.externalUrl}"></md-outlined-text-field>
+    <md-outlined-text-field class="wt-mono-field" label="Pattern" name="regex" required th:value="${form.regex}"></md-outlined-text-field>
+    <md-outlined-text-field type="textarea" rows="3" label="Must match" name="positiveSample"
+        required th:value="${form.positiveSample}"></md-outlined-text-field>
+    <md-outlined-text-field type="textarea" rows="3" label="Must not match" name="negativeSample"
+        required th:value="${form.negativeSample}"></md-outlined-text-field>
+    <details class="wt-form-disclosure">
+      <summary>Keywords, entropy and filter</summary>
+      <md-outlined-text-field label="Keywords" name="keywords" th:value="${form.keywords}"
+          supporting-text="Comma-separated"></md-outlined-text-field>
+      <md-outlined-text-field label="Minimum entropy" name="entropy" th:value="${form.entropy}"></md-outlined-text-field>
+      <md-outlined-text-field label="Secret group" name="secretGroup" th:value="${form.secretGroup}"></md-outlined-text-field>
+      <md-outlined-text-field label="Filter (CEL)" name="filter" th:value="${form.filter}"></md-outlined-text-field>
+    </details>
+    <input type="hidden" name="id" th:value="${form.id}">
+    <input type="hidden" name="ruleId" th:value="${form.ruleId}">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <md-filled-button type="submit" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Test and save version</md-filled-button>
+  </form>
+  <details class="wt-form-disclosure mt-3">
+    <summary th:text="${'Version history (' + versions.size() + ')'}">Version history</summary>
+    <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Rule versions">
+      <table class="table mb-0">
+        <caption>Saved versions of this rule, newest first</caption>
+        <thead><tr><th scope="col">Version</th><th scope="col">Author</th><th scope="col">Definition</th></tr></thead>
+        <tbody>
+          <tr th:each="version : ${versions}">
+            <td th:text="${version.ruleVersion}">1</td>
+            <td th:text="${version.author}">author</td>
+            <td><details><summary>Show</summary><pre class="mb-0" th:text="${version.definition}">{}</pre></details></td>
+          </tr>
+          <tr th:if="${versions.empty}"><td colspan="3" class="text-muted">No versions recorded.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+</div>

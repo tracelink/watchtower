@@ -1,0 +1,68 @@
+/* Material Web migration: maps Material 3's --md-sys-* design tokens onto Watchtower's
+   existing --wt-* tokens (tokens.css). This file is a pure translation layer - it never
+   redefines a --wt-* value itself, and never hardcodes a literal color. Because every
+   declaration below is a var(--wt-*) reference rather than a resolved color, the existing
+   3-block dark-mode system in tokens.css (:root defaults, prefers-color-scheme media query,
+   [data-theme="dark"] override) re-themes every Material Web component automatically with
+   zero changes here - CSS custom property references are live, not copy-on-declare.
+
+   Loaded immediately after tokens.css in htmlhead.html (tokens must exist first). Add one
+   more var(--wt-*) mapping line here as each wave's converted pages need a token this initial
+   set doesn't yet cover - never invent a parallel --wt-md-* namespace. */
+:root {
+  /* Core color roles */
+  --md-sys-color-primary: var(--wt-accent-interactive);
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: var(--wt-accent-soft);
+  --md-sys-color-on-primary-container: var(--wt-accent-strong);
+
+  --md-sys-color-surface: var(--wt-surface);
+  --md-sys-color-on-surface: var(--wt-text);
+  --md-sys-color-surface-container: var(--wt-surface-alt);
+  --md-sys-color-surface-container-high: var(--wt-surface-alt);
+  --md-sys-color-surface-variant: var(--wt-surface-alt);
+  --md-sys-color-on-surface-variant: var(--wt-text-muted);
+
+  --md-sys-color-outline: var(--wt-border);
+  --md-sys-color-outline-variant: var(--wt-border);
+
+  --md-sys-color-error: var(--wt-danger-solid);
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: var(--wt-danger-strong);
+  --md-sys-color-on-error-container: #ffffff;
+
+  /* md-dialog reads these for its own surface/scrim - keep in sync with --wt-surface so a
+     dialog doesn't visually clash with the cards it opens on top of. */
+  --md-sys-color-surface-container-highest: var(--wt-surface);
+  --md-sys-color-scrim: #000000;
+
+  /* Shape */
+  --md-sys-shape-corner-small: var(--wt-radius-sm);
+  --md-sys-shape-corner-medium: var(--wt-radius);
+  --md-sys-shape-corner-large: var(--wt-radius);
+  --md-sys-shape-corner-extra-large: var(--wt-radius);
+
+  /* Typography - composite tokens (family/size/line-height/weight/tracking per role), unlike
+     --wt-text-* which only ever supplied a single font-size number. Only family+size are set
+     here; Material Web falls back to its own defaults for the remaining sub-tokens
+     (line-height, weight, tracking) of each role, which is an acceptable default until a wave
+     needs finer control. */
+  --md-sys-typescale-body-large-font: var(--wt-font);
+  --md-sys-typescale-body-large-size: var(--wt-text-base);
+  --md-sys-typescale-body-medium-font: var(--wt-font);
+  --md-sys-typescale-body-medium-size: var(--wt-text-sm);
+  --md-sys-typescale-label-large-font: var(--wt-font);
+  --md-sys-typescale-label-large-size: var(--wt-text-sm);
+  --md-sys-typescale-headline-small-font: var(--wt-font);
+  /* Was unset (font-only) until Phase 2 Section B (dashboard stat tiles) needed the size half
+     of this role too. 1.5rem/24px is both this app's own --wt-text-xl and Material 3's
+     documented headline-small size, so no new number was invented for it. */
+  --md-sys-typescale-headline-small-size: var(--wt-text-xl);
+  /* Field supporting text and character counters use body-small. Unset, it fell back to the
+     reference typeface (Roboto, not loaded) and rendered in the browser's serif. The two
+     reference typefaces catch every other role this file doesn't set. */
+  --md-sys-typescale-body-small-font: var(--wt-font);
+  --md-sys-typescale-body-small-size: var(--wt-text-sm);
+  --md-ref-typeface-plain: var(--wt-font);
+  --md-ref-typeface-brand: var(--wt-font);
+}

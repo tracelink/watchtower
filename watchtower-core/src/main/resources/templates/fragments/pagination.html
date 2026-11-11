@@ -1,0 +1,40 @@
+<!-- Shared exact-count, fixed-size paginator for server-rendered result collections. Hidden when
+     there is nothing to page (an empty list or a single page). -->
+<div th:fragment="pagination(baseUrl, pagination)" class="card-header border-bottom"
+     th:if="${pagination != null && pagination.totalPages() > 1}"
+     th:with="pageUrl=${baseUrl + (#strings.contains(baseUrl, '?') ? '&' : '?') + 'page='}">
+    <nav class="wt-pagination" aria-label="Pagination">
+        <span class="wt-pagination__status" role="status" aria-live="polite"
+              th:text="${#numbers.formatInteger(pagination.firstElementNumber(), 1, 'COMMA') + '–' + #numbers.formatInteger(pagination.lastElementNumber(), 1, 'COMMA') + ' of ' + #numbers.formatInteger(pagination.totalElements(), 1, 'COMMA')}"></span>
+        <div class="wt-pagination__actions">
+			<span th:if="${!pagination.hasPrevious()}" class="wt-pagination__step is-disabled"
+				  aria-disabled="true"><span class="material-icons" aria-hidden="true">chevron_left</span>Previous</span>
+			<a th:if="${pagination.hasPrevious()}" class="wt-pagination__step"
+			   th:href="${pageUrl + (pagination.pageNumber() - 1)}"
+			   hx-target="#results-region" hx-select="#results-region" hx-swap="outerHTML"
+			   hx-push-url="true"><span class="material-icons" aria-hidden="true">chevron_left</span>Previous</a>
+
+            <span th:if="${!pagination.pageWindow().isEmpty() && pagination.pageWindow()[0] > 1}"
+                  class="wt-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+			<th:block th:each="pageNumber : ${pagination.pageWindow()}">
+				<span th:if="${pageNumber == pagination.pageNumber() + 1}"
+					  class="wt-pagination__page is-current" aria-current="page"
+					  th:text="${pageNumber}"></span>
+				<a th:unless="${pageNumber == pagination.pageNumber() + 1}"
+				   class="wt-pagination__page" th:aria-label="${'Go to page ' + pageNumber}"
+                   th:href="${pageUrl + (pageNumber - 1)}"
+                   hx-target="#results-region" hx-select="#results-region" hx-swap="outerHTML"
+                   hx-push-url="true" th:text="${pageNumber}"></a>
+            </th:block>
+            <span th:if="${!pagination.pageWindow().isEmpty() && pagination.pageWindow()[pagination.pageWindow().size() - 1] < pagination.totalPages()}"
+                  class="wt-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+
+			<a th:if="${pagination.hasNext()}" class="wt-pagination__step"
+			   th:href="${pageUrl + (pagination.pageNumber() + 1)}"
+			   hx-target="#results-region" hx-select="#results-region" hx-swap="outerHTML"
+			   hx-push-url="true">Next<span class="material-icons" aria-hidden="true">chevron_right</span></a>
+			<span th:if="${!pagination.hasNext()}" class="wt-pagination__step is-disabled"
+				  aria-disabled="true">Next<span class="material-icons" aria-hidden="true">chevron_right</span></span>
+        </div>
+    </nav>
+</div>

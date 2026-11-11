@@ -1,0 +1,3 @@
+<div th:fragment="dialog(scanType, scanId)" data-feedback-context hidden
+ th:if="${#authorization.expression('hasAuthority(''Finding Feedback'') and hasAuthority(''Scan Results View'')')}"
+ th:attr="data-scan-type=${scanType},data-scan-id=${scanId}"></div>

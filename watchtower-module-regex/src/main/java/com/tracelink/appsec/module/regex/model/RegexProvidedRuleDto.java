@@ -2,14 +2,15 @@ package com.tracelink.appsec.module.regex.model;
 
 import java.util.regex.Pattern;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.tracelink.appsec.module.regex.RegexModule;
 import com.tracelink.appsec.watchtower.core.rule.ProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Represents a data transfer object for the {@link RegexRuleEntity}. All fields in this object are
@@ -17,7 +18,7 @@ import com.tracelink.appsec.watchtower.core.rule.RuleDto;
  *
  * @author mcool
  */
-public class RegexProvidedRuleDto extends ProvidedRuleDto {
+public class RegexProvidedRuleDto extends ProvidedRuleDto implements RegexRuleDto {
 
 	@NotNull(message = "File extension" + CANNOT_BE_NULL)
 	@Size(max = 255, message = "File extension cannot have a length of more than 256 characters.")
@@ -57,6 +58,7 @@ public class RegexProvidedRuleDto extends ProvidedRuleDto {
 
 	public void setRegexPattern(String regexPattern) {
 		this.regexPattern = regexPattern;
+		this.compiledPattern = null;
 	}
 
 	@Override
@@ -112,4 +114,9 @@ public class RegexProvidedRuleDto extends ProvidedRuleDto {
 		return fileExtension.isEmpty() || fileName.endsWith(fileExtension);
 	}
 
+	@Override
+	protected RuleRevision executableDefinition() {
+		return newDefinition().field("fileExtension", getFileExtension())
+				.field("regexPattern", getRegexPattern());
+	}
 }

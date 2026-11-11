@@ -1,4 +1,4 @@
-class WatchtowerViolationsBarChart{
+window.WatchtowerViolationsBarChart = class WatchtowerViolationsBarChart {
 	constructor(selectId, canvasId, scanType){
 		this.selectId = selectId;
 		this.canvasId = canvasId;
@@ -51,31 +51,32 @@ class WatchtowerViolationsBarChart{
 		};
 	
 		var options = {
-			legend: {
-				position: 'top',
-				labels: {
-					 padding: 10,
-					 boxWidth: 15
+			plugins: {
+				legend: {
+					position: 'top',
+					labels: {
+						 padding: 10,
+						 boxWidth: 15
+					}
+				},
+				tooltip: {
+					mode: 'index',
+					position: 'nearest'
 				}
 			},
-			cutoutPercentage: 0,
 			// Uncomment the following line in order to disable the animations.
 			// animation: false,
-			tooltips: {
-				custom: false,
-				mode: 'index',
-				position: 'nearest'
-			},
 			scales: {
-				xAxes: [{ stacked: true }],
-				yAxes: [{
+				x: {
+					stacked: true
+				},
+				y: {
 					stacked: true,
 					display: true,
 					ticks: {
 						beginAtZero: true
 					}
-					
-				}]
+				}
 			},
 			layout: {
 		        padding: {
@@ -97,21 +98,21 @@ class WatchtowerViolationsBarChart{
 
 	updateBarTimePeriod = async (event) => {
 		let period = event.target.value;
+		wtSetChartLoading('bar-no-data', 'Loading time and type trend…');
 			
-		const response = await fetch(`/rest/metrics/violations-by-period-and-type?period=${period}&type=${this.scanType}`);
-		const result = await response.json();
-		
-		this.updateBarData(result);
+		try {
+			const query = wtMetricQuery(this.selectId, period);
+			this.updateBarData(await wtFetchMetric(`/rest/metrics/violations-by-period-and-type?${query}&type=${this.scanType}`));
+		} catch (error) {
+			toggleChart(true, 'bar-no-data', this.canvasId, error.message);
+		}
 	};
 	
 	barContentLoad = async () => {
-		const response = await fetch(`/rest/metrics/violations-by-period-and-type?period=last-four-weeks&type=${this.scanType}`);
-		const result = await response.json();
-		
-		this.updateBarData(result);
-	
-		$('#'+this.selectId).change(this.updateBarTimePeriod);
+		const select = document.getElementById(this.selectId);
+		await this.updateBarTimePeriod({target: {value: select.value || 'last-thirty-days'}});
+		select.addEventListener('change', this.updateBarTimePeriod);
 	};
 	
 	
-}
+};

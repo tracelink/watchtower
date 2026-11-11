@@ -1,68 +1,22 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-        <h3 class="page-title">Scan Results Viewer</h3>
-    </div>
+<div th:replace="~{fragments/pageheader :: header('Pull request results', null)}"></div>
+<!-- The last 90 days by default: the page reads an indexed window, not every scan ever run.
+     Older ones are one click away; nothing is moved or deleted. -->
+<div class="wt-page-bar mb-3">
+  <div th:replace="~{fragments/resultfilters :: filters(baseUrl=${'/scan/results/'}, filters=${filters}, activeFilter=${activeFilter})}"></div>
+  <div class="wt-result-period" th:if="${periods != null}">
+    <nav class="wt-segmented-filter" aria-label="Period" data-result-period>
+      <a th:each="p : ${periods}" th:href="@{/scan/results/{f}(f=${activeFilter},period=${p.key})}"
+         th:class="${p == period} ? 'wt-segment is-active' : 'wt-segment'"
+         th:attr="aria-current=${p == period ? 'page' : null}" th:text="${p.display}">Last 90 days</a>
+    </nav>
+  </div>
 </div>
-<!-- End Page Header -->
-<div class="row border-bottom pb-1 mb-2">
-    <div class="col">
-        <div class="card card-small mb-2">
-            <div class="card-header border-bottom py-1">
-                <h6 class="d-inline m-0">Select a Filter</h6>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item px-3">
-                    <!-- Button Groups -->
-                    <div class="btn-group btn-group-toggle">
-                        <a th:each="filter, oStat : ${filters}"
-                           th:href="'/scan/results/' + ${filter.getName()}"
-                           th:class="${filter.getName().equals(activeFilter) } ? 'btn btn-white active' : 'btn btn-white'"
-                           th:text="${filter.getDisplay()}"></a>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </div>
-</div>
-<div class="row" th:if="${results}">
-	<div class="col">
-        <div class="card card-small mb-2">
-        	<div>
-        	   <div class="card-header border-bottom">
-             	   	<h6 class="d-inline " th:text="${'Page: ' + activePageNum}"/>
-             	   	<div class="d-block float-right">
-             	   		<a th:class="${'btn btn-primary ' + (activePageNum == 0 ? 'disabled' : '')}" th:href="${'/scan/results/' + activeFilter + '?page=' + (activePageNum-1)}">Previous</a>
-             	   		<a class="btn btn-primary" th:href="${'/scan/results/' + activeFilter + '?page=' + (activePageNum+1)}">Next</a>
-          	   		</div>
-               </div>
-               <div class="card-body pb-3 text-center">
-                   <table class="table mb-0 datatable-clean">
-                       <thead class="bg-light">
-                       <tr>
-                           <th scope="col" class="border-0">Date</th>
-                           <th scope="col" class="border-0">SCM ID</th>
-                           <th scope="col" class="border-0">Pull Request ID</th>
-                           <th scope="col" class="border-0">Violations</th>
-                           <th scope="col" class="border-0">View Report</th>
-                       </tr>
-                       </thead>
-                       <tbody>
-                           <tr th:each="result : ${results}">
-                               <td class="py-1 localizetime" th:text="${result.getDateMillis()}" th:data-order="${result.getDate()}">Date Reviewed</td>
-                               <td class="py-1" th:text="${result.getApiLabel()}">SCM ID</td>
-                               <td class="py-1">
-                               		<a th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank"/>
-                               </td>
-                               <td class="py-1" th:text="${result.getViolations().size()}">Number of Violations</td>
-                               <td class="py-1">
-                               		<a class="btn btn-success btn-sm py-1" th:href="${'/scan/report/' + result.getId()}">Report</a>
-                               </td>
-                           </tr>
-                       </tbody>
-                   </table>
-               </div>
-           </div>
-        </div>
-    </div>
+<th:block th:if="${results != null and #lists.isEmpty(results)}"><div th:replace="~{fragments/emptystate :: state(${period != null and period.name() == 'RECENT' ? 'No pull request scans match this filter in the last 90 days. Older ones are under Older.' : 'No pull request scans match this filter.'})}"></div></th:block>
+<div class="row" th:if="${results != null and !#lists.isEmpty(results)}">
+	<div class="col"><div id="results-region" class="card card-small mb-2">
+		<div th:replace="~{fragments/pagination(baseUrl=${'/scan/results/' + activeFilter + (filterQuery ?: '')}, pagination=${pagination})}"></div>
+		<div class="card-body pb-3 wt-table-scroll" role="region" aria-label="Pull request scan results" tabindex="0">
+            <div th:replace="~{fragments/scanactivity :: table(${activityRows}, 'Pull request scans matching the selected filter, newest first')}"></div>
+		</div>
+	</div></div>
 </div>

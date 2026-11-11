@@ -1,7 +1,10 @@
 package com.tracelink.appsec.watchtower.core.metrics.chart;
 
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
 import java.util.List;
+
+import com.tracelink.appsec.watchtower.core.rule.RulePriority;
+import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
+
 import net.minidev.json.JSONObject;
 
 /**
@@ -19,7 +22,11 @@ public class ViolationsByPeriodChartGenerator extends
 	 */
 	@Override
 	protected Long accumulate(Long partialResult, List<AbstractScanEntity<?, ?>> items) {
-		return partialResult + items.stream().mapToLong(AbstractScanEntity::getNumViolations).sum();
+		return partialResult + items.stream()
+				.filter(s -> s.getViolations().stream()
+						.noneMatch(v -> RulePriority.INFORMATIONAL.equals(v.getSeverity())))
+				.mapToLong(AbstractScanEntity::getNumViolations)
+				.sum();
 	}
 
 	/**

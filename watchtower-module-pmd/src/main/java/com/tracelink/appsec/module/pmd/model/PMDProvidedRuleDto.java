@@ -2,6 +2,7 @@ package com.tracelink.appsec.module.pmd.model;
 
 import com.tracelink.appsec.module.pmd.PMDModule;
 import com.tracelink.appsec.watchtower.core.rule.ProvidedRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Rule definition of a PMD-provided rule. Hold basic information about the underlying PMD rule
@@ -50,5 +51,12 @@ public class PMDProvidedRuleDto extends ProvidedRuleDto implements PMDRuleDto {
 		return rule;
 	}
 
+	@Override
+	public String getExternalRuleKey() { return getName(); }
+
+	@Override
+	protected RuleRevision executableDefinition() {
+		return newDefinition().field("engineRuleKey", getExternalRuleKey());
+	}
 }
 

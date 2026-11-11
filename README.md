@@ -9,10 +9,6 @@ Collected scan data is displayed on server Dashboards.
 The server can include multiple Modules to perform different types of scans. Each module defines its
 own type of rules, which are then aggregated into rulesets and applied to code during a scan.
 
-## Status
-
-[Badges go here]
-
 ## License
 
 [MIT License](https://opensource.org/licenses/MIT)
@@ -20,7 +16,7 @@ own type of rules, which are then aggregated into rulesets and applied to code d
 ## Table of Contents
 
 - [General Info](#general-info)
-- [How TraceLink uses Watchtower](#how-tracelink-uses-watchtower)
+- [How Watchtower is used](#how-watchtower-is-used)
 - [Technologies](#technologies)
 - [Installation](#installation)
 - [Authentication](#authentication)
@@ -43,12 +39,12 @@ rulesets that will be applied to individual scans. Additionally, it handles auth
 authorization of users, basic UI framing, logging, encryption of sensitive values, and Module
 management.
 
-## How TraceLink uses Watchtower
+## How Watchtower is used
 
-TraceLink ProdSec uses Watchtower to identify security-related and general code issues and report
+An application security team uses Watchtower to identify security-related and general code issues and report
 them back to developers. Watchtower integrates with SCM pull request systems, so scans are run
 automatically on pull request creation or update and issues are found before code is merged. This
-enables TraceLink developers to resolve issues earlier in the Software Development Lifecycle (SDLC),
+enables developers to resolve issues earlier in the Software Development Lifecycle (SDLC),
 when they are less costly. Watchtower also aggregates results from many scan types to simplify the
 scanning process and provide a single view of the most common issues across programming languages
 and frameworks.
@@ -80,44 +76,68 @@ environment variables listed in [Docker.env](Docker.env), then type `docker-comp
 directory to build the application and start the Docker container. The application will be hosted on
 port 8080.
 
-There are two files included to aid deploying to Kubernetes. [deploy](deploy.yaml) is a basic EKS deployment model that can be tailored to fit your needs and [watchtower-secrets](watchtower-secrets.yaml) can be used to supply the db secrets to your EKS system using the Kubernetes configMap. For production usage, it is recommended to put these secrets into a secrets manager, based on your application's needs and infrastructure's availability.
+The [deploy manifest](deploy.yaml) is a basic EKS deployment model that can be tailored to fit your
+needs. Its pods read database and bootstrap credentials from the cluster-managed
+`watchtower-secrets` Kubernetes Secret. The deployment script validates that the required keys are
+non-empty but never prints, downloads for local use, reapplies, or modifies an existing Secret.
+
+On a first deployment where the Secret is absent, `deploy.sh` can migrate `db_url`, `db_user`, and
+`db_pass` from the legacy `watchtower-secrets` ConfigMap. Provide the new bootstrap password only
+for that one command:
+
+```bash
+read -rs -p 'Bootstrap admin password: ' WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD
+echo
+export WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD
+./deploy.sh prod
+unset WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD
+```
+
+If the Secret already exists but is incomplete, the script fails closed and tells the operator
+which keys to repair in Kubernetes; it does not overwrite them from the ConfigMap. First deployments
+without either a Secret or legacy ConfigMap must create the Secret through the cluster's normal
+secret-management process. The migration retains the ConfigMap for rollback; remove it manually
+after verifying the rollout.
 
 If you are running directly from the jar file and not via Docker, note that some modules require
 specific setup as noted in their respective READMEs.
 
-For development purposes and initial setup of Watchtower, an initial admin user is configured by
-default in the Watchtower database.
+For initial setup, configure a strong `WATCHTOWER_BOOTSTRAP_ADMIN_PASSWORD`. Watchtower creates the
+initial admin only when no administrator exists and never writes this credential to logs.
 
 | Username | Roles | 
 |----------|-------| 
 | admin | Full System Admin. Ability to access all Watchtower features. | 
 
-This user is given a random password that is output to the Watchtower logs. Once Watchtower has been
-deployed, set up a new, named admin user with a secure password and the Full System Admin role, and
-then disable or delete the default admin user to prevent unauthorized access to Watchtower
-configurations.
-
-On every startup, Watchtower will check for this admin user. If the user exists and is not disabled,
-Watchtower will automatically reset the password and output it to the logs. If the user doesn't
-exist, Watchtower will ensure a user does exist that has sufficient privileges to assign roles and
-privileges. If such a user does not exist, Watchtower will re-create the admin and grant it Full
-System Admin so that administrators cannot get locked out while modifying users or roles.
+After deployment, set up a named administrator with the Full System Admin role, then disable the
+bootstrap account. When that account remains enabled, the configured bootstrap credential is
+rotated on startup without being logged.
 
 ## Authentication
 
 There are two built-in ways to authenticate to Watchtower.
 
-1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users authenticate to Watchtower directly. This is configured by default. A basic password checking policy class is installed already [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/auth/service/checker/ComplexityUserPasswordRequirementsChecker.java), implementors can override this in configuration classes as done [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/configuration/WatchtowerConfiguration.java). 
-2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`, `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as in [here](./watchtower-web/src/main/resources/application-prd.yaml).
+1. "Local" Authentication - Usernames and hashed passwords are stored in the database and users
+   authenticate to Watchtower directly. This is configured by default. A basic password checking
+   policy class is installed
+   already [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/auth/service/checker/ComplexityUserPasswordRequirementsChecker.java)
+   , implementors can override this in configuration classes as
+   done [here](./watchtower-core/src/main/java/com/tracelink/appsec/watchtower/core/configuration/WatchtowerConfiguration.java)
+   .
+2. SSO Authentication - Users login to a separate system which grants access to Watchtower via Open
+   ID Connect. Configuration is handled via application properties, and requires a `CLIENT_ID`
+   , `CLIENT_SECRET`, and `ISSUER_URI` supplied on the command line or in a file as
+   in [here](./watchtower-web/src/main/resources/application-prd.yaml).
 
 In addition, any user can create an API key + Secret that can be used for programmatic access via
 Basic Auth. This Api key is granted the same privileges as the owning user.
 
-By default, there is a self-registration process that allows a user to join Watchtower and is assigned a default role as described in the Authorization section. This registration can be turned off by setting the configuration `watchtower.allowRegistration` to false. This could be used once the app is migrated to SSO and at least one local user account is created to protect against duplicate accounts.
+Self-registration is disabled by default. It can be enabled deliberately with
+`watchtower.allowRegistration=true`; new users receive the default role described below.
 
-At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull Requests that have not been scanned in each configured repository and adds them to the scanning queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
-
-
+At startup, an asynchronous event will trigger to recover from downtime. This searches SCMs for Pull
+Requests that have not been scanned in each configured repository and adds them to the scanning
+queue. This can be disabled by setting the configuration `watchtower.runAfterStartup` to false.
 
 ## Authorization
 
@@ -161,10 +181,11 @@ so that modules can be easily added or removed from a deployment.
 
 | Module | Description | Documentation Link |
 |--------|-------------|--------------------|
+| Advisory | This module scans security reports from remote container repositories to detect if a container should be blocked because it has a security advisory that wasn't whitelisted. | [watchtower-module-advisory](.watchtower-module-advisory/README.md)| 
 | Checkov | This module integrates the Python [Checkov](https://www.checkov.io/) scanner into Watchtower to scan infrastructure-as-code and detect misconfigurations. | [watchtower-module-checkov](./watchtower-module-checkov/README.md)|
 | ESLint | This module integrate the [ESLint](https://eslint.org/) linter into Watchtower to scan JavaScript code for common problems. | [watchtower-module-eslint](./watchtower-module-eslint/README.md)|
-| JSON | This module defines Watchtower rules using JSONPath expressions to scan JSON files for issues. | [watchtower-module-json](./watchtower-module-json/README.md)
-| PMD | This module integrates the Java [PMD](https://pmd.github.io/) static code analyzer into Watchtower to scan Java, Ecmascript, Scala, and XML files. | [watchtower-module-pmd](./watchtower-module-pmd/README.md)
+| JSON | This module defines Watchtower rules using JSONPath expressions to scan JSON files for issues. | [watchtower-module-json](./watchtower-module-json/README.md)|
+| PMD | This module integrates the Java [PMD](https://pmd.github.io/) static code analyzer into Watchtower to scan Java, Ecmascript, Scala, and XML files. | [watchtower-module-pmd](./watchtower-module-pmd/README.md)|
 | Regex | This module defines Watchtower rules using Regex expressions to scan files of many types for issues. | [watchtower-module-regex](./watchtower-module-regex/README.md)|
 
 ## Customization
@@ -211,6 +232,7 @@ Watchtower supports the following scan types:
 
 - Pull Request Scans
 - Upload Scans
+- Image Scans
 
 ### Pull Request Scans
 
@@ -231,6 +253,30 @@ mark a repository as exempt from Watchtower scans.
 
 Pull request scans are currently implemented to integrate with Bitbucket Cloud.
 
+#### Manual Code Reviews
+
+The manual code review feature is intended to automate aspects of the secure code review process. 
+Each pull request scan will automatically be assessed for a manual code review and assigned a manual 
+code review status. There are (5) manual code review statuses: “Not Applicable”, “Pending Review”, 
+“In Progress”, “Reviewed”, and “Reviewed w/ Recommendations”.
+
+A pull request will automatically be assigned either the “Not Applicable” status or the 
+“Pending Review” status. A pull request is only assigned a “Pending Review” status if the following 
+criteria are met: at least one manual code review rule is included in the scanning ruleset and at 
+least one manual code review match is found. In all other cases, the pull request scan will be 
+assigned a “Not Applicable” MCR status.
+
+The Manual Code Review view will only display the manual code reviews of the most recent version of 
+a Pull Request Scan and will not display any manual code reviews with the MCR status of 
+“Not Applicable” or null. To narrow the MCR scope down to likely relevant code, manual code review findings 
+are only reported if found within a +/- 5 lines range of a modified line. MCR findings will be excluded from 
+pull request scan reports as well as from the Pull Request Dashboard and metrics.
+
+Currently, manual code review rules can only be configured within the regex rule designer. To 
+configure a manual code review rule, check the “Manual Code Review Rule” checkbox when saving the 
+rule. All manual code review rules are informational by nature, therefore the priority will always 
+be set to informational.
+
 ### Upload Scans
 
 Upload scans provide a way to manually scan code for issues. The code to scan is uploaded as a zip
@@ -242,6 +288,43 @@ files of a project, rather than only reporting on the subset of files that appea
 Watchtower provides a [CLI](./watchtower-cli/README.md) and
 a [Maven plugin](./watchtower-maven-plugin/README.md) to perform upload scans during the development
 phase of the SDLC.
+
+### Image Scans
+
+Image scans download an image security report from an image registry and report on any security
+findings. The scanner compares findings against a list of advisories that are effectively ignored by
+Watchtower and will not be flagged as violations. Rulesets allow for precise configuration of the
+allowed list of advisories for a particular image registry and repository.
+
+If the ruleset for an image scan is configured with a blocking level, then the image may be rejected
+according to the implementation of the API integration that initiated the scan. The image will only
+be rejected if the image security scan contains findings with a severity greater than or equal to
+the blocking level.
+
+#### ECR
+
+AWS's Elastic Container Registry can be configured as an API integration for automatic Watchtower
+image scans. Provide an AWS access key ID and secret key via the API settings page in Watchtower.
+The credentials should have permissions to access the following AWS functionality:
+
+- CloudFormation: create and delete stack, describe stacks
+- EventBridge: create and delete rule, connection, and API destination
+- ECR: describe image scan findings and delete image
+- Inspector2: list findings (enhanced scans only)
+
+Test that the connection works as expected and then register the Watchtower webhook with AWS by
+clicking the 'Register' button. If registration is successful, the integration entity will be listed
+with a status of 'Registered'. After ECR completes an image scan, it will send a request to
+Watchtower to start the image scanning process using AWS's API Destinations. All credentials to
+connect to Watchtower are configured automatically during the registration process. To remove an ECR
+API integration, you must first unregister the integration, which will delete the AWS resources
+needed for the Watchtower webhook. Then you can delete the integration from Watchtower.
+
+For ECR, rejecting images with blocking-level violations consists of deleting the image from the
+repository.
+
+ECR scan type changes within the AWS account will require de-registering and re-registering the 
+Watchtower webhook to delete the original CloudFormation stack and create the appropriate new stack.
 
 ## Database Column Encryption
 
@@ -312,6 +395,7 @@ rotated manually (if, for example, there is reason to believe they are compromis
 can be set to automatically rotate all keys after a certain number of days.
 
 ## Configuration
+
 | Configuration Key | Default Value | Value Options | Description|
 |-------------------|---------------|---------------|------------|
 |SPRING_PROFILES_ACTIVE|(blank)|prd, dev, prdtest, (custom)|Different built-in configuration parameters. `prd` is for production spring properties and requires a database configuration and sso configuration . `dev` uses an in-memory database and requires no setup. `prdtest` is for production-like testing such as a local docker container. `(custom)` is the implementor's choice. Any deployment can provide its own application.properties and override all properties.|
@@ -320,7 +404,7 @@ can be set to automatically rotate all keys after a certain number of days.
 |JDBC_USERNAME|(blank)|any string|The JDBC username used to authenticate to MySQL|
 |JDBC_PASSWORD|(blank)|any string|The JDBC password used to authenticate to MySQL|
 |watchtower.runAfterStartup| true|true/false|Should Watchtower run the "After Startup" processes. This runs a downtime recovery operation to try to "catch-up" from any Watchtower downtime.|
-|watchtower.allowRegistration|true|true/false|Should Watchtower enable Self-Service Registration (buttons and screens)|
+|watchtower.allowRegistration|false|true/false|Should Watchtower enable Self-Service Registration (buttons and screens)|
 |watchtower.threads.prscan|4|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning pull requests|
 |watchtower.threads.uploadscan|2|any positive integer|Configure the number of threads that Watchtower should reserve and use when scanning file uploads|
 
@@ -341,8 +425,10 @@ this will clash with the other Module.
 
 Several class selectors have been customized for the UI. These include:
 
-`datatable-invert` will begin datatables listing in reverse order (mostly for incrementing IDs and dates)
-`localizetime` will convert an html tag that exactly contains the epoch millis/seconds into a localized datetime string of the client's browser (Month Day, Year, Hours:Minutes:Seconds)
+`datatable-invert` will begin datatables listing in reverse order (mostly for incrementing IDs and
+dates)
+`localizetime` will convert an html tag that exactly contains the epoch millis/seconds into a
+localized datetime string of the client's browser (Month Day, Year, Hours:Minutes:Seconds)
 
 ## Authors
 

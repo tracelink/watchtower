@@ -14,7 +14,29 @@ public interface IRuleDesigner {
 	 * 
 	 * @return a {@link RuleDesignerModelAndView} for this module's Rule Designer
 	 */
-	RuleDesignerModelAndView getRuleDesignerModelAndView();
+	RuleDesignerModelAndView getDefaultRuleDesignerModelAndView();
+
+	/**
+	 * The designer opened from a drafted rule: the rule and its examples are filled in and, where the engine can
+	 * test a rule, the example has already been run. Nothing is saved. A designer that cannot show a draft keeps
+	 * the default page.
+	 *
+	 * @param draft the draft to show
+	 * @return the designer page with the draft filled in
+	 */
+	default RuleDesignerModelAndView getPrefilledRuleDesignerModelAndView(RuleDraftData draft) {
+		return getDefaultRuleDesignerModelAndView();
+	}
+
+	/**
+	 * Checks a draft meant for this designer before it is stored (for example that a regex compiles).
+	 *
+	 * @param draft the draft to check
+	 * @return a plain sentence saying what is wrong, or null when the draft is acceptable
+	 */
+	default String validateDraft(RuleDraftData draft) {
+		return null;
+	}
 
 	String getPrivilegeNameForAccess();
 

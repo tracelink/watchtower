@@ -4,6 +4,7 @@ import com.tracelink.appsec.module.eslint.EsLintModule;
 import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.ProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Represents a data transfer object for the {@link EsLintRuleEntity} for custom rules. All fields
@@ -59,4 +60,11 @@ public class EsLintProvidedRuleDto extends ProvidedRuleDto implements EsLintRule
 		return rule;
 	}
 
+	@Override
+	public String getExternalRuleKey() { return getName(); }
+
+	@Override
+	protected RuleRevision executableDefinition() {
+		return newDefinition().field("engineRuleKey", getExternalRuleKey());
+	}
 }

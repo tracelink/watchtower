@@ -15,12 +15,12 @@ public interface UserPasswordRequirementsChecker {
 	 * @param password the password to check
 	 * @throws BadCredentialsException if the password is bad
 	 */
-	public void check(String password) throws BadCredentialsException;
+	void check(String password) throws BadCredentialsException;
 
 	/**
 	 * Get a user-friendly string describing the requirements of the password
 	 * 
-	 * @return
+	 * @return The user-friendly requirements string
 	 */
-	public String getRequirementsStatement();
+	String getRequirementsStatement();
 }

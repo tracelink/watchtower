@@ -20,6 +20,19 @@ public class SimpleBucketerTest {
 	}
 
 	@Test
+	public void testGetLabelsThirtyDays() {
+		SimpleBucketer<LocalDateTime> bucketer = new SimpleBucketer<>(
+				BucketerTimePeriod.LAST_THIRTY_DAYS,
+				LocalDateTime::now, Function.identity());
+		BucketIntervals intervals = bucketer.getBucketIntervals();
+		Assertions.assertTrue(intervals instanceof DayIntervals);
+		// getBuckets() returns fencepost boundaries (N+1 for N buckets - see
+		// AbstractBucketer#putItemsInBuckets), so the day count is on getLabels().
+		Assertions.assertEquals(30, intervals.getLabels().size());
+		Assertions.assertEquals(31, intervals.getBuckets().size());
+	}
+
+	@Test
 	public void testGetLabelsWeeks() {
 		SimpleBucketer<LocalDateTime> bucketer = new SimpleBucketer<>(
 				BucketerTimePeriod.LAST_FOUR_WEEKS,

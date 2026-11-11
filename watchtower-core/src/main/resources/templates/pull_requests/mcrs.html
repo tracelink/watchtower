@@ -1,0 +1,33 @@
+<div th:replace="~{fragments/pageheader :: header('Manual code reviews', null)}"></div>
+<div th:replace="~{fragments/resultfilters :: filters(baseUrl=${'/scan/mcr/'}, filters=${filters}, activeFilter=${activeFilter})}"></div>
+<th:block th:if="${results != null and #lists.isEmpty(results)}"><div th:replace="~{fragments/emptystate :: state('No manual code reviews match this filter.')}"></div></th:block>
+<div class="row" th:if="${results != null and !#lists.isEmpty(results)}"><div class="col">
+	<div id="results-region" class="card card-small mb-2">
+		<div th:replace="~{fragments/pagination(baseUrl=${'/scan/mcr/' + activeFilter}, pagination=${pagination})}"></div>
+		<div class="card-body pb-3 wt-table-scroll" role="region" aria-label="Manual code review results" tabindex="0">
+			<table class="table mb-0 datatable-clean wt-results-table">
+				<caption>Manual code reviews matching the selected status filter</caption>
+				<thead class="bg-light"><tr>
+					<th scope="col" class="border-0">Pull request</th><th scope="col" class="border-0">Status</th><th scope="col" class="border-0">Matches</th><th scope="col" class="border-0">MCR</th>
+					<th scope="col" class="border-0 wt-result-secondary">Completed</th><th scope="col" class="border-0 wt-result-secondary">SCM</th><th scope="col" class="border-0 wt-result-secondary">Duration</th>
+				</tr></thead>
+				<tbody><th:block th:each="result : ${results}">
+					<tr class="wt-result-row">
+						<th scope="row" class="py-1 wt-result-identity wt-scan-target"><a class="wt-entity-link" th:if="${!#strings.isEmpty(result.getPrLink())}" th:href="${result.getPrLink()}" th:text="${result.getDisplayName()}" target="_blank" rel="noopener noreferrer">Pull request</a><span th:unless="${!#strings.isEmpty(result.getPrLink())}" th:text="${result.getDisplayName()}">Pull request</span></th>
+						<td class="py-1 wt-result-status"><span class="wt-status-chip"><span class="material-icons" aria-hidden="true">assignment</span><span th:text="${result.getMcrStatus().getDisplayName}">Status</span></span></td>
+						<td class="py-1 wt-result-findings"><div th:replace="~{fragments/severity :: compactSummary(${result.getMcrFindings()})}"></div></td>
+						<td class="py-1 wt-result-action"><a class="btn btn-secondary btn-sm py-1 wt-report-link" th:href="${'/scan/mcr/report/' + result.getId()}" th:aria-label="${'View manual code review for ' + result.getDisplayName()}"><span>View review</span><span class="material-icons" aria-hidden="true">arrow_forward</span></a></td>
+						<td class="py-1 wt-result-secondary" th:data-order="${result.getDateMillis()}"><span th:if="${result.getDateMillis() > 0}" class="localizetime" data-time-style="short" th:text="${result.getDateMillis()}"></span><span th:unless="${result.getDateMillis() > 0}" class="wt-muted">Not completed</span></td>
+						<td class="py-1 wt-result-secondary"><span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Source control"><span class="material-icons" aria-hidden="true">hub</span><span th:text="${result.getApiLabel()}">SCM</span></span></td><td class="py-1 wt-result-secondary wt-num" th:text="${result.hasPerformanceTimings() ? result.totalDurationDisplay : 'Not recorded'}">Duration</td>
+					</tr>
+					<!-- On narrow screens the secondary columns hide and show here as chips. -->
+					<tr class="wt-result-detail-row"><td colspan="7"><span class="wt-meta-chips">
+						<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Source control"><span class="material-icons" aria-hidden="true">hub</span><span th:text="${result.getApiLabel()}">SCM</span></span>
+						<span class="wt-mini-chip wt-meta-chip" tabindex="0" data-tip="Duration"><span class="material-icons" aria-hidden="true">timer</span><span th:text="${result.hasPerformanceTimings() ? result.totalDurationDisplay : 'Not recorded'}">Duration</span></span>
+						<span class="wt-mini-chip wt-meta-chip" th:if="${result.getDateMillis() > 0}"><span class="material-icons" aria-hidden="true">event</span><span class="localizetime" data-time-style="short" th:text="${result.getDateMillis()}"></span></span>
+					</span></td></tr>
+				</th:block></tbody>
+			</table>
+		</div>
+	</div>
+</div></div>

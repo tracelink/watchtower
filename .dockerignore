@@ -1,0 +1,30 @@
+# The build stage runs `mvnw clean package`, so any target/ copied in is deleted
+# immediately after being shipped to the daemon. This was 194MB of a 278MB context.
+target/
+*/target/
+**/target/
+
+# Not needed to build, and 35MB of context.
+.git/
+.gitignore
+
+# Installed inside the image by the Dockerfile itself, not copied from the host.
+**/eslint_work/
+**/node_modules/
+
+# Editor and OS noise. Also keeps the context stable, so the COPY layer is not
+# invalidated by a stray .DS_Store.
+.DS_Store
+**/.DS_Store
+*.swp
+.*.swp
+.idea/
+.vscode/
+*.iml
+
+# Local-only tooling and docs that do not affect the built artifact.
+.claude/
+watchtower-secret.yaml
+Docker.env
+.env
+.env.*

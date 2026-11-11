@@ -1,361 +1,473 @@
 package com.tracelink.appsec.watchtower.core.metrics;
 
-import com.tracelink.appsec.watchtower.core.metrics.bucketer.AbstractBucketer;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
+
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
+import com.tracelink.appsec.watchtower.core.metrics.MetricsProjectionRepository.DailyScanMetric;
+import com.tracelink.appsec.watchtower.core.metrics.MetricsProjectionRepository.DailyViolationMetric;
+import com.tracelink.appsec.watchtower.core.metrics.MetricsProjectionRepository.ScannerTimingMetric;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.BucketIntervals;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.BucketerTimePeriod;
 import com.tracelink.appsec.watchtower.core.metrics.bucketer.SimpleBucketer;
-import com.tracelink.appsec.watchtower.core.metrics.chart.AbstractChartGenerator;
-import com.tracelink.appsec.watchtower.core.metrics.chart.ScansByPeriodChartGenerator;
-import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodAndTypeChartGenerator;
-import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByPeriodChartGenerator;
-import com.tracelink.appsec.watchtower.core.metrics.chart.ViolationsByTypeChartGenerator;
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanEntity;
-import com.tracelink.appsec.watchtower.core.scan.AbstractScanResultService;
 import com.tracelink.appsec.watchtower.core.scan.ScanType;
-import com.tracelink.appsec.watchtower.core.scan.scm.pr.service.PRScanResultService;
-import com.tracelink.appsec.watchtower.core.scan.upload.service.UploadScanResultService;
-import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import net.minidev.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanType;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.entity.PullRequestSyncSettingsEntity;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.result.PRScanPerformanceSummary;
+import com.tracelink.appsec.watchtower.core.scan.code.scm.pr.service.PullRequestSyncSettingsService;
+import com.tracelink.appsec.watchtower.core.scan.image.ImageScanType;
+import com.tracelink.appsec.watchtower.core.scan.presentation.DurationText;
+import com.tracelink.appsec.watchtower.core.scan.ScanExecutionSummaryCodec;
 
-/**
- * This service handles asynchronously generating any needed metrics for our dashboards that might
- * take longer than a page refresh and serve them up as needed from a cache.
- *
- * @author csmith
- */
+import net.minidev.json.JSONObject;
+
+/** Dashboard metrics facade backed by durable daily database projections. */
 @Service
 public class MetricsCacheService {
+	public static final String METRICS_NOT_READY = "Metrics are not available";
 
-	private static final Logger LOG = LoggerFactory.getLogger(MetricsCacheService.class);
+	private final MetricsProjectionRepository projections;
+	private final PullRequestSyncSettingsService settingsService;
+	private final ZoneId metricsZone;
 
-	private static final String KEY_VIO_BY_PERIOD = "violationsByPeriod";
-	private static final String KEY_VIO_BY_TYPE = "violationsByType";
-	private static final String KEY_VIO_BY_PERIOD_AND_TYPE = "violationsByPeriodAndType";
-	private static final String KEY_SCANS_BY_PERIOD = "scansByPeriod";
-	private static final String SCAN_COUNT = "scanCount";
-	private static final String VIO_COUNT = "violationCount";
-	private static final String AVG_TIME = "averageTime";
-
-	public static final String METRICS_NOT_READY =
-			"Metrics are being generated and will be available soon";
-
-	private final Map<ScanType, AbstractScanResultService<?, ?>> serviceMap;
-
-	// Initialized empty so that if the first update takes longer than a user can
-	// log in, they don't see anything, but nothing breaks
-	private Map<CacheKey, JSONObject> chartsCache = new HashMap<>();
-	private Map<CacheKey, Number> statsCache = new HashMap<>();
-
-	private final ReentrantLock pauseLock = new ReentrantLock();
-	private final Condition unPaused = pauseLock.newCondition();
-	private boolean metricsReady = false;
-	private volatile boolean isPaused = false;
-
-	public MetricsCacheService(@Autowired PRScanResultService prScanResultService,
-			@Autowired UploadScanResultService uploadScanResultService) {
-		this.serviceMap = new HashMap<>();
-		this.serviceMap.put(ScanType.PULL_REQUEST, prScanResultService);
-		this.serviceMap.put(ScanType.UPLOAD, uploadScanResultService);
+	@Autowired
+	public MetricsCacheService(MetricsProjectionRepository projections,
+			PullRequestSyncSettingsService settingsService,
+			@Value("${watchtower.metrics.zone:UTC}") String metricsZone) {
+		this.projections = projections;
+		this.settingsService = settingsService;
+		this.metricsZone = ZoneId.of(metricsZone);
 	}
 
-	/**
-	 * Marked only after the first time the metrics are generated
-	 *
-	 * @return true if the metrics have been generated fully at least once
-	 */
-	public boolean isMetricsCacheReady() {
-		return this.metricsReady;
+	MetricsCacheService(MetricsProjectionRepository projections,
+			PullRequestSyncSettingsService settingsService) {
+		this(projections, settingsService, ZoneId.systemDefault().getId());
 	}
 
-	/**
-	 * Pause metrics gathering
-	 */
-	public void pause() {
-		pauseLock.lock();
-		try {
-			isPaused = true;
-		} finally {
-			pauseLock.unlock();
-		}
-	}
+	public boolean isMetricsCacheReady() { return true; }
+	public void pause() { }
+	public void resume() { }
 
-	/**
-	 * Unpause metrics gathering
-	 */
-	public void resume() {
-		pauseLock.lock();
-		try {
-			isPaused = false;
-			unPaused.signalAll();
-		} finally {
-			pauseLock.unlock();
-		}
-	}
+	/** Compatibility hook; projections update when scan results are persisted. */
+	@Deprecated(forRemoval = true)
+	public void updateAllMetrics() { }
 
-
-	/**
-	 * Periodically, asynchronously update all metrics in the system.
-	 */
-	@Scheduled(initialDelay = 1000 * 5, fixedDelay = 1000L * 60)
-	public void updateAllMetrics() {
-		pauseLock.lock();
-		try {
-			while (isPaused) {
-				unPaused.await();
-			}
-		} catch (InterruptedException ie) {
-			return;
-		} finally {
-			pauseLock.unlock();
-		}
-		try {
-			LOG.info("Beginning periodic update of metrics");
-			Map<CacheKey, JSONObject> chartsMap = new HashMap<>();
-			Map<CacheKey, Number> statsMap = new HashMap<>();
-			for (ScanType type : this.serviceMap.keySet()) {
-				LOG.debug("Starting scanType: " + type.getDisplayName());
-
-				// Charts cache updates
-				for (BucketerTimePeriod period : BucketerTimePeriod.values()) {
-					LOG.debug("Starting time period: " + period);
-					Map<String, AbstractChartGenerator<AbstractScanEntity<?, ?>, ?>> chartGenerators = new HashMap<>();
-					chartGenerators.put(KEY_VIO_BY_PERIOD, new ViolationsByPeriodChartGenerator());
-					chartGenerators.put(KEY_VIO_BY_TYPE, new ViolationsByTypeChartGenerator());
-					chartGenerators.put(KEY_VIO_BY_PERIOD_AND_TYPE,
-							new ViolationsByPeriodAndTypeChartGenerator());
-					chartGenerators.put(KEY_SCANS_BY_PERIOD, new ScansByPeriodChartGenerator());
-
-					// Get datasets for all charts of this type and period
-					Map<String, JSONObject> chartDatasets = generateCharts(type, period,
-							chartGenerators);
-					// Add all charts to the map with an appropriate cache key
-					chartDatasets.forEach((k, v) -> {
-						CacheKey key = new CacheKey(type, k, period.getPeriod());
-						chartsMap.put(key, v);
-					});
-				}
-
-				// Stats cache updates
-				LOG.debug("Starting getAverageTime");
-				CacheKey avgTimeKey = new CacheKey(type, AVG_TIME);
-				statsMap.put(avgTimeKey, this.serviceMap.get(type).getAverageTime());
-				LOG.debug("Starting countScans");
-				CacheKey scansKey = new CacheKey(type, SCAN_COUNT);
-				statsMap.put(scansKey, this.serviceMap.get(type).countScans());
-				LOG.debug("Starting countViolations");
-				CacheKey violationsKey = new CacheKey(type, VIO_COUNT);
-				statsMap.put(violationsKey, this.serviceMap.get(type).countViolations());
-			}
-			this.chartsCache = chartsMap;
-			this.statsCache = statsMap;
-			LOG.info("Periodic update of metrics complete");
-			this.metricsReady = true;
-		} catch (Exception e) {
-			LOG.error("Periodic update of metrics failed with an exception", e);
-		}
-	}
-
-	/**
-	 * Gets metrics about the number of violations of each type found within a certain length of
-	 * time.
-	 *
-	 * @param type   the ScanType to retrieve
-	 * @param period a string representing a certain length of time over which to gather metrics
-	 * @return map containing labels for each violation type and a dataset for number of violations
-	 * of each type
-	 */
 	public JSONObject getViolationsByType(ScanType type, String period) {
-		return getMetric(type, KEY_VIO_BY_TYPE, period);
+		Buckets buckets = buckets(type, period);
+		Map<String, Long> totals = new TreeMap<>();
+		bucketViolations(type, buckets).forEach(bucket -> bucket.forEach(
+				metric -> totals.merge(metric.name(), metric.count(), Long::sum)));
+		JSONObject result = new JSONObject();
+		result.put("labels", new ArrayList<>(totals.keySet()));
+		result.put("counts", new ArrayList<>(totals.values()));
+		return result;
 	}
 
-	/**
-	 * Gets metrics about the number of violations of found within a certain length of time. Data is
-	 * divided into time periods of appropriate length.
-	 *
-	 * @param type   the ScanType to retrieve
-	 * @param period a string representing a certain length of time over which to gather metrics
-	 * @return map containing labels for each subdivided time period and a dataset for number of
-	 * violations found during each period
-	 */
 	public JSONObject getViolationsByPeriod(ScanType type, String period) {
-		return getMetric(type, KEY_VIO_BY_PERIOD, period);
+		Buckets buckets = buckets(type, period);
+		JSONObject result = base(buckets);
+		result.put("counts", type == CodeScanType.REPOSITORY
+				? bucketViolations(type, buckets).stream()
+						.map(bucket -> bucket.stream().mapToLong(DailyViolationMetric::count).sum()).toList()
+				: bucketScans(type, buckets).stream()
+						.map(bucket -> bucket.stream().mapToLong(DailyScanMetric::violations).sum()).toList());
+		return result;
 	}
 
-	/**
-	 * Gets metrics about the number of violations of each type found within a certain length of
-	 * time. Data is divided into time periods of appropriate length.
-	 *
-	 * @param type   the ScanType to retrieve
-	 * @param period a string representing a certain length of time over which to gather metrics
-	 * @return map containing labels for each subdivided time period and datasets for number of
-	 * violations found during each period for each violation type
-	 */
 	public JSONObject getViolationsByPeriodAndType(ScanType type, String period) {
-		return getMetric(type, KEY_VIO_BY_PERIOD_AND_TYPE, period);
+		Buckets buckets = buckets(type, period);
+		List<Map<String, Long>> values = bucketViolations(type, buckets).stream().map(bucket -> {
+			Map<String, Long> map = new TreeMap<>();
+			bucket.forEach(metric -> map.merge(metric.name(), metric.count(), Long::sum));
+			return map;
+		}).toList();
+		JSONObject result = base(buckets);
+		values.stream().flatMap(map -> map.keySet().stream()).distinct().sorted().forEach(name ->
+				result.put(name, values.stream().map(map -> map.getOrDefault(name, 0L)).toList()));
+		return result;
 	}
 
-	/**
-	 * Gets metrics about the number of scans completed within a certain length of time. Data is
-	 * divided into time periods of appropriate length.
-	 *
-	 * @param type   the ScanType to retrieve
-	 * @param period a string representing a certain length of time over which to gather metrics
-	 * @return map containing labels for each subdivided time period and a dataset for number of
-	 * scans completed during each period
-	 */
 	public JSONObject getScansByPeriod(ScanType type, String period) {
-		return getMetric(type, KEY_SCANS_BY_PERIOD, period);
-	}
-
-	/**
-	 * Generates chart data for metrics about scans and violations from the database over a given
-	 * period of time using the given chart generators.
-	 *
-	 * @param type            the ScanType to retrieve
-	 * @param period          a {@link BucketerTimePeriod} representing the period of time over
-	 *                        which to gather metrics
-	 * @param chartGenerators map of chart generators to format scan and violation metrics
-	 * @return map from string to JSON object, where the string is a cache key (e.g.
-	 * KEY_VIO_BY_TYPE) and the JSON object contains labels and datasets for a metrics chart
-	 */
-	private Map<String, JSONObject> generateCharts(ScanType type, BucketerTimePeriod period,
-			Map<String, AbstractChartGenerator<AbstractScanEntity<?, ?>, ?>> chartGenerators) {
-		// Create bucketer
-		AbstractBucketer<AbstractScanEntity<?, ?>> bucketer = new SimpleBucketer<>(
-				period, () -> serviceMap.get(type).getOldestScanDate().atStartOfDay(),
-				AbstractScanEntity::getEndDate);
-		// Get start and end dates of buckets
-		BucketIntervals bucketIntervals = bucketer.getBucketIntervals();
-		long startMillis = bucketIntervals.getStart().toInstant(ZoneOffset.UTC)
-				.toEpochMilli();
-		long endMillis = bucketIntervals.getEnd().toInstant(ZoneOffset.UTC)
-				.toEpochMilli();
-		// Get scans iterator and iterate through all pages of scans
-		Iterator<Page<AbstractScanEntity<?, ?>>> pageIterator = serviceMap.get(type)
-				.scanIteratorBetweenDates(startMillis, endMillis);
-		pageIterator.forEachRemaining(
-				page -> {
-					if (page.getNumber() % 5 == 0) {
-						LOG.debug("Generating metrics for page: " + page.getNumber());
-					}
-					// Bucket scans
-					List<List<AbstractScanEntity<?, ?>>> bucketedScans = bucketer
-							.putItemsInBuckets(page.getContent());
-					// Reduce this page of results for each chart generator
-					chartGenerators.values()
-							.forEach(chartGenerator -> chartGenerator.reduce(bucketedScans));
-				});
-
-		List<String> labels = bucketIntervals.getLabels();
-		return chartGenerators.entrySet().stream().collect(
-				Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getResults(labels)));
-	}
-
-	private JSONObject getMetric(ScanType type, String key, String period) {
-		JSONObject json;
-		try {
-			// Ensure period is valid
-			BucketerTimePeriod.ofPeriod(period);
-			CacheKey cacheKey = new CacheKey(type, key, period);
-			json = chartsCache.get(cacheKey);
-		} catch (IllegalArgumentException e) {
-			json = new JSONObject();
-			json.put("error", Collections.singletonList(e.getMessage()));
+		Buckets buckets = buckets(type, period);
+		JSONObject result = base(buckets);
+		result.put("counts", bucketScans(type, buckets).stream()
+				.map(bucket -> bucket.stream().mapToLong(DailyScanMetric::scans).sum()).toList());
+		if (buckets.period() == BucketerTimePeriod.ALL_TIME) {
+			long impossible = projections.implausibleScanCount(type.getTypeName());
+			if (impossible > 0) {
+				result.put("impossibleDates", impossible);
+				result.put("impossibleBefore", LocalDate.ofInstant(Instant.ofEpochMilli(
+						MetricsProjectionRepository.EARLIEST_PLAUSIBLE_SCAN_MILLIS), ZoneOffset.UTC).toString());
+			}
 		}
-		if (json == null) {
-			json = new JSONObject();
-			json.put("error", "Null metric for that period");
-		}
-		return json;
+		return result;
 	}
 
-	/**
-	 * Get the count of scans for the scan type
-	 *
-	 * @param type the ScanType to retrieve
-	 * @return the scan count for this type
-	 */
+	public JSONObject getSourceSizeByPeriod(ScanType type, String period) {
+		Buckets buckets = buckets(type, period);
+		JSONObject result = base(buckets);
+		result.put("counts", bucketScans(type, buckets).stream().map(bucket -> {
+			long count = bucket.stream().mapToLong(DailyScanMetric::sourceSizeCount).sum();
+			long sum = bucket.stream().mapToLong(DailyScanMetric::sourceSizeSum).sum();
+			return count == 0 ? 0D : (double) sum / count;
+		}).toList());
+		return result;
+	}
+
+	public JSONObject getPrPerformanceByPeriod(String period) {
+		Buckets buckets = buckets(CodeScanType.PULL_REQUEST, period);
+		JSONObject result = performanceResult(labels(buckets),
+				bucketScans(CodeScanType.PULL_REQUEST, buckets));
+		result.put("scannerSeries", scannerSeries(bucketScannerTimings(buckets)));
+		return result;
+	}
+
+	/** Average elapsed time of completed scans, from the existing daily duration projection. */
+	public JSONObject getScanDurationByPeriod(ScanType type, String period) {
+		Buckets buckets = buckets(type, period);
+		return scanDurationResult(labels(buckets), bucketScans(type, buckets));
+	}
+
+	public JSONObject getViolationsByType(ScanType type, LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		Map<String, Long> totals = new TreeMap<>();
+		customViolations(type, buckets).forEach(bucket -> bucket.forEach(
+				metric -> totals.merge(metric.name(), metric.count(), Long::sum)));
+		JSONObject result = new JSONObject();
+		result.put("labels", new ArrayList<>(totals.keySet()));
+		result.put("counts", new ArrayList<>(totals.values()));
+		return result;
+	}
+
+	public JSONObject getViolationsByPeriod(ScanType type, LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		if (type == CodeScanType.REPOSITORY) {
+			JSONObject result = customBase(buckets);
+			result.put("counts", customViolations(type, buckets).stream()
+					.map(bucket -> bucket.stream().mapToLong(DailyViolationMetric::count).sum()).toList());
+			return result;
+		}
+		return customScanResult(type, buckets,
+				bucket -> bucket.stream().mapToLong(DailyScanMetric::violations).sum());
+	}
+
+	public JSONObject getScansByPeriod(ScanType type, LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		return customScanResult(type, buckets,
+				bucket -> bucket.stream().mapToLong(DailyScanMetric::scans).sum());
+	}
+
+	public JSONObject getSourceSizeByPeriod(ScanType type, LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		return customScanResult(type, buckets, bucket -> {
+			long count = bucket.stream().mapToLong(DailyScanMetric::sourceSizeCount).sum();
+			return count == 0 ? 0D : bucket.stream().mapToLong(DailyScanMetric::sourceSizeSum).sum()
+					/ (double) count;
+		});
+	}
+
+	public JSONObject getPrPerformanceByPeriod(LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		JSONObject result = performanceResult(buckets.labels(),
+				customScans(CodeScanType.PULL_REQUEST, buckets));
+		result.put("scannerSeries", scannerSeries(group(
+				projections.findPrScannerTimings(startOfDay(start), startOfDay(end.plusDays(1))),
+				ScannerTimingMetric::date, buckets)));
+		return result;
+	}
+
+	public JSONObject getScanDurationByPeriod(ScanType type, LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		return scanDurationResult(buckets.labels(), customScans(type, buckets));
+	}
+
+	public JSONObject getViolationsByPeriodAndType(ScanType type, LocalDate start, LocalDate end) {
+		CustomBuckets buckets = customBuckets(start, end);
+		List<Map<String, Long>> values = customViolations(type, buckets).stream().map(bucket -> {
+			Map<String, Long> map = new TreeMap<>();
+			bucket.forEach(metric -> map.merge(metric.name(), metric.count(), Long::sum));
+			return map;
+		}).toList();
+		JSONObject result = customBase(buckets);
+		values.stream().flatMap(map -> map.keySet().stream()).distinct().sorted().forEach(name ->
+				result.put(name, values.stream().map(map -> map.getOrDefault(name, 0L)).toList()));
+		return result;
+	}
+
 	public long getScanCount(ScanType type) {
-		CacheKey key = new CacheKey(type, SCAN_COUNT);
-		return (long) this.statsCache.getOrDefault(key, 0L);
+		return projections.sum(type.getTypeName(), "scan_count");
 	}
 
-	/**
-	 * Get the count of violations for the scan type
-	 *
-	 * @param type the ScanType to retrieve
-	 * @return the violation count for this type
-	 */
+	public long getScanCountToday(ScanType type) {
+		long today = LocalDate.now(metricsZone).atStartOfDay(metricsZone).toInstant()
+				.toEpochMilli();
+		return projections.findScans(type.getTypeName(), today,
+				today + Duration.ofDays(1).toMillis()).stream().mapToLong(DailyScanMetric::scans).sum();
+	}
+
 	public long getViolationCount(ScanType type) {
-		CacheKey key = new CacheKey(type, VIO_COUNT);
-		return (long) this.statsCache.getOrDefault(key, 0L);
+		long local = projections.sum(type.getTypeName(), "violation_count");
+		return type == CodeScanType.REPOSITORY
+				? local + projections.repositoryProviderFindingCount(0, Long.MAX_VALUE) : local;
 	}
 
-	/**
-	 * Get the average of scan durations for the scan type in milliseconds
-	 *
-	 * @param type the ScanType to retrieve
-	 * @return the average scan duration for this type
-	 */
+	public HomeMetricsSnapshot getHomeMetrics(long start, long end) {
+		long completed = 0;
+		long findings = 0;
+		long durationSum = 0;
+		long durationCount = 0;
+		for (ScanType type : List.of(CodeScanType.PULL_REQUEST, CodeScanType.UPLOAD,
+				CodeScanType.REPOSITORY, ImageScanType.CONTAINER)) {
+			for (DailyScanMetric metric : projections.findScans(type.getTypeName(), start, end)) {
+				completed += metric.scans();
+				findings += metric.violations();
+				durationSum += metric.durationSum();
+				durationCount += metric.durationCount();
+			}
+		}
+		findings += projections.repositoryProviderFindingCount(start, end);
+		double average = durationCount == 0 ? 0 : (double) durationSum / durationCount;
+		return new HomeMetricsSnapshot(completed, findings, average);
+	}
+
 	public double getAverageScanTime(ScanType type) {
-		CacheKey key = new CacheKey(type, AVG_TIME);
-		return (double) this.statsCache.getOrDefault(key, 0.0);
+		return projections.average(type.getTypeName(), "duration_sum_ms", "duration_count");
 	}
 
-	/**
-	 * Get the average of scan durations for the scan type expressed in ms, s, or mins, whichever
-	 * provides the best resolution
-	 *
-	 * @param type the ScanType to retrieve
-	 * @return the average scan duration in the best resolution
-	 */
 	public String getAverageScanTimeString(ScanType type) {
-		double slicer = getAverageScanTime(type);
-		if (slicer < 1000) {
-			return String.format("%.0f ms", slicer);
-		}
-		slicer /= 1000;
-		if (slicer < 60) {
-			return String.format("%.2f s", slicer);
-		}
-		slicer /= 60;
-		return String.format("%.2f mins", slicer);
+		return formatDuration(getAverageScanTime(type));
 	}
 
-	private static class CacheKey {
-
-		private final String generatedKey;
-
-		CacheKey(ScanType type, String key) {
-			this.generatedKey = type.getTypeName() + "-" + key;
-		}
-
-		CacheKey(ScanType type, String key, String period) {
-			this.generatedKey = type.getTypeName() + "-" + key + "-" + period;
-		}
-
-		public int hashCode() {
-			return this.generatedKey.hashCode();
-		}
-
-		public boolean equals(Object other) {
-			return (other instanceof CacheKey)
-					&& ((CacheKey) other).generatedKey.equals(this.generatedKey);
-		}
+	public double getAverageSourceSize(ScanType type) {
+		return projections.average(type.getTypeName(), "source_size_sum_bytes", "source_size_count");
 	}
 
+	public String getAverageSourceSizeString(ScanType type) {
+		double size = getAverageSourceSize(type);
+		if (size < 1024) return String.format("%.0f B", size);
+		size /= 1024;
+		if (size < 1024) return String.format("%.2f KB", size);
+		return String.format("%.2f MB", size / 1024);
+	}
+
+	public long getPullRequestCount() { return projections.dimension("pull_request_count"); }
+	public long getRepositoryCount() { return projections.dimension("repository_count"); }
+
+	public PRScanPerformanceSummary getRecentPrPerformance() {
+		return projections.performanceSince(System.currentTimeMillis()
+				- Duration.ofDays(getPrPerformanceWindowDays()).toMillis());
+	}
+
+	public PRScanPerformanceSummary getAllTimePrPerformance() {
+		return projections.performanceSince(0);
+	}
+
+	public int getPrPerformanceWindowDays() {
+		PullRequestSyncSettingsEntity settings = settingsService.getSettings();
+		return settings == null ? 7 : settings.getPerformanceWindowDays();
+	}
+
+	private Buckets buckets(ScanType type, String value) {
+		BucketerTimePeriod period = BucketerTimePeriod.ofPeriod(value);
+		SimpleBucketer<DailyScanMetric> bucketer = new SimpleBucketer<>(period,
+				() -> projections.oldestDate(type.getTypeName()), DailyScanMetric::date);
+		return new Buckets(period, bucketer, bucketer.getBucketIntervals());
+	}
+
+	private List<List<DailyScanMetric>> bucketScans(ScanType type, Buckets buckets) {
+		long start = millis(buckets.intervals().getStart());
+		long end = millis(buckets.intervals().getEnd());
+		return buckets.scans().putItemsInBuckets(projections.findScans(type.getTypeName(), start, end));
+	}
+
+	private List<List<DailyViolationMetric>> bucketViolations(ScanType type, Buckets buckets) {
+		SimpleBucketer<DailyViolationMetric> bucketer = new SimpleBucketer<>(buckets.period(),
+				() -> projections.oldestDate(type.getTypeName()), DailyViolationMetric::date);
+		return bucketer.putItemsInBuckets(projections.findViolations(type.getTypeName(),
+				millis(buckets.intervals().getStart()), millis(buckets.intervals().getEnd())));
+	}
+
+	private JSONObject base(Buckets buckets) {
+		JSONObject result = new JSONObject();
+		result.put("labels", labels(buckets));
+		return result;
+	}
+
+	private List<String> labels(Buckets buckets) {
+		if (buckets.period() != BucketerTimePeriod.LAST_THIRTY_DAYS) {
+			return buckets.intervals().getLabels();
+		}
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH);
+		List<java.time.LocalDateTime> boundaries = buckets.intervals().getBuckets();
+		return boundaries.subList(0, boundaries.size() - 1).stream()
+				.map(date -> date.format(formatter)).toList();
+	}
+
+	private List<List<ScannerTimingMetric>> bucketScannerTimings(Buckets buckets) {
+		SimpleBucketer<ScannerTimingMetric> bucketer = new SimpleBucketer<>(buckets.period(),
+				() -> projections.oldestDate(CodeScanType.PULL_REQUEST.getTypeName()),
+				ScannerTimingMetric::date);
+		return bucketer.putItemsInBuckets(projections.findPrScannerTimings(
+				millis(buckets.intervals().getStart()), millis(buckets.intervals().getEnd())));
+	}
+
+	private List<Map<String, Object>> scannerSeries(List<List<ScannerTimingMetric>> buckets) {
+		List<Map<String, long[]>> bucketValues = new ArrayList<>();
+		java.util.Set<String> scannerNames = new java.util.TreeSet<>();
+		for (List<ScannerTimingMetric> bucket : buckets) {
+			Map<String, long[]> values = new TreeMap<>();
+			for (ScannerTimingMetric metric : bucket) {
+				ScanExecutionSummaryCodec.decode(metric.timingsJson()).forEach(scanner -> {
+					long[] aggregate = values.computeIfAbsent(scanner.scannerName(), key -> new long[2]);
+					aggregate[0] += scanner.durationMs();
+					aggregate[1]++;
+					scannerNames.add(scanner.scannerName());
+				});
+			}
+			bucketValues.add(values);
+		}
+		List<Map<String, Object>> result = new ArrayList<>();
+		for (String scannerName : scannerNames) {
+			Map<String, Object> series = new LinkedHashMap<>();
+			series.put("name", scannerName);
+			series.put("values", bucketValues.stream().map(values -> {
+				long[] aggregate = values.get(scannerName);
+				return aggregate == null || aggregate[1] == 0
+						? 0D : aggregate[0] / (double) aggregate[1];
+			}).toList());
+			result.add(series);
+		}
+		return result;
+	}
+
+	private CustomBuckets customBuckets(LocalDate start, LocalDate end) {
+		if (start == null || end == null || start.isAfter(end)) {
+			throw new IllegalArgumentException("Start date must be on or before end date");
+		}
+		if (Duration.between(start.atStartOfDay(), end.plusDays(1).atStartOfDay()).toDays() > 3660) {
+			throw new IllegalArgumentException("Custom date range cannot exceed 10 years");
+		}
+		long days = end.toEpochDay() - start.toEpochDay() + 1;
+		Function<LocalDate, LocalDate> next = days <= 31 ? date -> date.plusDays(1)
+				: days <= 180 ? date -> date.plusWeeks(1) : date -> date.plusMonths(1);
+		List<LocalDate> boundaries = new ArrayList<>();
+		for (LocalDate date = start; !date.isAfter(end); date = next.apply(date)) boundaries.add(date);
+		boundaries.add(end.plusDays(1));
+		List<String> labels = new ArrayList<>();
+		for (int i = 0; i < boundaries.size() - 1; i++) {
+			LocalDate from = boundaries.get(i);
+			LocalDate to = boundaries.get(i + 1).minusDays(1);
+			labels.add(from.equals(to) ? from.toString() : from + " – " + to);
+		}
+		return new CustomBuckets(boundaries, labels);
+	}
+
+	private List<List<DailyScanMetric>> customScans(ScanType type, CustomBuckets buckets) {
+		List<DailyScanMetric> rows = projections.findScans(type.getTypeName(),
+				startOfDay(buckets.boundaries().get(0)),
+				startOfDay(buckets.boundaries().getLast()));
+		return group(rows, DailyScanMetric::date, buckets);
+	}
+
+	private List<List<DailyViolationMetric>> customViolations(ScanType type, CustomBuckets buckets) {
+		List<DailyViolationMetric> rows = projections.findViolations(type.getTypeName(),
+				startOfDay(buckets.boundaries().get(0)),
+				startOfDay(buckets.boundaries().getLast()));
+		return group(rows, DailyViolationMetric::date, buckets);
+	}
+
+	private <T> List<List<T>> group(List<T> rows, Function<T, java.time.LocalDateTime> date,
+			CustomBuckets buckets) {
+		List<List<T>> grouped = new ArrayList<>();
+		for (int i = 0; i < buckets.labels().size(); i++) grouped.add(new ArrayList<>());
+		for (T row : rows) {
+			LocalDate rowDate = date.apply(row).toLocalDate();
+			for (int i = 0; i < grouped.size(); i++) {
+				if (!rowDate.isBefore(buckets.boundaries().get(i))
+						&& rowDate.isBefore(buckets.boundaries().get(i + 1))) {
+					grouped.get(i).add(row);
+					break;
+				}
+			}
+		}
+		return grouped;
+	}
+
+	private JSONObject customScanResult(ScanType type, CustomBuckets buckets,
+			Function<List<DailyScanMetric>, Number> value) {
+		JSONObject result = customBase(buckets);
+		result.put("counts", customScans(type, buckets).stream().map(value).toList());
+		return result;
+	}
+
+	private JSONObject customBase(CustomBuckets buckets) {
+		JSONObject result = new JSONObject();
+		result.put("labels", buckets.labels());
+		return result;
+	}
+
+	private JSONObject performanceResult(List<String> labels,
+			List<List<DailyScanMetric>> buckets) {
+		JSONObject result = new JSONObject();
+		result.put("labels", labels);
+		result.put("samples", buckets.stream().map(bucket -> bucket.stream()
+				.mapToLong(DailyScanMetric::performanceCount).sum()).toList());
+		result.put("totalMs", performanceAverages(buckets, DailyScanMetric::totalDurationSum));
+		result.put("sourceMs", performanceAverages(buckets, DailyScanMetric::sourceDurationSum));
+		result.put("scannersMs", performanceAverages(buckets, DailyScanMetric::scannerDurationSum));
+		result.put("processingMs", performanceAverages(buckets,
+				DailyScanMetric::processingDurationSum));
+		return result;
+	}
+
+	private JSONObject scanDurationResult(List<String> labels, List<List<DailyScanMetric>> buckets) {
+		JSONObject result = new JSONObject();
+		result.put("labels", labels);
+		result.put("samples", buckets.stream().map(bucket -> bucket.stream()
+				.mapToLong(DailyScanMetric::durationCount).sum()).toList());
+		result.put("totalMs", buckets.stream().map(bucket -> {
+			long count = bucket.stream().mapToLong(DailyScanMetric::durationCount).sum();
+			return count == 0 ? 0D : bucket.stream().mapToLong(DailyScanMetric::durationSum).sum()
+					/ (double) count;
+		}).toList());
+		return result;
+	}
+
+	private List<Double> performanceAverages(List<List<DailyScanMetric>> buckets,
+			java.util.function.ToLongFunction<DailyScanMetric> value) {
+		return buckets.stream().map(bucket -> {
+			long count = bucket.stream().mapToLong(DailyScanMetric::performanceCount).sum();
+			return count == 0 ? 0D : bucket.stream().mapToLong(value).sum() / (double) count;
+		}).toList();
+	}
+
+	private long startOfDay(LocalDate date) {
+		return date.atStartOfDay(metricsZone).toInstant().toEpochMilli();
+	}
+
+	private long millis(java.time.LocalDateTime date) {
+		return date.atZone(metricsZone).toInstant().toEpochMilli();
+	}
+
+	private static String formatDuration(double millis) {
+		return DurationText.of(millis);
+	}
+
+	private record Buckets(BucketerTimePeriod period, SimpleBucketer<DailyScanMetric> scans,
+			BucketIntervals intervals) { }
+	private record CustomBuckets(List<LocalDate> boundaries, List<String> labels) { }
 }

@@ -1,0 +1,38 @@
+<!--/* IMPROVEMENT_PLAN.md Phase 11 Section D: one fragment replacing the page-header row/col
+     block copy-pasted (with drifting column-width classes - col-lg-12, col-sm-4, col-sm-6,
+     col-sm-8 - that never mattered, since none of the 27 call sites had a second column to
+     balance against) across 27 templates. Every call site is title-only or title + an
+     uppercase eyebrow subtitle; most left the subtitle commented out as dead code. No
+     action-button slot: none of the 27 had one - every page's buttons live in a card below
+     the header, not in the header row itself.
+
+     subtitle is not optional to omit at the call site - Thymeleaf fragment signatures have no
+     default parameter values, so a title-only page passes null explicitly, e.g.
+     th:replace="~{fragments/pageheader :: header('Rulesets', null)}".
+
+     Material Web migration follow-up (2026-09-22): the Bootstrap grid/utility classes this
+     fragment used to carry (row/no-gutters/py-4/g-0, col-12/text-center/text-sm-left/mb-0)
+     are gone - .wt-page-header-inner (components.css) replicates the exact same responsive
+     text-align behavior in plain CSS. This is the one ancestor the shipped breadcrumb feature
+     (below) depends on for its own centering, so the visual result must stay identical, not
+     just "close enough". */-->
+<div th:fragment="header(title, subtitle)" class="page-header">
+  <div class="wt-page-header-inner">
+    <!-- Navigable ancestors are resolved from the same route hierarchy as the persistent
+         sidebar. The current page remains plain text with aria-current, while every ancestor is
+         a real link that supports keyboard navigation, copying, and opening in another tab. -->
+    <nav class="wt-breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <!-- An ancestor named like this page (the sidebar link that leads here, e.g. "Rulesets"
+             above "Rulesets") would say the same thing twice, so it is left out. -->
+        <li th:each="breadcrumb : ${breadcrumbLinks}"
+            th:unless="${#strings.equalsIgnoreCase(breadcrumb.label, title)}">
+          <a th:href="${breadcrumb.url}" th:text="${breadcrumb.label}"></a>
+        </li>
+        <li aria-current="page" th:text="${title}"></li>
+      </ol>
+    </nav>
+    <span th:if="${subtitle != null}" class="page-subtitle text-uppercase" th:text="${subtitle}"></span>
+    <h1 class="page-title" tabindex="-1" th:text="${title}"></h1>
+  </div>
+</div>

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tracelink.appsec.watchtower.core.encryption.service.KeyEncryptionService;
@@ -15,7 +15,7 @@ import com.tracelink.appsec.watchtower.core.encryption.utils.EncryptionUtils;
 @ExtendWith(SpringExtension.class)
 public class DataEncryptionKeyConverterTest {
 
-	@MockBean
+	@MockitoBean
 	private KeyEncryptionService keyEncryptionService;
 
 	@Test

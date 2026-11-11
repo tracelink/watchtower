@@ -1,0 +1,70 @@
+<!--/* The scan dialog, shared by the inventory (Scan selected, or a row's Scan icon: the chosen ids
+     are copied in by repo-scan.js) and the Scans page's New scan (pass the integrations: the
+     dialog then asks for an integration and the repositories as chips instead of ids). When is
+     four buttons; time, day and plan name show only for a repeating scan, and the button then
+     reads "Create plan". The posted fields are unchanged: selector (one chip per line),
+     frequency, hour (0-23 UTC) and day (1-7 for weekly, 1 = Monday; 1-28 for monthly). Fragment
+     parameters cannot hold T(...), so callers pass model values only. */-->
+<md-dialog th:fragment="dialog(apiLabel, integrations, choices, frequencies)" id="repoScanDialog"
+    data-scan-dialog th:attr="data-scan-picker=${integrations != null ? 'true' : null},open=${openNewScan == true ? 'open' : null}">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">play_circle</span></span>
+    <span class="wt-person__text"><span data-scan-title th:text="${integrations != null ? 'New repository scan' : 'Scan repositories'}">Scan repositories</span>
+      <span class="wt-person__meta" th:if="${integrations == null and apiLabel != null}" th:text="${apiLabel}">BitBucket</span></span></span>
+    <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+  <form slot="content" id="repoScanForm" method="POST" action="/reposcan/submit" class="wt-md-form" data-scan-form>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input th:if="${integrations == null}" type="hidden" name="apiLabel" th:value="${apiLabel}"/>
+    <th:block th:if="${integrations != null}">
+      <md-outlined-select name="apiLabel" label="Integration" required>
+        <md-select-option th:each="i, s : ${integrations}" th:value="${i}" th:selected="${s.first}"><div slot="headline" th:text="${i}"></div></md-select-option>
+      </md-outlined-select>
+      <div class="wt-chip-input" data-scan-targets>
+        <label class="wt-picker-label" for="repoScanTargetInput">Repositories</label>
+        <div class="wt-chip-input__box">
+          <span class="wt-chip-input__chips" data-scan-target-chips></span>
+          <input id="repoScanTargetInput" type="text" class="wt-chip-input__field" autocomplete="off" maxlength="200"
+              placeholder="A name, pay*, label:pci, team:checkout, project:PAY or *" data-scan-target-input/>
+        </div>
+        <span class="wt-field-help">Press Enter after each one.</span>
+        <textarea name="selector" hidden aria-label="Repositories" data-scan-selector></textarea>
+        <p class="wt-field-error" role="alert" hidden data-scan-target-error>Add at least one repository.</p>
+      </div>
+    </th:block>
+    <div data-selected-ids></div>
+    <div th:replace="~{fragments/rulesetpicker :: picker('repoScanRuleset', ${choices}, 'scan')}"></div>
+    <md-outlined-text-field name="branches" label="Branches" supporting-text="Blank for the default branch; or main, release/*"></md-outlined-text-field>
+    <fieldset class="wt-choice-chips" data-scan-when>
+      <legend>When</legend>
+      <label th:each="f : ${frequencies}" class="wt-choice-chip">
+        <input type="radio" name="frequency" th:value="${f.name()}" th:checked="${f.name() == 'ONCE'}"
+            th:aria-label="${f.name() == 'ONCE' ? 'Now' : f.displayName}"/>
+        <span class="material-icons" aria-hidden="true"
+            th:text="${f.name() == 'ONCE' ? 'bolt' : f.name() == 'DAILY' ? 'today' : f.name() == 'WEEKLY' ? 'date_range' : 'calendar_month'}">bolt</span><span
+            th:text="${f.name() == 'ONCE' ? 'Now' : f.displayName}">Now</span>
+      </label>
+    </fieldset>
+    <div class="wt-scan-repeat" data-scan-recurring hidden>
+      <md-outlined-select name="hour" label="At (UTC)" data-scan-hour>
+        <md-select-option th:each="h : ${#numbers.sequence(0, 23)}" th:value="${h}" th:selected="${h == 2}"><div slot="headline"
+            th:text="${(h < 10 ? '0' : '') + h + ':00'}">02:00</div></md-select-option>
+      </md-outlined-select>
+      <md-outlined-select name="day" label="Day" data-scan-day="WEEKLY" disabled>
+        <md-select-option th:each="d, s : ${ {'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'} }"
+            th:value="${s.count}" th:selected="${s.first}"><div slot="headline" th:text="${d}">Monday</div></md-select-option>
+      </md-outlined-select>
+      <md-outlined-select name="day" label="Day of month" data-scan-day="MONTHLY" disabled hidden>
+        <md-select-option th:each="d : ${#numbers.sequence(1, 28)}" th:value="${d}" th:selected="${d == 1}"><div slot="headline"
+            th:text="${d + (d == 1 or d == 21 ? 'st' : d == 2 or d == 22 ? 'nd' : d == 3 or d == 23 ? 'rd' : 'th')}">1st</div></md-select-option>
+      </md-outlined-select>
+      <md-outlined-text-field name="name" label="Plan name" supporting-text="Optional"></md-outlined-text-field>
+    </div>
+    <span class="wt-mini-chip wt-meta-chip wt-scan-next"><span class="material-icons" aria-hidden="true" data-scan-next-icon>schedule_send</span><span
+        data-scan-next>Joins the queue now; the run page shows progress</span></span>
+  </form>
+  <div slot="actions">
+    <md-text-button type="button" data-dialog-close>Cancel</md-text-button>
+    <md-filled-button type="submit" form="repoScanForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true"
+        data-scan-submit-icon>play_arrow</span><span data-scan-submit>Scan</span></md-filled-button>
+  </div>
+</md-dialog>

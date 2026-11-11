@@ -1,497 +1,418 @@
-<!-- Page Header -->
-<div class="page-header row no-gutters py-4">
-    <div class="col-lg-12 col-md-12 col-sm-12 text-center text-sm-left mb-0">
-        <h3 class="page-title">Rulesets</h3>
+<!-- Rulesets (UAT walkthrough, 2026-10-16): the picker is a chip by the title with a Default chip;
+     New ruleset plus one More menu replace seven buttons; a summary row of chips (rule count,
+     included rulesets, scanners); one rule table with All / Its own / Included tabs, a From chip,
+     severity chips and scanner tiles. Rules are paged on the server (the page took over 30 s). -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')},
+    canImpex=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}">
+<div class="wt-component-region" data-ruleset-region aria-busy="false">
+<div class="wt-component-loading" data-ruleset-loading role="status" aria-live="polite" hidden>
+    <span class="wt-spinner" aria-hidden="true"></span>
+    <span>Loading ruleset…</span>
+</div>
+
+<div class="wt-home-head wt-report-head wt-page-bar" data-ruleset-picker role="group" aria-label="Ruleset">
+    <div th:replace="~{fragments/pageheader :: header('Rulesets', null)}"></div>
+    <div class="wt-meta-chips wt-report-head__status" th:unless="${rulesets.isEmpty()}">
+        <details class="wt-popover wt-download-menu wt-ruleset-picker" data-ruleset-menu>
+            <summary class="wt-mini-chip wt-meta-chip" id="rulesetselect"
+                th:aria-label="${'Ruleset: ' + (currentRuleset != null ? currentRuleset.name : 'none') + '. Change'}"><span
+                class="material-icons" aria-hidden="true">rule</span><span
+                th:text="${currentRuleset != null ? currentRuleset.name : 'Choose a ruleset'}">Default Dev Ruleset</span><span
+                class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+            <div class="wt-popover__body wt-download-menu__body wt-ruleset-picker__body">
+                <th:block th:each="group : ${ {'Your rulesets', 'Supporting', 'Scanner rulesets'} }">
+                    <span class="wt-menu-label" th:text="${group}">Your rulesets</span>
+                    <a th:each="r : ${rulesets}" class="wt-menu-item" th:href="@{/rulesets/{id}(id=${r.id})}"
+                       th:if="${(group == 'Your rulesets' and r.isPrimary()) or (group == 'Supporting' and r.isSupporting()) or (group == 'Scanner rulesets' and r.isProvided())}"
+                       th:attr="aria-current=${currentRuleset != null and r.id == currentRuleset.id ? 'true' : null}"
+                       data-ruleset-link><span th:text="${r.name}">Default Dev Ruleset</span><span th:if="${r.isDefault()}"
+                       class="material-icons wt-tone-success" aria-label="Default">star</span></a>
+                </th:block>
+            </div>
+        </details>
+        <span th:if="${currentRuleset != null and currentRuleset.isDefault()}" class="wt-mini-chip wt-meta-chip wt-mini-chip--ok"
+            tabindex="0" data-tip="New repositories and uploads use this ruleset"><span class="material-icons"
+            aria-hidden="true">star</span>Default</span>
+    </div>
+    <div class="wt-page-actions wt-report-head__status wt-ruleset-actions">
+        <!-- Ask the assistant is an AI-star icon beside New ruleset, not a row of its own (Fixes board). -->
+        <button th:if="${currentRuleset != null and #authorization.expression('hasAuthority(''Assistant Use'')')}" type="button"
+            class="wt-icon-action wt-icon-action--ai" data-assistant-open aria-label="Ask the assistant about this ruleset"
+            data-tip="Ask the assistant about this ruleset"
+            th:attr="data-assistant-subject=${currentRuleset.name},data-assistant-context=${'Help manage ruleset ID ' + currentRuleset.id + '. Resolve the requested changes, then prepare a complete change set for my review. Do not apply anything.'}"><span
+            class="material-icons" aria-hidden="true">auto_awesome</span></button>
+        <md-filled-button type="button" data-wt-dialog-target="#createRulesetModal" th:if="${canModify}" has-icon>
+            <span class="material-icons" slot="icon" aria-hidden="true">add</span>New ruleset</md-filled-button>
+        <details class="wt-popover wt-download-menu" th:if="${canModify or canImpex}" data-ruleset-more>
+            <summary class="wt-mini-chip wt-meta-chip wt-ruleset-more" aria-label="More ruleset actions"><span
+                class="material-icons" aria-hidden="true">more_horiz</span>More<span class="material-icons"
+                aria-hidden="true">arrow_drop_down</span></summary>
+            <div class="wt-popover__body wt-download-menu__body">
+                <button type="button" class="wt-menu-item" data-wt-dialog-target="#importModal" th:if="${canImpex}"><span
+                    class="material-icons" aria-hidden="true">upload_file</span> Import</button>
+                <form th:if="${canImpex and view != null and view.allCount > 0}" th:action="${'/rulesets/'+currentRuleset.id+'/export'}" method="POST">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="wt-menu-item"><span class="material-icons" aria-hidden="true">download</span> Export</button>
+                </form>
+                <th:block th:if="${canModify and currentRuleset != null}">
+                    <button type="button" class="wt-menu-item" data-wt-dialog-target="#editRulesetModal"><span
+                        class="material-icons" aria-hidden="true">edit</span> Edit details</button>
+                    <button type="button" class="wt-menu-item" data-wt-dialog-target="#editRulesModal"><span
+                        class="material-icons" aria-hidden="true">checklist</span> Edit rules</button>
+                    <button type="button" class="wt-menu-item" data-wt-dialog-target="#rulesetInheritanceModal"><span
+                        class="material-icons" aria-hidden="true">account_tree</span> Edit included rulesets</button>
+                </th:block>
+                <button type="button" class="wt-menu-item" data-wt-dialog-target="#defaultRulesetModal" th:if="${canModify}"><span
+                    class="material-icons" aria-hidden="true">star</span> Make default</button>
+            </div>
+        </details>
     </div>
 </div>
-<!-- End Page Header -->
-<div class="row border-bottom mb-3">
-    <!-- Rulesets -->
-    <div class="col-lg-12 col-md-12 col-sm-12 mb-4">
-        <div class="card card-small h-100">
-            <div class="card-header border-bottom">
-                <div class="d-flex">
-                    <div class="mr-auto">
-                        <h6 class="card-title m-0">Select a Ruleset</h6>
-                    </div>
-                    <div class="mr-right pr-1" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-                        <button class="btn btn-success" data-toggle="modal"
-                                data-target="#createRulesetModal">
-                            Create New Ruleset
-                        </button>
-                    </div>
-                    <div class="mr-right pr-1" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-                        <button class="btn btn-primary" data-toggle="modal"
-                                 data-target="#defaultRulesetModal">
-                            Manage Default Ruleset
-                        </button>
-                    </div>
-                    <div class="mr-right pr-1" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}">
-                        <button class="btn btn-secondary" data-toggle="modal"
-                                data-target="#importModal">
-                            Import Ruleset
-                        </button>
-                    </div>
-                </div>
-                <span th:if="${rulesets.size() > 0}">Select a ruleset below to view a list of its rules. Each ruleset displays the number of rules it contains.</span>
-            </div>
-            <div th:switch="${rulesets.size()}">
-                <div th:case="0" class="card-footer">
-                    No rulesets to display.
-                </div>
-                <div th:case="*" class="card-footer">
-	                <select class="selectpicker" data-style="rounded border"
-	                        data-width="auto" id="rulesetselect">
-	                    <optgroup label="Primary">
-	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isPrimary()}"
-	                                th:selected="${ruleset.id} == ${currentRuleset.id}"
-	                                th:value="${ruleset.id}"
-	                                th:data-content="${ruleset.isDefault() ? ruleset.name + ' (' + ruleset.getNumRules() + ')' + ' <span class=''badge badge-pill badge-primary''>' + ruleset.designation.name + '</span>' : ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
-	                    </optgroup>
-	                    <optgroup label="Supporting">
-	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isSupporting()}"
-	                                th:selected="${ruleset.id} == ${currentRuleset.id}"
-	                                th:value="${ruleset.id}"
-	                                th:data-content="${ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
-	                    </optgroup>
-	                    <optgroup label="Provided">
-	                        <option th:each="ruleset : ${rulesets}" th:if="${ruleset.isProvided()}"
-	                                th:selected="${ruleset.id} == ${currentRuleset.id}"
-	                                th:value="${ruleset.id}"
-	                                th:data-content="${ruleset.name + ' (' + ruleset.getNumRules() + ')'}"></option>
-	                    </optgroup>
-	                </select>
-                </div>
-            </div>
-        </div>
+<th:block th:if="${rulesets.isEmpty()}">
+    <div class="wt-empty-picture" data-rulesets-empty>
+        <span class="material-icons wt-empty-picture__icon" aria-hidden="true">rule</span>
+        <strong>No rulesets yet</strong>
+        <span class="wt-muted">Create or import one to begin.</span>
     </div>
-    <!-- End Rulesets -->
-</div>
+</th:block>
+
 <!-- No Ruleset Block -->
 <th:block th:if="${currentRuleset != null}">
-<div class="row">
-    <!-- Rules -->
-    <div class="col-lg-12 col-md-12 col-sm-12 rulesCard">
-        <div class="card card-small mb-4">
-            <div class="card-header border-bottom">
-                <div class="d-flex align-items-center">
-                    <div class="mr-auto">
-                        <h6 class="card-title m-0" th:text="${currentRuleset.name + ' Rules'}"></h6>
-                    </div>
-                    <div>
-                        <button class="btn btn-warning" data-toggle="modal"
-                        		th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
-                                data-target="#editRulesetModal">Edit Ruleset</button>
-                        <form th:unless="${currentRuleset.getNumRules() == 0}" class="d-inline"
-                        	  th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}"
-                              th:action="${'/rulesets/'+currentRuleset.id+'/export'}" method="POST">
-                            <input type="hidden" th:name="${_csrf.parameterName}"
-                                   th:value="${_csrf.token}"/>
-                            <button class="btn btn-secondary" type="submit">Export Ruleset</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <div class="card-body ">
-	                    <div class="d-flex mb-4">
-	                        <p class="h6 mr-auto font-weight-bold">Owned Rules:</p>
-	                        <div class="text-right mr-right" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-		                        <button class="btn btn-warning" data-toggle="modal"
-		                                data-target="#editRulesModal">
-		                            Edit Rules
-		                        </button>
-		                    </div>
-	                    </div>
-                        <div th:switch="${currentRuleset.getRules().size()}">
-                            <span th:case="0">There are no rules in this ruleset.</span>
-                            <div th:case="*">
-                                <div class="table-responsive">
-                                    <table class="table table-striped datatable">
-                                        <thead>
-                                        <tr>
-                                            <th scope="col">Rule Name</th>
-                                            <th scope="col">Priority</th>
-                                            <th scope="col">Message</th>
-                                            <th scope="col" class="text-center">More info</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr th:each="rule : ${currentRuleset.getRules()}">
-                                            <td th:text="${rule.name}"></td>
-                                            <td th:text="${rule.priority.getName()}"></td>
-                                            <td th:text="${rule.message}"></td>
-                                            <td class="text-center">
-                                                <a th:href="${rule.externalUrl}" target="_blank">
-                                                    <i class="material-icons md-18">link</i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body border-top">
-                        <div class="d-flex mb-4">
-                        	<p class="h6 mr-auto font-weight-bold">Inherited Rules:</p>
-                        	<div class="text-right mr-right" th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-	                            <button class="btn btn-warning" data-toggle="modal"
-	                                    data-target="#rulesetInheritanceModal" >
-	                                Edit Inherited Rulesets
-	                            </button>
-                        	</div>
-                        </div>
-                        <div th:switch=${currentRuleset.getInheritedRules().size()}>
-                        	<span th:case="0">This ruleset has no inherited rulesets.</span>
-	                        <div th:case="*" class="table-responsive">
-	                            <table class="table table-striped datatable">
-	                                <thead>
-	                                <tr>
-	                                    <th scope="col">Inherited From</th>
-	                                    <th scope="col">Rule Name</th>
-	                                    <th scope="col">Priority</th>
-	                                    <th scope="col">Message</th>
-	                                    <th scope="col" class="text-center">More Info</th>
-	                                </tr>
-	                                </thead>
-	                                <tbody>
-	                                <tr th:each="rule : ${currentRuleset.getInheritedRules()}">
-	                                    <td th:text="${rule.value}"></td>
-	                                    <td th:text="${rule.key.name}"></td>
-	                                    <td th:text="${rule.key.priority.getName()}" th:data-sort="${rule.key.priority.getPriority()}"></td>
-	                                    <td th:text="${rule.key.message}"></td>
-	                                    <td class="text-center">
-	                                        <a th:href="${rule.key.externalUrl}" target="_blank">
-	                                            <i class="material-icons md-18">link</i>
-	                                        </a>
-	                                    </td>
-	                                </tr>
-	                                </tbody>
-	                            </table>
-	                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- End Rules -->
-    </div>
+<div class="wt-meta-chips mb-3" data-ruleset-summary>
+    <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+        th:attr="data-tip=${view.ownCount + ' its own, ' + view.includedCount + ' from the rulesets it includes'}"><span
+        class="material-icons" aria-hidden="true">rule</span><span
+        th:text="${#numbers.formatInteger(view.allCount, 1, 'COMMA') + (view.allCount == 1 ? ' rule' : ' rules')}">1,172 rules</span></span>
+    <span th:unless="${view.included.isEmpty()}" class="wt-mini-chip wt-meta-chip" tabindex="0"
+        th:attr="data-tip=${#strings.listJoin(view.included.![name], ', ')}"><span class="material-icons"
+        aria-hidden="true">account_tree</span><span
+        th:text="${'Includes ' + view.included.size() + (view.included.size() == 1 ? ' ruleset' : ' rulesets')}">Includes 8 rulesets</span></span>
+    <span class="wt-scanner-tiles" th:unless="${view.scanners.isEmpty()}">
+        <span th:each="sc : ${view.scanners}" class="wt-scanner-tile wt-scanner-tile--ran" role="img" tabindex="0"
+            th:attr="data-tip=${sc.rules + ' ' + sc.scanner.name() + (sc.rules == 1 ? ' rule' : ' rules') + ' in this ruleset'},aria-label=${sc.rules + ' ' + sc.scanner.name() + ' rules'}"><span
+            class="material-icons" aria-hidden="true" th:text="${sc.scanner.icon()}">coffee</span></span>
+    </span>
+    <!-- Status as a chip with its explanation on hover, not a warning block. -->
+    <span th:if="${secretsBlockingWarning}" data-secrets-blocking-warning class="wt-mini-chip wt-meta-chip wt-mini-chip--warn"
+        tabindex="0" role="status"
+        th:attr="data-tip=${(currentRuleset.blockingLevel != null ? 'Only findings at ' + currentRuleset.blockingLevel.name + ' or higher block, so Medium generic-secret findings are reported without blocking.' : 'This ruleset has no blocking level, so no finding blocks.') + ' Set the blocking level to Medium or lower to block them.'}"><span
+        class="material-icons" aria-hidden="true">key</span>Secrets may not block</span>
 </div>
-<!-- Edit Rules Modal -->
-<div class="modal fade" id="editRulesModal" tabindex="-1" role="dialog"
-	 th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
-     aria-labelledby="addModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="addModalLabel">
-                    Set Rules for <label th:text="${currentRuleset.name}"></label>
-                </h4>
-                <button type="button" class="close" data-dismiss="modal"
-                        aria-hidden="true">×
-                </button>
 
+<div class="wt-page-bar mb-3" th:with="sevLabel=${filter.priority() == null ? 'All' : filter.priority().name},
+        scLabel=${filter.scanner == 'all' ? 'All' : knownScanners.get(filter.scanner).name()}">
+    <nav class="wt-segmented-filter" role="tablist" aria-label="Which rules">
+        <a role="tab" class="wt-segment" data-rule-scope="all"
+           th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope='all',scanner=${filter.scanner},severity=${filter.severity},pageSize=${filter.pageSize})}"
+           th:classappend="${filter.scope == 'all'} ? 'is-active'" th:aria-selected="${filter.scope == 'all'}"><span
+           class="material-icons" aria-hidden="true">list</span>All<span class="wt-count-badge"
+           th:text="${#numbers.formatInteger(view.allCount, 1, 'COMMA')}">1,172</span></a>
+        <a role="tab" class="wt-segment" data-rule-scope="own"
+           th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope='own',scanner=${filter.scanner},severity=${filter.severity},pageSize=${filter.pageSize})}"
+           th:classappend="${filter.scope == 'own'} ? 'is-active'" th:aria-selected="${filter.scope == 'own'}"><span
+           class="material-icons" aria-hidden="true">edit_note</span>Its own<span class="wt-count-badge"
+           th:text="${#numbers.formatInteger(view.ownCount, 1, 'COMMA')}">4</span></a>
+        <a role="tab" class="wt-segment" data-rule-scope="included"
+           th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope='included',scanner=${filter.scanner},severity=${filter.severity},pageSize=${filter.pageSize})}"
+           th:classappend="${filter.scope == 'included'} ? 'is-active'" th:aria-selected="${filter.scope == 'included'}"><span
+           class="material-icons" aria-hidden="true">account_tree</span>Included<span class="wt-count-badge"
+           th:text="${#numbers.formatInteger(view.includedCount, 1, 'COMMA')}">1,168</span></a>
+    </nav>
+    <div class="wt-meta-chips" aria-label="Rule filters">
+        <details class="wt-popover wt-download-menu" data-rule-filter="module">
+            <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Scanner: ' + scLabel + '. Change'}"><span
+                th:text="${'Scanner: ' + scLabel}">Scanner: All</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+            <div class="wt-popover__body wt-download-menu__body">
+                <a class="wt-menu-item"
+                   th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope=${filter.scope},scanner='all',severity=${filter.severity},pageSize=${filter.pageSize})}"
+                   th:attr="aria-current=${filter.scanner == 'all' ? 'true' : null}">All</a>
+                <a th:each="sc : ${view.scanners}" class="wt-menu-item"
+                   th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope=${filter.scope},scanner=${sc.key},severity=${filter.severity},pageSize=${filter.pageSize})}"
+                   th:attr="aria-current=${filter.scanner == sc.key ? 'true' : null}"><span class="material-icons"
+                   aria-hidden="true" th:text="${sc.scanner.icon()}">coffee</span> <span th:text="${sc.scanner.name()}">PMD</span></a>
             </div>
-            <div class="modal-body">
-                <form class="form-inline" id="editRulesModalForm" method="post"
-                      th:action="${'/rulesets/'+currentRuleset.id+'/rules'}">
-                    <div class="input-group pb-2">
-                        <input type="hidden" th:name="${_csrf.parameterName}"
-                               th:value="${_csrf.token}"/>
-                        <label for="rulesPicker">Select rules to include in this ruleset</label>
-                        <select name="ruleIds" form="editRulesModalForm" id="rulesPicker"
-                                class="selectpicker input-group" title="Select Rules"
-                                data-style="rounded border" data-live-search="true" multiple>
-                            <optgroup label="Custom">
-                            	<option th:each="rule : ${rules}" th:if="${rule.isCustom()}" th:data-content="${rule.name}"
-                                    th:value="${rule.id}" th:selected="${currentRuleset.getRuleIds().contains(rule.id)}"/>
-                            </optgroup>
-                            <optgroup label="Provided">
-                            	<option th:each="rule : ${rules}" th:if="${rule.isProvided()}" th:data-content="${rule.name}"
-                                    th:value="${rule.id}" th:selected="${currentRuleset.getRuleIds().contains(rule.id)}"/>
-                            </optgroup>
-                        </select>
-                        <button class="btn btn-success px-2" type="submit">
-                            Set Rules
-                        </button>
-                    </div>
-                </form>
+        </details>
+        <details class="wt-popover wt-download-menu" data-rule-filter="severity">
+            <summary class="wt-mini-chip wt-meta-chip" th:aria-label="${'Severity: ' + sevLabel + '. Change'}"><span
+                th:text="${'Severity: ' + sevLabel}">Severity: All</span><span class="material-icons" aria-hidden="true">arrow_drop_down</span></summary>
+            <div class="wt-popover__body wt-download-menu__body">
+                <a class="wt-menu-item"
+                   th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope=${filter.scope},scanner=${filter.scanner},severity='all',pageSize=${filter.pageSize})}"
+                   th:attr="aria-current=${filter.severity == 'all' ? 'true' : null}">All</a>
+                <a th:each="priority : ${rulePriorities}" class="wt-menu-item"
+                   th:href="@{/rulesets/{id}(id=${currentRuleset.id},scope=${filter.scope},scanner=${filter.scanner},severity=${priority.name()},pageSize=${filter.pageSize})}"
+                   th:attr="aria-current=${filter.severity == priority.name() ? 'true' : null}"><span
+                   th:class="${'wt-sev wt-sev-' + priority.priority}" th:text="${priority.name}">High</span></a>
             </div>
-        </div>
+        </details>
     </div>
 </div>
-<!-- End Edit Rules Modal -->
-<!-- Edit Ruleset Modal -->
-<div class="modal fade" id="editRulesetModal" tabindex="-1" role="dialog"
-	 th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
-     aria-labelledby="editRulesetModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="editRulesetModalLabel">
-                    Ruleset Info for <label th:text="${currentRuleset.name}"></label>
-                </h4>
-                <button type="button" class="close" data-dismiss="modal"
-                        aria-hidden="true">×
-                </button>
+
+<section id="results-region" aria-live="polite" aria-label="Rules in this ruleset">
+    <div th:if="${view.rows.content.isEmpty()}" class="wt-empty-picture" data-ruleset-rules-empty>
+        <span class="material-icons wt-empty-picture__icon" aria-hidden="true">rule</span>
+        <strong th:text="${filter.scope == 'own' ? 'No rules of its own' : (filter.scope == 'included' ? 'No included rules' : 'No rules in this ruleset')}">No rules</strong>
+        <span class="wt-muted" th:text="${filter.scanner != 'all' or filter.severity != 'all' ? 'Nothing matches the Scanner and Severity filters.' : (filter.scope == 'included' ? 'Include other rulesets to add their rules.' : 'Add rules with Edit rules in the More menu.')}">Add rules.</span>
+    </div>
+    <div class="wt-table-scroll" role="region" aria-label="Ruleset rules" tabindex="0" th:unless="${view.rows.content.isEmpty()}">
+        <table class="table mb-0">
+            <caption th:text="${#numbers.formatInteger(view.rows.totalElements(), 1, 'COMMA') + ' rules, by name'}"></caption>
+            <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">What it finds</th>
+                <th scope="col">From</th><th scope="col"><span class="visually-hidden">Documentation</span></th></tr></thead>
+            <tbody>
+            <tr th:each="rule : ${view.rows.content}" data-rule-row th:attr="data-rule-module=${rule.module},data-rule-severity=${rule.priority != null ? rule.priority.name() : ''}">
+                <th scope="row"><span class="wt-work-rule"><span class="wt-scanner-tile wt-scanner-tile--ran" role="img" tabindex="0"
+                    th:attr="data-tip=${rule.scanner.name() + ' rule'},aria-label=${rule.scanner.name() + ' rule'}"><span class="material-icons"
+                    aria-hidden="true" th:text="${rule.scanner.icon()}">coffee</span></span><span th:text="${rule.name}">Rule</span></span></th>
+                <td><span th:class="${rule.severityClass()}" th:text="${rule.severityName()}">High</span></td>
+                <td class="wt-ruleset-message" th:text="${rule.message}">What it finds</td>
+                <td>
+                    <span th:if="${rule.isOwn()}" class="wt-mini-chip wt-mini-chip--link"><span class="material-icons"
+                        aria-hidden="true">edit_note</span>This ruleset</span>
+                    <span th:unless="${rule.isOwn()}" class="wt-mini-chip" tabindex="0"
+                        th:attr="data-tip=${'Included from ' + rule.from}"><span class="material-icons"
+                        aria-hidden="true">account_tree</span><span th:text="${rule.from}">PMD - Java Best Practices</span></span>
+                </td>
+                <td class="text-end">
+                    <a class="wt-icon-action wt-external-rule-link" th:if="${rule.externalUrl != null && !#strings.isEmpty(rule.externalUrl)}"
+                        th:href="${rule.externalUrl}" target="_blank" rel="noopener noreferrer"
+                        th:aria-label="|Open documentation for ${rule.name} in a new tab|" data-tip="Open documentation">
+                        <span class="material-icons" aria-hidden="true">open_in_new</span>
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <th:block th:unless="${view.rows.content.isEmpty()}"><div th:replace="~{fragments/pagination :: pagination(${pageUrl}, ${view.rows})}"></div></th:block>
+</section>
+<!-- Ruleset dialogs (UAT walkthrough, 2026-10-16): icon headline with ×, choices as buttons,
+     sentence case, and the delete confirm asks for the name. "Rules in …" loads its list on open
+     (rulesets.js, /rulesets/{id}/rules/choices) instead of rendering every rule into the page. -->
+<md-dialog id="editRulesModal" class="wt-rule-choices-dialog" th:if="${canModify}"
+    th:attr="data-choices-url=@{/rulesets/{id}/rules/choices(id=${currentRuleset.id})}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">checklist</span></span>
+        <span class="wt-person__text"><span th:text="${'Rules in ' + currentRuleset.name}">Rules in Default Dev Ruleset</span></span>
+        <span class="wt-count-badge" data-rule-choices-count th:text="${#numbers.formatInteger(view.ownRuleIds.size(), 1, 'COMMA')}">1,171</span></span>
+        <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="editRulesModalForm" method="post" class="wt-md-form"
+          th:action="${'/rulesets/'+currentRuleset.id+'/rules'}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div class="wt-rule-choices__filters">
+            <input type="search" class="wt-picker-search" placeholder="Search rules" aria-label="Search rules"
+                autocomplete="off" data-rule-choices-search/>
+            <div class="wt-segmented-filter" role="group" aria-label="Custom or provided rules">
+                <button type="button" class="wt-segment is-active" aria-pressed="true" data-rule-choices-kind="custom"><span
+                    class="material-icons" aria-hidden="true">edit_note</span>Custom</button>
+                <button type="button" class="wt-segment" aria-pressed="false" data-rule-choices-kind="provided"><span
+                    class="material-icons" aria-hidden="true">inventory_2</span>Provided</button>
             </div>
-            <div class="modal-body">
-                <form class="d-inline" th:action="${'/rulesets/'+currentRuleset.id+'/edit'}" method="POST" id="rulesetEditForm">
-                    <div class="row mb-2">
-                        <label for="name" class="col-sm-3 col-form-label">Name</label>
-                        <div class="col">
-                            <input type="text" class="form-control" id="name"
-                                   name="name" th:value="${currentRuleset.name}">
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <label for="rulesetDescription"
-                               class="col-sm-3 col-form-label">Description</label>
-                        <div class="col">
-                                            <textarea class="form-control" rows="2"
-                                                      id="rulesetDescription"
-                                                      name="description" th:text="${currentRuleset.description}"></textarea>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <label for="designation" class="col-sm-3 col-form-label">Designation</label>
-                        <div class="col">
-                            <select th:if="${rulesetDesignations.contains(currentRuleset.designation)}" class="selectpicker w-100" data-style="rounded border"
-                                    id="designation" name="designation">
-                                <th:block th:each="designation : ${rulesetDesignations}">
-                                    <option th:text="${designation.name}"
-                                            th:value="${designation}"
-                                            th:selected="${designation.equals(currentRuleset.designation)}"/>
-                                </th:block>
-                            </select>
-                            <input th:unless="${rulesetDesignations.contains(currentRuleset.designation)}" 
-                            		class="form-control" type="text" disabled name="designation" th:value="${currentRuleset.designation.name}"/>
-                            <input th:unless="${rulesetDesignations.contains(currentRuleset.designation)}"
-                            		type="hidden" name="designation" th:value="${currentRuleset.designation}"/>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <label for="blockingLevel" class="col-sm-3 col-form-label">Blocking
-                            Level</label>
-                        <div class="col">
-                            <select class="selectpicker w-100"
-                                    data-style="rounded border" id="blockingLevel"
-                                    name="blockingLevel">
-                                <th:block th:each="priority : ${rulePriorities}">
-                                    <option th:text="${priority.name}"
-                                            th:value="${priority}"
-                                            th:selected="${priority.equals(currentRuleset.blockingLevel)}"/>
-                                </th:block>
-                            </select>
-                        </div>
-                    </div>
-                    <input type="hidden" th:name="${_csrf.parameterName}"
-                           th:value="${_csrf.token}"/>
-                </form>
-                
-            </div>
-            <div class="modal-footer d-flex">
-           		<div class="col ml-left pl-0">
-            		<form id="deleteRulesetForm" method="post" th:action="${'/rulesets/'+currentRuleset.id+'/delete'}">
-		            	<button type="submit" class="btn btn-danger">
-		                	Delete Ruleset
-		                </button>
-	                </form>
+            <label class="wt-chip-select"><span class="visually-hidden">Scanner</span>
+                <select data-rule-choices-scanner><option value="">All scanners</option></select></label>
+        </div>
+        <p class="wt-muted wt-rule-choices__status" role="status" aria-live="polite" data-rule-choices-status>Loading rules…</p>
+        <div class="wt-picker-list wt-rule-choices__list" data-rule-choices-list role="group"
+            th:aria-label="${'Rules in ' + currentRuleset.name}"></div>
+        <div data-rule-choices-selected hidden></div>
+    </form>
+    <div slot="actions" class="wt-dialog-actions--split">
+        <span class="wt-dialog-actions__start wt-rule-choices__bulk">
+            <button type="button" class="wt-link-button" data-rule-choices-all>Select all shown</button>
+            <span aria-hidden="true">·</span>
+            <button type="button" class="wt-link-button" data-rule-choices-none>Clear shown</button>
+        </span>
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button form="editRulesModalForm" type="submit" has-icon data-rule-choices-save disabled><span slot="icon"
+            class="material-icons" aria-hidden="true">save</span>Save rules</md-filled-button>
+    </div>
+</md-dialog>
+
+<md-dialog id="editRulesetModal" th:if="${canModify}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">rule_folder</span></span>
+        <span class="wt-person__text"><span th:text="${currentRuleset.name}">Default Dev Ruleset</span></span>
+        <span th:if="${currentRuleset.isDefault()}" class="wt-mini-chip wt-mini-chip--ok" tabindex="0"
+            data-tip="New repositories get this ruleset."><span class="material-icons" aria-hidden="true">star</span>Default</span></span>
+        <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" th:action="${'/rulesets/'+currentRuleset.id+'/edit'}" method="POST" id="rulesetEditForm" class="wt-md-form">
+        <span class="wt-mini-chip wt-chip-start"><span class="material-icons" aria-hidden="true">rule</span><span
+            th:text="${#numbers.formatInteger(view.allCount, 1, 'COMMA') + (view.allCount == 1 ? ' rule' : ' rules')}">1,171 rules</span></span>
+        <md-outlined-text-field label="Name" id="name" name="name" required th:value="${currentRuleset.name}"></md-outlined-text-field>
+        <md-outlined-text-field type="textarea" rows="2" label="Description" id="rulesetDescription" required
+                name="description" th:value="${currentRuleset.description}"></md-outlined-text-field>
+        <fieldset class="wt-choice-chips" th:if="${rulesetDesignations.contains(currentRuleset.designation)}">
+            <legend>Kind</legend>
+            <label th:each="designation : ${rulesetDesignations}" class="wt-choice-chip" tabindex="-1"
+                th:attr="data-tip=${designation.name() == 'PRIMARY' ? 'Assigned to repositories and scanned on its own.' : 'A building block other rulesets include.'}"><input
+                type="radio" name="designation" th:value="${designation}" th:checked="${designation == currentRuleset.designation}"
+                th:aria-label="${designation.name}"/><span class="material-icons" aria-hidden="true"
+                th:text="${designation.name() == 'PRIMARY' ? 'folder_special' : 'folder_shared'}">folder_special</span><span
+                th:text="${designation.name}">Primary</span></label>
+        </fieldset>
+        <input th:unless="${rulesetDesignations.contains(currentRuleset.designation)}"
+        		type="hidden" name="designation" th:value="${currentRuleset.designation}"/>
+        <fieldset class="wt-choice-chips" data-blocking-level>
+            <legend>Blocks a pull request at</legend>
+            <label th:each="priority : ${rulePriorities}" class="wt-choice-chip"><input type="radio" name="blockingLevel"
+                th:value="${priority}" th:checked="${priority.equals(currentRuleset.blockingLevel)}"
+                th:attr="data-level-name=${priority.name}" th:aria-label="${priority.name}"/><span
+                th:text="${priority.shortName}">Medium</span></label>
+            <span class="wt-field-help wt-choice-chips__help" data-blocking-help
+                th:text="${currentRuleset.blockingLevel == null ? 'No level chosen: findings only comment, nothing blocks.' : 'Findings at ' + currentRuleset.blockingLevel.name + ' or above block; lower ones only comment.'}">Findings at Medium Low or above block; lower ones only comment.</span>
+        </fieldset>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions" class="wt-dialog-actions--split">
+        <button type="button" class="wt-icon-action wt-icon-action--danger wt-icon-action--bordered wt-dialog-actions__start"
+            data-wt-dialog-target="#deleteRulesetModal" aria-label="Delete ruleset" data-tip="Delete ruleset (asks to confirm)"><span
+            class="material-icons" aria-hidden="true">delete</span></button>
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button type="submit" form="rulesetEditForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">save</span>Save</md-filled-button>
+    </div>
+</md-dialog>
+
+<md-dialog id="deleteRulesetModal" type="alert" th:if="${canModify}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--notrun wt-integration-head__icon" aria-hidden="true"><span class="material-icons">delete_forever</span></span>
+        <span class="wt-person__text"><span th:text="${'Delete ' + currentRuleset.name + '?'}">Delete Default Dev Ruleset?</span></span></span></div>
+    <form slot="content" id="deleteRulesetForm" method="post" class="wt-md-form" th:action="${'/rulesets/'+currentRuleset.id+'/delete'}">
+        <div class="wt-meta-chips">
+            <span class="wt-mini-chip wt-mini-chip--bad"><span class="material-icons" aria-hidden="true">warning</span>Can't be undone</span>
+            <span class="wt-mini-chip wt-mini-chip--ok"><span class="material-icons" aria-hidden="true">rule</span><span
+                th:text="${'Its ' + #numbers.formatInteger(view.allCount, 1, 'COMMA') + (view.allCount == 1 ? ' rule stays' : ' rules stay') + ' available'}">Its 1,171 rules stay available</span></span>
+        </div>
+        <md-outlined-text-field label="Type the name to confirm" name="confirmName" autocomplete="off" required
+            th:placeholder="${currentRuleset.name}" th:attr="data-wt-confirm-name=${currentRuleset.name}"></md-outlined-text-field>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button class="wt-btn-danger" form="deleteRulesetForm" type="submit" has-icon disabled data-wt-confirm-submit><span
+            slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete ruleset</md-filled-button>
+    </div>
+</md-dialog>
+
+<md-dialog id="rulesetInheritanceModal" th:if="${canModify}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">account_tree</span></span>
+        <span class="wt-person__text"><span>Include other rulesets</span></span></span>
+        <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="rulesetInheritanceModalForm" class="wt-md-form"
+          th:action="${'/rulesets/'+currentRuleset.id+'/inherit'}" method="POST">
+        <span class="wt-mini-chip wt-chip-start" tabindex="0"
+            th:attr="data-tip=${currentRuleset.name + ' also runs every rule of the rulesets you tick here.'}"><span
+            class="material-icons" aria-hidden="true">help_outline</span>How including works</span>
+        <input type="search" class="wt-picker-search" placeholder="Search rulesets" aria-label="Search rulesets"
+            autocomplete="off" data-ruleset-include-search/>
+        <div class="wt-picker-list wt-rule-choices__list" data-ruleset-include-list>
+            <th:block th:each="group : ${ {'Primary', 'Supporting', 'Scanner rulesets'} }"
+                th:with="members=${rulesets.?[id != #vars.currentRuleset.id and ((#vars.group == 'Primary' and isPrimary()) or (#vars.group == 'Supporting' and isSupporting()) or (#vars.group == 'Scanner rulesets' and isProvided()))]}">
+                <div class="wt-picker-group" role="group" th:aria-label="${group}" th:unless="${members.isEmpty()}" data-include-group>
+                    <span class="wt-picker-group__title"><span th:text="${group}">Primary</span><span class="wt-count-badge"
+                        th:text="${members.size()}">8</span></span>
+                    <label th:each="r : ${members}" class="wt-picker-option wt-check-option" data-include-option
+                        th:attr="data-search=${#strings.toLowerCase(r.name)}"><input type="checkbox" name="inheritedRulesetIds"
+                        th:value="${r.id}" th:checked="${view.directlyIncluded.contains(r.id)}"/><span class="material-icons"
+                        aria-hidden="true" th:text="${group == 'Primary' ? 'folder_special' : (group == 'Supporting' ? 'folder_shared' : 'inventory_2')}">folder_special</span><span
+                        th:text="${r.name}">DNP App Dev</span><span class="wt-muted"
+                        th:with="n=${ruleCounts.getOrDefault(r.id, 0)}" th:text="${'· ' + #numbers.formatInteger(n, 1, 'COMMA') + (n == 1 ? ' rule' : ' rules')}">· 129 rules</span></label>
                 </div>
-                <div >
-	                <button class="btn btn-warning" type="submit" form="rulesetEditForm">
-                         Save Ruleset Info
-               		</button>
-            	</div>
-           	</div>
+            </th:block>
+            <p class="wt-picker-empty" data-include-empty hidden>No ruleset matches.</p>
         </div>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button form="rulesetInheritanceModalForm" type="submit" has-icon><span slot="icon" class="material-icons"
+            aria-hidden="true">save</span>Save</md-filled-button>
     </div>
-</div>
-<!-- End Edit Ruleset Modal -->
-<!-- Ruleset Inheritance Modal -->
-<div class="modal fade" id="rulesetInheritanceModal" tabindex="-1" role="dialog"
-     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}"
-     aria-labelledby="rulesetInheritanceModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="rulesetInheritanceModalLabel">
-                    Set Inherited Rulesets
-                </h4>
-                <button type="button" class="close" data-dismiss="modal"
-                        aria-hidden="true">×
-                </button>
-            </div>
-            <div class="modal-body">
-                <form class="d-inline" th:action="${'/rulesets/'+currentRuleset.id+'/inherit'}" method="POST">
-                    <select name="inheritedRulesetIds" class="selectpicker input-group w-75"
-                            title="Select rulesets to inherit rules from"
-                            data-style="rounded border" data-live-search="true" multiple>
-                        <optgroup label="Primary">
-                            <option th:each="r : ${rulesets}"
-                                    th:if="${!currentRuleset.name.equals(r.name) && r.isPrimary()}"
-                                    th:data-content="${r.name}"
-                                    th:value="${r.id}"
-                                    th:selected="${not currentRuleset.rulesets.?[name == #root.r.name].isEmpty()}"/>
-                        </optgroup>
-                        <optgroup label="Supporting">
-                            <option th:each="r : ${rulesets}"
-                                    th:if="${!currentRuleset.name.equals(r.name) && r.isSupporting()}"
-                                    th:data-content="${r.name}"
-                                    th:value="${r.id}"
-                                    th:selected="${not currentRuleset.rulesets.?[name == #root.r.name].isEmpty()}"/>
-                        </optgroup>
-                        <optgroup label="Provided">
-                            <option th:each="r : ${rulesets}"
-                                    th:if="${!currentRuleset.name.equals(r.name) && r.isProvided()}"
-                                    th:data-content="${r.name}"
-                                    th:value="${r.id}"
-                                    th:selected="${not currentRuleset.rulesets.?[name == #root.r.name].isEmpty()}"/>
-                        </optgroup>
-                    </select>
-                    <input type="hidden" th:name="${_csrf.parameterName}"
-                           th:value="${_csrf.token}"/>
-                    <button class="btn btn-secondary" type="submit">
-                        Set Rulesets
-                    </button>
-                </form>
-          	</div>
-        </div>
-    </div>
-</div>
-<!-- End Ruleset Inheritance Modal -->
+</md-dialog>
 </th:block>
 <!-- End No Ruleset Block -->
 
-<!-- Create Ruleset Modal -->
-<div class="modal fade" id="createRulesetModal" tabindex="-1" role="dialog"
-     aria-labelledby="createModalLabel" aria-hidden="true"
-     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="createModalLabel">Create Ruleset</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×
-                </button>
-            </div>
-            <form id="createModalForm" class="d-inline" method="POST" action="create">
-                <div class="modal-body">
-                    <div class="row mb-2">
-                        <div class="col-md-8">
-                            <input type="text" class="form-control" placeholder="Name" name="name">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <input type="text" class="form-control" placeholder="Description"
-                                   name="description">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <select class="selectpicker mt-2" data-style="rounded border"
-                                    data-width="auto"
-                                    id="designationselect" name="designation">
-                                <option value="" selected disabled>Select a Designation</option>
-                                <th:block th:each="designation : ${rulesetDesignations}">
-                                    <option th:text="${designation.name}"
-                                            th:value="${designation}"/>
-                                </th:block>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <input type="hidden" th:name="${_csrf.parameterName}"
-                           th:value="${_csrf.token}"/>
-                    <button class="btn btn-success px-2" type="submit">Create Ruleset
-                    </button>
-                </div>
-            </form>
-        </div>
+<md-dialog id="createRulesetModal" th:if="${canModify}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">create_new_folder</span></span>
+        <span class="wt-person__text"><span>Create ruleset</span></span></span>
+        <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="createModalForm" method="POST" action="create" class="wt-md-form">
+        <md-outlined-text-field label="Name" name="name" required placeholder="e.g. Payments services"></md-outlined-text-field>
+        <md-outlined-text-field label="Description" name="description" required placeholder="What it is for"></md-outlined-text-field>
+        <fieldset class="wt-choice-chips">
+            <legend>Kind</legend>
+            <label th:each="designation : ${rulesetDesignations}" class="wt-choice-chip" tabindex="-1"
+                th:attr="data-tip=${designation.name() == 'PRIMARY' ? 'Assigned to repositories and scanned on its own.' : 'A building block other rulesets include.'}"><input
+                type="radio" name="designation" th:value="${designation}" th:checked="${designation.name() == 'PRIMARY'}"
+                th:aria-label="${designation.name}"/><span class="material-icons" aria-hidden="true"
+                th:text="${designation.name() == 'PRIMARY' ? 'folder_special' : 'folder_shared'}">folder_special</span><span
+                th:text="${designation.name}">Primary</span></label>
+        </fieldset>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button type="submit" form="createModalForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">add</span>Create</md-filled-button>
     </div>
-</div>
-<!-- End Create Ruleset Modal -->
-<!-- Default Ruleset Modal -->
-<div class="modal fade" id="defaultRulesetModal" tabindex="-1" role="dialog"
-     aria-labelledby="defaultModalLabel" aria-hidden="true"
-     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_MODIFY_NAME+''')')}">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="defaultModalLabel">Manage Default Ruleset</h5>
-                <button type="button" class="close" data-dismiss="modal"
-                        aria-hidden="true">×
-                </button>
-            </div>
-            <div class="modal-body">
-                <p th:if="${defaultRuleset != null}"
-                   th:text="'The current default ruleset is ' + ${defaultRuleset.name} + '.'"></p>
-                <p th:if="${defaultRuleset == null}">There is currently no default ruleset
-                    configured.</p>
-                <p>You may select a default ruleset from the list of primary rulesets below. This
-                    ruleset will be automatically assigned to new repositories that are added to
-                    Watchtower. You may also choose to select 'No Default Ruleset', which means that
-                    new repositories will need to be manually assigned to a ruleset before they
-                    can be scanned.</p>
-                <form class="d-inline" action="default" method="POST">
-                    <select class="selectpicker input-group" data-width="auto"
-                            data-style="rounded border" name="rulesetId">
-                        <option th:selected="${defaultRuleset == null}" th:value="-1">No Default
-                            Ruleset
-                        </option>
-                        <option th:each="r : ${rulesets}"
-                                th:if="${!r.isSupporting()}"
-                                th:data-content="${r.name}"
-                                th:value="${r.id}"
-                                th:selected="${defaultRuleset != null && r.id == defaultRuleset.id}"></option>
-                    </select>
-                    <input type="hidden" th:name="${_csrf.parameterName}"
-                           th:value="${_csrf.token}"/>
-                    <button class="btn btn-primary" type="submit">
-                        Set Default Ruleset
-                    </button>
-                </form>
-            </div>
-        </div>
+</md-dialog>
+
+<md-dialog id="defaultRulesetModal" th:if="${canModify}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">star</span></span>
+        <span class="wt-person__text"><span>Default ruleset</span></span></span>
+        <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="defaultRulesetForm" class="wt-md-form" action="default" method="POST">
+        <span class="wt-mini-chip wt-chip-start" tabindex="0"
+            data-tip="New repositories get this ruleset. With none, they aren't scanned until one is assigned."><span
+            class="material-icons" aria-hidden="true">info</span>Used for new repositories</span>
+        <md-outlined-select name="rulesetId" label="Default">
+            <md-select-option th:selected="${defaultRuleset == null}" value="-1">
+                <div slot="headline">None</div>
+                <div slot="supporting-text">New repositories aren't scanned until a ruleset is assigned</div>
+            </md-select-option>
+            <md-select-option th:each="r : ${rulesets}" th:if="${!r.isSupporting()}" th:value="${r.id}"
+                    th:selected="${defaultRuleset != null && r.id == defaultRuleset.id}"
+                    th:with="n=${ruleCounts.getOrDefault(r.id, 0)}">
+                <div slot="headline" th:text="${r.name}">Default Dev Ruleset</div>
+                <div slot="supporting-text" th:text="${#numbers.formatInteger(n, 1, 'COMMA') + (n == 1 ? ' rule' : ' rules')}">1,171 rules</div>
+            </md-select-option>
+        </md-outlined-select>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
+    <div slot="actions">
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button type="submit" form="defaultRulesetForm" has-icon><span slot="icon" class="material-icons" aria-hidden="true">star</span>Set default</md-filled-button>
     </div>
-</div>
-<!-- End Default Ruleset Modal -->
-<!-- Import Ruleset Modal -->
-<div class="modal fade" id="importModal" tabindex="-1"
-     role="dialog"
-     aria-labelledby="importModalLabel" aria-hidden="true"
-     th:if="${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).RULESETS_IMPEX_NAME+''')')}">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="importModalLabel">Import Ruleset</h4>
-                <button type="button" class="close" data-dismiss="modal"
-                        aria-hidden="true">×
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col">
-                        <form id="importModalForm" method="post" class="form"
-                              action="import" enctype="multipart/form-data">
-                            <div class="form-group">
-                                <label for="fileSelect">Select a file to import</label>
-                                <input class="form-control-file" id="fileSelect" type="file" name="file"/>
-                                 <input type="hidden"  th:name="${_csrf.parameterName}"
-                                       th:value="${_csrf.token}"/>
-                            </div>
-                        </form>
-                        <div>
-	                        <button class="btn btn-success" type="submit" form="importModalForm">Import</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+</md-dialog>
+
+<!-- Import: a drop zone (the file input itself), one amber chip for what an existing name does; the
+     preview of what the file changes still appears before Import is enabled (UAT #26). -->
+<md-dialog id="importModal" th:if="${canImpex}">
+    <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+        <span class="wt-scanner-tile wt-scanner-tile--ran wt-integration-head__icon" aria-hidden="true"><span class="material-icons">upload_file</span></span>
+        <span class="wt-person__text"><span>Import ruleset</span></span></span>
+        <button type="button" class="wt-icon-action" aria-label="Close" title="Close" data-wt-dialog-close><span class="material-icons" aria-hidden="true">close</span></button></div>
+    <form slot="content" id="importModalForm" method="post" class="wt-md-form" hx-boost="false"
+          action="import" enctype="multipart/form-data">
+        <label class="wt-drop-zone" for="fileSelect">
+            <span class="material-icons" aria-hidden="true">upload</span>
+            <strong data-import-file-name>Drop a ruleset JSON file or browse</strong>
+            <span class="wt-field-help">A file made with Export on a Watchtower ruleset</span>
+            <input class="wt-drop-zone__input" id="fileSelect" type="file" name="file"
+                accept="application/json,.json" required data-import-file/>
+        </label>
+        <span class="wt-mini-chip wt-mini-chip--warn wt-chip-start" tabindex="0"
+            data-tip="If a ruleset with the same name exists, its description and blocking level are updated and its rules are replaced by the file's (rules left out are removed from it, not deleted). Custom rules are matched by name; provided rules only take the file's priority. A rule name owned by another scanner stops the import, and a failed import changes nothing."><span
+            class="material-icons" aria-hidden="true">sync_alt</span>Same name replaces its rule list</span>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div data-import-preview role="status" aria-live="polite"></div>
+    </form>
+    <div slot="actions">
+        <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+        <md-filled-button type="submit" form="importModalForm" data-import-submit disabled has-icon><span slot="icon"
+            class="material-icons" aria-hidden="true">upload</span>Import</md-filled-button>
     </div>
+</md-dialog>
 </div>
-<!-- End Import Ruleset Modal -->
+</th:block>

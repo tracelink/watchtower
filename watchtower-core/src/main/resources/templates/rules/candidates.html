@@ -1,0 +1,198 @@
+<!-- Candidates (UAT walkthrough, 2026-10-16): the five stacked sections become a 5-step bar that
+     shows one step at a time, each step with its state; one amber "Tests run directly, not
+     sandboxed" chip replaces the two sentences (R3 is bounded direct engine execution); examples
+     are a 2 × 2 grid with an Add example dialog; Decide's actions and the approval box only appear
+     once a draft is selected. Nothing runs until someone presses its button. -->
+<th:block th:with="canSeeScans=${#authorization.expression('hasAuthority(''Scan Results View'')')}">
+<section data-rule-candidates-page data-rule-candidates-dialog
+  th:data-rule-id="${rule.id}" th:data-csrf-header="${_csrf.headerName}" th:data-csrf-token="${_csrf.token}"
+  th:attr="data-start-step=${example != null ? '2' : '1'}">
+
+<div class="wt-home-head wt-report-head wt-page-bar wt-page-bar--inline">
+ <div class="wt-detail-title">
+  <span class="wt-scanner-tile wt-scanner-tile--ran wt-scanner-tile--lg" role="img" tabindex="0"
+      th:attr="data-tip=${scanner.name() + ' rule (' + scanner.purpose() + ')'},aria-label=${scanner.name() + ' rule'}"><span
+      class="material-icons" aria-hidden="true" th:text="${scanner.icon()}">key</span></span>
+  <div th:replace="~{fragments/pageheader :: header(${ruleName + ' · Improve this rule'}, null)}"></div>
+ </div>
+ <div class="wt-meta-chips wt-report-head__status">
+  <span class="wt-mini-chip wt-meta-chip wt-mini-chip--warn" tabindex="0" data-candidate-availability
+      data-tip="Draft tests run the real engine with time and size limits, but not in a sandbox. Live scanning keeps using the current rule while a draft is tested. Expectations come from reviewed, secret-free examples."><span
+      class="material-icons" aria-hidden="true">warning</span><span data-candidate-availability-text>Not sandboxed</span></span>
+ </div>
+ <div class="wt-page-actions wt-report-head__status">
+  <a th:if="${canSeeScans}" class="wt-icon-action" th:href="@{/rules/{id}/health(id=${rule.id})}" aria-label="Rule health" data-tip="Rule health"><span
+      class="material-icons" aria-hidden="true">monitor_heart</span></a>
+  <a class="wt-icon-action" th:href="@{/rules/{id}/reviews(id=${rule.id})}" aria-label="Saved reviews" data-tip="Saved reviews"><span
+      class="material-icons" aria-hidden="true">rate_review</span></a>
+  <a th:if="${#authorization.expression('hasAuthority(''Assistant Use'') and hasAuthority(''Scan Results View'')')}" class="wt-button-link wt-button-link-secondary wt-button-link--ai" th:href="@{/rules/{id}/improvements(id=${rule.id})}"><span class="material-icons" aria-hidden="true">auto_awesome</span>Suggest improvement</a>
+  <a class="wt-icon-action" th:href="@{/rule/edit/{module}/{id}(module=${rule.module},id=${rule.id})}"
+      aria-label="Rule editor" data-tip="Open the rule editor"><span class="material-icons" aria-hidden="true">edit</span></a>
+ </div>
+</div>
+
+<div class="wt-candidate-steps mb-3" role="tablist" aria-label="Steps">
+ <button type="button" role="tab" class="wt-candidate-step" data-candidate-step="1" aria-controls="candidate-step-1" aria-selected="false"><span
+     class="wt-candidate-step__n">1</span><span class="wt-candidate-step__text"><strong>Propose</strong><span data-candidate-step-state="1">…</span></span></button>
+ <button type="button" role="tab" class="wt-candidate-step" data-candidate-step="2" aria-controls="candidate-step-2" aria-selected="false"><span
+     class="wt-candidate-step__n">2</span><span class="wt-candidate-step__text"><strong>Examples</strong><span data-candidate-step-state="2">…</span></span></button>
+ <button type="button" role="tab" class="wt-candidate-step" data-candidate-step="3" aria-controls="candidate-step-3" aria-selected="false"><span
+     class="wt-candidate-step__n">3</span><span class="wt-candidate-step__text"><strong>Compare</strong><span data-candidate-step-state="3">…</span></span></button>
+ <button type="button" role="tab" class="wt-candidate-step" data-candidate-step="4" aria-controls="candidate-step-4" aria-selected="false"><span
+     class="wt-candidate-step__n">4</span><span class="wt-candidate-step__text"><strong>Shadow check</strong><span data-candidate-step-state="4">…</span></span></button>
+ <button type="button" role="tab" class="wt-candidate-step" data-candidate-step="5" aria-controls="candidate-step-5" aria-selected="false"><span
+     class="wt-candidate-step__n">5</span><span class="wt-candidate-step__text"><strong>Decide</strong><span data-candidate-step-state="5">…</span></span></button>
+</div>
+
+<!-- 1. Propose -->
+<section class="wt-candidate-panel" id="candidate-step-1" role="tabpanel" data-candidate-panel="1">
+ <div class="wt-meta-chips">
+  <strong>Propose a change</strong><span class="wt-muted wt-candidate-lead">Change only what needs to change; other fields stay as they are.</span>
+  <span class="wt-mini-chip" tabindex="0" data-candidate-authoring hidden><span class="material-icons" aria-hidden="true">cloud_download</span><span
+      data-candidate-authoring-text>Can't be edited here</span></span>
+ </div>
+ <div class="wt-actions" data-candidate-authoring-links hidden>
+  <a class="wt-button-link wt-button-link-secondary" href="/designer"><span class="material-icons" aria-hidden="true">design_services</span>Open rule designer</a>
+  <a class="wt-button-link wt-button-link-secondary" href="/help/features#review-report"><span class="material-icons" aria-hidden="true">upgrade</span>Upstream rule workflow</a>
+ </div>
+ <div data-candidate-fields></div>
+ <div class="wt-candidate-field">
+  <label class="wt-label wt-candidate-field__label" for="candidate-rationale"><span>Why change it</span></label>
+  <textarea id="candidate-rationale" class="form-control wt-candidate-field__input" data-candidate-rationale rows="1" maxlength="300"
+      placeholder="Reason for the change"></textarea>
+  <div class="wt-candidate-field__aside"><span class="wt-muted" data-candidate-rationale-count>0 / 300</span></div>
+ </div>
+ <div class="wt-candidate-foot">
+ <details class="wt-form-disclosure"><summary><span class="material-icons" aria-hidden="true">link</span>Attach an assigned review (optional)</summary>
+  <label class="wt-review-evidence__search"><span class="visually-hidden">Search open reviews</span><input type="search" maxlength="200"
+      placeholder="Search open reviews" aria-label="Search open reviews" data-candidate-review-search></label>
+  <label>Review for this revision <select data-candidate-review><option value="">No attached review</option></select></label>
+  <p data-candidate-review-preview class="wt-muted"></p><p data-candidate-review-page-status role="status" class="wt-muted"></p>
+  <div class="wt-actions"><md-text-button type="button" data-candidate-review-previous disabled>Previous</md-text-button><md-text-button type="button" data-candidate-review-next disabled>Next</md-text-button></div>
+ </details>
+ <div class="wt-actions wt-actions--end"><span class="wt-mini-chip" data-candidate-change-state><span class="material-icons" aria-hidden="true">edit_off</span><span
+     data-candidate-change-text>No changes yet</span></span><md-filled-button type="button" data-candidate-create disabled has-icon><span class="material-icons" slot="icon"
+     aria-hidden="true">add</span>Create draft</md-filled-button></div>
+ </div>
+</section>
+
+<!-- 2. Examples -->
+<section class="wt-candidate-panel" id="candidate-step-2" role="tabpanel" data-candidate-panel="2" hidden>
+ <div class="wt-meta-chips">
+  <strong>Examples for testing</strong>
+  <span class="wt-mini-chip" tabindex="0" data-candidate-preparation><span class="material-icons" aria-hidden="true">hourglass_empty</span><span
+      data-candidate-preparation-text>Checking…</span></span>
+  <span class="wt-spacer"></span>
+  <md-outlined-button type="button" data-wt-dialog-open="#candidateExampleDialog" has-icon><span class="material-icons" slot="icon" aria-hidden="true">add</span>Add example</md-outlined-button>
+ </div>
+ <div class="wt-table-scroll" tabindex="0" role="region" aria-label="Examples by set">
+  <table class="table mb-0" data-candidate-grid>
+   <caption class="visually-hidden">Reviewed examples by set and expectation</caption>
+   <thead><tr><th scope="col">Set</th><th scope="col">Must match (vulnerable)</th><th scope="col">Must stay clean</th></tr></thead>
+   <tbody>
+    <tr><th scope="row"><span tabindex="0" data-tip="Examples the draft is tuned against.">Regression</span></th>
+     <td data-candidate-cell="REGRESSION:MATCH"></td><td data-candidate-cell="REGRESSION:NO_MATCH"></td></tr>
+    <tr><th scope="row"><span tabindex="0" data-tip="Examples kept aside to check the draft fairly.">Held-out</span></th>
+     <td data-candidate-cell="HOLDOUT:MATCH"></td><td data-candidate-cell="HOLDOUT:NO_MATCH"></td></tr>
+   </tbody>
+  </table>
+ </div>
+ <ul class="wt-candidate-fixtures" data-candidate-fixtures></ul>
+ <section th:if="${example != null}" class="wt-candidate-case" data-candidate-case th:attr="data-case-id=${example.caseId},data-case-revision=${example.revision}">
+  <div class="wt-meta-chips"><strong>Register the saved example</strong>
+   <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">bookmark</span><code th:text="${example.fixtureRef}"></code></span>
+   <span class="wt-mini-chip" th:text="${example.caseKind == 'FALSE_POSITIVE' ? 'False positive' : example.caseKind == 'MISSED_VULNERABILITY' ? 'Missed vulnerability' : example.caseKind}"></span>
+   <span class="wt-mini-chip"><span class="material-icons" aria-hidden="true">person</span><span th:text="${'Reviewed by ' + example.reviewer}"></span></span>
+   <span class="wt-mini-chip" tabindex="0" th:attr="data-tip=${'SHA-256 ' + example.fixtureHash}"><span class="material-icons" aria-hidden="true">tag</span><span th:text="${#strings.substring(example.fixtureHash, 0, 8)}"></span></span>
+  </div>
+  <span class="wt-muted">The server checks the stored file and its hash before registering it, and the example must still belong to the current rule revision.</span>
+  <label>Expectation <select data-candidate-case-expected><option th:each="expected : ${ {'MATCH','NO_MATCH'} }" th:value="${expected}"
+      th:text="${expected == 'MATCH' ? 'Must match' : 'Must stay clean'}" th:selected="${example.expectedBehavior == expected}"></option></select></label>
+  <label>Set <select data-candidate-case-cohort><option value="REGRESSION">Regression</option><option value="HOLDOUT">Held-out</option></select></label>
+  <label class="wt-checkbox-row"><input type="checkbox" data-candidate-case-confirm> I checked the file, the expectation and the set.</label>
+  <div class="wt-actions"><md-outlined-button type="button" data-candidate-case-register>Verify and register</md-outlined-button></div>
+ </section>
+</section>
+
+<!-- 3. Compare -->
+<section class="wt-candidate-panel" id="candidate-step-3" role="tabpanel" data-candidate-panel="3" hidden>
+ <div class="wt-empty-picture" data-candidate-none>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">compare</span>
+  <strong>No drafts to compare yet</strong>
+  <span class="wt-muted">Create a draft in step 1 and add examples in step 2. Tests only run when you start them.</span>
+ </div>
+ <div data-candidate-compare hidden>
+  <div class="wt-meta-chips"><strong>Drafts</strong><span class="wt-muted" data-candidate-page-status role="status"></span></div>
+  <div class="wt-candidate-list" data-candidate-list></div>
+  <div class="wt-actions"><md-text-button type="button" data-candidate-previous>Previous</md-text-button><md-text-button type="button" data-candidate-next>Next</md-text-button></div>
+  <pre class="wt-evidence-result" data-candidate-definition></pre>
+  <div class="wt-meta-chips" data-candidate-runs></div>
+  <pre class="wt-evidence-result" data-candidate-results></pre>
+ </div>
+</section>
+
+<!-- 4. Shadow check -->
+<section class="wt-candidate-panel" id="candidate-step-4" role="tabpanel" data-candidate-panel="4" hidden>
+ <div class="wt-empty-picture" data-candidate-shadow-locked>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">visibility_off</span>
+  <strong>Pick a draft first</strong>
+  <span class="wt-muted">A shadow check runs the draft beside the live rule on recent scans (30 or 90 days). It needs a passing test run and source access.</span>
+ </div>
+ <div data-candidate-shadow-area hidden>
+  <div class="wt-meta-chips"><strong>Shadow samples</strong>
+   <span class="wt-mini-chip" tabindex="0" data-tip="At most 3 extra test requests per scan, sampling at most 20 files per draft. Samples do not measure repository coverage."><span
+       class="material-icons" aria-hidden="true">info</span>Samples only</span>
+   <label>Window <select data-candidate-shadow-days><option value="30">30 days</option><option value="90">90 days</option></select></label>
+  </div>
+  <pre class="wt-evidence-result" data-candidate-shadow></pre>
+ </div>
+</section>
+
+<!-- 5. Decide -->
+<section class="wt-candidate-panel" id="candidate-step-5" role="tabpanel" data-candidate-panel="5" hidden>
+ <div class="wt-empty-picture" data-candidate-decide-none>
+  <span class="material-icons wt-empty-picture__icon" aria-hidden="true">gavel</span>
+  <strong>Nothing to decide yet</strong>
+  <span class="wt-muted">Run tests, promote, roll back or reject appear here once a draft is picked in step 3.</span>
+ </div>
+ <div data-candidate-decide hidden>
+  <div class="wt-meta-chips"><span class="wt-mini-chip" tabindex="0" data-candidate-prerequisites><span class="material-icons" aria-hidden="true">flag</span><span
+      data-candidate-stage>Draft</span></span></div>
+  <div class="wt-actions" data-candidate-actions>
+   <md-outlined-button type="button" data-candidate-action="test">Run reviewed tests</md-outlined-button>
+   <md-outlined-button type="button" data-candidate-action="shadow">Start shadow check</md-outlined-button>
+   <md-outlined-button type="button" data-candidate-action="promote">Promote tested revision</md-outlined-button>
+   <md-outlined-button type="button" data-candidate-action="rollback">Roll back promotion</md-outlined-button>
+   <md-text-button type="button" data-candidate-action="reject">Reject draft</md-text-button>
+  </div>
+  <label class="wt-checkbox-row"><input type="checkbox" data-candidate-approval> I reviewed the exact revision and evidence shown and approve this action.</label>
+ </div>
+</section>
+
+<p data-candidate-status role="status" aria-live="polite" class="wt-inline-status"></p>
+
+<div class="wt-meta-chips wt-candidate-history" data-candidate-history-row>
+ <strong>Rule history</strong>
+ <span data-candidate-history class="wt-meta-chips"></span>
+</div>
+
+<!-- Add example: a reviewed, versioned example file and what the rule must do with it. -->
+<md-dialog id="candidateExampleDialog" data-candidate-example-dialog>
+ <div slot="headline" class="wt-dialog-headline"><span>Add example</span>
+  <button type="button" class="wt-icon-action" data-wt-dialog-close aria-label="Close"><span class="material-icons" aria-hidden="true">close</span></button></div>
+ <div slot="content" class="wt-md-form">
+  <span class="wt-mini-chip" tabindex="0" data-tip="Example files stay in the configured versioned folder; Watchtower stores only their reference and hash. Use reviewed, secret-free files."><span
+      class="material-icons" aria-hidden="true">folder</span>Stored in the example folder</span>
+  <md-outlined-text-field data-candidate-fixture-reference label="Versioned fixture reference" maxlength="255"></md-outlined-text-field>
+  <md-outlined-text-field data-candidate-fixture-hash label="SHA-256" maxlength="64"></md-outlined-text-field>
+  <md-outlined-text-field data-candidate-fixture-evidence label="Reviewed evidence reference" maxlength="255"></md-outlined-text-field>
+  <label>Expectation <select data-candidate-fixture-expected><option value="MATCH">Must match</option><option value="NO_MATCH">Must stay clean</option></select></label>
+  <label>Set <select data-candidate-fixture-cohort><option value="REGRESSION">Regression</option><option value="HOLDOUT">Held-out</option></select></label>
+ </div>
+ <div slot="actions">
+  <md-text-button type="button" data-wt-dialog-close>Cancel</md-text-button>
+  <md-filled-button type="button" data-candidate-fixture-save has-icon><span class="material-icons" slot="icon" aria-hidden="true">save</span>Save example</md-filled-button>
+ </div>
+</md-dialog>
+</section>
+</th:block>

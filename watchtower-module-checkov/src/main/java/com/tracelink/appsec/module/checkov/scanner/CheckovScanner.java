@@ -1,6 +1,8 @@
 package com.tracelink.appsec.module.checkov.scanner;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -15,20 +17,23 @@ import com.tracelink.appsec.module.checkov.model.CheckovProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
+import com.tracelink.appsec.watchtower.core.module.scanner.ScanScope;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
- * {@link IScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the results
+ * {@link ICodeScanner} for Checkov. Executes the {@linkplain CheckovEngine} and publishes the
+ * results
  *
  * @author csmith
  */
-public class CheckovScanner implements IScanner {
+public class CheckovScanner implements ICodeScanner {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CheckovScanner.class);
 	private final CheckovEngine engine;
 
@@ -37,8 +42,13 @@ public class CheckovScanner implements IScanner {
 	}
 
 	@Override
-	public ScanReport scan(ScanConfig config) {
-		ScanReport report = new ScanReport();
+	public EngineExecutionIdentity getExecutionIdentity(CodeScanConfig config) {
+		return engine.getExecutionIdentity(this, config);
+	}
+
+	@Override
+	public CodeScanReport scan(CodeScanConfig config) {
+		CodeScanReport report = new CodeScanReport();
 		Benchmarking<CheckovProvidedRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
@@ -60,7 +70,7 @@ public class CheckovScanner implements IScanner {
 			}
 		} catch (Exception e) {
 			LOGGER.error("Exception while scanning", e);
-			report.addError(new ScanError("Error while scanning: " + e.getMessage()));
+			report.addError(new CodeScanError("Error while scanning: " + e.getMessage()));
 		}
 
 		report.setRuleBenchmarking(benchmarking);
@@ -77,10 +87,11 @@ public class CheckovScanner implements IScanner {
 	}
 
 	private void addResultsToReport(JsonObject result, List<CheckovProvidedRuleDto> rules,
-			ScanReport report, Path workingDirectory) {
+			CodeScanReport report, Path workingDirectory) {
 		if (result.has("errors")) {
 			report.addError(
-					new ScanError("Runtime error(s) found: " + result.get("errors").getAsString()));
+					new CodeScanError(
+							"Runtime error(s) found: " + result.get("errors").getAsString()));
 		}
 		if (result.has("results")) {
 			JsonObject results = result.getAsJsonObject("results");
@@ -94,7 +105,8 @@ public class CheckovScanner implements IScanner {
 								.filter(r -> r.getName().equals(failName)).findFirst();
 						if (foundRule.isPresent()) {
 							RuleDto rule = foundRule.get();
-							ScanViolation violation = new ScanViolation();
+							CodeScanViolation violation = new CodeScanViolation();
+							violation.setRuleIdentity(rule.getExecutionIdentity());
 							violation.setFileName(workingDirectory
 									.resolve(fail.get("file_path").getAsString().substring(1))
 									.toString());
@@ -102,14 +114,17 @@ public class CheckovScanner implements IScanner {
 							violation.setLineNum(Integer.parseInt(lines.get(0).toString()));
 							violation.setMessage(
 									rule.getMessage() + " More Info: " + rule.getExternalUrl());
-							violation.setSeverity(rule.getPriority().getName());
-							violation.setSeverityValue(rule.getPriority().getPriority());
+							violation.setSeverity(rule.getPriority());
 							violation.setViolationName(failName);
 							report.addViolation(violation);
+						} else if (failName.startsWith("CKV_SECRET")) {
+							// Checkov's own secrets detection runs whatever checks were chosen. Secrets are
+							// reported by the secrets scanner, so this is dropped on purpose, not a failure.
+							LOGGER.debug("Ignoring Checkov secrets check {}", failName);
 						} else {
 							String error = "Could not find rule for check " + failName;
 							LOGGER.error(error);
-							report.addError(new ScanError(error));
+							report.addError(new CodeScanError(error));
 						}
 					} else {
 						LOGGER.error("Checkov failed check is not JSON: " + f.toString());
@@ -120,8 +135,38 @@ public class CheckovScanner implements IScanner {
 	}
 
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return CheckovProvidedRuleDto.class;
+	public List<String> getDefaultFileTypes() {
+		// Measured with checkov 2.0.257: Terraform, Kubernetes, CloudFormation (yaml, json, .template),
+		// ARM and Serverless files, plus files named exactly Dockerfile. Other Dockerfile spellings
+		// (Dockerfile.prod, app.dockerfile) and .tfvars are not analysed by that version.
+		return List.of(".tf", ".json", ".yaml", ".yml", ".template", "dockerfile");
+	}
+
+	@Override
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Collections.singletonList(CheckovProvidedRuleDto.class);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * {@link #scan(CodeScanConfig)} calls {@code runCheckovDirectoryScan()} - a whole-directory
+	 * scan, not per-file - and Terraform evaluation needs sibling files (e.g.
+	 * {@code variables.tf}, {@code outputs.tf}) to resolve references. Scoping to only the
+	 * files changed in the pull request would produce wrong results, so this needs every
+	 * manifest file regardless of what changed (IMPROVEMENT_PLAN.md item 2.8).
+	 */
+	@Override
+	public ScanScope getRequiredScope() {
+		return ScanScope.MANIFEST_FILES;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<String> getRequiredFilePatterns() {
+		return Arrays.asList("**/*.tf", "**/*.yaml", "**/*.yml", "**/*.json");
 	}
 
 }

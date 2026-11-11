@@ -1,0 +1,24 @@
+# Prometheus rule group. Each pod exposes the same database totals; use max, not sum.
+groups:
+  - name: watchtower-aws-security
+    rules:
+      - alert: AwsSecurityUnresolvedExecution
+        expr: max(watchtower_aws_security_unresolved) > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "AWS assessment needs reconciliation; do not submit a replacement blindly" }
+      - alert: AwsSecurityInputCleanupOverdue
+        expr: max(watchtower_aws_security_input_oldest_seconds) > 21600
+        for: 10m
+        labels: { severity: critical }
+        annotations: { summary: "AWS temporary inputs remain after the review/cleanup window" }
+      - alert: AwsSecurityThrottling
+        expr: max(delta(watchtower_aws_security_throttles[10m])) > 0
+        for: 2m
+        labels: { severity: warning }
+        annotations: { summary: "AWS assessment operations were throttled; inspect account quotas" }
+      - alert: AwsSecurityMissingEvidence
+        expr: max(watchtower_aws_security_missing) > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Retained AWS reports contain missing full finding records" }

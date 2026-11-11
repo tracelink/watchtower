@@ -1,0 +1,9 @@
+<!--/* IMPROVEMENT_PLAN.md Phase 11 Section E: "There are no rules in this ruleset." and its four
+     siblings (rules/rulesets.html, rules/designer.html, rules/rule-edit.html x2,
+     configuration/apisettings.html) were all bare text with no visual treatment - easy to miss
+     next to a page full of cards and icons. One fragment, one Material Icons glyph + the
+     caller's own message, rather than five ad-hoc one-off blocks. */-->
+<div th:fragment="state(message)" class="wt-empty-state">
+  <i class="material-icons" aria-hidden="true">inbox</i>
+  <span th:text="${message}"></span>
+</div>

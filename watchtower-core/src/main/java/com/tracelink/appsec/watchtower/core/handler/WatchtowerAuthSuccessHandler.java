@@ -1,6 +1,6 @@
 package com.tracelink.appsec.watchtower.core.handler;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -31,7 +31,7 @@ public class WatchtowerAuthSuccessHandler
 		String username = event.getAuthentication().getName();
 		UserEntity user = userService.findByUsername(username);
 
-		user.setLastLogin(new Date());
+		user.setLastLogin(LocalDateTime.now());
 		userService.updateUser(user);
 	}
 }

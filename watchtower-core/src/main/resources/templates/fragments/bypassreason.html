@@ -1,0 +1,11 @@
+<!-- A bypass reason category with the same icon and words as the bypass dialog's "Why?" choices
+     (UAT walkthrough, 2026-10-15). Older bypasses recorded no category. The code arrives as an enum, which a string th:case never
+     equals, so the switch is on its name. -->
+<span th:fragment="chip(code)" class="wt-mini-chip" th:switch="${#strings.toString(code)}">
+	<th:block th:case="'FALSE_POSITIVE'"><span class="material-icons" aria-hidden="true">gpp_bad</span>False positive</th:block>
+	<th:block th:case="'ACCEPTED_RISK'"><span class="material-icons" aria-hidden="true">shield</span>Accepted risk</th:block>
+	<th:block th:case="'TEST_CODE'"><span class="material-icons" aria-hidden="true">science</span>Test code</th:block>
+	<th:block th:case="'NOT_EXPLOITABLE'"><span class="material-icons" aria-hidden="true">verified_user</span>Not exploitable</th:block>
+	<th:block th:case="'OTHER'"><span class="material-icons" aria-hidden="true">more_horiz</span>Other</th:block>
+	<th:block th:case="*"><span class="material-icons" aria-hidden="true">help_outline</span>Not recorded</th:block>
+</span>

@@ -1,127 +1,96 @@
-<!-- Source -->
-<div class="col">
-  <div class="row mb-4">
-    <div class="col-lg-12">
-      <div class="card card-small h-100">
-        <div class="card-header border-bottom py-1">
-          <h6 class="d-inline m-0">Source Code</h6>
-          <a class="display-6 d-inline float-right m-0 text-muted" role="button" tabindex="0"
-             data-toggle="popover" data-trigger="focus"
-             th:data-content="${help.get('regexSource')}">Help</a>
-        </div>
-        <div class="card-body d-flex">
-          <textarea id="source" name="source" form="runqueryform" rows="15" cols="100"
-                    th:text="${sourceCode}"></textarea>
-        </div>
-        <div class="card-footer border-top py-1">
-          <div class="d-flex">
-            <form method="POST" id="runqueryform" class="form-inline"
-                  action="/designer/regex/query">
-              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-              <button class="btn btn-primary" name="Submit" value="Submit" type="Submit">Run Rule
-              </button>
-            </form>
-            <button class="ml-auto btn btn-success" data-toggle="modal"
-                    data-target="#saveRegexRuleModal">Save Rule
-            </button>
-          </div>
-        </div>
+
+<!-- Two cards (UAT walkthrough, 2026-10-16): the sample on the left, the rule on the right with
+     Run rule and Save rule; the matches sit under both as chips that jump to the highlighted line
+     (fragments/designer :: matches). The help is the rule card's "How to write it" chip. -->
+<div class="wt-designer-workspace" data-rule-designer>
+  <div class="wt-designer-grid">
+    <section class="card wt-designer-card" data-designer-editor aria-labelledby="regex-sample-heading">
+      <div class="wt-designer-card__head">
+        <h2 id="regex-sample-heading" class="h6 m-0">Sample code</h2>
+        <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+            data-tip="Any text: the pattern is checked line by line"><span class="material-icons"
+            aria-hidden="true">notes</span>Any text</span>
       </div>
-    </div>
+      <textarea aria-label="Sample code to test" id="source" name="source" form="runqueryform" rows="15" cols="100"
+                data-designer-input
+                th:text="${sourceCode}"></textarea>
+    </section>
+    <section class="card wt-designer-card" data-designer-editor aria-labelledby="regex-rule-heading">
+      <div class="wt-designer-card__head">
+        <h2 id="regex-rule-heading" class="h6 m-0 wt-designer-card__title"><span
+            class="wt-scanner-tile wt-scanner-tile--ran" aria-hidden="true"><span
+            class="material-icons">pattern</span></span>Regex rule</h2>
+        <span th:replace="~{fragments/designer :: howto(${help.get('regex')})}"></span>
+      </div>
+      <textarea aria-label="Regular expression rule" id="regexquery" name="query" form="runqueryform" rows="4"
+                data-designer-input
+                th:text="${query}"></textarea>
+      <div class="wt-designer-actions">
+        <form method="POST" id="runqueryform" data-designer-run-form action="/designer/regex/query">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <md-filled-button type="submit" name="Submit" value="Submit" has-icon
+              data-run-rule><span slot="icon" class="material-icons" aria-hidden="true">play_arrow</span>Run rule</md-filled-button>
+        </form>
+        <md-outlined-button id="openSaveRegexRuleDialog" type="button" has-icon
+            data-save-rule
+            data-wt-dialog-target="#saveRegexRuleDialog"><span slot="icon" class="material-icons"
+            aria-hidden="true">save</span>Save rule</md-outlined-button>
+      </div>
+    </section>
   </div>
-  <!-- End Source -->
-  <div class="row mb-4">
-    <!-- Query -->
-    <div class="col-lg-9 col-md-9 col-sm-12 ">
-      <div class="card card-small h-100">
-        <div class="card-header border-bottom py-1">
-          <h6 class="d-inline m-0">Regex Rule</h6>
-          <a class="display-6 d-inline float-right m-0 text-muted" role="button" tabindex="0"
-             data-toggle="popover" data-trigger="focus"
-             th:data-content="${help.get('regex')}">Help</a>
-        </div>
-        <div class="card-body d-flex">
-          <textarea id="regexquery" name="query" form="runqueryform" cols="200"
-                    th:text="${query}"></textarea>
-        </div>
-      </div>
-    </div>
-    <!-- End Query -->
-    <!-- Matches -->
-    <div class="col">
-      <div class="card card-small h-100">
-        <div class="card-header border-bottom py-1">
-          <h6 class="d-inline m-0">Matches Found</h6>
-          <a class="display-6 d-inline float-right m-0 text-muted" role="button" tabindex="0"
-             data-toggle="popover" data-trigger="focus" th:data-content="${help.get('matches')}">Help</a>
-        </div>
-        <div class="card-body overflow-auto" style="height:100px">
-          <pre th:if="${error != null}" th:text="${error}"></pre>
-          <div th:if="${error==null}">
-            <div th:each="match : ${matches}" th:text="${match}"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- End Matches -->
-  </div>
+  <section th:replace="~{fragments/designer :: matches(${matches}, ${error})}"></section>
 </div>
-<div class="modal fade" id="saveRegexRuleModal" tabindex="-1"
-     role="dialog"
-     aria-labelledby="saveRegexRuleLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="saveRegexRuleLabel">Save Rule</h4>
-        <button type="button" class="close" data-dismiss="modal"
-                aria-hidden="true">×
-        </button>
+<!-- PILOT (Material Web): this one modal was converted first, to size the effort of a real
+     migration, before every other modal in the app followed the same pattern across
+     IMPROVEMENT_PLAN_MATERIAL_UI.md Section E's waves. Controller (/designer/regex/save) is
+     unchanged - same field names, same CSRF hidden input, so no Java changes were required for
+     this page. -->
+<md-dialog id="saveRegexRuleDialog">
+  <div slot="headline">Save regex rule</div>
+  <form slot="content" id="saveRegexRuleForm" method="post" class="wt-md-form"
+        action="/designer/regex/save">
+    <md-outlined-text-field label="Rule Name" name="name" id="ruleName"
+        th:value="${ruleName}"></md-outlined-text-field>
+    <md-outlined-text-field label="Short Message" name="message" id="ruleMessage"
+        th:value="${ruleMessage}"></md-outlined-text-field>
+    <md-outlined-select label="Priority" name="priority" id="rulePriority">
+      <md-select-option th:each="priority : ${rulePriorities}"
+          th:value="${priority.getPriority()}" th:selected="${priority.getPriority()==rulePriority}">
+        <div slot="headline" th:text="${priority.getName()}"></div>
+      </md-select-option>
+    </md-outlined-select>
+    <md-outlined-text-field label="Query" name="query" id="ruleQuery"></md-outlined-text-field>
+    <details class="wt-form-disclosure">
+      <summary>More options</summary>
+      <md-outlined-text-field label="File extension" name="fileExtension" id="ruleFileExtension"
+          th:value="${ruleFileExt}" supporting-text="Blank = all files"></md-outlined-text-field>
+      <div class="wt-meta-chips" data-file-types-notice hidden
+          th:attr="data-types=${#strings.listJoin(moduleFileTypes, ',')}">
+        <span class="wt-mini-chip wt-mini-chip--warn" tabindex="0" data-file-types-chip data-tip=""><span
+            class="material-icons" aria-hidden="true">warning</span><span data-file-types-chip-text></span></span>
+        <a class="wt-mini-chip wt-mini-chip--link" href="/configuration/modules"
+            sec:authorize="hasAuthority('Module Settings Modify')"><span class="material-icons" aria-hidden="true">tune</span>File types</a>
       </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col">
-            <form id="saveRegexRuleForm" method="post" class="form"
-                  action="/designer/regex/save">
-              <div class="form-group">
-                <label for="ruleName">Rule Name</label>
-                <input type="text" class="form-control" name="name" id="ruleName"
-                       placeholder="Rule Name" th:value="${ruleName}"/>
-              </div>
-              <div class="form-group">
-                <label for="ruleMessage">Short Message</label>
-                <input type="text" class="form-control" name="message" id="ruleMessage"
-                       placeholder="Rule Message" th:value="${ruleMessage}"/>
-              </div>
-              <div class="form-group">
-                <label for="rulePriority">Priority</label>
-                <select name="priority" class="form-control" id="rulePriority">
-                  <option th:each="priority : ${rulePriorities}"
-                          th:value="${priority.getPriority()}" th:text="${priority.getName()}"
-                          th:selected="${priority.getPriority()==rulePriority}"/>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="ruleQuery">Query</label>
-                <input type="text" class="form-control" name="query" id="ruleQuery"
-                       placeholder="Query"/>
-              </div>
-              <div class="form-group">
-                <label for="ruleFileExtension">File Extension</label>
-                <input type="text" class="form-control" name="fileExtension" id="ruleFileExtension"
-                       placeholder="File Extension" th:value="${ruleFileExt}"/>
-              </div>
-              <div class="form-group">
-                <label for="ruleUrl">External URL</label>
-                <input type="text" class="form-control" name="externalUrl" id="ruleUrl"
-                       placeholder="URL for more information" th:value="${ruleExtUrl}"/>
-              </div>
-              <input type="hidden" id="formSource" name="source"/>
-              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-              <button class="btn btn-success" type="submit">Save Rule</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+      <md-outlined-text-field label="External URL" name="externalUrl" id="ruleUrl"
+          th:value="${ruleExtUrl}"></md-outlined-text-field>
+      <label class="wt-md-checkbox-row">
+        <md-checkbox name="mcrRule" id="mcrRule" value="" touch-target="wrapper"></md-checkbox>
+        Manual code review rule
+      </label>
+    </details>
+    <input type="hidden" id="formSource" name="source"/>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancelSaveRegexRuleDialog" type="button">Cancel</md-text-button>
+    <md-filled-button form="saveRegexRuleForm" type="submit">Save rule</md-filled-button>
   </div>
-</div>
+</md-dialog>
+
+<!-- Material Web custom elements are now registered globally by htmlhead.html's
+     material-web-bundle.js (self-hosted, esbuild-bundled - see
+     watchtower-core/src/main/frontend/material-web/). Dialog open/close wiring and the
+     source/query field population that used to run on jQuery's 'show.bs.modal' (which never
+     fires on an md-dialog) now lives in regex-designer.js, alongside this page's other
+     designer JS, so it re-runs correctly on every htmx boosted swap via the existing
+     addScriptReference/#content mechanism - see regex-designer.js. -->

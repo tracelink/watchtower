@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -33,11 +34,13 @@ import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetNotFoundException;
 import com.tracelink.appsec.watchtower.core.module.ModuleException;
 import com.tracelink.appsec.watchtower.core.module.ModuleNotFoundException;
+import com.tracelink.appsec.watchtower.core.rule.CustomRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleDesignation;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.rule.RuleEntity;
 import com.tracelink.appsec.watchtower.core.rule.RuleException;
 import com.tracelink.appsec.watchtower.core.rule.RuleService;
-import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
+import com.tracelink.appsec.watchtower.core.scan.repository.RepositoryRepository;
 
 /**
  * Handles logic to retrieve and edit rulesets.
@@ -45,13 +48,22 @@ import com.tracelink.appsec.watchtower.core.scan.scm.RepositoryRepository;
  * @author mcool
  */
 @Service
+@Transactional(rollbackFor = Exception.class)
 public class RulesetService {
 	private static final Logger LOG = LoggerFactory.getLogger(RulesetService.class);
+	private static final int PREVIEW_NAMES = 50;
+ private com.tracelink.appsec.watchtower.core.persistence.LedgerRepository configurationRecords;
+ @Autowired
+ public void setConfigurationRecords(com.tracelink.appsec.watchtower.core.persistence.LedgerRepository records) { configurationRecords = records; }
+ /** Shared with assistant actions and repository assignment paths. */
+ public void lockConfiguration() { if(configurationRecords != null) configurationRecords.lockScope("ruleset-configuration"); }
+
 
 	private RulesetRepository rulesetRepository;
 	private RuleService ruleService;
 	private RepositoryRepository repositoryRepository;
 	private JsonMapper mapper;
+	private ProvidedRulesStateRepository providedRulesStateRepository;
 
 	/**
 	 * Creates an instance of this service with a {@link RulesetRepository} and a
@@ -70,6 +82,18 @@ public class RulesetService {
 		PolymorphicTypeValidator validator = createTypeValidator();
 		mapper = JsonMapper.builder().polymorphicTypeValidator(validator)
 				.activateDefaultTyping(validator).build();
+	}
+
+	/**
+	 * Lets startup skip importing a module's provided rules when they did not change. Without it
+	 * (as in unit tests that build this service directly) every registration imports.
+	 *
+	 * @param providedRulesStateRepository the per-module fingerprints of the last import
+	 */
+	@Autowired
+	public void setProvidedRulesStateRepository(
+			ProvidedRulesStateRepository providedRulesStateRepository) {
+		this.providedRulesStateRepository = providedRulesStateRepository;
 	}
 
 	private PolymorphicTypeValidator createTypeValidator() {
@@ -106,6 +130,7 @@ public class RulesetService {
 	 */
 	public RulesetEntity createRuleset(String name, String description,
 			RulesetDesignation designation) throws RulesetException {
+        lockConfiguration();
 		if (StringUtils.isBlank(name) || StringUtils.isBlank(description) || designation == null) {
 			throw new IllegalArgumentException(
 					"Please provide a ruleset name, description and designation that are not null or empty.");
@@ -137,7 +162,9 @@ public class RulesetService {
 	 * @throws RulesetNotFoundException if no ruleset with the given ID exists
 	 * @throws RulesetException         if the id belongs to a Provided ruleset
 	 */
+	@Transactional
 	public void deleteRuleset(long id) throws RulesetNotFoundException, RulesetException {
+        lockConfiguration();
 		RulesetEntity ruleset = getRuleset(id);
 		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
 			throw new RulesetException("Cannot delete a Provided ruleset");
@@ -149,6 +176,14 @@ public class RulesetService {
 			throws RulesetNotFoundException, RulesetException {
 		// Remove all rulesets and rules from this ruleset
 		ruleset.getRulesets().clear();
+		// RuleEntity.rulesets and RulesetEntity.rules both independently declare ownership of the
+		// same rule_ruleset join table (neither is mappedBy), both EAGER-fetched. Clearing only
+		// this side leaves each owned rule's own eagerly-loaded rulesets collection still
+		// referencing this ruleset, and Hibernate's dirty-checking on that unsynchronized side
+		// tries to maintain a row for a ruleset mid-deletion at flush time -
+		// TransientPropertyValueException. Mirrors the "remove all references to this ruleset from
+		// other rulesets" pattern below, applied to the rule side instead.
+		ruleset.getRules().forEach(rule -> rule.getRulesets().remove(ruleset));
 		ruleset.getRules().clear();
 		// Remove all references to this ruleset from other rulesets
 		rulesetRepository.findAll().forEach(r -> r.getRulesets().remove(ruleset));
@@ -175,6 +210,7 @@ public class RulesetService {
 	 */
 	public void editRuleset(RulesetDto rulesetDto)
 			throws RulesetNotFoundException, RulesetException {
+        lockConfiguration();
 		RulesetEntity ruleset = getRuleset(rulesetDto.getId());
 		// Check to avoid changing Provided rulesets
 		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
@@ -203,7 +239,7 @@ public class RulesetService {
 		// Make sure that we do not create a supporting ruleset that inherits from primary rulesets
 		if (rulesetDto.getDesignation().equals(RulesetDesignation.SUPPORTING)
 				&& ruleset.getRulesets().stream()
-						.anyMatch(r -> !r.getDesignation().equals(RulesetDesignation.SUPPORTING))) {
+						.anyMatch(r -> r.getDesignation()==RulesetDesignation.PRIMARY || r.getDesignation()==RulesetDesignation.DEFAULT)) {
 			throw new RulesetException(
 					"Ruleset cannot be a supporting ruleset if it inherits from a primary ruleset.");
 		}
@@ -230,6 +266,7 @@ public class RulesetService {
 	 */
 	public void setInheritedRulesets(long rulesetId, List<Long> inheritedRulesetIds)
 			throws RulesetNotFoundException, RulesetException {
+        lockConfiguration();
 		RulesetEntity ruleset = getRuleset(rulesetId);
 		// Check that we do not create inheritance on a Provided ruleset
 		if (ruleset.getDesignation().equals(RulesetDesignation.PROVIDED)) {
@@ -272,7 +309,9 @@ public class RulesetService {
 	 */
 	public void setRules(long rulesetId, List<Long> ruleIds)
 			throws RulesetNotFoundException, RuleNotFoundException {
+        lockConfiguration();
 		RulesetEntity ruleset = getRuleset(rulesetId);
+        if (ruleset.getDesignation() == RulesetDesignation.PROVIDED) throw new IllegalArgumentException("Cannot modify membership of a Provided ruleset");
 		Set<RuleEntity> rules = new HashSet<>();
 		for (Long ruleId : ruleIds) {
 			// If any rule is not found, ruleset will not be altered
@@ -294,6 +333,7 @@ public class RulesetService {
 	 */
 	public RulesetEntity setDefaultRuleset(long rulesetId)
 			throws RulesetNotFoundException, RulesetException {
+        lockConfiguration();
 		if (rulesetId == -1L) {
 			// Set current default to primary
 			RulesetEntity defaultRuleset = getDefaultRuleset();
@@ -331,6 +371,7 @@ public class RulesetService {
 	 * @throws RuleException         if the rule cannot be removed
 	 */
 	public void removeRuleFromAllRulesets(long ruleId) throws RuleNotFoundException, RuleException {
+        lockConfiguration();
 		RuleEntity rule = ruleService.getRule(ruleId);
 		if (rule.toDto().isProvided()) {
 			throw new RuleException("Cannot delete a provided rule");
@@ -356,9 +397,11 @@ public class RulesetService {
 	 * @throws RulesetException         if the ruleset cannot be created
 	 * @throws RuleException            if the rules are invalid
 	 */
+	@Transactional(rollbackFor = Exception.class)
 	public RulesetDto importRuleset(InputStream inputStream, String userName)
 			throws IllegalArgumentException, ModuleNotFoundException, IOException,
 			RulesetException, RuleException {
+		lockConfiguration();
 		// Check that user is not null
 		if (StringUtils.isBlank(userName)) {
 			throw new IllegalArgumentException("User cannot be null.");
@@ -368,6 +411,54 @@ public class RulesetService {
 		// TODO allow configuration of these options?
 		return importOrUpdateRuleset(rulesetDto, userName, ImportOption.UPDATE,
 				ImportOption.UPDATE).toDto();
+	}
+
+	/**
+	 * What importing this file would change, computed without writing anything (UAT #26). Mirrors
+	 * {@link #importRuleset}: a ruleset with the same name is updated and its rule list replaced;
+	 * custom rules are created or fully updated by name; provided rules only take the new priority.
+	 */
+	public record ImportPreview(String rulesetName, boolean existingRuleset, int newRules, int updatedRules,
+			int priorityOnlyRules, List<String> removedFromRuleset, int removedCount, List<String> problems) {
+	}
+
+	@Transactional(readOnly = true)
+	public ImportPreview previewImport(InputStream inputStream) throws IOException {
+		RulesetDto incoming = mapper.readValue(inputStream, RulesetDto.class);
+		if (StringUtils.isBlank(incoming.getName())) {
+			return new ImportPreview("", false, 0, 0, 0, List.of(), 0,
+					List.of("The file has no ruleset name. Use a file exported from a Watchtower ruleset."));
+		}
+		Set<RuleDto> rules = incoming.getRules() == null ? Set.of() : incoming.getRules();
+		List<String> problems = new java.util.ArrayList<>();
+		if (rules.isEmpty()) {
+			problems.add("The file contains no rules.");
+		}
+		rules.stream().filter(rule -> rule instanceof CustomRuleDto custom && StringUtils.isBlank(custom.getAuthor()))
+				.forEach(rule -> ((CustomRuleDto) rule).setAuthor("import preview"));
+		problems.addAll(ruleService.validationProblems(rules));
+		int created = 0;
+		int updated = 0;
+		int priorityOnly = 0;
+		for (RuleDto rule : rules) {
+			RuleEntity found = ruleService.getRule(rule.getName());
+			if (found == null) {
+				created++;
+			} else if (!found.toDto().getModule().equalsIgnoreCase(rule.getModule())) {
+				problems.add("Rule " + rule.getName() + " already belongs to the " + found.toDto().getModule() + " module.");
+			} else if (RuleDesignation.PROVIDED.equals(rule.getRuleDesignation())) {
+				priorityOnly++;
+			} else {
+				updated++;
+			}
+		}
+		RulesetEntity existing = rulesetRepository.findByName(incoming.getName());
+		Set<String> incomingNames = rules.stream().map(RuleDto::getName).collect(Collectors.toSet());
+		List<String> removed = existing == null ? List.of()
+				: existing.getRules().stream().map(RuleEntity::getName).filter(name -> !incomingNames.contains(name))
+						.sorted().toList();
+		return new ImportPreview(incoming.getName(), existing != null, created, updated, priorityOnly,
+				removed.stream().limit(PREVIEW_NAMES).toList(), removed.size(), List.copyOf(problems));
 	}
 
 	/**
@@ -466,6 +557,17 @@ public class RulesetService {
 	public List<RulesetDto> registerProvidedRulesets(String moduleName,
 			List<RulesetDto> incomingProvidedRulesets)
 			throws ModuleException {
+        lockConfiguration();
+		for (RulesetDto incomingRulesetDto : incomingProvidedRulesets) {
+			validateAndNameProvidedRuleset(moduleName, incomingRulesetDto);
+		}
+		String fingerprint = fingerprintOf(moduleName, incomingProvidedRulesets);
+		if (isAlreadyImported(moduleName, fingerprint, incomingProvidedRulesets)) {
+			LOG.info("Provided rules for {} are unchanged since their last import; not importing",
+					moduleName);
+			return List.of();
+		}
+
 		List<RulesetDto> updatedRulesets = new ArrayList<RulesetDto>();
 		List<RulesetDto> relevantWatchtowerProvidedRulesets =
 				getRulesets().stream().filter(
@@ -473,26 +575,6 @@ public class RulesetService {
 						.collect(Collectors.toList());
 		try {
 			for (RulesetDto incomingRulesetDto : incomingProvidedRulesets) {
-				// Make sure ruleset is designated properly
-				if (!incomingRulesetDto.isProvided()) {
-					throw new ModuleException(
-							"Trying to register a provided ruleset, but not designated correctly. Module "
-									+ moduleName + " ruleset " + incomingRulesetDto.getName());
-				}
-				List<RuleDto> nonProvidedRules = incomingRulesetDto.getRules().stream()
-						.filter(r -> !r.isProvided()).collect(Collectors.toList());
-				if (!nonProvidedRules.isEmpty()) {
-					throw new ModuleException(
-							"Trying to register a provided ruleset, but not all rules are marked provided. Module "
-									+ moduleName + " ruleset " + incomingRulesetDto.getName()
-									+ " rules: " + Strings.join(nonProvidedRules, ','));
-				}
-
-				// Ensure the correct naming convention of the provided ruleset
-				if (!incomingRulesetDto.getName().startsWith(moduleName)) {
-					incomingRulesetDto.setName(moduleName + " - " + incomingRulesetDto.getName());
-				}
-
 				RulesetEntity resultantRuleset = importOrUpdateRuleset(incomingRulesetDto, "system",
 						ImportOption.UPDATE, ImportOption.OVERRIDE);
 				if (resultantRuleset != null) {
@@ -507,7 +589,81 @@ public class RulesetService {
 		removeDeprecatedProvidedRules(updatedRulesets, relevantWatchtowerProvidedRulesets);
 		removeDeprecatedProvidedRulesets(updatedRulesets, relevantWatchtowerProvidedRulesets,
 				moduleName);
+		recordImport(moduleName, fingerprint);
 		return updatedRulesets;
+	}
+
+	/**
+	 * Checks a provided ruleset is marked provided throughout, and prefixes its name with the
+	 * module's.
+	 */
+	private static void validateAndNameProvidedRuleset(String moduleName,
+			RulesetDto incomingRulesetDto) throws ModuleException {
+		if (!incomingRulesetDto.isProvided()) {
+			throw new ModuleException(
+					"Trying to register a provided ruleset, but not designated correctly. Module "
+							+ moduleName + " ruleset " + incomingRulesetDto.getName());
+		}
+		List<RuleDto> nonProvidedRules = incomingRulesetDto.getRules().stream()
+				.filter(r -> !r.isProvided()).collect(Collectors.toList());
+		if (!nonProvidedRules.isEmpty()) {
+			throw new ModuleException(
+					"Trying to register a provided ruleset, but not all rules are marked provided. Module "
+							+ moduleName + " ruleset " + incomingRulesetDto.getName()
+							+ " rules: " + Strings.join(nonProvidedRules, ','));
+		}
+
+		// Ensure the correct naming convention of the provided ruleset
+		if (!incomingRulesetDto.getName().startsWith(moduleName)) {
+			incomingRulesetDto.setName(moduleName + " - " + incomingRulesetDto.getName());
+		}
+	}
+
+	/**
+	 * @return the rulesets' fingerprint, or null if it can't be computed (they are then imported)
+	 */
+	private static String fingerprintOf(String moduleName, List<RulesetDto> rulesets) {
+		try {
+			return ProvidedRulesFingerprint.of(rulesets);
+		} catch (RuntimeException e) {
+			LOG.warn("Could not fingerprint the provided rules of {}; importing them", moduleName,
+					e);
+			return null;
+		}
+	}
+
+	/**
+	 * @return true if the module's provided rules were imported with this fingerprint and each of
+	 *         its provided rulesets is still stored
+	 */
+	private boolean isAlreadyImported(String moduleName, String fingerprint,
+			List<RulesetDto> rulesets) {
+		if (providedRulesStateRepository == null || fingerprint == null) {
+			return false;
+		}
+		boolean sameFingerprint = providedRulesStateRepository.findById(moduleName)
+				.map(state -> fingerprint.equals(state.getFingerprint())).orElse(false);
+		return sameFingerprint && rulesets.stream().allMatch(ruleset -> {
+			RulesetEntity stored = rulesetRepository.findByName(ruleset.getName());
+			return stored != null
+					&& RulesetDesignation.PROVIDED.equals(stored.getDesignation());
+		});
+	}
+
+	/**
+	 * Remembers the fingerprint the module's provided rules were imported with. A failure only
+	 * costs the next boot another import.
+	 */
+	private void recordImport(String moduleName, String fingerprint) {
+		if (providedRulesStateRepository == null || fingerprint == null) {
+			return;
+		}
+		try {
+			providedRulesStateRepository.save(new ProvidedRulesStateEntity(moduleName, fingerprint,
+					System.currentTimeMillis()));
+		} catch (RuntimeException e) {
+			LOG.warn("Could not record the provided rules import of {}", moduleName, e);
+		}
 	}
 
 	/**
@@ -657,15 +813,17 @@ public class RulesetService {
 		List<RuleDto> currentRules = currentProvidedRulesets.stream()
 				.flatMap(ors -> ors.getRules().stream()).collect(Collectors.toList());
 
-		// compare lists so that any rule in the original list, but not in the new list is deleted
+		// Preserve removed rules and their evidence; only their lifecycle changes.
 		originalRules.stream().filter(
-				or -> currentRules.stream().noneMatch(cr -> cr.getName().equals(or.getName())))
+				// Ignoring case: an import matched a rule renamed only in case to the same row
+				or -> currentRules.stream()
+						.noneMatch(cr -> cr.getName().equalsIgnoreCase(or.getName())))
 				.forEach(r -> {
 					try {
-						ruleService.deleteRule(r.getId());
+						ruleService.retireRule(r.getId());
 					} catch (RuleNotFoundException e) {
 						LOG.warn(
-								"Attempting to remove deprecated Provided rule {}, but it wasn't found",
+								"Attempting to retire removed Provided rule {}, but it wasn't found",
 								r.getName());
 					}
 				});

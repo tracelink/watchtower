@@ -3,46 +3,135 @@
 <title>Watchtower</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<link href="/styles/font-awesome-all.css" rel="stylesheet">
+<!-- IMPROVEMENT_PLAN.md item 10.12: kills the dark-mode flash. theme-toggle.js also applies
+     data-theme, but it does so from an Alpine store initialiser, which only runs after Alpine's
+     own deferred script - by then the page has already painted light. This runs synchronously,
+     ahead of the stylesheets below, so a pinned theme is on the html element from the very
+     first paint. Deliberately inline and tiny: an external file would be one more blocking
+     request in front of every page render just to set one attribute.
+
+     Phase 11 Section D adds the same fix for the desktop icon rail's pinned-expanded state:
+     without it, a user who pinned the rail wide would see it flash collapsed (layout.css's
+     default) for a frame before rail-toggle.js's own Alpine-store initialiser (also
+     Alpine-deferred, same timing problem as theme above) applies wt-rail-expanded. -->
+<script th:attr="nonce=${nonce}">
+	(function () {
+		// Material Web migration: light is the unconditional default now, not "whatever the
+		// OS/browser prefers." Only an explicit 'dark' previously saved by theme-toggle.js
+		// changes that - anything else (nothing saved, an unrecognized value, or this catch
+		// block running at all because storage/JS access threw) resolves to light. No
+		// prefers-color-scheme check any more: this used to resolve that media query
+		// synchronously so Bootstrap's dark-mode CSS wouldn't flash light-then-dark, but with
+		// no 'auto' concept left there is nothing for it to resolve into.
+		var theme = 'light';
+		try {
+			if (localStorage.getItem('watchtower-theme') === 'dark') {
+				theme = 'dark';
+			}
+		} catch (e) {
+			// Private mode, or site data blocked - theme stays 'light', the default.
+		}
+		document.documentElement.setAttribute('data-theme', theme);
+		document.documentElement.setAttribute('data-bs-theme', theme);
+		try {
+			if (localStorage.getItem('watchtower-rail') === 'expanded') {
+				document.documentElement.classList.add('wt-rail-expanded');
+			}
+		} catch (e) {
+			// Same fallback as above: leaving the class off means the collapsed rail default
+			// decides, which is correct if storage is unavailable anyway.
+		}
+	})();
+</script>
 
 <link rel="stylesheet" href="/styles/icons.css">
 
-<link rel="stylesheet" href="/webjars/bootstrap/4.3.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="/webjars/bootstrap/5.3.3/css/bootstrap.min.css">
 
-<link rel="stylesheet" href="/webjars/bootstrap-select/1.13.11/css/bootstrap-select.min.css">
+<!-- IMPROVEMENT_PLAN.md Phase 11 Section C: modern-theme.css split into 4 files, load order
+     matters - tokens first (components/layout consume its --wt-* custom properties), base
+     early (sets defaults components/layout override), components before layout as the more
+     general layer. Pure reorganization: same selectors/declarations as the original single
+     file, see tokens.css's header comment for the full design-system overview. -->
+<link rel="stylesheet" id="main-stylesheet-tokens" href="/styles/tokens.css">
 
-<link rel="stylesheet" id="main-stylesheet" data-version="1.0.0" href="/styles/shards-dashboards.1.0.0.css">
+<!-- Material Web migration Section B: maps --md-sys-* tokens onto the --wt-* tokens just
+     loaded above (must come after tokens.css, before base/components/layout, same load-order
+     reasoning as the rest of this cascade). See md-theme.css's header comment. -->
+<link rel="stylesheet" id="main-stylesheet-md-theme" href="/styles/md-theme.css">
 
-<link rel="stylesheet" href="/webjars/datatables/1.10.21/css/jquery.dataTables.min.css">
+<link rel="stylesheet" id="main-stylesheet-base" href="/styles/base.css">
+<link rel="stylesheet" id="main-stylesheet-components" href="/styles/components.css">
+<link rel="stylesheet" id="main-stylesheet-layout" href="/styles/layout.css">
 
 <th:block th:if="${styles != null}" th:each="style : ${styles}">
 <link rel="stylesheet" th:href="${style}"></link>
 </th:block>
 
-<script src="/webjars/jquery/3.5.1/jquery.min.js" th:attr="nonce=${nonce}"></script>
+<!-- Bootstrap 5's bundle includes Popper and does not require jQuery. -->
+<script src="/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js" th:attr="nonce=${nonce}"></script>
 
-<script src="/webjars/popper.js/1.12.9/umd/popper.min.js" th:attr="nonce=${nonce}"></script>
+<!-- Material Web / Lit, self-hosted (no CDN) via a local esbuild bundle - see
+     watchtower-core/src/main/frontend/material-web/. Registers every md-* custom element the
+     app uses, globally, once - a single IIFE script tag, same loading convention as every
+     other library on this page (Bootstrap above), rather than the per-page ES
+     module + import map an earlier CDN pilot used. customElements.define() only needs to run
+     once per document, so loading this in <head> (outside #content) is sufficient; it does not
+     need to re-run on htmx boosted swaps the way page-specific designer scripts do. -->
+<script src="/scripts/material-web-bundle.js" th:attr="nonce=${nonce}"></script>
 
-<script src="/webjars/bootstrap/4.3.1/js/bootstrap.min.js" th:attr="nonce=${nonce}"></script>
+<!-- IMPROVEMENT_PLAN.md item 10.18: shards.min.js and shards-dashboards.1.0.0.js removed here.
+     The CSS half of that theme was already unlinked in item 9.0; these were the JS half, still
+     loading on every page. shards.min.js registered no jQuery plugins the app used, and
+     shards-dashboards.js only added jQuery easings plus a custom Chart.js "LineWithLine"
+     controller that no chart ever asked for - dashboard/*.js use stock line/bar/pie. It also
+     threw outright if Chart.js had not loaded first, which constrained script order for nothing. -->
 
-<script src="/webjars/chart.js/2.9.4/dist/Chart.min.js" th:attr="nonce=${nonce}"></script>
+<!-- Phase 11 Section E: plain delegated listener, not Alpine - no state to hold, so a bare
+     document-level 'click' handler is simpler than a component. -->
+<script src="/scripts/button-ripple.js" th:attr="nonce=${nonce}"></script>
 
-<script src="/scripts/shards.min.js" th:attr="nonce=${nonce}"></script>
-
-<script src="/scripts/shards-dashboards.1.0.0.js" th:attr="nonce=${nonce}"></script>
-
-<script src="/webjars/bootstrap-select/1.13.11/js/bootstrap-select.min.js" th:attr="nonce=${nonce}"></script>
-
-<script src="/webjars/datatables/1.10.21/js/jquery.dataTables.min.js" th:attr="nonce=${nonce}"></script>
-
-<script src="/scripts/datatable.js" th:attr="nonce=${nonce}"></script>
-
-<script src="/scripts/sidebar.js" th:attr="nonce=${nonce}"></script>
-
-<script src="/webjars/luxon/1.26.0/build/global/luxon.js" th:attr="nonce=${nonce}"></script>
-
+<script src="/scripts/feature-help.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/wt-tooltip.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/wt-copy.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/wt-dialog.js" defer th:attr="nonce=${nonce}"></script>
 <script src="/scripts/localizetime.js" th:attr="nonce=${nonce}"></script>
 
-<th:block th:if="${scripts != null}" th:each="script : ${scripts}">
-<script th:src="${script}" th:attr="nonce=${nonce}"></script>
-</th:block>
+<!-- IMPROVEMENT_PLAN.md items 9.1/9.2: progressive-enhancement nav boost + small interactive chrome -->
+<script defer src="/webjars/htmx.org/2.0.10/dist/htmx.min.js" th:attr="nonce=${nonce}"></script>
+
+<!-- Registers htmx:beforeRequest/afterRequest listeners on document.body, same reasoning as
+     localizetime.js above: attaching them here doesn't require htmx.js to have already
+     loaded (it fires later, on the first request), and body survives every boosted swap. -->
+<script src="/scripts/loading-indicator.js" th:attr="nonce=${nonce}"></script>
+
+<!-- Auto-dismisses .alert-dismissible notification banners after a delay - see that file's
+     header comment for why a timer, not a Lit component, and why bound the same way
+     wtResyncOutlinedSelects (loading-indicator.js, above) is. -->
+<script src="/scripts/auto-dismiss-alerts.js" th:attr="nonce=${nonce}"></script>
+
+<!-- Asks before any form marked data-confirm="…" is submitted (destructive actions confirm).
+     Document-level, capture phase: runs before htmx's boosted-form handler and survives swaps. -->
+<script src="/scripts/confirm-action.js" th:attr="nonce=${nonce}"></script>
+
+<!-- Material Web migration, Section C: Alpine.js is fully removed. theme-toggle.js,
+     rail-toggle.js, mobile-drawer.js, sidebar-alpine.js and searchable-listbox.js are gone -
+     their wt-theme-toggle/wt-rail-toggle/wt-mobile-drawer/wt-sidebar-nav/wt-searchable-listbox
+     replacements are all registered by material-web-bundle.js above, loaded once, globally,
+     the same way every md-* component already is. -->
+
+<!-- Page-specific ${scripts} moved to fragments/container.html, inside #content: this
+     <head> is excluded from every boosted (hx-select="#content") swap (item 9.1), so a
+     script left here would only ever run once, on the very first full page load. -->
+
+<link rel="stylesheet" href="/styles/assistant.css">
+<link rel="stylesheet" href="/styles/feature-guide.css">
+<script src="/scripts/assistant.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/rule-evidence.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/rule-candidates.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/rule-review-report.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/finding-assessment.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/ai-review.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/ai-helpers.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/finding-feedback.js" defer th:attr="nonce=${nonce}"></script>
+<script src="/scripts/finding-review.js" defer th:attr="nonce=${nonce}"></script>

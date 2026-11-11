@@ -1,0 +1,143 @@
+{
+  "Description": "ECR Watchtower Webhook",
+  "Parameters": {
+    "WatchtowerEndpoint": {
+      "Type": "String",
+      "Description": "Watchtower endpoint to send ECR Enhanced scan complete events"
+    },
+    "WatchtowerApiKeyId": {
+      "Type": "String",
+      "Description": "API key ID for authentication to Watchtower",
+      "NoEcho": true
+    },
+    "WatchtowerSecret": {
+      "Type": "String",
+      "Description": "API secret for authentication to Watchtower",
+      "NoEcho": true
+    }
+  },
+  "Resources": {
+    "WatchtowerConnection": {
+      "Type": "AWS::Events::Connection",
+      "Properties": {
+        "AuthorizationType": "BASIC",
+        "Description": "Connection to Watchtower API",
+        "AuthParameters": {
+          "BasicAuthParameters": {
+            "Username": {
+              "Ref": "WatchtowerApiKeyId"
+            },
+            "Password": {
+              "Ref": "WatchtowerSecret"
+            }
+          }
+        }
+      }
+    },
+    "WatchtowerApiDestination": {
+      "Type": "AWS::Events::ApiDestination",
+      "Properties": {
+        "ConnectionArn": {
+          "Fn::GetAtt": [
+            "WatchtowerConnection",
+            "Arn"
+          ]
+        },
+        "Description": "API Destination to send events to Watchtower",
+        "HttpMethod": "POST",
+        "InvocationEndpoint": {
+          "Ref": "WatchtowerEndpoint"
+        }
+      }
+    },
+    "WatchtowerApiDestinationTargetRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "WatchtowerInvokeApiDestinationRole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "AllowApiDestinationsInvoke",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "InvokeApiDestination",
+                  "Effect": "Allow",
+                  "Action": [
+                    "events:InvokeApiDestination"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "WatchtowerApiDestination",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "EcrWatchtowerRule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "Description": "Rule to configure Watchtower API Destination upon ECR Enhanced scan completion",
+        "EventPattern": {
+          "source": [
+            "aws.inspector2"
+          ],
+          "detail-type": [
+            "Inspector2 Scan"
+          ],
+          "detail": {
+            "scan-status": [
+              "INITIAL_SCAN_COMPLETE"
+            ]
+          }
+        },
+        "Name": "EcrWatchtowerAPIDestinationRule",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Id": "EcrWatchtowerScanIntegration",
+            "Arn": {
+              "Fn::GetAtt": [
+                "WatchtowerApiDestination",
+                "Arn"
+              ]
+            },
+            "RoleArn": {
+              "Fn::GetAtt": [
+                "WatchtowerApiDestinationTargetRole",
+                "Arn"
+              ]
+            },
+            "InputTransformer": {
+              "InputPathsMap": {
+                "registryId": "$.account",
+                "repository": "$.detail.repository-name",
+                "tags": "$.detail.image-tags"
+              },
+              "InputTemplate": "{\n\t\"registryId\": <registryId>,\n\t\"repository\": <repository>,\n\t\"tags\": <tags>\n}\n"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

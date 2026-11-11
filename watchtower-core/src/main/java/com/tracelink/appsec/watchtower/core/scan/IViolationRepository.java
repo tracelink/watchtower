@@ -10,6 +10,6 @@ import org.springframework.data.repository.NoRepositoryBean;
  * @author csmith
  */
 @NoRepositoryBean
-public interface IViolationRepository<V extends AbstractViolationEntity<?>>
+public interface IViolationRepository<V extends AbstractScanViolationEntity<?>>
 		extends JpaRepository<V, Long> {
 }

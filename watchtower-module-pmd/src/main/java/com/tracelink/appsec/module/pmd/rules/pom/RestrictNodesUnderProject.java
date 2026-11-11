@@ -7,8 +7,8 @@ import java.util.Set;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import net.sourceforge.pmd.RuleContext;
 import net.sourceforge.pmd.lang.xml.ast.XmlNode;
+import net.sourceforge.pmd.reporting.RuleContext;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
 
@@ -48,7 +48,7 @@ public class RestrictNodesUnderProject extends BasicPomRule {
 			// if the subname is not in the whitelist, mark as a violation
 			if (!subNodeNames.contains(element.getNodeName())) {
 				setProperty(ILLEGAL_TAG, element.getNodeName());
-				addViolation(ctx, node);
+				ctx.addViolation(node);
 			}
 		}
 		super.visitElementNode(node, element, ctx);

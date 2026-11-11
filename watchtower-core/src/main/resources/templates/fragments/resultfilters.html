@@ -1,0 +1,19 @@
+<!-- Result tabs in the one segmented style: an icon on every tab and the count on the active
+     one (from its page, so no extra count queries). -->
+<nav th:fragment="filters(baseUrl, filters, activeFilter)" class="wt-segmented-filter"
+     aria-label="Filter results">
+  <a th:each="filter : ${filters}" th:href="${baseUrl + filter.getName() + (filterQuery ?: '')}"
+     th:with="active=${filter.getName().equals(activeFilter)},
+              icon=${filter.getName() == 'all' ? 'list' : filter.getName() == 'violations' ? 'warning'
+                  : filter.getName() == 'incomplete' ? 'error' : filter.getName() == 'unresolved' ? 'radio_button_unchecked' : 'filter_list'}"
+     th:class="${active} ? 'wt-segment is-active' : 'wt-segment'"
+     th:attr="aria-current=${active ? 'page' : null},
+              data-tip=${filter.getName() == 'incomplete' ? 'Failed, running or waiting scans' : null}">
+    <span class="material-icons" aria-hidden="true" th:text="${icon}"
+        th:classappend="${filter.getName() == 'incomplete'} ? ' wt-text-danger' : ''">list</span>
+    <span th:text="${filter.getDisplay()}">All</span>
+    <span th:if="${active and pagination != null}" class="wt-count-badge" tabindex="0"
+        data-tip="Scans matching this filter, whatever their status. Home and the dashboards count finished scans only."
+        th:text="${#numbers.formatInteger(pagination.totalElements, 1, 'COMMA')}">0</span>
+  </a>
+</nav>

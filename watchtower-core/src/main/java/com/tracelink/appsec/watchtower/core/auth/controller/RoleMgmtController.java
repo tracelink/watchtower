@@ -1,12 +1,18 @@
 package com.tracelink.appsec.watchtower.core.auth.controller;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +26,9 @@ import com.tracelink.appsec.watchtower.core.auth.model.PrivilegeEntity;
 import com.tracelink.appsec.watchtower.core.auth.model.RoleEntity;
 import com.tracelink.appsec.watchtower.core.auth.service.PrivilegeService;
 import com.tracelink.appsec.watchtower.core.auth.service.RoleService;
+import com.tracelink.appsec.watchtower.core.auth.service.UserService;
 import com.tracelink.appsec.watchtower.core.mvc.WatchtowerModelAndView;
+import com.tracelink.appsec.watchtower.core.mvc.PagedResult;
 
 /**
  * Controller for all Role Management including showing current role's permissions, editing and
@@ -38,19 +46,42 @@ public class RoleMgmtController {
 
 	private PrivilegeService privilegeService;
 
+	private UserService userService;
+
 	public RoleMgmtController(@Autowired RoleService roleService,
 			@Autowired ConversionService conversionService,
-			@Autowired PrivilegeService privilegeService) {
+			@Autowired PrivilegeService privilegeService,
+			@Autowired UserService userService) {
 		this.roleService = roleService;
 		this.conversionService = conversionService;
 		this.privilegeService = privilegeService;
+		this.userService = userService;
 	}
 
 	@GetMapping("/rolemgmt")
-	public WatchtowerModelAndView rolemgmt() {
+	public WatchtowerModelAndView rolemgmt(@RequestParam(defaultValue = "0") int page) {
 		WatchtowerModelAndView mv = new WatchtowerModelAndView("admin/rolemgmt");
-		mv.addObject("roles", roleService.findAllRoles());
+		if (page < 0) {
+			mv.setViewName("redirect:/rolemgmt?page=0");
+			return mv;
+		}
+		PageRequest pageable = PageRequest.of(page, 10, Sort.by("roleName"));
+		Page<RoleEntity> roles = roleService.findRoles(pageable);
+		List<RoleEntity> allRoles = roleService.findAllRoles();
+		if (roles == null) roles = new PageImpl<>(allRoles, pageable, allRoles.size());
+		PagedResult<RoleEntity> pagination = PagedResult.of(roles, role -> role);
+		if (pagination.totalPages() > 0 && page >= pagination.totalPages()) {
+			mv.setViewName("redirect:/rolemgmt?page=" + (pagination.totalPages() - 1));
+			return mv;
+		}
+		mv.addObject("roles", pagination.content());
+		mv.addObject("allRoles", allRoles);
+		mv.addObject("pagination", pagination);
 		mv.addObject("defaultRole", roleService.findDefaultRole());
+		// Users per role and the privilege total for the "9 of 54" meter (UAT walkthrough).
+		mv.addObject("roleUsers", userService.countUsersByRole());
+		mv.addObject("privilegeTotal", privilegeService.getAllPrivileges().size());
+		mv.addScriptReference("/scripts/rolemgmt.js");
 		return mv;
 	}
 
@@ -66,8 +97,17 @@ public class RoleMgmtController {
 							"Cannot find role.");
 			modelAndView.setViewName("redirect:/rolemgmt");
 		} else {
+			List<PrivilegeEntity> privileges = privilegeService.getAllPrivileges();
+			Map<String, List<PrivilegeEntity>> privilegesByModule = new LinkedHashMap<>();
+			for (PrivilegeEntity privilege : privileges) {
+				String module = StringUtils.defaultIfBlank(privilege.getModule(), "Other");
+				privilegesByModule.computeIfAbsent(module, ignored -> new java.util.ArrayList<>())
+						.add(privilege);
+			}
 			modelAndView.addObject("role", role);
-			modelAndView.addObject("privileges", privilegeService.getAllPrivileges());
+			modelAndView.addObject("privileges", privileges);
+			modelAndView.addObject("privilegesByModule", privilegesByModule);
+			modelAndView.addScriptReference("/scripts/role-privileges.js");
 		}
 		return modelAndView;
 	}
@@ -123,6 +163,10 @@ public class RoleMgmtController {
 		} else if (roleService.isBuiltInRole(role)) {
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
 					"Cannot delete a built in role");
+		} else if (role.isDefaultRole()) {
+			// The page shows "In use" instead of Delete for the default role.
+			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.FAILURE_NOTIFICATION,
+					"The default role can't be deleted. Make another role the default first.");
 		} else {
 			roleService.deleteRole(role);
 			redirectAttributes.addFlashAttribute(WatchtowerModelAndView.SUCCESS_NOTIFICATION,

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.tracelink.appsec.module.checkov.CheckovModule;
 import com.tracelink.appsec.watchtower.core.rule.ProvidedRuleDto;
+import com.tracelink.appsec.watchtower.core.rule.RuleRevision;
 
 /**
  * Extension of the {@linkplain ProvidedRuleDto} to add Checkov Rule concepts like the
@@ -68,4 +69,12 @@ public class CheckovProvidedRuleDto extends ProvidedRuleDto {
 		}
 	}
 
+	@Override
+	public String getExternalRuleKey() { return getName(); }
+
+	@Override
+	protected RuleRevision executableDefinition() {
+		// The executable check lives in the pinned engine, not in these catalog descriptions.
+		return newDefinition().field("engineRuleKey", getExternalRuleKey());
+	}
 }

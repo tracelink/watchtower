@@ -1,0 +1,72 @@
+<!-- Advisories seen in image scans (UAT walkthrough, 2026-10-16): a search pill and Minimum score /
+     Sort chips filter on the server; the advisory ID is the link, the score a coloured CVSS chip and
+     each row has one Ignore icon. What ignoring does is on the "Ignore?" chip's hover. -->
+<div class="wt-designer-workspace" data-rule-designer>
+  <div class="wt-advisory-head">
+    <h2 class="h6 m-0" tabindex="0" data-tip="These come from the AWS ECR scan of each image. An Advisory rule marks one as accepted, so later image scans stop reporting it.">Advisories seen in image scans</h2>
+    <span class="wt-mini-chip wt-meta-chip" tabindex="0"
+        data-tip="Ignoring an advisory creates an Advisory rule for it. Once that rule is in an image repository's ruleset, later image scans stop reporting the advisory there. Earlier results do not change; remove the rule from the ruleset to report it again."><span
+        class="material-icons" aria-hidden="true">help_outline</span>Ignore?</span>
+    <form class="wt-advisory-filters" data-advisory-filters role="search">
+      <md-outlined-text-field class="wt-search-pill" type="search" name="search" maxlength="200"
+          label="Advisory or package" data-advisory-search><span slot="leading-icon"
+          class="material-icons" aria-hidden="true">search</span></md-outlined-text-field>
+      <label class="wt-chip-select"><span class="visually-hidden">Minimum score</span>
+        <select name="minScore" data-advisory-min-score>
+          <option value="0">Score: any</option><option value="4">Score ≥ 4.0</option>
+          <option value="7">Score ≥ 7.0</option><option value="9">Score ≥ 9.0</option></select></label>
+      <label class="wt-chip-select"><span class="visually-hidden">Sort</span>
+        <select name="sort" data-advisory-sort>
+          <option value="score">Highest score</option><option value="name">Advisory ID</option></select></label>
+    </form>
+  </div>
+  <section class="card wt-designer-card wt-advisory-card">
+    <div class="wt-table-scroll" role="region" aria-label="Advisories seen" tabindex="0">
+      <table id="advisoryTable" class="table mb-0">
+        <caption class="visually-hidden">Advisories observed during image scans</caption>
+        <thead>
+        <tr>
+          <th scope="col">Advisory</th>
+          <th scope="col">Score</th>
+          <th scope="col">Description</th>
+          <th scope="col"><span class="visually-hidden">Ignore</span></th>
+        </tr>
+        </thead>
+        <tbody data-advisory-rows>
+        <tr><td colspan="4">Loading advisories…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <nav class="wt-pagination" aria-label="Advisory pages">
+      <span class="wt-pagination__status" data-advisory-status role="status" aria-live="polite">Loading advisories…</span>
+      <div class="wt-pagination__actions">
+        <md-text-button type="button" data-advisory-previous disabled>Previous</md-text-button>
+        <md-text-button type="button" data-advisory-next disabled>Next</md-text-button>
+      </div>
+    </nav>
+  </section>
+</div>
+<!-- Ignore an advisory (UAT walkthrough, 2026-10-16): the advisory and its score in the title, what
+     ignoring does as two chips, with an explicit Ignore action. -->
+<md-dialog id="saveAdvisoryRuleDialog" type="alert">
+  <div slot="headline" class="wt-dialog-headline"><span class="wt-person">
+    <span class="wt-scanner-tile wt-integration-head__icon wt-scanner-tile--warn" aria-hidden="true"><span class="material-icons">playlist_remove</span></span>
+    <span class="wt-person__text"><span>Ignore <span data-advisory-name-label>this advisory</span>?</span>
+      <span class="wt-person__meta" data-advisory-score-label></span></span></span></div>
+  <form slot="content" id="saveAdvisoryRuleForm" method="post" class="wt-md-form"
+        action="/designer/advisory/save">
+    <div class="wt-meta-chips">
+      <span class="wt-mini-chip wt-mini-chip--warn" tabindex="0"
+          data-tip="Once that rule is in an image repository's ruleset, later image scans stop reporting this advisory there."><span
+          class="material-icons" aria-hidden="true">rule</span>Creates an Advisory rule</span>
+      <span class="wt-mini-chip wt-mini-chip--ok"><span class="material-icons" aria-hidden="true">history</span>Past results unchanged</span>
+    </div>
+    <input type="hidden" name="advisoryName" id="advisoryName"/>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+  </form>
+  <div slot="actions">
+    <md-text-button id="cancelSaveAdvisoryRuleDialog" type="button">Cancel</md-text-button>
+    <md-filled-button form="saveAdvisoryRuleForm" type="submit" has-icon><span slot="icon" class="material-icons"
+        aria-hidden="true">playlist_remove</span>Ignore advisory</md-filled-button>
+  </div>
+</md-dialog>

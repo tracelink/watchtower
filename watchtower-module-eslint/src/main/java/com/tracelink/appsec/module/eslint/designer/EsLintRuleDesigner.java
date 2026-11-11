@@ -25,13 +25,15 @@ import com.tracelink.appsec.module.eslint.model.EsLintCustomRuleDto;
 import com.tracelink.appsec.module.eslint.model.EsLintMessageDto;
 import com.tracelink.appsec.module.eslint.model.EsLintRuleDto;
 import com.tracelink.appsec.module.eslint.scanner.EsLintScanner;
+import com.tracelink.appsec.watchtower.core.module.designer.DesignerMatch;
 import com.tracelink.appsec.watchtower.core.module.designer.IRuleDesigner;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerException;
 import com.tracelink.appsec.watchtower.core.module.designer.RuleDesignerModelAndView;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
+import com.tracelink.appsec.watchtower.core.module.designer.RuleDraftData;
 import com.tracelink.appsec.watchtower.core.rule.RulePriority;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
 
 /**
  * Implementation of the {@link IRuleDesigner} for ESLint rules. Allows querying against custom
@@ -90,11 +92,42 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RuleDesignerModelAndView getRuleDesignerModelAndView() {
+	public RuleDesignerModelAndView getDefaultRuleDesignerModelAndView() {
 		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
 		rule.setCreateFunction(DEFAULT_CREATE_FUNCTION);
 		rule.setMessages(DEFAULT_MESSAGES);
 		return query(DEFAULT_SOURCE_CODE, DEFAULT_CREATE_FUNCTION, DEFAULT_MESSAGES);
+	}
+
+	/** The message id a drafted rule reports with; the draft's message is its text. */
+	public static final String DRAFT_MESSAGE_ID = "violation";
+
+	/**
+	 * The designer for a drafted rule. The drafted create function is JavaScript that the scanner would run, so
+	 * it is shown but <b>not run</b>: the person reads it and presses Run rule.
+	 */
+	@Override
+	public RuleDesignerModelAndView getPrefilledRuleDesignerModelAndView(RuleDraftData draft) {
+		EsLintCustomRuleDto rule = new EsLintCustomRuleDto();
+		rule.setName(draft.name());
+		rule.setMessage(draft.message());
+		rule.setPriority(RulePriority.valueOf(draft.priority()));
+		rule.setExternalUrl(DEFAULT_URL);
+		rule.setCreateFunction(draft.definition());
+		rule.setMessages(new ArrayList<>(List.of(new EsLintMessageDto(DRAFT_MESSAGE_ID, draft.message()))));
+		RuleDesignerModelAndView mav = getBaseModelAndView();
+		mav.addObject("rule", rule);
+		mav.addObject("sourceCode", org.apache.commons.lang3.StringUtils.defaultString(draft.vulnerableSnippet()));
+		return mav;
+	}
+
+	@Override
+	public String validateDraft(RuleDraftData draft) {
+		String function = draft.definition();
+		if (!function.contains("create") || !function.contains("context.report")) {
+			return "An ESLint rule needs a create(context) function that calls context.report.";
+		}
+		return null;
 	}
 
 	/**
@@ -236,7 +269,7 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 		ruleset.setDescription("query-description");
 		ruleset.setRules(Collections.singleton(rule));
 
-		ScanConfig config = new ScanConfig();
+		CodeScanConfig config = new CodeScanConfig();
 		config.setRuleset(ruleset);
 
 		try {
@@ -250,14 +283,30 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 		}
 
 		// Get violations and any errors from scanner
-		ScanReport report = scanner.scan(config);
-		List<String> matches = report.getViolations().stream()
-				.map(violation -> "Line " + violation.getLineNum() + ": " + violation.getMessage())
+		CodeScanReport report = scanner.scan(config);
+		List<DesignerMatch> matches = report.getViolations().stream()
+				.map(violation -> DesignerMatch.atLine(violation.getLineNum(), violation.getMessage()))
 				.collect(Collectors.toList());
 		mav.addObject("matches", matches);
 		if (!report.getErrors().isEmpty()) {
-			mav.addErrorMessage(report.getErrors().get(0).getErrorMessage());
+			mav.addErrorMessage(plainProblem(report.getErrors().get(0).getErrorMessage()));
 		}
+	}
+
+	/**
+	 * The engine's failure without its process details (exit code, timeout flag) and temporary
+	 * file path: the error line when it printed one, otherwise a sentence about the create function.
+	 * A message that is not a process failure (such as a parsing error in the sample) is kept.
+	 */
+	static String plainProblem(String raw) {
+		String text = java.util.Objects.toString(raw, "");
+		if (!text.startsWith("ESLint process failed")) {
+			return text;
+		}
+		return text.lines().skip(1).map(String::strip)
+				.filter(line -> line.matches("\\w*Error\\b.*")).findFirst()
+				.map(line -> "ESLint could not run the rule: " + line)
+				.orElse("ESLint could not run the rule. Check the create function.");
 	}
 
 	/**
@@ -302,8 +351,8 @@ public class EsLintRuleDesigner implements IRuleDesigner {
 		help.put("matches",
 				"The Matches section shows any violations that were found for the source code, along with the message that will be displayed to the user.");
 		help.put("esLintRule",
-				"The ESLint Rule section stores info about a custom rule. "
-						+ "If you want to design a rule, provide the JavaScript code for the \"create\" function. ");
+				"A create(context) function that reports nodes, with the message IDs it uses listed under Messages. "
+						+ "Open Syntax tree to see the node types in the sample.");
 		help.put("messages",
 				"The Messages section stores message IDs and values for any message IDs defined in the custom rule.");
 		return help;

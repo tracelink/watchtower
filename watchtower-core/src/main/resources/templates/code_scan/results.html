@@ -1,0 +1,11 @@
+<div th:replace="~{fragments/resultstabs :: head('results', false)}"></div>
+<div id="results-region" data-nav-active="/scans/results">
+  <nav th:replace="~{fragments/resultstabs :: tabs(${kind.key})}"></nav>
+  <th:block th:if="${results.isEmpty()}"><div th:replace="~{fragments/emptystate :: state('No scans match this view yet.')}"></div></th:block>
+  <div class="card card-small" th:unless="${results.isEmpty()}">
+    <div th:replace="~{fragments/pagination(baseUrl=${baseUrl}, pagination=${pagination})}"></div>
+    <div class="card-body pb-3 wt-table-scroll" role="region" aria-label="Repository results" tabindex="0">
+      <div th:replace="~{fragments/scanactivity :: table(${results}, 'Pull request and full-repository scan results, newest first')}"></div>
+    </div>
+  </div>
+</div>

@@ -1,41 +1,55 @@
 package com.tracelink.appsec.module.regex.scanner;
 
 import com.tracelink.appsec.module.regex.model.RegexCustomRuleDto;
+import com.tracelink.appsec.module.regex.model.RegexProvidedRuleDto;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
+import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
-import com.tracelink.appsec.watchtower.core.scan.processor.AbstractProcessor;
-import com.tracelink.appsec.watchtower.core.scan.processor.CallableCreator;
-import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
-import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
+import com.tracelink.appsec.watchtower.core.scan.code.JavaEngineExecutionIdentity;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.AbstractProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.CallableCreator;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.MultiThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * {@link IScanner} implementation of a regex scan. Regex will scan every file using regex rules
+ * {@link ICodeScanner} implementation of a regex scan. Regex will scan every file using regex rules
  * that define patterns to find. If a pattern matches, a violation is logged.
  * <p>
  * Note: regexes are run line by line, so patterns that may match across lines will not match.
  *
  * @author csmith, mcool
  */
-public class RegexScanner implements IScanner {
+public class RegexScanner implements ICodeScanner {
+	@Override
+	public EngineExecutionIdentity getExecutionIdentity(CodeScanConfig config) {
+		if (getClass() != RegexScanner.class) return EngineExecutionIdentity.unknown("java-regex");
+		return JavaEngineExecutionIdentity.capture("java-regex", this, config,
+				RegexScanner.class, ICodeScanner.class, org.apache.commons.lang3.StringUtils.class,
+				org.apache.commons.io.FileUtils.class, net.lingala.zip4j.ZipFile.class);
+	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ScanReport scan(ScanConfig config) {
+	public CodeScanReport scan(CodeScanConfig config) {
 		RegexBenchmarking benchmarking = new RegexBenchmarking();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
-		ScanReport report = new ScanReport();
+		CodeScanReport report = new CodeScanReport();
 		try (Benchmarker totalTime =
 				benchmarking.newBenchmarker(TimerType.DefaultTimerType.WALL_CLOCK)) {
 			AbstractProcessor processor =
-					getProcessor(config.getThreads(), benchmarking);
+					getProcessor(config.getThreads(), benchmarking).withFileTypes(config.getFileTypes());
 
 			try (Benchmarker b = benchmarking.newBenchmarker(TimerType.DefaultTimerType.SCAN)) {
 				processor.runScan(config.getRuleset(), config.getWorkingDirectory());
@@ -45,7 +59,7 @@ public class RegexScanner implements IScanner {
 					benchmarking.newBenchmarker(TimerType.DefaultTimerType.REPORT_GENERATE)) {
 				processor.getReports().stream().forEach(report::join);
 				processor.getSystemExceptions().stream()
-						.forEach(exception -> new ScanError(exception));
+						.forEach(exception -> report.addError(new CodeScanError(exception)));
 			}
 		}
 		report.setRuleBenchmarking(benchmarking);
@@ -66,7 +80,7 @@ public class RegexScanner implements IScanner {
 	}
 
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return RegexCustomRuleDto.class;
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Arrays.asList(RegexCustomRuleDto.class, RegexProvidedRuleDto.class);
 	}
 }

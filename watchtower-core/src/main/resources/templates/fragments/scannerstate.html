@@ -1,0 +1,16 @@
+<!-- A scanner's state for its New scan page, as chips (UAT walkthrough, 2026-10-16): a coloured
+     "Scanning on" / "Paused" chip, "Not accepting scans" when quiesced, then waiting and running
+     counts as icons. The full meaning is in each chip's hover text. -->
+<th:block th:fragment="chips(paused, quiesced, queued, running)">
+  <span class="wt-status-chip" tabindex="0" th:classappend="${paused} ? ' wt-tone-warning' : ' wt-tone-success'"
+      th:attr="data-tip=${paused} ? 'Paused: scans are accepted, but queued scans do not start until the scanner is resumed.' : 'Scans start as soon as they are submitted.'"
+      data-scanner-state><span class="material-icons" aria-hidden="true" th:text="${paused} ? 'pause_circle' : 'circle'">circle</span><span
+      th:text="${paused} ? 'Paused' : 'Scanning on'">Scanning on</span></span>
+  <span th:if="${quiesced}" class="wt-status-chip wt-tone-warning" tabindex="0"
+      data-tip="New scans are rejected; work already queued still finishes."><span class="material-icons"
+      aria-hidden="true">do_not_disturb_on</span>Not accepting scans</span>
+  <span class="wt-mini-chip" tabindex="0" th:attr="data-tip=${queued + ' waiting to start'}" th:aria-label="${queued + ' waiting to start'}"><span
+      class="material-icons" aria-hidden="true">hourglass_top</span><strong th:text="${queued}">0</strong></span>
+  <span class="wt-mini-chip" tabindex="0" th:attr="data-tip=${running + ' running now'}" th:aria-label="${running + ' running now'}"><span
+      class="material-icons" aria-hidden="true">sync</span><strong th:text="${running}">0</strong></span>
+</th:block>

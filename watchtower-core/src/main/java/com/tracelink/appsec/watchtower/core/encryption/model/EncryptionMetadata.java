@@ -2,14 +2,13 @@ package com.tracelink.appsec.watchtower.core.encryption.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * Model for Watchtower encryption metadata. Includes the date and time of the last key encryption
@@ -49,8 +48,7 @@ public class EncryptionMetadata {
 	}
 
 	public long getLastRotationDateTimeMillis() {
-		return lastRotationDateTime == null ? 0L
-				: lastRotationDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.toEpochMillis(lastRotationDateTime);
 	}
 
 	public boolean isRotationScheduleEnabled() {
@@ -74,7 +72,6 @@ public class EncryptionMetadata {
 	}
 
 	public long getNextRotationDateMillis(DataEncryptionKey dek) {
-		return getNextRotationDate(dek).atStartOfDay().toInstant(ZoneOffset.UTC)
-				.toEpochMilli();
+		return com.tracelink.appsec.watchtower.core.ui.ServerTime.startOfDayMillis(getNextRotationDate(dek));
 	}
 }

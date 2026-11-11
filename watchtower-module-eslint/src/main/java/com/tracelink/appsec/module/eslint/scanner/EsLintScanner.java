@@ -7,10 +7,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.tracelink.appsec.module.eslint.model.EsLintProvidedRuleDto;
 import org.apache.commons.io.FileUtils;
 
 import com.google.gson.Gson;
@@ -24,25 +27,26 @@ import com.tracelink.appsec.watchtower.core.benchmark.Benchmarker;
 import com.tracelink.appsec.watchtower.core.benchmark.Benchmarking;
 import com.tracelink.appsec.watchtower.core.benchmark.TimerType;
 import com.tracelink.appsec.watchtower.core.exception.rule.RulesetException;
-import com.tracelink.appsec.watchtower.core.module.scanner.IScanner;
-import com.tracelink.appsec.watchtower.core.report.ScanError;
-import com.tracelink.appsec.watchtower.core.report.ScanReport;
-import com.tracelink.appsec.watchtower.core.report.ScanViolation;
+import com.tracelink.appsec.watchtower.core.module.scanner.ICodeScanner;
 import com.tracelink.appsec.watchtower.core.rule.RuleDto;
 import com.tracelink.appsec.watchtower.core.ruleset.RulesetDto;
-import com.tracelink.appsec.watchtower.core.scan.ScanConfig;
-import com.tracelink.appsec.watchtower.core.scan.processor.AbstractProcessor;
-import com.tracelink.appsec.watchtower.core.scan.processor.CallableCreator;
-import com.tracelink.appsec.watchtower.core.scan.processor.MultiThreadedProcessor;
-import com.tracelink.appsec.watchtower.core.scan.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.CodeScanConfig;
+import com.tracelink.appsec.watchtower.core.scan.code.EngineExecutionIdentity;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.AbstractProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.CallableCreator;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.MultiThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.processor.SingleThreadedProcessor;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanError;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanReport;
+import com.tracelink.appsec.watchtower.core.scan.code.report.CodeScanViolation;
 
 /**
- * {@link IScanner} for ESLint. Scans and reports with the ESLint Linter via the
+ * {@link ICodeScanner} for ESLint. Scans and reports with the ESLint Linter via the
  * {@link LinterEngine}.
  *
  * @author mcool
  */
-public class EsLintScanner implements IScanner {
+public class EsLintScanner implements ICodeScanner {
 
 	private static final Gson GSON = new Gson();
 	private final LinterEngine engine;
@@ -51,12 +55,17 @@ public class EsLintScanner implements IScanner {
 		this.engine = engine;
 	}
 
+	@Override
+	public EngineExecutionIdentity getExecutionIdentity(CodeScanConfig config) {
+		return engine.getExecutionIdentity(this, config);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ScanReport scan(ScanConfig config) {
-		ScanReport report = new ScanReport();
+	public CodeScanReport scan(CodeScanConfig config) {
+		CodeScanReport report = new CodeScanReport();
 		Benchmarking<EsLintCustomRuleDto> benchmarking = new Benchmarking<>();
 		benchmarking.enable(config.isBenchmarkEnabled());
 
@@ -68,13 +77,14 @@ public class EsLintScanner implements IScanner {
 				rulesetPath = writeRulesetToFile(config.getRuleset());
 			} catch (IOException | RulesetException e) {
 				report.addError(
-						new ScanError(
+						new CodeScanError(
 								"Exception writing ESLint ruleset to file: " + e.getMessage()));
 				return report;
 			}
 
 			// Run processor
-			AbstractProcessor processor = getProcessor(config, rulesetPath);
+			AbstractProcessor processor =
+					getProcessor(config, rulesetPath).withFileTypes(config.getFileTypes());
 
 			try (Benchmarker b = benchmarking.newBenchmarker(TimerType.DefaultTimerType.SCAN)) {
 				processor.runScan(config.getRuleset(), config.getWorkingDirectory());
@@ -84,7 +94,7 @@ public class EsLintScanner implements IScanner {
 					benchmarking.newBenchmarker(TimerType.DefaultTimerType.REPORT_GENERATE)) {
 				processor.getReports().forEach(report::join);
 				processor.getSystemExceptions()
-						.forEach(exception -> report.addError(new ScanError(exception)));
+						.forEach(exception -> report.addError(new CodeScanError(exception)));
 			}
 			// Delete ruleset file
 			FileUtils.deleteQuietly(rulesetPath.toFile());
@@ -98,8 +108,15 @@ public class EsLintScanner implements IScanner {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Class<? extends RuleDto> getSupportedRuleClass() {
-		return EsLintCustomRuleDto.class;
+	public List<String> getDefaultFileTypes() {
+		// The bridge parses every file it is given as JavaScript (ES2020) and reports a parse error for
+		// anything else, so only script files are listed.
+		return List.of(".js", ".cjs", ".mjs");
+	}
+
+	@Override
+	public List<Class<? extends RuleDto>> getSupportedRuleClass() {
+		return Arrays.asList(EsLintCustomRuleDto.class, EsLintProvidedRuleDto.class);
 	}
 
 	/**
@@ -121,7 +138,7 @@ public class EsLintScanner implements IScanner {
 		return rulesetPath;
 	}
 
-	private AbstractProcessor getProcessor(ScanConfig config, Path rulesetPath) {
+	private AbstractProcessor getProcessor(CodeScanConfig config, Path rulesetPath) {
 		int threads = config.getThreads();
 		if (threads > 0) {
 			return new MultiThreadedProcessor(getCreator(config.getWorkingDirectory(), rulesetPath),
@@ -135,7 +152,7 @@ public class EsLintScanner implements IScanner {
 	private CallableCreator getCreator(Path workingDirectory, Path rulesetPath) {
 		return (path, ruleset) -> () -> {
 			// Create ESLint report
-			ScanReport report = new ScanReport();
+			CodeScanReport report = new CodeScanReport();
 			try (BufferedReader br = new BufferedReader(new FileReader(path.toFile()))) {
 				Path filePath = path.getFileName();
 				Path directoryPath = workingDirectory.relativize(path.getParent());
@@ -146,7 +163,7 @@ public class EsLintScanner implements IScanner {
 								rulesetPath.toString());
 				// Check for errors
 				if (scanResult.hasErrors()) {
-					report.addError(new ScanError(scanResult.getErrors()));
+					report.addError(new CodeScanError(scanResult.getErrors()));
 				}
 				// Process results of scan
 				if (scanResult.hasResults()) {
@@ -156,7 +173,7 @@ public class EsLintScanner implements IScanner {
 					processMessages(messages, report, ruleset, path);
 				}
 			} catch (IOException e) {
-				report.addError(new ScanError("Could not read: " + path.getFileName()));
+				report.addError(new CodeScanError("Could not read: " + path.getFileName()));
 			}
 			return report;
 		};
@@ -171,7 +188,7 @@ public class EsLintScanner implements IScanner {
 	 * @param ruleset  the ruleset used to produce the given messages
 	 * @param fileName the name of the file scanned for these messages
 	 */
-	private static void processMessages(List<LinterMessage> messages, ScanReport report,
+	private static void processMessages(List<LinterMessage> messages, CodeScanReport report,
 			RulesetDto ruleset, Path fileName) {
 		Set<RuleDto> esLintRules = ruleset.getAllRules().stream()
 				.filter(r -> r instanceof EsLintRuleDto).collect(Collectors.toSet());
@@ -180,7 +197,7 @@ public class EsLintScanner implements IScanner {
 			if (message.isFatal() || message.getNodeType() == null || message.getSeverity() != 1
 					|| message.getRuleId() == null) {
 				// Add error to report
-				report.addError(new ScanError(message.getMessage()));
+				report.addError(new CodeScanError(message.getMessage()));
 			}
 			// Message is a violation
 			else {
@@ -192,12 +209,12 @@ public class EsLintScanner implements IScanner {
 					continue;
 				}
 				// Create scan violation
-				ScanViolation violation = new ScanViolation();
+				CodeScanViolation violation = new CodeScanViolation();
+				violation.setRuleIdentity(rule.getExecutionIdentity());
 				violation.setViolationName(message.getRuleId());
 				violation.setFileName(fileName.toString());
 				violation.setLineNum(message.getLine());
-				violation.setSeverity(rule.getPriority().getName());
-				violation.setSeverityValue(rule.getPriority().getPriority());
+				violation.setSeverity(rule.getPriority());
 				violation.setMessage(message.getMessage());
 				// Add violation to report
 				report.addViolation(violation);

@@ -1,0 +1,167 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="wt-component-preview">
+  <header class="page-header">
+    <div class="wt-page-header-inner">
+      <nav class="wt-breadcrumb" aria-label="Breadcrumb">
+        <ol><li>Administration</li><li aria-current="page">UI components</li></ol>
+      </nav>
+      <span class="page-subtitle">Internal reference</span>
+      <h1 class="page-title" tabindex="-1">UI components</h1>
+      <p class="wt-page-description">Shared patterns for dense, accessible Watchtower screens.</p>
+    </div>
+  </header>
+
+  <section class="wt-preview-section" aria-labelledby="preview-themes">
+    <div class="wt-preview-heading">
+      <div><p class="wt-eyebrow">Foundations</p><h2 id="preview-themes">Themes and status</h2></div>
+      <div class="wt-action-bar" role="group" aria-label="Page actions">
+        <md-outlined-button type="button">Secondary</md-outlined-button>
+        <md-filled-button type="button">Primary action</md-filled-button>
+      </div>
+    </div>
+    <div class="wt-theme-preview-grid" data-preview="themes">
+      <article class="wt-theme-preview wt-theme-preview-light" aria-label="Light theme example">
+        <h3>Light</h3>
+        <div class="wt-kpi-grid">
+          <div class="wt-kpi"><span>Completed</span><strong>128</strong><small>Last 30 days</small></div>
+          <div class="wt-kpi"><span>Findings</span><strong>34</strong><small>Across 11 scans</small></div>
+        </div>
+        <div class="wt-chip-row" aria-label="Status examples">
+          <span class="wt-status-chip wt-tone-success"><span class="material-icons" aria-hidden="true">check_circle</span>Completed</span>
+          <span class="wt-status-chip wt-tone-warning"><span class="material-icons" aria-hidden="true">warning</span>Incomplete</span>
+          <span class="wt-status-chip wt-tone-danger"><span class="material-icons" aria-hidden="true">error</span>Failed</span>
+        </div>
+      </article>
+      <article class="wt-theme-preview wt-theme-preview-dark" aria-label="Dark theme example">
+        <h3>Dark</h3>
+        <div class="wt-kpi-grid">
+          <div class="wt-kpi"><span>Completed</span><strong>128</strong><small>Last 30 days</small></div>
+          <div class="wt-kpi"><span>Findings</span><strong>34</strong><small>Across 11 scans</small></div>
+        </div>
+        <div class="wt-chip-row" aria-label="Severity examples">
+          <span class="wt-severity wt-severity-1">High</span>
+          <span class="wt-severity wt-severity-3">Medium</span>
+          <span class="wt-severity wt-severity-6">Info</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="wt-preview-section" aria-labelledby="preview-controls">
+    <div class="wt-preview-heading"><div><p class="wt-eyebrow">Interaction</p><h2 id="preview-controls">Controls and states</h2></div></div>
+    <div class="wt-preview-grid" data-preview="focus-states">
+      <article class="card card-small">
+        <div class="card-header"><h3>Action states</h3></div>
+        <div class="card-body wt-control-examples">
+          <md-filled-button class="is-hover-preview" type="button">Hover</md-filled-button>
+          <md-filled-button class="is-focus-preview" type="button">Focus</md-filled-button>
+          <md-outlined-button type="button" aria-busy="true"><span class="wt-spinner" aria-hidden="true"></span>Loading</md-outlined-button>
+        </div>
+      </article>
+      <article class="card card-small">
+        <div class="card-header"><h3>Form field</h3></div>
+        <div class="card-body">
+          <md-outlined-text-field id="preview-repository" class="wt-control-wide" label="Repository"
+              value="platform/payments" aria-describedby="preview-repository-help"></md-outlined-text-field>
+          <p id="preview-repository-help" class="wt-field-help">Owner and repository name.</p>
+          <md-outlined-text-field id="preview-invalid" class="wt-control-wide" label="Ruleset"
+              error error-text="Choose a ruleset" aria-describedby="preview-invalid-error"></md-outlined-text-field>
+          <p id="preview-invalid-error" class="wt-field-error">Choose a ruleset.</p>
+        </div>
+      </article>
+      <article class="card card-small">
+        <div class="card-header"><h3>Filter</h3></div>
+        <div class="card-body">
+          <nav class="wt-segmented-filter" aria-label="Example result filter">
+            <a class="wt-segment is-active" aria-current="page" href="#preview-controls">All</a>
+            <a class="wt-segment" href="#preview-controls">Failed</a>
+            <a class="wt-segment" href="#preview-controls">Complete</a>
+          </nav>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- docs/design-system.md, "Restraint": the patterns a new feature attaches to instead of
+       adding its own card. -->
+  <section class="wt-preview-section" aria-labelledby="preview-restraint" data-preview="restraint">
+    <div class="wt-preview-heading"><div><p class="wt-eyebrow">Restraint</p><h2 id="preview-restraint">Attach, don't add</h2></div></div>
+    <div class="wt-page-bar mb-3">
+      <div class="wt-page-meta">
+        <span class="wt-status-chip wt-status-chip--danger">Blocking</span>
+        <span>platform/payments</span><span>Scanned 2 minutes ago</span>
+        <details class="wt-popover">
+          <summary aria-label="About this status"><span class="material-icons" aria-hidden="true">info</span></summary>
+          <div class="wt-popover__body">Status is a chip; its explanation sits behind the info icon, not in a paragraph on the page.</div>
+        </details>
+      </div>
+      <div class="wt-page-actions">
+        <md-outlined-button type="button">Secondary</md-outlined-button>
+        <md-filled-button type="button">Primary</md-filled-button>
+      </div>
+    </div>
+    <div class="wt-preview-grid">
+      <article class="card card-small">
+        <div class="card-header"><h3>Row actions</h3></div>
+        <div class="card-body wt-table-actions">
+          <md-outlined-button class="wt-row-action" has-icon type="button"><span slot="icon" class="material-icons" aria-hidden="true">edit</span>Edit</md-outlined-button>
+          <form data-confirm="Delete this example? It is only a preview." data-confirm-action="Delete" action="#preview-restraint" method="get">
+            <md-outlined-button class="wt-row-action wt-row-action--danger" has-icon type="submit"><span slot="icon" class="material-icons" aria-hidden="true">delete</span>Delete</md-outlined-button>
+          </form>
+        </div>
+      </article>
+      <article class="card card-small">
+        <div class="card-header"><h3>Optional fields</h3></div>
+        <div class="card-body">
+          <details class="wt-form-disclosure">
+            <summary>More options</summary>
+            <p class="wt-field-help">Optional fields stay closed until needed.</p>
+          </details>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="wt-preview-section" aria-labelledby="preview-data">
+    <div class="wt-preview-heading"><div><p class="wt-eyebrow">Data display</p><h2 id="preview-data">Tables and metadata</h2></div></div>
+    <div class="card" data-preview="responsive-table">
+      <div class="wt-table-scroll" role="region" aria-label="Recent scan example" tabindex="0">
+        <table class="table table-hover">
+          <caption>Recent scans, responsive containment example</caption>
+          <thead><tr><th scope="col">Target</th><th scope="col">Module</th><th scope="col">Status</th><th scope="col">Findings</th><th scope="col">Completed</th><th scope="col">Action</th></tr></thead>
+          <tbody><tr><th scope="row">platform/payments #418</th><td>PR</td><td><span class="wt-status-chip wt-tone-success">Completed</span></td><td>3</td><td>2 minutes ago</td><td><a class="btn btn-secondary btn-sm wt-report-link" href="#preview-data"><span>View report</span><span class="material-icons" aria-hidden="true">arrow_forward</span></a></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <dl class="wt-metadata-grid wt-metadata-grid-wide">
+      <div><dt>Ticket</dt><dd class="wt-mono">SEC-1842</dd></div>
+      <div><dt>Package</dt><dd class="wt-mono">org.example:parser</dd></div>
+      <div><dt>Duration</dt><dd>42 seconds</dd></div>
+      <div><dt>Completed</dt><dd>24 Sep 2026, 21:18</dd></div>
+    </dl>
+  </section>
+
+  <section class="wt-preview-section" aria-labelledby="preview-density" data-preview="density">
+    <div class="wt-preview-heading"><div><p class="wt-eyebrow">Density</p><h2 id="preview-density">Comfortable and compact</h2></div></div>
+    <div class="wt-density-grid">
+      <div class="card"><div class="card-body"><h3>Comfortable</h3><p>Default spacing for forms and reading surfaces.</p></div></div>
+      <div class="card wt-density-compact"><div class="card-body"><h3>Compact</h3><p>Operational tables and high-frequency controls.</p></div></div>
+    </div>
+  </section>
+
+  <section class="wt-preview-section" aria-labelledby="preview-feedback">
+    <div class="wt-preview-heading"><div><p class="wt-eyebrow">Feedback</p><h2 id="preview-feedback">System states</h2></div></div>
+    <div class="wt-preview-grid">
+      <div class="alert alert-success" role="status" aria-live="polite"><strong>Saved.</strong> Repository settings were updated.</div>
+      <div class="alert alert-warning"><strong>Metrics delayed.</strong> Recent projections are still processing.</div>
+      <div class="alert alert-danger" role="alert"><strong>Scan failed.</strong> Review scanner diagnostics and retry.</div>
+      <div class="wt-state wt-state-empty"><span class="material-icons" aria-hidden="true">inbox</span><div><h3>No scans yet</h3><p>Submit a scan to populate this view.</p></div></div>
+      <div class="wt-state wt-state-loading" aria-busy="true"><span class="wt-spinner" aria-hidden="true"></span><div><h3>Loading activity</h3><p>Existing content remains visible until replacement is ready.</p></div></div>
+      <div class="wt-dialog-preview" role="group" aria-labelledby="preview-confirm-title"><h3 id="preview-confirm-title">Rotate encryption key?</h3><p>This starts a background rotation. Key material is never displayed.</p><div class="wt-action-bar"><md-text-button type="button">Cancel</md-text-button><md-filled-button class="wt-btn-danger" type="button">Rotate key</md-filled-button></div></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 
-import com.tracelink.appsec.watchtower.core.scan.threadpool.PauseableThreadPoolTaskExecutor;
+import com.tracelink.appsec.watchtower.core.scan.code.threadpool.PauseableThreadPoolTaskExecutor;
 
 /**
  * Handles creating executor services and scheduling scans in a
@@ -23,7 +23,13 @@ public abstract class AbstractScanningService {
 	private final boolean runAfterStartup;
 
 	protected AbstractScanningService(int executorThreads, boolean shouldRecoverFromDowntime) {
-		this.executor = new PauseableThreadPoolTaskExecutor(executorThreads);
+		this(executorThreads, shouldRecoverFromDowntime,
+				PauseableThreadPoolTaskExecutor.DEFAULT_QUEUE_CAPACITY);
+	}
+
+	protected AbstractScanningService(int executorThreads, boolean shouldRecoverFromDowntime,
+			int queueCapacity) {
+		this.executor = new PauseableThreadPoolTaskExecutor(executorThreads, queueCapacity);
 		this.executor.setBeanName(this.getClass().getSimpleName());
 		this.executor.initialize();
 		this.runAfterStartup = shouldRecoverFromDowntime;
@@ -83,6 +89,14 @@ public abstract class AbstractScanningService {
 
 	public long getTaskNumActive() {
 		return this.getExecutor().getTaskNumActive();
+	}
+
+	/**
+	 * @return the number of scans that may wait in the queue before submissions are
+	 *         rejected
+	 */
+	public int getQueueCapacity() {
+		return this.getExecutor().getQueueCapacity();
 	}
 
 	/**

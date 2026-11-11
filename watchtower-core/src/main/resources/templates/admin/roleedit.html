@@ -1,54 +1,42 @@
+<div th:replace="~{fragments/pageheader :: header(${role.roleName}, 'Role')}"></div>
+<p class="wt-page-meta mb-3" th:if="${!#strings.isEmpty(role.description)}" th:text="${role.description}">Role description</p>
 
-<div class="page-header row no-gutters py-4">
-	<div class="col-12 col-sm-4 text-center text-sm-left mb-0">
-		<h3 class="page-title">Edit User Role</h3>
-	</div>
-</div>
-<!-- End Page Header -->
-<div class="row">
-	<div class="col">
-		<div class="card card-small mb-4">
-			<div class="card-header border-bottom">
-				<h6 class="m-0" th:text="${'Edit Role: ' + role.getRoleName()}"></h6>
-				<div class="form-group mt-2 mb-0">
-					<label class="font-weight-bold">Description:</label>
-					<span th:text="${role.getDescription()}"></span>
-				</div>
-			</div>
-			<div class="card-body p-0 pb-3 text-center">
-				<form method="POST" action="/rolemgmt/edit">
-					<div class="table-responsive">
-						<table class="table mb-0">
-							<thead class="bg-light">
-								<tr>
-									<th scope="col" class="border">Module</th>
-									<th scope="col" class="border">Category</th>
-									<th scope="col" class="border">Privilege</th>
-									<th scope="col" class="border">Description</th>
-									<th scope="col" class="border">Enabled</th>
-								</tr>
-							</thead>
-							<tbody>
-								<th:block th:each="priv : ${privileges}">
-									<tr>
-										<td th:text="${priv.module}"></td>
-										<td th:text="${priv.category}"></td>
-										<td th:text="${priv.name}"></td>
-										<td th:text="${priv.description}" class="text-left"></td>
-										<td>
-											<input type="checkbox" th:name="${priv.name}" th:checked="${role.getPrivileges().contains(priv)}"></input>
-										</td>
-									</tr>
-								</th:block>
-							</tbody>
-						</table>
-					</div>
-					<input type="hidden" name="id" th:value="${role.id}"></input> <input
-						type="hidden" th:name="${_csrf.parameterName}"
-						th:value="${_csrf.token}" />
-					<button type="submit" class="btn btn-accent">Save Role</button>
-				</form>
-			</div>
-		</div>
-	</div>
-</div>
+<!-- Editors: grouped checkboxes, one Select all / Clear all toggle per group (role-privileges.js).
+     Read-only viewers: just the privileges the role grants, as text - no disabled controls. -->
+<th:block th:with="canModify=${#authorization.expression('hasAuthority('''+T(com.tracelink.appsec.watchtower.core.auth.model.CorePrivilege).ROLE_MODIFY_NAME+''')')}">
+<form th:if="${canModify}" method="POST" action="/rolemgmt/edit" class="card card-small mb-4">
+  <div class="card-body border-bottom">
+    <md-outlined-text-field id="privilegeSearch" class="wt-control-wide" type="search" data-privilege-search
+        label="Search privileges" placeholder="Name, category, or description"></md-outlined-text-field>
+    <p data-privilege-status role="status" aria-live="polite" class="text-muted mt-2 mb-0"></p>
+  </div>
+  <div class="card-body">
+    <section th:each="moduleEntry : ${privilegesByModule}" data-privilege-group class="wt-privilege-group mb-4"
+             th:attr="aria-labelledby=${'privilege-module-' + moduleEntryStat.index}">
+      <div class="wt-privilege-group__heading">
+        <h3 class="h6 mb-0" th:id="${'privilege-module-' + moduleEntryStat.index}" th:text="${moduleEntry.key}">Module</h3>
+        <md-text-button type="button" data-toggle-group>Select all</md-text-button>
+      </div>
+      <div class="wt-privilege-list">
+        <label th:each="priv : ${moduleEntry.value}" data-privilege-row class="wt-privilege-row"
+               th:attr="data-privilege-text=${priv.name + ' ' + priv.category + ' ' + priv.description}">
+          <md-checkbox th:aria-label="${priv.name}" th:name="${priv.name}" value="true" th:checked="${role.privileges.contains(priv)}"></md-checkbox>
+          <span><strong th:text="${priv.name}">Privilege</strong><small class="d-block text-muted"><span th:text="${priv.category}">Category</span> — <span th:text="${priv.description}">Description</span></small></span>
+        </label>
+      </div>
+    </section>
+  </div>
+  <div class="card-footer d-flex justify-content-end">
+    <input type="hidden" name="id" th:value="${role.id}"/><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/><md-filled-button type="submit">Save role</md-filled-button>
+  </div>
+</form>
+<section th:unless="${canModify}" class="card card-small mb-4" aria-labelledby="granted-heading" data-granted-privileges>
+  <div class="card-body">
+    <h2 id="granted-heading" class="h6" th:text="${role.privileges.size()} + (${role.privileges.size()} == 1 ? ' privilege granted' : ' privileges granted')">Privileges granted</h2>
+    <ul class="wt-granted-list" th:unless="${role.privileges.empty}">
+      <li th:each="priv : ${role.privileges}"><strong th:text="${priv.name}">Privilege</strong>
+        <span class="text-muted" th:text="${priv.description}">Description</span></li>
+    </ul>
+  </div>
+</section>
+</th:block>

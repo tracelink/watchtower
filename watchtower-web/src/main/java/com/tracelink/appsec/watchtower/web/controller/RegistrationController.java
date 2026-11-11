@@ -1,10 +1,11 @@
 package com.tracelink.appsec.watchtower.web.controller;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,10 +61,18 @@ public class RegistrationController {
 			bindingResult.rejectValue("passwordConfirmation", "error.user",
 					"Passwords don't match");
 		}
+		if (bindingResult.hasErrors()) {
+			modelAndView.setViewName("register");
+			return modelAndView;
+		}
 		try {
 			userService.registerNewUser(form.getUsername(), form.getPassword());
 		} catch (BadCredentialsException e) {
 			bindingResult.rejectValue("password", "error.user", "Password does not meet policy");
+		} catch (DataIntegrityViolationException e) {
+			// A concurrent registration may win after the initial existence check.
+			bindingResult.rejectValue("username", "error.user",
+					"User with that username already exists");
 		}
 
 		if (bindingResult.hasErrors()) {

@@ -1,19 +1,21 @@
 <!doctype html>
 <html class="no-js h-100" lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/htmlhead"></head>
+<head th:replace="~{fragments/htmlhead}"></head>
 <body class="h-100">
-<div class="container-fluid">
-    <div class="row">
-        <main class="main-content col">
-            <div class="error">
-                <div class="error__content">
-                    <h2 th:text="${status}"></h2>
-                    <h3 th:text="${message}"></h3>
-                    <a class="btn btn-accent btn-pill" href="/" role="button">Home</a>
-                </div>
-            </div>
-        </main>
-    </div>
-</div>
+  <main class="error" aria-labelledby="error-heading">
+    <section class="error__content wt-state-card">
+      <p class="wt-eyebrow">Watchtower</p>
+      <h1 id="error-heading"><span th:text="${status}">Error</span> <span th:text="${error}">Request failed</span></h1>
+      <p th:text="${safeMessage}">The server could not complete this request.</p>
+      <p data-request-id class="text-muted wt-mono" th:if="${requestId != null}">Request ID: <span th:text="${requestId}">unknown</span></p>
+      <div class="wt-detail-actions">
+        <md-filled-button data-error-home href="/">Home</md-filled-button>
+        <md-outlined-button data-error-back type="button">Back</md-outlined-button>
+        <md-outlined-button data-error-retry type="button" th:if="${retryable}">Retry</md-outlined-button>
+      </div>
+    </section>
+  </main>
+  <div th:replace="~{fragments/versionbadge}"></div>
+  <script src="/scripts/error-page.js" th:attr="nonce=${nonce}"></script>
 </body>
 </html>
